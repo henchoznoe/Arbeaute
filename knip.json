@@ -1,18 +1,12 @@
 {
   "$schema": "https://unpkg.com/knip@6/schema.json",
   "ignoreBinaries": ["semantic-release"],
-  "ignore": ["components/ui/**"],
   "ignoreDependencies": [
-    "@fortawesome/fontawesome-svg-core",
-    "@fortawesome/free-brands-svg-icons",
-    "@fortawesome/react-fontawesome",
     "@semantic-release/changelog",
     "@semantic-release/commit-analyzer",
     "@semantic-release/git",
     "@semantic-release/release-notes-generator",
     "@semantic-release/npm",
-    "@semantic-release/github",
-    "lucide-react",
-    "next-themes"
+    "@semantic-release/github"
   ]
 }
