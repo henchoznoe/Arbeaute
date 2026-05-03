@@ -7,6 +7,8 @@ import Link from 'next/link'
 import { Animate } from '@/components/ui/animate'
 import { Separator } from '@/components/ui/separator'
 import { contact } from '@/lib/constants/contact'
+import { getAppVersion } from '@/lib/utils/app-version'
+import { getCommitHash } from '@/lib/utils/commit-hash'
 
 const socials = [
   { icon: faFacebook, href: contact.social.facebook, label: 'Facebook' },
@@ -14,6 +16,9 @@ const socials = [
 ]
 
 export function Footer() {
+  const appVersion = getAppVersion()
+  const commitHash = getCommitHash()
+
   return (
     <footer className="bg-muted/50 px-6 py-12">
       <div className="mx-auto max-w-6xl">
@@ -83,7 +88,8 @@ export function Footer() {
                   className="underline underline-offset-2 transition-colors hover:text-foreground"
                 >
                   Noé Henchoz
-                </Link>
+                </Link>{' '}
+                &middot; v{appVersion} &middot; {commitHash}
               </p>
             </div>
           </div>
