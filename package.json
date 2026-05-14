@@ -1,14 +1,14 @@
 {
   "name": "arbeaute-bulle.ch",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "TODO",
-  "homepage": "https://github.com/henchoznoe/arbeaute-bulle.ch",
+  "homepage": "https://github.com/henchoznoe/Arbeaute",
   "license": "MIT",
   "author": "Noé Henchoz <henchoznoe@gmail.com> (https://henchoznoe.ch/)",
   "type": "module",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/henchoznoe/arbeaute-bulle.ch.git"
+    "url": "git+https://github.com/henchoznoe/Arbeaute.git"
   },
   "scripts": {
     "dev": "next dev",

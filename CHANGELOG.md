@@ -1,3 +1,10 @@
+# [1.1.0](https://github.com/henchoznoe/Arbeaute/compare/v1.0.0...v1.1.0) (2026-05-14)
+
+
+### Features
+
+* integrate Vercel Analytics into the root layout ([34fb8a0](https://github.com/henchoznoe/Arbeaute/commit/34fb8a0b857d91fa30a6050de072dab435d4ffcb))
+
 # 1.0.0 (2026-05-03)
 
 
