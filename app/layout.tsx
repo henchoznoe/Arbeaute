@@ -1,6 +1,7 @@
 import '@fortawesome/fontawesome-svg-core/styles.css'
 
 import { config } from '@fortawesome/fontawesome-svg-core'
+import { Analytics } from '@vercel/analytics/next'
 import type { Metadata } from 'next'
 import { Inter, Playfair_Display } from 'next/font/google'
 
@@ -80,7 +81,10 @@ export default function RootLayout({
       suppressHydrationWarning
       className={cn('antialiased', inter.variable, playfair.variable)}
     >
-      <body suppressHydrationWarning>{children}</body>
+      <body suppressHydrationWarning>
+        {children}
+        <Analytics />
+      </body>
     </html>
   )
 }
