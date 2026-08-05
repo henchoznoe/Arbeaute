@@ -3,20 +3,38 @@ updates:
   - package-ecosystem: "npm"
     directory: "/"
     schedule:
-      interval: "monthly"
+      interval: "weekly"
+      day: "monday"
+      time: "04:00"
+      timezone: "Europe/Zurich"
     target-branch: "develop"
     rebase-strategy: "auto"
     commit-message:
       prefix: "chore"
       prefix-development: "chore"
       include: "scope"
+    cooldown:
+      default-days: 2
+    groups:
+      npm-dependencies:
+        patterns:
+          - "*"
 
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
-      interval: "monthly"
+      interval: "weekly"
+      day: "monday"
+      time: "04:00"
+      timezone: "Europe/Zurich"
     target-branch: "develop"
     rebase-strategy: "auto"
     commit-message:
       prefix: "ci"
       include: "scope"
+    cooldown:
+      default-days: 7
+    groups:
+      actions-dependencies:
+        patterns:
+          - "*"
