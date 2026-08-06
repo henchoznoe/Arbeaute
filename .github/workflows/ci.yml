@@ -15,6 +15,15 @@ jobs:
   ci:
     name: Lint, Type-check & Test
     runs-on: ubuntu-latest
+    env:
+      NEXT_PUBLIC_APP_URL: 'http://localhost:3000'
+      DATABASE_URL: 'postgresql://ci:ci@localhost:5432/ci'
+      DATABASE_URL_UNPOOLED: 'postgresql://ci:ci@localhost:5432/ci'
+      ADMIN_PASSWORD: 'ci-admin-password'
+      ADMIN_SESSION_SECRET: 'ci-admin-session-secret-at-least-32-characters'
+      CUSTOMER_SESSION_SECRET: 'ci-customer-session-secret-at-least-32-characters'
+      BLOB_STORE_ID: 'ci-store'
+      BLOB_READ_WRITE_TOKEN: 'ci-token'
 
     steps:
       - name: Checkout code
@@ -35,7 +44,7 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Type-check
-        run: pnpm exec tsc --noEmit
+        run: pnpm prisma generate && pnpm exec tsc --noEmit
 
       - name: Format & Lint check
         run: pnpm exec biome check .

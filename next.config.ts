@@ -18,6 +18,7 @@ const getLocalIp = () => {
 }
 
 const nextConfig: NextConfig = {
+  agentRules: false,
   allowedDevOrigins: [getLocalIp()],
   // Inline Vercel env vars at build time so client components can access them
   env: {

@@ -1,0 +1,137 @@
+generator client {
+  provider = "prisma-client"
+  output   = "./generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum AppointmentStatus {
+  CONFIRMED
+  CANCELLED
+  COMPLETED
+  NO_SHOW
+}
+
+enum AppointmentSource {
+  PUBLIC
+  ADMIN
+}
+
+enum AvailabilityExceptionType {
+  AVAILABLE
+  UNAVAILABLE
+}
+
+model ServiceCategory {
+  id          String    @id @default(cuid())
+  name        String
+  description String?
+  color       String    @default("#d99086")
+  sortOrder   Int       @default(0)
+  isActive    Boolean   @default(true)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  services    Service[]
+
+  @@index([isActive, sortOrder])
+  @@map("service_category")
+}
+
+model Service {
+  id                 String           @id @default(cuid())
+  agendaSourceId     Int?             @unique
+  categoryId         String?
+  name               String
+  description        String?
+  priceNote          String?
+  durationMinutes    Int
+  preparationMinutes Int              @default(0)
+  cleanupMinutes     Int              @default(0)
+  priceCents         Int
+  color              String           @default("#d99086")
+  imageUrl           String?
+  sortOrder          Int              @default(0)
+  isBookable         Boolean          @default(true)
+  isVisible          Boolean          @default(true)
+  isArchived         Boolean          @default(false)
+  createdAt          DateTime         @default(now())
+  updatedAt          DateTime         @updatedAt
+  category           ServiceCategory? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  appointments       Appointment[]
+
+  @@index([categoryId, isArchived, sortOrder])
+  @@index([isBookable, isVisible, isArchived])
+  @@map("service")
+}
+
+model WeeklyAvailability {
+  id          String   @id @default(cuid())
+  dayOfWeek   Int
+  startMinute Int
+  endMinute   Int
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([dayOfWeek, startMinute, endMinute])
+  @@index([dayOfWeek, startMinute])
+  @@map("weekly_availability")
+}
+
+model AvailabilityException {
+  id        String                    @id @default(cuid())
+  type      AvailabilityExceptionType
+  startsAt  DateTime
+  endsAt    DateTime
+  label     String?
+  createdAt DateTime                  @default(now())
+  updatedAt DateTime                  @updatedAt
+
+  @@index([startsAt, endsAt, type])
+  @@map("availability_exception")
+}
+
+model Appointment {
+  id                      String            @id @default(cuid())
+  serviceId               String
+  serviceNameSnapshot     String
+  servicePriceCents       Int
+  serviceDurationMinutes  Int
+  preparationMinutes      Int               @default(0)
+  cleanupMinutes          Int               @default(0)
+  startsAt                DateTime
+  endsAt                  DateTime
+  customerFirstName       String?
+  customerLastName        String
+  customerEmail           String?
+  customerPhone           String?
+  customerIdentityVersion Int               @default(1)
+  comment                 String?
+  source                  AppointmentSource
+  status                  AppointmentStatus @default(CONFIRMED)
+  cancelledAt             DateTime?
+  createdAt               DateTime          @default(now())
+  updatedAt               DateTime          @updatedAt
+  service                 Service           @relation(fields: [serviceId], references: [id], onDelete: Restrict)
+
+  @@index([startsAt, endsAt, status])
+  @@index([customerEmail, customerPhone, startsAt])
+  @@index([serviceId, startsAt])
+  @@map("appointment")
+}
+
+model RateLimitBucket {
+  id          String   @id @default(cuid())
+  keyHash     String
+  action      String
+  windowStart DateTime
+  count       Int      @default(1)
+  expiresAt   DateTime
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([keyHash, action, windowStart])
+  @@index([expiresAt])
+  @@map("rate_limit_bucket")
+}
