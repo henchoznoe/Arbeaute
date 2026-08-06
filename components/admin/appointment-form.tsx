@@ -43,6 +43,7 @@ export const AppointmentForm = ({
   const [pending, startTransition] = useTransition()
   const [message, setMessage] = useState<string | null>(null)
   const [outsideWarning, setOutsideWarning] = useState(false)
+  const [confirmingCancel, setConfirmingCancel] = useState(false)
 
   const resetWarning = () => {
     setOutsideWarning(false)
@@ -74,7 +75,7 @@ export const AppointmentForm = ({
   }
 
   const cancel = () => {
-    if (!appointment.id || !window.confirm('Annuler ce rendez-vous ?')) return
+    if (!appointment.id) return
     startTransition(async () => {
       const result = await cancelAdminAppointment(appointment.id as string)
       setMessage(result.message)
@@ -230,15 +231,37 @@ export const AppointmentForm = ({
 
       <div className="flex flex-col-reverse gap-3 sm:flex-row sm:items-center sm:justify-between">
         {appointment.id ? (
-          <button
-            type="button"
-            onClick={cancel}
-            disabled={pending}
-            className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-destructive/10 px-4 text-sm font-medium text-destructive"
-          >
-            <Trash2 className="size-4" />
-            Annuler le rendez-vous
-          </button>
+          confirmingCancel ? (
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={() => setConfirmingCancel(false)}
+                disabled={pending}
+                className="h-11 rounded-xl border px-4 text-sm font-medium"
+              >
+                Garder
+              </button>
+              <button
+                type="button"
+                onClick={cancel}
+                disabled={pending}
+                className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-destructive px-4 text-sm font-medium text-destructive-foreground"
+              >
+                <Trash2 className="size-4" />
+                Confirmer l’annulation
+              </button>
+            </div>
+          ) : (
+            <button
+              type="button"
+              onClick={() => setConfirmingCancel(true)}
+              disabled={pending}
+              className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-destructive/10 px-4 text-sm font-medium text-destructive"
+            >
+              <Trash2 className="size-4" />
+              Annuler le rendez-vous
+            </button>
+          )
         ) : (
           <span />
         )}

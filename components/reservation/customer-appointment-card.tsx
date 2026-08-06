@@ -40,6 +40,7 @@ export const CustomerAppointmentCard = ({
   const [slots, setSlots] = useState<AvailableSlot[]>([])
   const [startsAt, setStartsAt] = useState('')
   const [result, setResult] = useState<MutationResult | null>(null)
+  const [confirmingCancel, setConfirmingCancel] = useState(false)
   const [pending, startTransition] = useTransition()
 
   useEffect(() => {
@@ -67,7 +68,6 @@ export const CustomerAppointmentCard = ({
   }
 
   const cancel = () => {
-    if (!window.confirm('Voulez-vous vraiment annuler ce rendez-vous ?')) return
     startTransition(async () => {
       const response = await cancelCustomerAppointment({ appointmentId: id })
       setResult(response)
@@ -102,14 +102,35 @@ export const CustomerAppointmentCard = ({
               >
                 <CalendarDays className="size-4" /> Déplacer
               </button>
-              <button
-                type="button"
-                disabled={pending}
-                onClick={cancel}
-                className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-destructive/10 px-4 text-sm font-medium text-destructive"
-              >
-                <X className="size-4" /> Annuler
-              </button>
+              {confirmingCancel ? (
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    disabled={pending}
+                    onClick={() => setConfirmingCancel(false)}
+                    className="h-11 rounded-xl border px-4 text-sm font-medium"
+                  >
+                    Garder
+                  </button>
+                  <button
+                    type="button"
+                    disabled={pending}
+                    onClick={cancel}
+                    className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-destructive px-4 text-sm font-medium text-destructive-foreground"
+                  >
+                    <X className="size-4" /> Confirmer l’annulation
+                  </button>
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  disabled={pending}
+                  onClick={() => setConfirmingCancel(true)}
+                  className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-destructive/10 px-4 text-sm font-medium text-destructive"
+                >
+                  <X className="size-4" /> Annuler
+                </button>
+              )}
             </>
           ) : (
             <p className="text-sm text-muted-foreground">

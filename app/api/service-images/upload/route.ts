@@ -7,14 +7,15 @@ import { NextResponse } from 'next/server'
 import { env } from '@/lib/core/env'
 import prisma from '@/lib/core/prisma'
 import { getAdminSession } from '@/lib/core/session-cookies'
-
-const allowedContentTypes = ['image/jpeg', 'image/png', 'image/webp']
-const maximumSizeInBytes = 5 * 1024 * 1024
+import {
+  isValidServiceImagePath,
+  SERVICE_IMAGE_CONTENT_TYPES,
+  SERVICE_IMAGE_MAX_BYTES,
+} from '@/lib/services/service-image-policy'
 
 export const POST = async (request: Request) => {
-  const body = (await request.json()) as HandleUploadPresignedBody
-
   try {
+    const body = (await request.json()) as HandleUploadPresignedBody
     const result = await handleUploadPresigned({
       request,
       body,
@@ -26,22 +27,22 @@ export const POST = async (request: Request) => {
           where: { id: clientPayload },
           select: { id: true },
         })
-        if (!service || !pathname.startsWith(`services/${service.id}/`))
+        if (!service || !isValidServiceImagePath(pathname, service.id))
           throw new Error('Invalid upload target')
 
         const token = await issueSignedToken({
           storeId: env.BLOB_STORE_ID,
           pathname,
           operations: ['put'],
-          allowedContentTypes,
-          maximumSizeInBytes,
+          allowedContentTypes: [...SERVICE_IMAGE_CONTENT_TYPES],
+          maximumSizeInBytes: SERVICE_IMAGE_MAX_BYTES,
         })
 
         return {
           token,
           urlOptions: {
-            allowedContentTypes,
-            maximumSizeInBytes,
+            allowedContentTypes: [...SERVICE_IMAGE_CONTENT_TYPES],
+            maximumSizeInBytes: SERVICE_IMAGE_MAX_BYTES,
             addRandomSuffix: true,
           },
         }

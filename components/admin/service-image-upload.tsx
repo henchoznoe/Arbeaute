@@ -6,6 +6,10 @@ import Image from 'next/image'
 import { useRouter } from 'next/navigation'
 import { useState } from 'react'
 import { assignServiceImage, removeServiceImage } from '@/lib/actions/catalog'
+import {
+  isValidServiceImageFile,
+  SERVICE_IMAGE_CONTENT_TYPES,
+} from '@/lib/services/service-image-policy'
 
 interface ServiceImageUploadProps {
   serviceId: string
@@ -23,8 +27,8 @@ export const ServiceImageUpload = ({
   const uploadImage = async (formData: FormData) => {
     const file = formData.get('image')
     if (!(file instanceof File) || file.size === 0) return
-    if (file.size > 5 * 1024 * 1024) {
-      setError('L’image ne doit pas dépasser 5 Mo.')
+    if (!isValidServiceImageFile(file.type, file.size)) {
+      setError('Choisissez une image JPEG, PNG ou WebP de maximum 5 Mo.')
       return
     }
 
@@ -70,7 +74,7 @@ export const ServiceImageUpload = ({
         <input
           type="file"
           name="image"
-          accept="image/jpeg,image/png,image/webp"
+          accept={SERVICE_IMAGE_CONTENT_TYPES.join(',')}
           required
           className="max-w-full text-sm"
         />

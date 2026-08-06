@@ -291,7 +291,10 @@ export const ReservationWizard = ({
 
       {step === 3 ? (
         <form
-          action={submitBooking}
+          onSubmit={event => {
+            event.preventDefault()
+            submitBooking(new FormData(event.currentTarget))
+          }}
           className="rounded-3xl border bg-card p-5 sm:p-8"
         >
           <button

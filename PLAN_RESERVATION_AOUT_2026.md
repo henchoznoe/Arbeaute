@@ -6,7 +6,7 @@ Remplacer agenda.ch par un mini-agenda intégré au site Arbeaute avant le lundi
 
 Le lancement est réussi lorsque :
 
-- Les 46 prestations d’agenda.ch sont disponibles dans Neon avec groupes, descriptions, prix, durées, images et visibilité.
+- Les 34 prestations validées par Arzu sur sa photo de référence sont disponibles dans Neon avec leurs 8 groupes, descriptions, prix, durées, images et visibilité.
 - Arzu peut gérer prestations, horaires, indisponibilités et rendez-vous depuis son dashboard.
 - Les clients peuvent réserver, retrouver, déplacer et annuler leurs rendez-vous avec leur email et leur numéro de téléphone complet.
 - Aucun code de référence, compte client, email ou SMS n’est nécessaire.
@@ -173,26 +173,20 @@ Il n’existe ni table `Customer`, ni compte client, ni référence de réservat
 
 Créer un seed idempotent : relancer l’import ne doit créer aucun doublon.
 
-Importer les 46 prestations, leurs 9 groupes et les 5 prestations sans groupe. Conserver prix, durées, descriptions, notes tarifaires, couleurs, ordre, visibilité et état réservable.
+Importer les 34 prestations et leurs 8 groupes depuis la photo transmise par Arzu, qui fait foi en cas de différence avec agenda.ch. Conserver prix, durées, descriptions, notes tarifaires, couleurs, ordre, visibilité et état réservable.
 
 Inventaire :
 
-- Sans groupe — 5 prestations.
-- Cils et Regard — 8 prestations.
-- Drainage — 4 prestations.
-- Endosphère — 2 prestations.
-- Épilation au fil — 4 prestations.
-- Épilation laser diode — 8 prestations.
-- Épilation laser pour les hommes — 4 prestations.
-- Laser Erbium non ablatif — 4 prestations.
-- Ongles — 4 prestations.
-- Peeling chimique — 3 prestations.
+- Laser Erbium — 4 prestations.
+- Onglerie — 4 prestations.
+- Soins visage — 5 prestations.
+- Endosphères Therapy — 2 prestations.
+- Sourcils & Cils — 6 prestations.
+- Épilation au fil — 3 prestations.
+- Épilation diélectrique — 1 prestation.
+- Épilation laser — 9 prestations.
 
-Importer telles quelles les durées à 1 minute :
-
-- Réhaussement de cils.
-- Extension de cils cil à cil.
-- Remplissage du groupe Cils et Regard.
+Conserver la durée à 1 minute de la prestation « Tarif » du groupe Épilation diélectrique, visible mais non réservable.
 
 Télécharger les images existantes, les transférer dans Vercel Blob et supprimer toute dépendance au CDN agenda.ch.
 
@@ -210,7 +204,7 @@ Ne migrer aucun rendez-vous, client ou historique.
 
 ### 8–10 août — Catalogue et médias
 
-- Finaliser l’inventaire des 46 prestations.
+- Finaliser l’inventaire des 34 prestations validées sur la photo.
 - Migrer groupes, descriptions, images et états.
 - Construire l’administration des prestations et groupes.
 - Intégrer Vercel Blob.
@@ -235,7 +229,7 @@ Ne migrer aucun rendez-vous, client ou historique.
 ### 15–16 août — Recette
 
 - Exécuter tests, Prisma, TypeScript, Biome, Knip et build.
-- Comparer automatiquement les 46 prestations avec agenda.ch.
+- Comparer automatiquement les 34 prestations avec la source photo autoritaire et contrôler les données enrichies provenant d’agenda.ch.
 - Tester réservation, identification, déplacement et annulation en production.
 - Vérifier sauvegarde Neon, rollback Vercel et restauration du seed.
 - Faire une répétition complète avec Arzu.
@@ -296,7 +290,7 @@ Procédure :
 - Créer un rendez-vous admin avec un nom seulement.
 - Modifier prix, durée, groupe, description et image.
 - Bloquer une demi-journée et vérifier l’absence de créneaux publics.
-- Confirmer les 46 prestations, 9 groupes, prix et durées.
+- Confirmer les 34 prestations, 8 groupes, prix et durées.
 - Confirmer qu’aucune image ne dépend encore d’agenda.ch.
 - Vérifier qu’un utilisateur non connecté ne peut effectuer aucune mutation admin ou Blob.
 
