@@ -2,7 +2,10 @@
 
 ## 1. Objectif et critères de réussite
 
-Remplacer agenda.ch par un mini-agenda intégré au site Arbeaute avant le lundi 17 août 2026.
+Remplacer agenda.ch par un mini-agenda intégré au site Arbeaute avant le vendredi 7 août 2026 (soir).
+
+Le lancement a été avancé du 17 au 7 août. Les rendez-vous agenda.ch à venir sont
+reportés manuellement dans le nouveau système au moment du lancement (voir §8).
 
 Le lancement est réussi lorsque :
 
@@ -194,61 +197,53 @@ Ne migrer aucun rendez-vous, client ou historique.
 
 ## 7. Planning d’exécution
 
-### 5–7 août — Fondation
+Le planning ci-dessous a été compressé : le lancement est avancé du 17 au 7 août. Les
+étapes suivantes sont déjà livrées et validées par la suite de tests Vitest :
 
-- Importer la configuration Prisma/Zod/tests de NexTemplate.
-- Configurer Neon et les environnements.
-- Créer schéma, migrations et horaires initiaux.
-- Implémenter les sessions admin et client.
-- Ajouter la protection des routes et la limitation des tentatives.
+### 5–6 août — Fondation, catalogue, parcours client et agenda admin (livré)
 
-### 8–10 août — Catalogue et médias
+- Configuration Prisma/Zod/tests, Neon, schéma, migrations, horaires initiaux.
+- Sessions admin et client, protection des routes, limitation des tentatives.
+- Catalogue des 34 prestations et 8 groupes migré, images sur Vercel Blob.
+- Réservation publique mobile, confirmation, fichier `.ics`, `/mes-rendez-vous`,
+  déplacement et annulation à 24 heures.
+- Agenda admin (liste mobile, semaine desktop, rendez-vous, horaires, exceptions).
 
-- Finaliser l’inventaire des 34 prestations validées sur la photo.
-- Migrer groupes, descriptions, images et états.
-- Construire l’administration des prestations et groupes.
-- Intégrer Vercel Blob.
-- Remplacer les prestations statiques du site par les données PostgreSQL.
+### 6 août — Recette (exécutée, preuves dans RECETTE_RESERVATION_AOUT_2026.md)
 
-### 11–13 août — Parcours client
+- Tests, Prisma, TypeScript, Biome, Knip et build (`pnpm check:com` vert, 41 tests).
+- Comparaison automatique des 34 prestations avec la source photo autoritaire.
+- Recette fonctionnelle locale (réservation, identification, déplacement, annulation).
 
-- Implémenter le calcul des disponibilités.
-- Construire la réservation publique mobile.
-- Ajouter confirmation et fichier `.ics`.
-- Construire `/mes-rendez-vous`.
-- Ajouter déplacement et annulation à 24 heures.
-- Finaliser les protections anti-spam et concurrence.
+### 7 août (matin/midi) — Finalisation UX/UI
 
-### 14 août — Agenda admin
+- Corriger la navigation publique (lien « Mes rendez-vous » depuis l’accueil, header
+  commun aux trois pages publiques) et le retour visuel après annulation/déplacement.
+- Vérification de bout en bout en navigateur, mobile et desktop.
 
-- Finaliser la liste mobile et la semaine desktop.
-- Ajouter rendez-vous, horaires et exceptions.
-- Tester la création manuelle avec nom seulement.
-- Tester les usages tactiles sur le téléphone d’Arzu.
+### 7 août (après-midi) — Portes manuelles avant production
 
-### 15–16 août — Recette
+- Répétition complète avec Arzu sur son téléphone.
+- Vérifier sauvegarde/point de restauration Neon, dump Production, dernier déploiement sain.
+- Test réservation/identification/déplacement/annulation sur Production avec un
+  rendez-vous jetable, puis suppression.
+- Épingler le dashboard sur l’écran d’accueil d’Arzu.
 
-- Exécuter tests, Prisma, TypeScript, Biome, Knip et build.
-- Comparer automatiquement les 34 prestations avec la source photo autoritaire et contrôler les données enrichies provenant d’agenda.ch.
-- Tester réservation, identification, déplacement et annulation en production.
-- Vérifier sauvegarde Neon, rollback Vercel et restauration du seed.
-- Faire une répétition complète avec Arzu.
-
-### 17 août — Mise en production
+### 7 août (soir) — Mise en production
 
 - Déployer la version finale.
-- Remplacer tous les liens agenda.ch.
+- Remplacer tous les liens agenda.ch (déjà fait dans le code — vérifier en production).
+- Reporter manuellement les rendez-vous agenda.ch à venir dans le nouveau système.
 - Vérifier les parcours depuis téléphone et ordinateur.
-- Épingler le dashboard sur l’écran d’accueil d’Arzu.
 - Commencer la période de fonctionnement parallèle.
 
-### 18–31 août — Surveillance
+### 8–21 août — Surveillance
 
 - Contrôler quotidiennement erreurs, collisions et uploads.
 - Corriger les défauts sans étendre le périmètre.
 - Réconcilier manuellement les deux agendas.
 - Exporter une dernière sauvegarde agenda.ch.
-- Fermer le mini-site agenda.ch en fin de mois.
+- Fermer le mini-site agenda.ch en fin de période.
 - Retirer les dernières dépendances et changer les identifiants agenda.ch.
 
 ## 8. Fonctionnement parallèle accepté
@@ -296,7 +291,7 @@ Procédure :
 
 ## 10. Hypothèses et exclusions
 
-- Mise en production complète : lundi 17 août 2026.
+- Mise en production complète : vendredi 7 août 2026 (soir).
 - Interface française uniquement.
 - Un seul institut, une seule praticienne, un seul fuseau et une seule devise CHF.
 - Une seule prestation par rendez-vous.

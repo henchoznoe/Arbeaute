@@ -1,6 +1,6 @@
 # Recette du système de réservation — Août 2026
 
-Ce document conserve les preuves de recette et les opérations manuelles à effectuer avant et après la mise en production du 17 août 2026.
+Ce document conserve les preuves de recette et les opérations manuelles à effectuer avant et après la mise en production du 7 août 2026 (lancement avancé du 17 au 7 août).
 
 ## État au 6 août 2026
 
@@ -69,6 +69,8 @@ Ces opérations nécessitent une décision humaine ou concernent directement la 
 - [ ] Noter l’URL du dernier déploiement Production sain dans le journal de lancement.
 - [ ] Tester réservation, identification, déplacement et annulation sur Production avec un unique rendez-vous de recette, puis le supprimer.
 - [ ] Épingler `/admin` sur l’écran d’accueil du téléphone d’Arzu.
+- [ ] Reporter manuellement les rendez-vous agenda.ch à venir dans le nouveau système
+      (indisponibilités anonymes), conformément au fonctionnement parallèle ci-dessous.
 
 Les variables de connexion créées par l’intégration Postgres sont volontairement masquées par `vercel env pull` sous forme de valeurs de remplacement. La vérification directe de Neon depuis le poste local n’est donc pas utilisée comme preuve ; elle doit être faite depuis le dashboard Neon ou depuis l’environnement Vercel déployé.
 
@@ -81,7 +83,7 @@ Les variables de connexion créées par l’intégration Postgres sont volontair
 5. Rejouer les parcours lecture admin, réservation et espace client.
 6. Si une migration incompatible a été appliquée, utiliser le dump ou le point de restauration Neon prévu avant lancement ; ne jamais improviser un rollback SQL destructif.
 
-## Fonctionnement parallèle du 17 au 31 août
+## Fonctionnement parallèle du 7 au 21 août
 
 - Le nouveau système reçoit les réservations provenant du site Arbeaute.
 - Chaque rendez-vous reçu dans agenda.ch est reporté comme indisponibilité anonyme dans le nouvel agenda.

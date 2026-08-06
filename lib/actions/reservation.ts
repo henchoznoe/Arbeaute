@@ -18,7 +18,9 @@ import {
 } from '@/lib/reservation/appointments'
 import {
   type AvailableSlot,
+  findNextAvailableSlot,
   getAvailableSlots,
+  type NextAvailableSlot,
 } from '@/lib/reservation/availability'
 import { createAppointmentCalendar } from '@/lib/reservation/calendar'
 import {
@@ -82,6 +84,21 @@ export const getPublicAvailability = async (
     })
   } catch {
     return []
+  }
+}
+
+export const getNextPublicAvailableSlot = async (
+  serviceId: string,
+  fromDateKey: string,
+): Promise<NextAvailableSlot | null> => {
+  try {
+    return await findNextAvailableSlot({
+      database: prisma,
+      serviceId: z.string().min(1).parse(serviceId),
+      fromDateKey,
+    })
+  } catch {
+    return null
   }
 }
 

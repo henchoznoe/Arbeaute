@@ -14,7 +14,6 @@ interface ServiceValues {
   priceCents?: number
   priceNote?: string | null
   color?: string
-  sortOrder?: number
   isBookable?: boolean
   isVisible?: boolean
 }
@@ -129,7 +128,7 @@ export const ServiceForm = ({
       </label>
     </div>
 
-    <div className="grid gap-5 sm:grid-cols-3">
+    <div className="grid gap-5 sm:grid-cols-2">
       <label className="space-y-2 text-sm font-medium">
         Note de prix
         <input
@@ -148,35 +147,39 @@ export const ServiceForm = ({
           className={fieldClass}
         />
       </label>
-      <label className="space-y-2 text-sm font-medium">
-        Ordre
-        <input
-          name="sortOrder"
-          type="number"
-          min={0}
-          required
-          defaultValue={service?.sortOrder ?? 0}
-          className={fieldClass}
-        />
-      </label>
     </div>
 
-    <div className="flex flex-wrap gap-6 text-sm">
-      <label className="flex items-center gap-2 font-medium">
+    <div className="grid gap-4 sm:grid-cols-2">
+      <label className="flex items-start gap-2 rounded-lg border bg-background p-3 text-sm font-medium">
         <input
           name="isVisible"
           type="checkbox"
+          className="mt-0.5"
           defaultChecked={service?.isVisible ?? true}
         />
-        Visible sur le site
+        <span>
+          Visible sur le site
+          <span className="mt-1 block text-xs font-normal text-muted-foreground">
+            Apparaît dans le catalogue de la page d’accueil, avec sa description
+            et son prix.
+          </span>
+        </span>
       </label>
-      <label className="flex items-center gap-2 font-medium">
+      <label className="flex items-start gap-2 rounded-lg border bg-background p-3 text-sm font-medium">
         <input
           name="isBookable"
           type="checkbox"
+          className="mt-0.5"
           defaultChecked={service?.isBookable ?? true}
         />
-        Réservable
+        <span>
+          Réservable
+          <span className="mt-1 block text-xs font-normal text-muted-foreground">
+            Les clientes peuvent la choisir dans l’assistant de réservation en
+            ligne. À décocher pour un tarif variable (ex. « au temps passé »)
+            que vous réservez vous-même.
+          </span>
+        </span>
       </label>
     </div>
 

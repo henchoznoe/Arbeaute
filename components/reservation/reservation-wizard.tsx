@@ -1,10 +1,18 @@
 'use client'
 
-import { CalendarDays, Check, ChevronLeft, Clock, Download } from 'lucide-react'
-import { useEffect, useState, useTransition } from 'react'
+import {
+  CalendarDays,
+  Check,
+  ChevronLeft,
+  Clock,
+  Download,
+  Zap,
+} from 'lucide-react'
+import { useEffect, useRef, useState, useTransition } from 'react'
 import {
   type BookingResult,
   createPublicAppointment,
+  getNextPublicAvailableSlot,
   getPublicAvailability,
 } from '@/lib/actions/reservation'
 import type { AvailableSlot } from '@/lib/reservation/availability'
@@ -60,7 +68,10 @@ export const ReservationWizard = ({
   const [startsAt, setStartsAt] = useState('')
   const [loadingSlots, startSlotsTransition] = useTransition()
   const [submitting, startSubmitTransition] = useTransition()
+  const [searchingNext, startNextTransition] = useTransition()
+  const [nextSlotNotice, setNextSlotNotice] = useState<string | null>(null)
   const [result, setResult] = useState<BookingResult | null>(null)
+  const pendingSlotRef = useRef<string | null>(null)
   const selectedService = services.find(service => service.id === serviceId)
   const quickDates = Array.from({ length: 14 }, (_, index) =>
     addDateKeyDays(minDate, index),
@@ -68,11 +79,37 @@ export const ReservationWizard = ({
 
   useEffect(() => {
     if (step !== 2 || !serviceId || !date) return
-    setStartsAt('')
     startSlotsTransition(async () => {
-      setSlots(await getPublicAvailability(serviceId, date))
+      const loaded = await getPublicAvailability(serviceId, date)
+      setSlots(loaded)
+      const pending = pendingSlotRef.current
+      pendingSlotRef.current = null
+      setStartsAt(
+        pending && loaded.some(slot => slot.startsAt === pending)
+          ? pending
+          : '',
+      )
     })
   }, [date, serviceId, step])
+
+  const findNextSlot = () => {
+    if (!serviceId) return
+    setNextSlotNotice(null)
+    startNextTransition(async () => {
+      const found = await getNextPublicAvailableSlot(serviceId, date)
+      if (!found) {
+        setNextSlotNotice(
+          'Aucun créneau disponible dans les prochains mois pour cette prestation.',
+        )
+        return
+      }
+      if (found.dateKey === date) setStartsAt(found.slot.startsAt)
+      else {
+        pendingSlotRef.current = found.slot.startsAt
+        setDate(found.dateKey)
+      }
+    })
+  }
 
   const submitBooking = (formData: FormData) => {
     setResult(null)
@@ -138,19 +175,39 @@ export const ReservationWizard = ({
 
   return (
     <section className="mx-auto max-w-3xl">
-      <ol className="mb-8 grid grid-cols-3 gap-2" aria-label="Étapes">
+      <ol
+        className="mb-8 grid grid-cols-3 gap-1.5 sm:gap-2"
+        aria-label="Étapes"
+      >
         {['Prestation', 'Créneau', 'Coordonnées'].map((label, index) => {
           const number = index + 1
+          const canGoBack = step > number
+          const active = step >= number
           return (
-            <li
-              key={label}
-              className={cn(
-                'rounded-full border px-3 py-2 text-center text-xs font-medium sm:text-sm',
-                step >= number &&
-                  'border-primary bg-primary text-primary-foreground',
-              )}
-            >
-              {number}. {label}
+            <li key={label}>
+              <button
+                type="button"
+                disabled={!canGoBack}
+                onClick={() => setStep(number)}
+                aria-current={step === number ? 'step' : undefined}
+                className={cn(
+                  'flex w-full flex-col items-center gap-1 rounded-2xl border px-1.5 py-2.5 text-center transition sm:flex-row sm:justify-center sm:gap-2 sm:rounded-full sm:px-3',
+                  active && 'border-primary bg-primary text-primary-foreground',
+                  canGoBack ? 'cursor-pointer' : 'cursor-default',
+                )}
+              >
+                <span
+                  className={cn(
+                    'grid size-5 shrink-0 place-items-center rounded-full text-[11px] font-semibold',
+                    active ? 'bg-primary-foreground/20' : 'bg-foreground/10',
+                  )}
+                >
+                  {number}
+                </span>
+                <span className="text-[11px] leading-tight font-medium text-balance sm:text-sm">
+                  {label}
+                </span>
+              </button>
             </li>
           )
         })}
@@ -215,6 +272,22 @@ export const ReservationWizard = ({
           <p className="mt-1 text-sm text-muted-foreground">
             {selectedService?.name} · {selectedService?.durationMinutes} min
           </p>
+
+          <button
+            type="button"
+            onClick={findNextSlot}
+            disabled={searchingNext}
+            className="mt-5 inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl border border-primary/30 bg-primary/5 px-4 text-sm font-medium whitespace-nowrap text-primary transition hover:bg-primary/10 disabled:opacity-60 sm:w-auto"
+          >
+            <Zap className="size-4 shrink-0" />
+            {searchingNext ? 'Recherche…' : 'Prochain créneau disponible'}
+          </button>
+          {nextSlotNotice ? (
+            <p className="mt-2 text-sm text-muted-foreground">
+              {nextSlotNotice}
+            </p>
+          ) : null}
+
           <label className="mt-6 block space-y-2 text-sm font-medium">
             <span className="flex items-center gap-2">
               <CalendarDays className="size-4" /> Date

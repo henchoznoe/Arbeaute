@@ -65,7 +65,9 @@ const AdminPage = async ({ searchParams }: Readonly<AdminPageProps>) => {
         customerLastName: true,
         customerPhone: true,
         serviceNameSnapshot: true,
-        service: { select: { color: true } },
+        service: {
+          select: { color: true, category: { select: { name: true } } },
+        },
         source: true,
       },
     }),
@@ -112,6 +114,9 @@ const AdminPage = async ({ searchParams }: Readonly<AdminPageProps>) => {
           .join(' ')}
       </p>
       <p className="mt-0.5 truncate text-muted-foreground">
+        {appointment.service.category
+          ? `${appointment.service.category.name} — `
+          : ''}
         {appointment.serviceNameSnapshot}
       </p>
       {!compact && appointment.customerPhone ? (

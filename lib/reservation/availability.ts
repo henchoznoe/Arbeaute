@@ -3,6 +3,7 @@ import {
   SLOT_INTERVAL_MINUTES,
 } from '@/lib/reservation/constants'
 import {
+  addLocalDays,
   formatSlotTime,
   getBookingDateLimits,
   getLocalDayBounds,
@@ -152,4 +153,46 @@ export const getAvailableSlots = async ({
   }
 
   return [...new Map(slots.map(slot => [slot.startsAt, slot])).values()]
+}
+
+export interface NextAvailableSlot {
+  dateKey: string
+  slot: AvailableSlot
+}
+
+interface NextAvailableOptions {
+  database: DatabaseClient
+  serviceId: string
+  fromDateKey: string
+  now?: Date
+}
+
+const MAX_NEXT_AVAILABLE_SEARCH_DAYS = 100
+
+export const findNextAvailableSlot = async ({
+  database,
+  serviceId,
+  fromDateKey,
+  now = new Date(),
+}: NextAvailableOptions): Promise<NextAvailableSlot | null> => {
+  if (!isDateKey(fromDateKey)) return null
+  const { max } = getBookingDateLimits(now)
+
+  let dateKey = fromDateKey
+  for (
+    let day = 0;
+    day < MAX_NEXT_AVAILABLE_SEARCH_DAYS && dateKey <= max;
+    day += 1
+  ) {
+    const slots = await getAvailableSlots({
+      database,
+      serviceId,
+      dateKey,
+      now,
+    })
+    if (slots.length > 0) return { dateKey, slot: slots[0] }
+    dateKey = addLocalDays(dateKey, 1)
+  }
+
+  return null
 }

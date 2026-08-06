@@ -1,9 +1,21 @@
-import { Archive, Copy, Eye, EyeOff, Plus, Settings2 } from 'lucide-react'
+import {
+  Archive,
+  ChevronDown,
+  ChevronUp,
+  Copy,
+  Eye,
+  EyeOff,
+  Plus,
+  Settings2,
+} from 'lucide-react'
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
+import { ServiceDeleteButton } from '@/components/admin/service-delete-button'
 import {
   createCategory,
   duplicateService,
+  moveCategory,
+  moveService,
   toggleCategory,
   toggleServiceArchive,
   updateCategory,
@@ -54,7 +66,7 @@ const AdminServicesPage = async () => {
         </summary>
         <form
           action={createCategory}
-          className="mt-5 grid gap-3 md:grid-cols-5"
+          className="mt-5 grid gap-3 md:grid-cols-4"
         >
           <input
             name="name"
@@ -67,21 +79,12 @@ const AdminServicesPage = async () => {
             placeholder="Description"
             className={`${fieldClass} md:col-span-2`}
           />
-          <input
-            name="color"
-            type="color"
-            defaultValue="#927b59"
-            required
-            className={fieldClass}
-          />
           <div className="flex gap-2">
             <input
-              name="sortOrder"
-              type="number"
-              min={0}
-              defaultValue={categories.length}
+              name="color"
+              type="color"
+              defaultValue="#927b59"
               required
-              aria-label="Ordre"
               className={`${fieldClass} min-w-0 flex-1`}
             />
             <button
@@ -95,11 +98,43 @@ const AdminServicesPage = async () => {
       </details>
 
       <div className="mt-6 space-y-6">
-        {categories.map(category => (
+        {categories.map((category, categoryIndex) => (
           <section
             key={category.id}
             className="overflow-hidden rounded-2xl border bg-card"
           >
+            <div className="flex items-center justify-between gap-2 border-b bg-muted/30 px-4 py-2">
+              <span className="text-xs font-medium text-muted-foreground">
+                Ordre du groupe
+              </span>
+              <div className="flex gap-1">
+                <form action={moveCategory}>
+                  <input type="hidden" name="id" value={category.id} />
+                  <input type="hidden" name="direction" value="up" />
+                  <button
+                    type="submit"
+                    disabled={categoryIndex === 0}
+                    aria-label={`Monter ${category.name}`}
+                    className="grid size-8 place-items-center rounded-lg border disabled:opacity-30"
+                  >
+                    <ChevronUp className="size-4" />
+                  </button>
+                </form>
+                <form action={moveCategory}>
+                  <input type="hidden" name="id" value={category.id} />
+                  <input type="hidden" name="direction" value="down" />
+                  <button
+                    type="submit"
+                    disabled={categoryIndex === categories.length - 1}
+                    aria-label={`Descendre ${category.name}`}
+                    className="grid size-8 place-items-center rounded-lg border disabled:opacity-30"
+                  >
+                    <ChevronDown className="size-4" />
+                  </button>
+                </form>
+              </div>
+            </div>
+
             <form
               action={updateCategory}
               className="grid gap-3 border-b p-4 md:grid-cols-[1fr_2fr_auto_auto]"
@@ -116,24 +151,13 @@ const AdminServicesPage = async () => {
                 defaultValue={category.description ?? ''}
                 className={fieldClass}
               />
-              <div className="flex gap-2">
-                <input
-                  name="color"
-                  type="color"
-                  required
-                  defaultValue={category.color}
-                  className="h-9 w-12 rounded-lg border bg-background p-1"
-                />
-                <input
-                  name="sortOrder"
-                  type="number"
-                  min={0}
-                  required
-                  aria-label="Ordre du groupe"
-                  defaultValue={category.sortOrder}
-                  className="h-9 w-16 rounded-lg border bg-background px-2 text-sm"
-                />
-              </div>
+              <input
+                name="color"
+                type="color"
+                required
+                defaultValue={category.color}
+                className="h-9 w-12 rounded-lg border bg-background p-1"
+              />
               <button
                 type="submit"
                 className="inline-flex h-9 items-center justify-center gap-2 rounded-lg border px-3 text-sm font-medium"
@@ -144,7 +168,7 @@ const AdminServicesPage = async () => {
             </form>
 
             <div className="divide-y">
-              {category.services.map(service => (
+              {category.services.map((service, serviceIndex) => (
                 <div
                   key={service.id}
                   className={`flex flex-wrap items-center gap-3 px-4 py-3 ${service.isArchived ? 'opacity-50' : ''}`}
@@ -168,6 +192,32 @@ const AdminServicesPage = async () => {
                       <EyeOff className="size-4" />
                     )}
                     {service.isBookable ? 'Réservable' : 'Non réservable'}
+                  </div>
+                  <div className="flex gap-1">
+                    <form action={moveService}>
+                      <input type="hidden" name="id" value={service.id} />
+                      <input type="hidden" name="direction" value="up" />
+                      <button
+                        type="submit"
+                        disabled={serviceIndex === 0}
+                        aria-label={`Monter ${service.name}`}
+                        className="rounded-lg border p-2 disabled:opacity-30"
+                      >
+                        <ChevronUp className="size-4" />
+                      </button>
+                    </form>
+                    <form action={moveService}>
+                      <input type="hidden" name="id" value={service.id} />
+                      <input type="hidden" name="direction" value="down" />
+                      <button
+                        type="submit"
+                        disabled={serviceIndex === category.services.length - 1}
+                        aria-label={`Descendre ${service.name}`}
+                        className="rounded-lg border p-2 disabled:opacity-30"
+                      >
+                        <ChevronDown className="size-4" />
+                      </button>
+                    </form>
                   </div>
                   <Link
                     href={`/admin/services/${service.id}`}
@@ -199,6 +249,7 @@ const AdminServicesPage = async () => {
                       <Archive className="size-4" />
                     </button>
                   </form>
+                  <ServiceDeleteButton id={service.id} name={service.name} />
                 </div>
               ))}
             </div>

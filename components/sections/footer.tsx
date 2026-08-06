@@ -68,6 +68,12 @@ export function Footer() {
               >
                 Réserver
               </Link>
+              <Link
+                href="/mes-rendez-vous"
+                className="transition-colors hover:text-foreground"
+              >
+                Mes rendez-vous
+              </Link>
             </nav>
 
             <Separator className="w-full max-w-md" />
@@ -88,6 +94,14 @@ export function Footer() {
                   Noé Henchoz
                 </Link>{' '}
                 &middot; v{appVersion} &middot; {commitHash}
+              </p>
+              <p>
+                <Link
+                  href="/admin/login"
+                  className="underline underline-offset-2 transition-colors hover:text-foreground"
+                >
+                  Administration
+                </Link>
               </p>
             </div>
           </div>

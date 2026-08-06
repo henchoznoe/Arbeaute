@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import { SiteHeader } from '@/components/layout/site-header'
 import { ReservationWizard } from '@/components/reservation/reservation-wizard'
 import prisma from '@/lib/core/prisma'
 import { getBookingDateLimits } from '@/lib/reservation/time'
@@ -30,36 +31,37 @@ const ReservationPage = async () => {
   const limits = getBookingDateLimits()
 
   return (
-    <main className="min-h-screen px-5 py-8 sm:px-8 sm:py-12">
-      <header className="mx-auto mb-10 flex max-w-3xl items-center justify-between gap-4">
-        <Link href="/" className="font-heading text-xl font-bold">
-          Arbeauté
-        </Link>
-        <Link
-          href="/mes-rendez-vous"
-          className="text-sm font-medium underline underline-offset-4"
-        >
-          Mes rendez-vous
-        </Link>
-      </header>
-      <div className="mx-auto mb-9 max-w-3xl">
-        <p className="text-sm font-semibold tracking-widest text-rose-500 uppercase">
-          Réservation en ligne
-        </p>
-        <h1 className="mt-2 font-heading text-3xl font-bold sm:text-4xl">
-          Prendre rendez-vous
-        </h1>
-        <p className="mt-3 text-muted-foreground">
-          Choisissez votre soin et un créneau disponible. La confirmation est
-          immédiate.
-        </p>
-      </div>
-      <ReservationWizard
-        services={services}
-        minDate={limits.min}
-        maxDate={limits.max}
+    <>
+      <SiteHeader
+        actions={
+          <Link
+            href="/mes-rendez-vous"
+            className="text-sm font-medium whitespace-nowrap underline underline-offset-4"
+          >
+            Mes rendez-vous
+          </Link>
+        }
       />
-    </main>
+      <main className="min-h-screen px-5 pt-24 pb-8 sm:px-8 sm:pt-28 sm:pb-12">
+        <div className="mx-auto mb-9 max-w-3xl">
+          <p className="text-sm font-semibold tracking-widest text-rose-500 uppercase">
+            Réservation en ligne
+          </p>
+          <h1 className="mt-2 font-heading text-3xl font-bold sm:text-4xl">
+            Prendre rendez-vous
+          </h1>
+          <p className="mt-3 text-muted-foreground">
+            Choisissez votre soin et un créneau disponible. La confirmation est
+            immédiate.
+          </p>
+        </div>
+        <ReservationWizard
+          services={services}
+          minDate={limits.min}
+          maxDate={limits.max}
+        />
+      </main>
+    </>
   )
 }
 

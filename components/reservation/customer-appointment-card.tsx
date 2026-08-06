@@ -1,6 +1,7 @@
 'use client'
 
 import { CalendarDays, Download, X } from 'lucide-react'
+import { useRouter } from 'next/navigation'
 import { useEffect, useState, useTransition } from 'react'
 import {
   cancelCustomerAppointment,
@@ -35,6 +36,7 @@ export const CustomerAppointmentCard = ({
   maxDate,
   minDate,
 }: Readonly<CustomerAppointmentCardProps>) => {
+  const router = useRouter()
   const [moving, setMoving] = useState(false)
   const [date, setDate] = useState(dateKey)
   const [slots, setSlots] = useState<AvailableSlot[]>([])
@@ -62,7 +64,7 @@ export const CustomerAppointmentCard = ({
         setMoving(false)
         if (response.calendar)
           downloadCalendar(response.calendar, 'rendez-vous-arbeaute.ics')
-        window.location.reload()
+        router.refresh()
       }
     })
   }
@@ -71,7 +73,10 @@ export const CustomerAppointmentCard = ({
     startTransition(async () => {
       const response = await cancelCustomerAppointment({ appointmentId: id })
       setResult(response)
-      if (response.ok) window.location.reload()
+      // L'annulation supprime la session client côté serveur : on redirige avec
+      // un marqueur plutôt que de compter sur un état local, qui serait perdu au
+      // rafraîchissement automatique déclenché par l'action serveur.
+      if (response.ok) router.push('/mes-rendez-vous?cancelled=1')
     })
   }
 
