@@ -54,6 +54,13 @@ export const getLocalDayOfWeek = (dateKey: string): number => {
 export const getLocalDateKey = (date: Date): string =>
   formatInTimeZone(date, RESERVATION_TIME_ZONE, 'yyyy-MM-dd')
 
+export const getLocalWeekDateKeys = (anchorDateKey: string): string[] => {
+  const dayOfWeek = getLocalDayOfWeek(anchorDateKey)
+  const mondayOffset = dayOfWeek === 0 ? -6 : 1 - dayOfWeek
+  const monday = addLocalDays(anchorDateKey, mondayOffset)
+  return Array.from({ length: 7 }, (_, index) => addLocalDays(monday, index))
+}
+
 export const getBookingDateLimits = (
   now = new Date(),
 ): { min: string; max: string; latest: Date } => {

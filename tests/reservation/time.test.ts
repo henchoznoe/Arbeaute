@@ -4,6 +4,7 @@ import {
   canCustomerChangeAppointment,
   getLocalDayBounds,
   getLocalDayOfWeek,
+  getLocalWeekDateKeys,
   isDateKey,
   localDateMinuteToUtc,
 } from '@/lib/reservation/time'
@@ -34,6 +35,15 @@ describe('Europe/Zurich date conversion', () => {
     expect(isDateKey('2028-02-29')).toBe(true)
     expect(getLocalDayOfWeek('2026-08-10')).toBe(1)
     expect(addLocalDays('2026-12-31', 1)).toBe('2027-01-01')
+    expect(getLocalWeekDateKeys('2026-08-09')).toEqual([
+      '2026-08-03',
+      '2026-08-04',
+      '2026-08-05',
+      '2026-08-06',
+      '2026-08-07',
+      '2026-08-08',
+      '2026-08-09',
+    ])
   })
 
   it('allows changes exactly 24 hours before, but not one millisecond later', () => {
