@@ -123,7 +123,8 @@ Ajouter et valider :
 - `ADMIN_PASSWORD`
 - `ADMIN_SESSION_SECRET`
 - `CUSTOMER_SESSION_SECRET`
-- `BLOB_READ_WRITE_TOKEN`
+- `BLOB_STORE_ID`
+- `BLOB_WEBHOOK_PUBLIC_KEY`
 - `NEXT_PUBLIC_APP_URL`
 
 Aucun secret ne doit être exposé au navigateur ou ajouté au dépôt.

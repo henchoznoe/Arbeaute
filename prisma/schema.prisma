@@ -26,6 +26,7 @@ enum AvailabilityExceptionType {
 
 model ServiceCategory {
   id          String    @id @default(cuid())
+  slug        String    @unique
   name        String
   description String?
   color       String    @default("#d99086")
@@ -41,6 +42,7 @@ model ServiceCategory {
 
 model Service {
   id                 String           @id @default(cuid())
+  slug               String           @unique
   agendaSourceId     Int?             @unique
   categoryId         String?
   name               String

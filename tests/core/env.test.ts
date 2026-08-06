@@ -7,7 +7,7 @@ describe('environment configuration', () => {
     expect(env.ADMIN_SESSION_SECRET.length).toBeGreaterThanOrEqual(32)
     expect(env.CUSTOMER_SESSION_SECRET.length).toBeGreaterThanOrEqual(32)
     expect(env.BLOB_STORE_ID).not.toHaveLength(0)
-    expect(env.BLOB_READ_WRITE_TOKEN).not.toHaveLength(0)
+    expect(env.BLOB_WEBHOOK_PUBLIC_KEY).not.toHaveLength(0)
   })
 
   it('formats validation issues', () => {

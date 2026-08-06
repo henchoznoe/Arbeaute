@@ -23,7 +23,7 @@ jobs:
       ADMIN_SESSION_SECRET: 'ci-admin-session-secret-at-least-32-characters'
       CUSTOMER_SESSION_SECRET: 'ci-customer-session-secret-at-least-32-characters'
       BLOB_STORE_ID: 'ci-store'
-      BLOB_READ_WRITE_TOKEN: 'ci-token'
+      BLOB_WEBHOOK_PUBLIC_KEY: 'ci-public-key'
 
     steps:
       - name: Checkout code

@@ -1,3 +1,4 @@
+import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { logoutAdmin } from '@/lib/actions/admin-auth'
 import { getAdminSession } from '@/lib/core/session-cookies'
@@ -23,12 +24,17 @@ const AdminPage = async () => {
       </header>
 
       <section className="mt-10 rounded-3xl border bg-card p-8">
-        <h2 className="text-xl font-semibold">Fondation prête</h2>
+        <h2 className="text-xl font-semibold">Catalogue</h2>
         <p className="mt-2 max-w-xl text-muted-foreground">
-          Le dashboard de rendez-vous sera construit lors de l’étape Agenda
-          admin. La session sécurisée et la protection de cette zone sont
-          actives.
+          Gérez les groupes, prestations, tarifs, durées et images affichés sur
+          le site.
         </p>
+        <Link
+          href="/admin/services"
+          className="mt-5 inline-flex h-10 items-center rounded-lg bg-primary px-4 text-sm font-medium text-primary-foreground"
+        >
+          Gérer les prestations
+        </Link>
       </section>
     </main>
   )

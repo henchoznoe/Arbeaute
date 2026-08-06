@@ -1,19 +1,25 @@
-'use client'
-
+import Image from 'next/image'
 import Link from 'next/link'
-
 import { Animate } from '@/components/ui/animate'
 import { Button } from '@/components/ui/button'
-import {
-  Card,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card'
 import { contact } from '@/lib/constants/contact'
-import { services } from '@/lib/constants/services'
+import prisma from '@/lib/core/prisma'
 
-export function Services() {
+const formatPrice = (priceCents: number): string =>
+  `${(priceCents / 100).toLocaleString('fr-CH')} CHF`
+
+export async function Services() {
+  const categories = await prisma.serviceCategory.findMany({
+    where: { isActive: true },
+    orderBy: [{ sortOrder: 'asc' }, { name: 'asc' }],
+    include: {
+      services: {
+        where: { isVisible: true, isArchived: false },
+        orderBy: [{ sortOrder: 'asc' }, { name: 'asc' }],
+      },
+    },
+  })
+
   return (
     <section id="services" className="scroll-mt-16 px-6 py-24">
       <div className="mx-auto max-w-6xl">
@@ -26,26 +32,69 @@ export function Services() {
               Nos prestations
             </h2>
             <p className="mx-auto mt-4 max-w-2xl text-muted-foreground">
-              Découvrez notre gamme complète de soins esthétiques. Consultez nos
-              tarifs et réservez directement en ligne.
+              Découvrez notre gamme complète de soins esthétiques et leurs
+              tarifs.
             </p>
           </div>
         </Animate>
 
-        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-          {services.map((service, i) => (
-            <Animate key={service.title} animation="fade-up" delay={i * 100}>
-              <Card className="group h-full border-border/50 bg-card/80 transition-all duration-300 hover:border-rose-200 hover:shadow-lg hover:shadow-rose-100/50">
-                <CardHeader>
-                  <div className="mb-3 flex size-12 items-center justify-center rounded-xl bg-rose-50 text-rose-400 transition-colors group-hover:bg-rose-100">
-                    <service.icon className="size-6" />
-                  </div>
-                  <CardTitle className="text-lg">{service.title}</CardTitle>
-                  <CardDescription className="text-sm leading-relaxed">
-                    {service.description}
-                  </CardDescription>
-                </CardHeader>
-              </Card>
+        <div className="grid items-start gap-8 lg:grid-cols-2">
+          {categories.map((category, index) => (
+            <Animate
+              key={category.id}
+              animation="fade-up"
+              delay={(index % 4) * 75}
+            >
+              <article className="overflow-hidden rounded-2xl border bg-card shadow-sm">
+                <header
+                  className="px-5 py-4 text-primary-foreground"
+                  style={{ backgroundColor: category.color }}
+                >
+                  <h3 className="font-heading text-xl font-bold uppercase">
+                    {category.name}
+                  </h3>
+                  {category.description ? (
+                    <p className="mt-1 text-sm text-white/80">
+                      {category.description}
+                    </p>
+                  ) : null}
+                </header>
+                <div className="divide-y">
+                  {category.services.map(service => (
+                    <div
+                      key={service.id}
+                      className="flex items-center gap-3 px-4 py-3 even:bg-muted/45"
+                    >
+                      {service.imageUrl ? (
+                        <Image
+                          src={service.imageUrl}
+                          alt=""
+                          width={48}
+                          height={48}
+                          className="size-12 shrink-0 rounded-lg object-cover"
+                        />
+                      ) : null}
+                      <div className="min-w-0 flex-1">
+                        <p className="font-medium">{service.name}</p>
+                        {service.description ? (
+                          <p className="mt-0.5 line-clamp-2 text-xs text-muted-foreground">
+                            {service.description}
+                          </p>
+                        ) : null}
+                      </div>
+                      <div className="shrink-0 text-right">
+                        <p className="font-semibold text-[#927b59]">
+                          {formatPrice(service.priceCents)}
+                          {service.priceNote === '/ min' ? ' / min' : ''}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          {service.durationMinutes} min
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </article>
             </Animate>
           ))}
         </div>
@@ -62,7 +111,7 @@ export function Services() {
                 target="_blank"
                 rel="noopener noreferrer"
               >
-                Voir les tarifs et réserver
+                Réserver en ligne
               </Link>
             </Button>
           </div>

@@ -15,7 +15,7 @@ export default defineConfig({
       CUSTOMER_SESSION_SECRET:
         'test-customer-session-secret-at-least-32-characters',
       BLOB_STORE_ID: 'test-store',
-      BLOB_READ_WRITE_TOKEN: 'test-token',
+      BLOB_WEBHOOK_PUBLIC_KEY: 'test-public-key',
     },
   },
   resolve: {
