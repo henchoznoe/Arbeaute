@@ -5,6 +5,7 @@ export default function robots(): MetadataRoute.Robots {
     rules: {
       userAgent: '*',
       allow: '/',
+      disallow: ['/admin/', '/mes-rendez-vous'],
     },
     sitemap: 'https://arbeaute-bulle.ch/sitemap.xml',
   }

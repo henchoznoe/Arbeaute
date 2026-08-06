@@ -106,13 +106,7 @@ export async function Services() {
               size="lg"
               className="h-12 rounded-full px-8 text-base"
             >
-              <Link
-                href={contact.bookingUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                Réserver en ligne
-              </Link>
+              <Link href={contact.bookingUrl}>Réserver en ligne</Link>
             </Button>
           </div>
         </Animate>

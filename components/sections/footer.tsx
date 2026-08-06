@@ -64,8 +64,6 @@ export function Footer() {
               </Link>
               <Link
                 href={contact.bookingUrl}
-                target="_blank"
-                rel="noopener noreferrer"
                 className="transition-colors hover:text-foreground"
               >
                 Réserver

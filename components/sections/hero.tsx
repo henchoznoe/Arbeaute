@@ -39,13 +39,7 @@ export function Hero() {
               size="lg"
               className="h-12 rounded-full px-8 text-base"
             >
-              <Link
-                href={contact.bookingUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                Prendre rendez-vous
-              </Link>
+              <Link href={contact.bookingUrl}>Prendre rendez-vous</Link>
             </Button>
 
             <Button
