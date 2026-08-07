@@ -1,3 +1,12 @@
+# [1.3.0](https://github.com/henchoznoe/Arbeaute/compare/v1.2.0...v1.3.0) (2026-08-07)
+
+
+### Features
+
+* cancellation policy, consent forms and admin UX fixes ([491f209](https://github.com/henchoznoe/Arbeaute/commit/491f2097ba1d4db6f1d68f819688a15dc46eb905))
+* change logo ([d64580d](https://github.com/henchoznoe/Arbeaute/commit/d64580d9a6bbb4ff4975e62efdebe9be5090a4c6))
+* improve SEO ([7892f9e](https://github.com/henchoznoe/Arbeaute/commit/7892f9e4b7808f8793d3e46a624dc39ac346ccbd))
+
 # [1.2.0](https://github.com/henchoznoe/Arbeaute/compare/v1.1.0...v1.2.0) (2026-08-07)
 
 
