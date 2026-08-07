@@ -12,7 +12,7 @@
   },
   "scripts": {
     "dev": "next dev",
-    "build": "prisma generate && prisma migrate deploy && next build",
+    "build": "prisma generate && prisma migrate deploy && tsx prisma/seed.ts && (tsx prisma/migrate-media.ts || echo 'media migration skipped') && next build",
     "start": "next start",
     "prepare": "husky",
     "lint": "biome lint .",
