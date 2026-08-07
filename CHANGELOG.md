@@ -1,3 +1,10 @@
+# [1.4.0](https://github.com/henchoznoe/Arbeaute/compare/v1.3.0...v1.4.0) (2026-08-07)
+
+
+### Features
+
+* enhance date excpetion ([0da30b6](https://github.com/henchoznoe/Arbeaute/commit/0da30b60dc7210d92a92072bc906b8e3f7a75485))
+
 # [1.3.0](https://github.com/henchoznoe/Arbeaute/compare/v1.2.0...v1.3.0) (2026-08-07)
 
 
