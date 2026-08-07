@@ -5,12 +5,14 @@ import { redirect } from 'next/navigation'
 import { z } from 'zod/v4'
 import {
   AdminAgendaError,
+  buildAvailabilityExceptionRows,
   cancelAdminAppointmentSerializable,
   isAdminAppointmentInsidePublicHours,
   saveAdminAppointmentSerializable,
 } from '@/lib/admin/agenda'
 import prisma from '@/lib/core/prisma'
 import { getAdminSession } from '@/lib/core/session-cookies'
+import { MAX_AVAILABILITY_EXCEPTION_RANGE_DAYS } from '@/lib/reservation/constants'
 import { normalizeEmail, normalizePhone } from '@/lib/reservation/identity'
 import { isDateKey, localDateMinuteToUtc } from '@/lib/reservation/time'
 import { hasSameOrigin } from '@/lib/utils/request'
@@ -205,6 +207,7 @@ export const createAvailabilityException = async (
     .object({
       type: z.enum(['AVAILABLE', 'UNAVAILABLE']),
       date: z.string().refine(isDateKey),
+      endDate: z.string().refine(isDateKey).optional(),
       startTime: z.string().regex(timePattern),
       endTime: z.string().regex(timePattern),
       label: z.string().trim().max(120).optional(),
@@ -216,14 +219,24 @@ export const createAvailabilityException = async (
   const endMinute = parseMinute(parsed.data.endTime)
   if (startMinute >= endMinute)
     redirect('/admin/availability?error=invalid-exception')
-  await prisma.availabilityException.create({
-    data: {
+
+  let rows: ReturnType<typeof buildAvailabilityExceptionRows>
+  try {
+    rows = buildAvailabilityExceptionRows({
       type: parsed.data.type,
-      startsAt: localDateMinuteToUtc(parsed.data.date, startMinute),
-      endsAt: localDateMinuteToUtc(parsed.data.date, endMinute),
+      startDateKey: parsed.data.date,
+      endDateKey: parsed.data.endDate || parsed.data.date,
+      startMinute,
+      endMinute,
       label: parsed.data.label || null,
-    },
-  })
+    })
+  } catch {
+    redirect('/admin/availability?error=invalid-exception')
+  }
+  if (rows.length > MAX_AVAILABILITY_EXCEPTION_RANGE_DAYS)
+    redirect('/admin/availability?error=range-too-long')
+
+  await prisma.availabilityException.createMany({ data: rows })
   refreshAvailability()
 }
 

@@ -3,6 +3,7 @@ import {
   addLocalDays,
   canCustomerChangeAppointment,
   getCustomerChangeDeadline,
+  getDateKeysInRange,
   getLocalDayBounds,
   getLocalDayOfWeek,
   getLocalWeekDateKeys,
@@ -79,6 +80,32 @@ describe('Europe/Zurich date conversion', () => {
     expect(getCustomerChangeDeadline(midweek).toISOString()).toBe(
       '2026-08-10T08:00:00.000Z',
     )
+  })
+
+  it('lists every date in an inclusive range, single day included', () => {
+    expect(getDateKeysInRange('2026-08-20', '2026-08-20')).toEqual([
+      '2026-08-20',
+    ])
+    expect(getDateKeysInRange('2026-08-20', '2026-08-23')).toEqual([
+      '2026-08-20',
+      '2026-08-21',
+      '2026-08-22',
+      '2026-08-23',
+    ])
+  })
+
+  it('crosses a month boundary when listing a date range', () => {
+    expect(getDateKeysInRange('2026-08-30', '2026-09-02')).toEqual([
+      '2026-08-30',
+      '2026-08-31',
+      '2026-09-01',
+      '2026-09-02',
+    ])
+  })
+
+  it('rejects an inverted or invalid date range', () => {
+    expect(() => getDateKeysInRange('2026-08-23', '2026-08-20')).toThrow()
+    expect(() => getDateKeysInRange('2026-02-30', '2026-08-20')).toThrow()
   })
 
   it('keeps a Monday appointment cancellable during the previous week', () => {

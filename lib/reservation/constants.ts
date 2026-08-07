@@ -9,3 +9,5 @@ export const CUSTOMER_CHANGE_CUTOFF_MS = 48 * 60 * 60 * 1000
 export const CUSTOMER_CHANGE_CUTOFF_LABEL = '48 heures ouvrables'
 export const CUSTOMER_SESSION_MUTATION_LIMIT = 10
 export const MAX_SERIALIZABLE_ATTEMPTS = 3
+/** Plafond de jours pour une exception d'ouverture/fermeture sur plusieurs jours. */
+export const MAX_AVAILABILITY_EXCEPTION_RANGE_DAYS = 180

@@ -25,6 +25,22 @@ export const addLocalDays = (dateKey: string, amount: number): string => {
   return date.toISOString().slice(0, 10)
 }
 
+/** Liste inclusive des dates entre deux clés de date, dans l'ordre chronologique. */
+export const getDateKeysInRange = (
+  startDateKey: string,
+  endDateKey: string,
+): string[] => {
+  if (!isDateKey(startDateKey) || !isDateKey(endDateKey))
+    throw new Error('Invalid date')
+  if (endDateKey < startDateKey) throw new Error('Invalid date range')
+  const dateKeys: string[] = []
+  for (let cursor = startDateKey; cursor <= endDateKey; ) {
+    dateKeys.push(cursor)
+    cursor = addLocalDays(cursor, 1)
+  }
+  return dateKeys
+}
+
 export const localDateMinuteToUtc = (dateKey: string, minute: number): Date => {
   if (!isDateKey(dateKey) || minute < 0 || minute > 24 * 60)
     throw new Error('Invalid local date-time')
