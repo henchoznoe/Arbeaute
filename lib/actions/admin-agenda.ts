@@ -152,6 +152,9 @@ const refreshAvailability = () => {
   revalidatePath('/admin')
   revalidatePath('/admin/availability')
   revalidatePath('/reservation')
+  // Les horaires d'ouverture affichés sur la page d'accueil viennent des
+  // mêmes disponibilités hebdomadaires : elle doit être régénérée aussi.
+  revalidatePath('/')
 }
 
 export const createWeeklyAvailability = async (

@@ -2,17 +2,27 @@ import Link from 'next/link'
 import { SiteHeader } from '@/components/layout/site-header'
 import { CustomerAppointmentCard } from '@/components/reservation/customer-appointment-card'
 import { identifyCustomer, logoutCustomer } from '@/lib/actions/reservation'
+import { createPageMetadata } from '@/lib/config/seo'
 import prisma from '@/lib/core/prisma'
 import { getCustomerSession } from '@/lib/core/session-cookies'
 import { createAppointmentCalendar } from '@/lib/reservation/calendar'
+import { formatServiceLabel } from '@/lib/reservation/service-label'
 import {
   canCustomerChangeAppointment,
   formatAppointmentDate,
   getBookingDateLimits,
+  getCustomerChangeDeadline,
   getLocalDateKey,
 } from '@/lib/reservation/time'
 
 export const dynamic = 'force-dynamic'
+
+export const metadata = createPageMetadata({
+  title: 'Mes rendez-vous',
+  description: 'Gérez vos rendez-vous Arbeauté : déplacement et annulation.',
+  path: '/mes-rendez-vous',
+  index: false,
+})
 
 interface CustomerAppointmentsPageProps {
   searchParams: Promise<{ error?: string; cancelled?: string }>
@@ -146,17 +156,19 @@ const CustomerAppointmentsPage = async ({
                 <CustomerAppointmentCard
                   key={appointment.id}
                   id={appointment.id}
-                  serviceName={
-                    appointment.service.category
-                      ? `${appointment.service.category.name} — ${appointment.serviceNameSnapshot}`
-                      : appointment.serviceNameSnapshot
-                  }
+                  serviceName={formatServiceLabel(
+                    appointment.serviceNameSnapshot,
+                    appointment.service.category?.name,
+                  )}
                   dateLabel={formatAppointmentDate(appointment.startsAt)}
                   dateKey={getLocalDateKey(appointment.startsAt)}
                   priceLabel={`${(appointment.servicePriceCents / 100).toLocaleString('fr-CH')} CHF`}
                   canChange={canCustomerChangeAppointment(
                     appointment.startsAt,
                     now,
+                  )}
+                  changeDeadlineLabel={formatAppointmentDate(
+                    getCustomerChangeDeadline(appointment.startsAt),
                   )}
                   calendar={createAppointmentCalendar({
                     id: appointment.id,

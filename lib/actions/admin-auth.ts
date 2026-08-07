@@ -41,5 +41,5 @@ export const loginAdmin = async (formData: FormData): Promise<void> => {
 
 export const logoutAdmin = async (): Promise<void> => {
   await clearAdminSession()
-  redirect('/admin/login')
+  redirect('/')
 }

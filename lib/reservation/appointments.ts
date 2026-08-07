@@ -1,10 +1,10 @@
 import { createCustomerIdentityDigest } from '@/lib/core/session-cookies'
 import { getAvailableSlots } from '@/lib/reservation/availability'
+import { MAX_SERIALIZABLE_ATTEMPTS } from '@/lib/reservation/constants'
 import {
-  CUSTOMER_CHANGE_CUTOFF_MS,
-  MAX_SERIALIZABLE_ATTEMPTS,
-} from '@/lib/reservation/constants'
-import { getLocalDateKey } from '@/lib/reservation/time'
+  canCustomerChangeAppointment,
+  getLocalDateKey,
+} from '@/lib/reservation/time'
 import { Prisma, type PrismaClient } from '@/prisma/generated/prisma/client'
 
 export class ReservationError extends Error {
@@ -133,12 +133,12 @@ export const moveAppointmentSerializable = async (
               id: appointmentId,
               customerIdentityDigest: identityDigest,
               status: 'CONFIRMED',
-              startsAt: {
-                gte: new Date(now.getTime() + CUSTOMER_CHANGE_CUTOFF_MS),
-              },
             },
           })
-          if (!appointment)
+          if (
+            !appointment ||
+            !canCustomerChangeAppointment(appointment.startsAt, now)
+          )
             throw new ReservationError('APPOINTMENT_UNAVAILABLE')
 
           const slots = await getAvailableSlots({
@@ -197,12 +197,13 @@ export const cancelAppointmentSerializable = async (
           id: appointmentId,
           customerIdentityDigest: identityDigest,
           status: 'CONFIRMED',
-          startsAt: {
-            gte: new Date(now.getTime() + CUSTOMER_CHANGE_CUTOFF_MS),
-          },
         },
       })
-      if (!appointment) throw new ReservationError('APPOINTMENT_UNAVAILABLE')
+      if (
+        !appointment ||
+        !canCustomerChangeAppointment(appointment.startsAt, now)
+      )
+        throw new ReservationError('APPOINTMENT_UNAVAILABLE')
 
       return transaction.appointment.update({
         where: { id: appointment.id },

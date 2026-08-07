@@ -95,7 +95,28 @@ export function Footer() {
                 </Link>{' '}
                 &middot; v{appVersion} &middot; {commitHash}
               </p>
-              <p>
+              <p className="flex flex-wrap justify-center gap-x-3 gap-y-1">
+                <Link
+                  href="/politique-de-confidentialite"
+                  className="underline underline-offset-2 transition-colors hover:text-foreground"
+                >
+                  Politique de confidentialité
+                </Link>
+                <span aria-hidden="true">·</span>
+                <Link
+                  href="/mentions-legales"
+                  className="underline underline-offset-2 transition-colors hover:text-foreground"
+                >
+                  Mentions légales
+                </Link>
+                <span aria-hidden="true">·</span>
+                <Link
+                  href="/conditions-generales"
+                  className="underline underline-offset-2 transition-colors hover:text-foreground"
+                >
+                  Conditions générales
+                </Link>
+                <span aria-hidden="true">·</span>
                 <Link
                   href="/admin/login"
                   className="underline underline-offset-2 transition-colors hover:text-foreground"

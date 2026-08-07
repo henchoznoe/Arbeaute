@@ -13,6 +13,7 @@ import { logoutAdmin } from '@/lib/actions/admin-auth'
 import prisma from '@/lib/core/prisma'
 import { getAdminSession } from '@/lib/core/session-cookies'
 import { RESERVATION_TIME_ZONE } from '@/lib/reservation/constants'
+import { formatServiceLabel } from '@/lib/reservation/service-label'
 import {
   addLocalDays,
   getLocalDateKey,
@@ -114,10 +115,10 @@ const AdminPage = async ({ searchParams }: Readonly<AdminPageProps>) => {
           .join(' ')}
       </p>
       <p className="mt-0.5 truncate text-muted-foreground">
-        {appointment.service.category
-          ? `${appointment.service.category.name} — `
-          : ''}
-        {appointment.serviceNameSnapshot}
+        {formatServiceLabel(
+          appointment.serviceNameSnapshot,
+          appointment.service.category?.name,
+        )}
       </p>
       {!compact && appointment.customerPhone ? (
         <p className="mt-1 text-xs text-muted-foreground">

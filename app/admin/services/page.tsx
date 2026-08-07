@@ -11,6 +11,7 @@ import {
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { ServiceDeleteButton } from '@/components/admin/service-delete-button'
+import { SubmitButton } from '@/components/ui/submit-button'
 import {
   createCategory,
   duplicateService,
@@ -87,12 +88,12 @@ const AdminServicesPage = async () => {
               required
               className={`${fieldClass} min-w-0 flex-1`}
             />
-            <button
-              type="submit"
+            <SubmitButton
+              pendingLabel="Ajout…"
               className="rounded-lg bg-primary px-4 text-sm font-medium text-primary-foreground"
             >
               Ajouter
-            </button>
+            </SubmitButton>
           </div>
         </form>
       </details>
@@ -111,26 +112,24 @@ const AdminServicesPage = async () => {
                 <form action={moveCategory}>
                   <input type="hidden" name="id" value={category.id} />
                   <input type="hidden" name="direction" value="up" />
-                  <button
-                    type="submit"
+                  <SubmitButton
                     disabled={categoryIndex === 0}
                     aria-label={`Monter ${category.name}`}
-                    className="grid size-8 place-items-center rounded-lg border disabled:opacity-30"
+                    className="grid size-8 place-items-center rounded-lg border"
                   >
                     <ChevronUp className="size-4" />
-                  </button>
+                  </SubmitButton>
                 </form>
                 <form action={moveCategory}>
                   <input type="hidden" name="id" value={category.id} />
                   <input type="hidden" name="direction" value="down" />
-                  <button
-                    type="submit"
+                  <SubmitButton
                     disabled={categoryIndex === categories.length - 1}
                     aria-label={`Descendre ${category.name}`}
-                    className="grid size-8 place-items-center rounded-lg border disabled:opacity-30"
+                    className="grid size-8 place-items-center rounded-lg border"
                   >
                     <ChevronDown className="size-4" />
-                  </button>
+                  </SubmitButton>
                 </form>
               </div>
             </div>
@@ -158,13 +157,13 @@ const AdminServicesPage = async () => {
                 defaultValue={category.color}
                 className="h-9 w-12 rounded-lg border bg-background p-1"
               />
-              <button
-                type="submit"
-                className="inline-flex h-9 items-center justify-center gap-2 rounded-lg border px-3 text-sm font-medium"
+              <SubmitButton
+                pendingLabel="Enregistrement…"
+                className="h-9 rounded-lg border px-3 text-sm font-medium"
               >
                 <Settings2 className="size-4" />
                 Enregistrer
-              </button>
+              </SubmitButton>
             </form>
 
             <div className="divide-y">
@@ -197,26 +196,24 @@ const AdminServicesPage = async () => {
                     <form action={moveService}>
                       <input type="hidden" name="id" value={service.id} />
                       <input type="hidden" name="direction" value="up" />
-                      <button
-                        type="submit"
+                      <SubmitButton
                         disabled={serviceIndex === 0}
                         aria-label={`Monter ${service.name}`}
-                        className="rounded-lg border p-2 disabled:opacity-30"
+                        className="rounded-lg border p-2"
                       >
                         <ChevronUp className="size-4" />
-                      </button>
+                      </SubmitButton>
                     </form>
                     <form action={moveService}>
                       <input type="hidden" name="id" value={service.id} />
                       <input type="hidden" name="direction" value="down" />
-                      <button
-                        type="submit"
+                      <SubmitButton
                         disabled={serviceIndex === category.services.length - 1}
                         aria-label={`Descendre ${service.name}`}
-                        className="rounded-lg border p-2 disabled:opacity-30"
+                        className="rounded-lg border p-2"
                       >
                         <ChevronDown className="size-4" />
-                      </button>
+                      </SubmitButton>
                     </form>
                   </div>
                   <Link
@@ -227,18 +224,16 @@ const AdminServicesPage = async () => {
                   </Link>
                   <form action={duplicateService}>
                     <input type="hidden" name="id" value={service.id} />
-                    <button
-                      type="submit"
+                    <SubmitButton
                       aria-label={`Dupliquer ${service.name}`}
                       className="rounded-lg border p-2"
                     >
                       <Copy className="size-4" />
-                    </button>
+                    </SubmitButton>
                   </form>
                   <form action={toggleServiceArchive}>
                     <input type="hidden" name="id" value={service.id} />
-                    <button
-                      type="submit"
+                    <SubmitButton
                       aria-label={
                         service.isArchived
                           ? `Réactiver ${service.name}`
@@ -247,7 +242,7 @@ const AdminServicesPage = async () => {
                       className="rounded-lg border p-2"
                     >
                       <Archive className="size-4" />
-                    </button>
+                    </SubmitButton>
                   </form>
                   <ServiceDeleteButton id={service.id} name={service.name} />
                 </div>
@@ -256,11 +251,11 @@ const AdminServicesPage = async () => {
 
             <form action={toggleCategory} className="border-t p-3 text-right">
               <input type="hidden" name="id" value={category.id} />
-              <button type="submit" className="text-xs text-muted-foreground">
+              <SubmitButton className="text-xs text-muted-foreground">
                 {category.isActive
                   ? 'Désactiver le groupe'
                   : 'Réactiver le groupe'}
-              </button>
+              </SubmitButton>
             </form>
           </section>
         ))}

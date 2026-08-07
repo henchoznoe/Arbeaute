@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import { notFound, redirect } from 'next/navigation'
+import { ServiceConsentUpload } from '@/components/admin/service-consent-upload'
 import { ServiceForm } from '@/components/admin/service-form'
 import { ServiceImageUpload } from '@/components/admin/service-image-upload'
 import { updateService } from '@/lib/actions/catalog'
@@ -50,6 +51,10 @@ const EditServicePage = async ({
         <ServiceImageUpload
           serviceId={service.id}
           imageUrl={service.imageUrl}
+        />
+        <ServiceConsentUpload
+          serviceId={service.id}
+          consentFormUrl={service.consentFormUrl}
         />
       </div>
     </main>

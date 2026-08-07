@@ -54,6 +54,7 @@ model Service {
   priceCents         Int
   color              String           @default("#d99086")
   imageUrl           String?
+  consentFormUrl     String?
   sortOrder          Int              @default(0)
   isBookable         Boolean          @default(true)
   isVisible          Boolean          @default(true)
@@ -104,8 +105,10 @@ model Appointment {
   cleanupMinutes          Int               @default(0)
   startsAt                DateTime
   endsAt                  DateTime
-  occupiedStartsAt        DateTime
-  occupiedEndsAt          DateTime
+  // timestamptz est imposé par la contrainte d'exclusion GIST
+  // `appointment_no_confirmed_overlap`, qui s'appuie sur tstzrange().
+  occupiedStartsAt        DateTime          @db.Timestamptz(3)
+  occupiedEndsAt          DateTime          @db.Timestamptz(3)
   customerFirstName       String?
   customerLastName        String
   customerEmail           String?

@@ -41,7 +41,7 @@ export const ServiceImageUpload = ({
         {
           access: 'public',
           handleUploadUrl: '/api/service-images/upload',
-          clientPayload: serviceId,
+          clientPayload: JSON.stringify({ serviceId, kind: 'image' }),
         },
       )
       await assignServiceImage(serviceId, blob.url)

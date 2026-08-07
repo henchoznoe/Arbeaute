@@ -72,10 +72,51 @@ export const getBookingDateLimits = (
   }
 }
 
+const isBusinessDateKey = (dateKey: string): boolean => {
+  const dayOfWeek = getLocalDayOfWeek(dateKey)
+  return dayOfWeek >= 1 && dayOfWeek <= 5
+}
+
+/**
+ * Recule d'une durée exprimée en heures ouvrables : seules les heures tombant
+ * du lundi au vendredi (fuseau de l'institut) sont décomptées.
+ */
+const subtractBusinessTime = (target: Date, ms: number): Date => {
+  if (ms <= 0) return new Date(target.getTime())
+  let remaining = ms
+  // Fin (exclusive) de la tranche de journée en cours d'examen.
+  let sliceEnd = new Date(target.getTime())
+  let dateKey = getLocalDateKey(target)
+
+  // Borne de sécurité : 48 h ouvrables couvrent au plus ~10 jours calendaires.
+  for (let guard = 0; guard < 400; guard += 1) {
+    const dayStart = localDateMinuteToUtc(dateKey, 0)
+
+    if (isBusinessDateKey(dateKey)) {
+      const availableInDay = sliceEnd.getTime() - dayStart.getTime()
+      if (availableInDay >= remaining)
+        return new Date(sliceEnd.getTime() - remaining)
+      remaining -= availableInDay
+    }
+
+    // La fin du jour précédent est exactement le début du jour courant.
+    sliceEnd = dayStart
+    dateKey = addLocalDays(dateKey, -1)
+  }
+
+  return sliceEnd
+}
+
+/**
+ * Dernier instant auquel le client peut encore déplacer ou annuler lui-même.
+ */
+export const getCustomerChangeDeadline = (startsAt: Date): Date =>
+  subtractBusinessTime(startsAt, CUSTOMER_CHANGE_CUTOFF_MS)
+
 export const canCustomerChangeAppointment = (
   startsAt: Date,
   now = new Date(),
-): boolean => startsAt.getTime() - now.getTime() >= CUSTOMER_CHANGE_CUTOFF_MS
+): boolean => now.getTime() < getCustomerChangeDeadline(startsAt).getTime()
 
 export const formatAppointmentDate = (date: Date): string =>
   new Intl.DateTimeFormat('fr-CH', {

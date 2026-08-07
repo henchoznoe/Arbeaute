@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import {
   addLocalDays,
   canCustomerChangeAppointment,
+  getCustomerChangeDeadline,
   getLocalDayBounds,
   getLocalDayOfWeek,
   getLocalWeekDateKeys,
@@ -46,18 +47,48 @@ describe('Europe/Zurich date conversion', () => {
     ])
   })
 
-  it('allows changes exactly 24 hours before, but not one millisecond later', () => {
+  it('skips the weekend when counting the 48 business hours', () => {
+    // Lundi 10 août 2026, 10:00 à Zurich (08:00 UTC).
+    const startsAt = new Date('2026-08-10T08:00:00.000Z')
+    // 10 h le lundi + 24 h le vendredi + 14 h le jeudi = 48 h ouvrables,
+    // samedi et dimanche ne comptant pas.
+    expect(getCustomerChangeDeadline(startsAt).toISOString()).toBe(
+      '2026-08-06T08:00:00.000Z',
+    )
+  })
+
+  it('allows a change until the deadline, but not one millisecond later', () => {
     const startsAt = new Date('2026-08-10T08:00:00.000Z')
     expect(
       canCustomerChangeAppointment(
         startsAt,
-        new Date('2026-08-09T08:00:00.000Z'),
+        new Date('2026-08-06T07:59:59.999Z'),
       ),
     ).toBe(true)
     expect(
       canCustomerChangeAppointment(
         startsAt,
-        new Date('2026-08-09T08:00:00.001Z'),
+        new Date('2026-08-06T08:00:00.000Z'),
+      ),
+    ).toBe(false)
+  })
+
+  it('does not count Saturday or Sunday as business time', () => {
+    // Mercredi 12 août 2026, 10:00 à Zurich : aucun week-end sur les 48 h.
+    const midweek = new Date('2026-08-12T08:00:00.000Z')
+    expect(getCustomerChangeDeadline(midweek).toISOString()).toBe(
+      '2026-08-10T08:00:00.000Z',
+    )
+  })
+
+  it('keeps a Monday appointment cancellable during the previous week', () => {
+    const startsAt = new Date('2026-08-10T08:00:00.000Z')
+    // Le samedi précédent, le délai n'est pas encore écoulé côté calendaire,
+    // mais il l'est déjà en heures ouvrables.
+    expect(
+      canCustomerChangeAppointment(
+        startsAt,
+        new Date('2026-08-08T10:00:00.000Z'),
       ),
     ).toBe(false)
   })

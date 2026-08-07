@@ -7,12 +7,14 @@ import {
   cancelAdminAppointment,
   saveAdminAppointment,
 } from '@/lib/actions/admin-agenda'
+import { formatServiceLabel } from '@/lib/reservation/service-label'
 
 interface ServiceOption {
   id: string
   name: string
   durationMinutes: number
   priceCents: number
+  category: { name: string } | null
 }
 
 interface AppointmentValues {
@@ -105,7 +107,8 @@ export const AppointmentForm = ({
           </option>
           {services.map(service => (
             <option key={service.id} value={service.id}>
-              {service.name} · {service.durationMinutes} min ·{' '}
+              {formatServiceLabel(service.name, service.category?.name)} ·{' '}
+              {service.durationMinutes} min ·{' '}
               {(service.priceCents / 100).toLocaleString('fr-CH')} CHF
             </option>
           ))}

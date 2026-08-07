@@ -1,14 +1,15 @@
-'use client'
-
-import { Clock, Mail, MapPin, Phone } from 'lucide-react'
+import { CalendarCheck, Clock, Mail, MapPin, Phone } from 'lucide-react'
 import Link from 'next/link'
 
 import { Animate } from '@/components/ui/animate'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { contact, hours } from '@/lib/constants/contact'
+import { contact } from '@/lib/constants/contact'
+import { getOpeningHours } from '@/lib/reservation/opening-hours'
 
-export function Contact() {
+export async function Contact() {
+  const hours = await getOpeningHours()
+
   return (
     <section id="contact" className="scroll-mt-16 px-6 py-24">
       <div className="mx-auto max-w-6xl">
@@ -42,6 +43,11 @@ export function Contact() {
                   >
                     {contact.address}
                   </Link>
+                  <p className="mt-4 flex items-start gap-2 rounded-lg border border-rose-200 bg-rose-50 p-3 text-sm font-medium text-rose-700">
+                    <CalendarCheck className="mt-0.5 size-4 shrink-0" />
+                    Uniquement sur rendez-vous : merci de réserver en ligne ou
+                    par téléphone, aucune visite à l’improviste n’est possible.
+                  </p>
                 </CardContent>
               </Card>
             </Animate>

@@ -31,11 +31,17 @@ vi.mock('@vercel/blob/client', () => ({
 
 import { POST } from '@/app/api/service-images/upload/route'
 
-const makeRequest = (pathname = 'services/service-1/photo.jpg') =>
+const makeRequest = (
+  pathname = 'services/service-1/photo.jpg',
+  kind: 'image' | 'consent' = 'image',
+) =>
   new Request('http://localhost/api/service-images/upload', {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
-    body: JSON.stringify({ pathname, clientPayload: 'service-1' }),
+    body: JSON.stringify({
+      pathname,
+      clientPayload: JSON.stringify({ serviceId: 'service-1', kind }),
+    }),
   })
 
 describe('service image upload authorization', () => {
@@ -67,6 +73,44 @@ describe('service image upload authorization', () => {
         allowedContentTypes: ['image/jpeg', 'image/png', 'image/webp'],
       }),
     )
+  })
+
+  it('issues a PDF-only token for a consent form', async () => {
+    mocks.getAdminSession.mockResolvedValue({ kind: 'admin' })
+
+    const response = await POST(
+      makeRequest('services/service-1/consentement.pdf', 'consent'),
+    )
+
+    expect(response.status).toBe(200)
+    expect(mocks.issueSignedToken).toHaveBeenCalledWith(
+      expect.objectContaining({
+        pathname: 'services/service-1/consentement.pdf',
+        maximumSizeInBytes: 10 * 1024 * 1024,
+        allowedContentTypes: ['application/pdf'],
+      }),
+    )
+  })
+
+  it('refuses an unknown asset kind', async () => {
+    mocks.getAdminSession.mockResolvedValue({ kind: 'admin' })
+
+    const response = await POST(
+      new Request('http://localhost/api/service-images/upload', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({
+          pathname: 'services/service-1/photo.jpg',
+          clientPayload: JSON.stringify({
+            serviceId: 'service-1',
+            kind: 'script',
+          }),
+        }),
+      }),
+    )
+
+    expect(response.status).toBe(400)
+    expect(mocks.issueSignedToken).not.toHaveBeenCalled()
   })
 
   it('refuses a path belonging to another service', async () => {
