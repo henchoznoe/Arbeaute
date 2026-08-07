@@ -36,6 +36,7 @@ const errorMessages: Record<string, string> = {
   'invalid-range': 'La plage horaire est invalide.',
   'overlap-range': 'Cette plage chevauche un horaire existant.',
   'invalid-exception': 'L’exception saisie est invalide.',
+  'range-too-long': 'Cette période est trop longue (180 jours maximum).',
 }
 
 interface AvailabilityPageProps {
@@ -176,9 +177,14 @@ const AvailabilityPage = async ({
 
       <section className="mt-6 rounded-3xl border bg-card p-5 sm:p-7">
         <h2 className="text-xl font-semibold">Exceptions</h2>
+        <p className="mt-1 text-sm text-muted-foreground">
+          Renseignez « Jusqu’au » pour répéter la même plage horaire chaque jour
+          d’une période (vacances, par exemple), au lieu de créer une exception
+          par jour.
+        </p>
         <form
           action={createAvailabilityException}
-          className="mt-5 grid gap-3 md:grid-cols-2 lg:grid-cols-[1.1fr_1fr_0.8fr_0.8fr_1.5fr_auto]"
+          className="mt-5 grid gap-3 md:grid-cols-2 lg:grid-cols-[1fr_0.9fr_0.9fr_0.7fr_0.7fr_1.3fr_auto]"
         >
           <label className="grid gap-1.5 text-sm font-medium">
             Type
@@ -196,6 +202,13 @@ const AvailabilityPage = async ({
               required
               className={fieldClass}
             />
+          </label>
+          <label className="grid gap-1.5 text-sm font-medium">
+            Jusqu’au{' '}
+            <span className="font-normal text-muted-foreground">
+              (optionnel)
+            </span>
+            <input name="endDate" type="date" className={fieldClass} />
           </label>
           <label className="grid gap-1.5 text-sm font-medium">
             Début

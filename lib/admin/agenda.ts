@@ -1,12 +1,14 @@
 import { createCustomerIdentityDigest } from '@/lib/core/session-cookies'
 import { MAX_SERIALIZABLE_ATTEMPTS } from '@/lib/reservation/constants'
 import {
+  getDateKeysInRange,
   getLocalDateKey,
   getLocalDayBounds,
   getLocalDayOfWeek,
   localDateMinuteToUtc,
 } from '@/lib/reservation/time'
 import { Prisma, type PrismaClient } from '@/prisma/generated/prisma/client'
+import type { AvailabilityExceptionType } from '@/prisma/generated/prisma/enums'
 
 interface Interval {
   start: Date
@@ -68,6 +70,40 @@ export const isInsidePublicOpening = ({
   mergeIntervals([...weekly, ...available]).some(opening =>
     contains(opening, occupied),
   ) && !unavailable.some(blocked => overlaps(blocked, occupied))
+
+export interface AvailabilityExceptionRow {
+  type: AvailabilityExceptionType
+  startsAt: Date
+  endsAt: Date
+  label: string | null
+}
+
+/**
+ * Répète la même plage horaire chaque jour entre deux dates, pour créer en un
+ * coup une exception (ouverture ou fermeture) qui couvre plusieurs jours au
+ * lieu de devoir en saisir une par jour.
+ */
+export const buildAvailabilityExceptionRows = ({
+  type,
+  startDateKey,
+  endDateKey,
+  startMinute,
+  endMinute,
+  label,
+}: {
+  type: AvailabilityExceptionType
+  startDateKey: string
+  endDateKey: string
+  startMinute: number
+  endMinute: number
+  label: string | null
+}): AvailabilityExceptionRow[] =>
+  getDateKeysInRange(startDateKey, endDateKey).map(dateKey => ({
+    type,
+    startsAt: localDateMinuteToUtc(dateKey, startMinute),
+    endsAt: localDateMinuteToUtc(dateKey, endMinute),
+    label,
+  }))
 
 export const isAdminAppointmentInsidePublicHours = async (
   prisma: PrismaClient,
