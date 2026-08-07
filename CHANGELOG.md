@@ -1,3 +1,21 @@
+# [1.2.0](https://github.com/henchoznoe/Arbeaute/compare/v1.1.0...v1.2.0) (2026-08-07)
+
+
+### Bug Fixes
+
+* deploy database migrations before build ([fa0af28](https://github.com/henchoznoe/Arbeaute/commit/fa0af28c7ca38c4698a342582c429c8fe58e6cdd))
+
+
+### Features
+
+* add admin calendar and availability management ([c944026](https://github.com/henchoznoe/Arbeaute/commit/c944026a87c5f3c15efc97028406ea8d6bb5f7c8))
+* add catalog data and migration scripts for services and categories ([9ea29c8](https://github.com/henchoznoe/Arbeaute/commit/9ea29c83ce1239e835ad5ecbfed8b9d9878e4d29))
+* add customer booking and appointment management flow ([1283cbe](https://github.com/henchoznoe/Arbeaute/commit/1283cbe8e3d85cd0dd24e494c11979b1fd7af8b0))
+* add Prisma configuration and initial database schema ([f430b06](https://github.com/henchoznoe/Arbeaute/commit/f430b066f9cead5a55ee307e7d87c4fc045d489b))
+* add roadmap ([769f020](https://github.com/henchoznoe/Arbeaute/commit/769f020cf0f6b713b05abbffd144ecc57294485a))
+* update UI ([d799ecd](https://github.com/henchoznoe/Arbeaute/commit/d799ecd558e8ddaa22d465ae0fccf219443424fa))
+* update UX ([1678542](https://github.com/henchoznoe/Arbeaute/commit/16785425488a94261133f6c853e94035a0e35f64))
+
 # [1.1.0](https://github.com/henchoznoe/Arbeaute/compare/v1.0.0...v1.1.0) (2026-05-14)
 
 
