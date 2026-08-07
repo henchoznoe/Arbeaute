@@ -6,7 +6,7 @@ export const contact = {
   phoneRaw: '+41796756766',
   email: 'info@arbeaute.ch',
   bookingUrl: '/reservation',
-  website: 'https://arbeaute-bulle.ch',
+  website: 'https://www.arbeaute-bulle.ch',
   mapsUrl: 'https://maps.app.goo.gl/CTmCBxPJNNqZ6wXx5',
   mapsEmbed:
     'https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3189.9594854233746!2d7.055952776781569!3d46.61949387111656!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x478e6263023ba245%3A0x7ff81da403209e73!2sRue%20du%20March%C3%A9%2025%2C%201630%20Bulle!5e1!3m2!1sfr!2sch!4v1777838719042!5m2!1sfr!2sch',

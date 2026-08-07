@@ -2,6 +2,7 @@ import Link from 'next/link'
 import { SiteHeader } from '@/components/layout/site-header'
 import { CustomerAppointmentCard } from '@/components/reservation/customer-appointment-card'
 import { identifyCustomer, logoutCustomer } from '@/lib/actions/reservation'
+import { createPageMetadata } from '@/lib/config/seo'
 import prisma from '@/lib/core/prisma'
 import { getCustomerSession } from '@/lib/core/session-cookies'
 import { createAppointmentCalendar } from '@/lib/reservation/calendar'
@@ -15,6 +16,13 @@ import {
 } from '@/lib/reservation/time'
 
 export const dynamic = 'force-dynamic'
+
+export const metadata = createPageMetadata({
+  title: 'Mes rendez-vous',
+  description: 'Gérez vos rendez-vous Arbeauté : déplacement et annulation.',
+  path: '/mes-rendez-vous',
+  index: false,
+})
 
 interface CustomerAppointmentsPageProps {
   searchParams: Promise<{ error?: string; cancelled?: string }>

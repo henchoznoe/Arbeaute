@@ -6,6 +6,11 @@ import type { Metadata } from 'next'
 import { Inter, Playfair_Display } from 'next/font/google'
 
 import './globals.css'
+import { JsonLd } from '@/components/seo/json-ld'
+import { createLocalBusinessJsonLd } from '@/lib/config/seo'
+import { siteConfig } from '@/lib/config/site'
+import { contact } from '@/lib/constants/contact'
+import { getOpeningHours } from '@/lib/reservation/opening-hours'
 import { cn } from '@/lib/utils/cn'
 
 config.autoAddCss = false
@@ -21,44 +26,46 @@ const playfair = Playfair_Display({
 })
 
 export const metadata: Metadata = {
-  metadataBase: new URL('https://arbeaute-bulle.ch'),
-  title: 'Arbeauté | Soins esthétiques à Bulle',
-  description:
-    'À Bulle, Arbeauté vous propose un large éventail de soins esthétiques : épilation laser, soins du visage, onglerie, microblading, endosphère therapy et bien plus encore.',
+  metadataBase: new URL(siteConfig.url),
+  title: {
+    default: 'Arbeauté | Soins esthétiques à Bulle',
+    template: `%s | ${siteConfig.name}`,
+  },
+  description: siteConfig.description,
   keywords: [
-    'soins esthétiques',
-    'Bulle',
-    'épilation laser',
-    'soins du visage',
-    'onglerie',
-    'microblading',
-    'endosphère',
-    'peelings',
-    'beauté',
-    'Fribourg',
+    'soins esthétiques Bulle',
+    'institut de beauté Bulle',
+    'épilation laser Bulle',
+    'épilation laser Fribourg',
+    'soins du visage Bulle',
+    'onglerie Bulle',
+    'microblading Fribourg',
+    'endosphères therapy',
+    'peelings visage',
+    'esthéticienne Bulle',
   ],
   authors: [{ name: 'Noé Henchoz', url: 'https://henchoznoe.ch' }],
+  creator: contact.name,
+  publisher: contact.name,
   openGraph: {
     type: 'website',
-    locale: 'fr_CH',
-    url: 'https://arbeaute-bulle.ch',
-    siteName: 'Arbeauté',
+    locale: siteConfig.locale,
+    url: siteConfig.url,
+    siteName: siteConfig.name,
     title: 'Arbeauté | Soins esthétiques à Bulle',
-    description:
-      'Soins esthétiques professionnels à Bulle : épilation laser, soins du visage, onglerie, microblading et plus.',
+    description: siteConfig.description,
   },
   twitter: {
     card: 'summary_large_image',
     title: 'Arbeauté | Soins esthétiques à Bulle',
-    description:
-      'Soins esthétiques professionnels à Bulle : épilation laser, soins du visage, onglerie, microblading et plus.',
+    description: siteConfig.description,
   },
   robots: {
     index: true,
     follow: true,
   },
   alternates: {
-    canonical: 'https://arbeaute-bulle.ch',
+    canonical: '/',
   },
   icons: {
     icon: [
@@ -70,11 +77,13 @@ export const metadata: Metadata = {
   },
 }
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode
 }>) {
+  const openingHours = await getOpeningHours()
+
   return (
     <html
       lang="fr"
@@ -83,6 +92,7 @@ export default function RootLayout({
       className={cn('antialiased', inter.variable, playfair.variable)}
     >
       <body suppressHydrationWarning>
+        <JsonLd data={createLocalBusinessJsonLd(openingHours)} />
         {children}
         <Analytics />
       </body>

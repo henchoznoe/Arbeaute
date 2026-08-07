@@ -69,7 +69,7 @@ export async function Services() {
                       {service.imageUrl ? (
                         <Image
                           src={service.imageUrl}
-                          alt=""
+                          alt={service.name}
                           width={48}
                           height={48}
                           className="size-12 shrink-0 rounded-lg object-cover"

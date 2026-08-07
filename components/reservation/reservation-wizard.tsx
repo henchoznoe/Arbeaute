@@ -525,6 +525,10 @@ export const ReservationWizard = ({
               rendez-vous, conformément à la{' '}
               <a href="/politique-de-confidentialite" className="underline">
                 politique de confidentialité
+              </a>{' '}
+              et aux{' '}
+              <a href="/conditions-generales" className="underline">
+                conditions générales
               </a>
               .
             </span>

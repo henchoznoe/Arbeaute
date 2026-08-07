@@ -1,10 +1,18 @@
 import Link from 'next/link'
 import { SiteHeader } from '@/components/layout/site-header'
 import { ReservationWizard } from '@/components/reservation/reservation-wizard'
+import { createPageMetadata } from '@/lib/config/seo'
 import prisma from '@/lib/core/prisma'
 import { getBookingDateLimits } from '@/lib/reservation/time'
 
 export const dynamic = 'force-dynamic'
+
+export const metadata = createPageMetadata({
+  title: 'Prendre rendez-vous en ligne',
+  description:
+    'Réservez votre soin esthétique à Bulle en quelques clics : choisissez votre prestation, un créneau disponible et confirmez immédiatement.',
+  path: '/reservation',
+})
 
 const ReservationPage = async () => {
   const categories = await prisma.serviceCategory.findMany({
