@@ -92,7 +92,7 @@ export const AppointmentForm = ({
       onChange={resetWarning}
       className="space-y-6 rounded-3xl border bg-card p-5 shadow-sm sm:p-7"
     >
-      <label className="block space-y-2 text-sm font-medium">
+      <label className="flex flex-col gap-2 text-sm font-medium">
         Prestation
         <select
           name="serviceId"
@@ -113,7 +113,7 @@ export const AppointmentForm = ({
       </label>
 
       <div className="grid gap-5 sm:grid-cols-2">
-        <label className="space-y-2 text-sm font-medium">
+        <label className="flex flex-col gap-2 text-sm font-medium">
           Date
           <input
             name="date"
@@ -123,7 +123,7 @@ export const AppointmentForm = ({
             className={fieldClass}
           />
         </label>
-        <label className="space-y-2 text-sm font-medium">
+        <label className="flex flex-col gap-2 text-sm font-medium">
           Heure de début
           <input
             name="time"
@@ -137,10 +137,12 @@ export const AppointmentForm = ({
       </div>
 
       <div className="grid gap-5 sm:grid-cols-2">
-        <label className="space-y-2 text-sm font-medium">
-          Prénom{' '}
-          <span className="font-normal text-muted-foreground">
-            (facultatif)
+        <label className="flex flex-col gap-2 text-sm font-medium">
+          <span>
+            Prénom{' '}
+            <span className="font-normal text-muted-foreground">
+              (facultatif)
+            </span>
           </span>
           <input
             name="firstName"
@@ -150,7 +152,7 @@ export const AppointmentForm = ({
             autoComplete="given-name"
           />
         </label>
-        <label className="space-y-2 text-sm font-medium">
+        <label className="flex flex-col gap-2 text-sm font-medium">
           Nom
           <input
             name="lastName"
@@ -164,10 +166,12 @@ export const AppointmentForm = ({
       </div>
 
       <div className="grid gap-5 sm:grid-cols-2">
-        <label className="space-y-2 text-sm font-medium">
-          Email{' '}
-          <span className="font-normal text-muted-foreground">
-            (facultatif)
+        <label className="flex flex-col gap-2 text-sm font-medium">
+          <span>
+            Email{' '}
+            <span className="font-normal text-muted-foreground">
+              (facultatif)
+            </span>
           </span>
           <input
             name="email"
@@ -178,10 +182,12 @@ export const AppointmentForm = ({
             autoComplete="email"
           />
         </label>
-        <label className="space-y-2 text-sm font-medium">
-          Téléphone{' '}
-          <span className="font-normal text-muted-foreground">
-            (facultatif)
+        <label className="flex flex-col gap-2 text-sm font-medium">
+          <span>
+            Téléphone{' '}
+            <span className="font-normal text-muted-foreground">
+              (facultatif)
+            </span>
           </span>
           <input
             name="phone"
@@ -198,9 +204,13 @@ export const AppointmentForm = ({
         l’email et le téléphone sont tous les deux renseignés.
       </p>
 
-      <label className="block space-y-2 text-sm font-medium">
-        Commentaire{' '}
-        <span className="font-normal text-muted-foreground">(facultatif)</span>
+      <label className="flex flex-col gap-2 text-sm font-medium">
+        <span>
+          Commentaire{' '}
+          <span className="font-normal text-muted-foreground">
+            (facultatif)
+          </span>
+        </span>
         <textarea
           name="comment"
           rows={4}

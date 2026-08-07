@@ -34,21 +34,21 @@ export const SiteHeader = ({
           Arbeauté
         </Link>
 
-        {links.length > 0 ? (
-          <nav className="hidden items-center gap-8 justify-self-center text-sm font-medium sm:flex">
-            {links.map(link => (
-              <Link
-                key={link.href}
-                href={link.href}
-                className="transition-colors hover:text-rose-500"
-              >
-                {link.label}
-              </Link>
-            ))}
-          </nav>
-        ) : (
-          <span />
-        )}
+        <div className="justify-self-center">
+          {links.length > 0 ? (
+            <nav className="hidden items-center gap-8 text-sm font-medium sm:flex">
+              {links.map(link => (
+                <Link
+                  key={link.href}
+                  href={link.href}
+                  className="transition-colors hover:text-rose-500"
+                >
+                  {link.label}
+                </Link>
+              ))}
+            </nav>
+          ) : null}
+        </div>
 
         <div className="flex items-center justify-self-end gap-3">
           {actions}

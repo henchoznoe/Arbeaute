@@ -56,7 +56,7 @@ const CustomerAppointmentsPage = async ({
               lors de votre réservation.
             </p>
             <form action={identifyCustomer} className="mt-7 space-y-4">
-              <label className="block space-y-2 text-sm font-medium">
+              <label className="flex flex-col gap-2 text-sm font-medium">
                 Email
                 <input
                   name="email"
@@ -67,7 +67,7 @@ const CustomerAppointmentsPage = async ({
                   className={fieldClass}
                 />
               </label>
-              <label className="block space-y-2 text-sm font-medium">
+              <label className="flex flex-col gap-2 text-sm font-medium">
                 Numéro de téléphone complet
                 <input
                   name="phone"
@@ -87,8 +87,10 @@ const CustomerAppointmentsPage = async ({
                   className="rounded-xl bg-destructive/10 p-4 text-sm text-destructive"
                   role="alert"
                 >
-                  Identification impossible. Vérifiez les informations ou
-                  réessayez plus tard.
+                  Aucun rendez-vous à venir ne correspond à cet email et ce
+                  numéro de téléphone. Vérifiez les informations saisies lors de
+                  la réservation, ou prenez un nouveau rendez-vous si vous n’en
+                  avez pas encore.
                 </p>
               ) : null}
               <button

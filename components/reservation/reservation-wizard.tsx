@@ -4,6 +4,7 @@ import {
   CalendarDays,
   Check,
   ChevronLeft,
+  ChevronRight,
   Clock,
   Download,
   Zap,
@@ -71,11 +72,25 @@ export const ReservationWizard = ({
   const [searchingNext, startNextTransition] = useTransition()
   const [nextSlotNotice, setNextSlotNotice] = useState<string | null>(null)
   const [result, setResult] = useState<BookingResult | null>(null)
+  const [viewStart, setViewStart] = useState(minDate)
   const pendingSlotRef = useRef<string | null>(null)
   const selectedService = services.find(service => service.id === serviceId)
-  const quickDates = Array.from({ length: 14 }, (_, index) =>
-    addDateKeyDays(minDate, index),
+  const weekDates = Array.from({ length: 7 }, (_, index) =>
+    addDateKeyDays(viewStart, index),
   ).filter(dateKey => dateKey <= maxDate)
+  const canGoPreviousWeek = viewStart > minDate
+  const canGoNextWeek = addDateKeyDays(viewStart, 7) <= maxDate
+
+  const goToWeek = (amount: number) => {
+    const next = addDateKeyDays(viewStart, amount)
+    setViewStart(next < minDate ? minDate : next > maxDate ? maxDate : next)
+  }
+
+  const selectDate = (dateKey: string) => {
+    setDate(dateKey)
+    if (dateKey < viewStart || dateKey > addDateKeyDays(viewStart, 6))
+      setViewStart(dateKey)
+  }
 
   useEffect(() => {
     if (step !== 2 || !serviceId || !date) return
@@ -103,6 +118,7 @@ export const ReservationWizard = ({
         )
         return
       }
+      setViewStart(found.dateKey)
       if (found.dateKey === date) setStartsAt(found.slot.startsAt)
       else {
         pendingSlotRef.current = found.slot.startsAt
@@ -288,7 +304,7 @@ export const ReservationWizard = ({
             </p>
           ) : null}
 
-          <label className="mt-6 block space-y-2 text-sm font-medium">
+          <label className="mt-6 flex flex-col gap-2 text-sm font-medium">
             <span className="flex items-center gap-2">
               <CalendarDays className="size-4" /> Date
             </span>
@@ -297,27 +313,47 @@ export const ReservationWizard = ({
               value={date}
               min={minDate}
               max={maxDate}
-              onChange={event => setDate(event.target.value)}
+              onChange={event => selectDate(event.target.value)}
               className={fieldClass}
             />
           </label>
-          <div className="mt-4 flex gap-2 overflow-x-auto pb-2">
-            {quickDates.map(dateKey => (
-              <button
-                key={dateKey}
-                type="button"
-                onClick={() => setDate(dateKey)}
-                aria-label={formatQuickDate(dateKey)}
-                className={cn(
-                  'min-w-24 rounded-xl border px-3 py-2 text-sm font-medium capitalize',
-                  date === dateKey
-                    ? 'border-primary bg-primary text-primary-foreground'
-                    : 'bg-background hover:border-primary',
-                )}
-              >
-                {formatQuickDate(dateKey)}
-              </button>
-            ))}
+          <div className="mt-4 flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => goToWeek(-7)}
+              disabled={!canGoPreviousWeek}
+              aria-label="Semaine précédente"
+              className="grid size-9 shrink-0 place-items-center rounded-full border disabled:opacity-30"
+            >
+              <ChevronLeft className="size-4" />
+            </button>
+            <div className="flex flex-1 gap-2 overflow-x-auto pb-2">
+              {weekDates.map(dateKey => (
+                <button
+                  key={dateKey}
+                  type="button"
+                  onClick={() => selectDate(dateKey)}
+                  aria-label={formatQuickDate(dateKey)}
+                  className={cn(
+                    'min-w-24 shrink-0 rounded-xl border px-3 py-2 text-sm font-medium capitalize',
+                    date === dateKey
+                      ? 'border-primary bg-primary text-primary-foreground'
+                      : 'bg-background hover:border-primary',
+                  )}
+                >
+                  {formatQuickDate(dateKey)}
+                </button>
+              ))}
+            </div>
+            <button
+              type="button"
+              onClick={() => goToWeek(7)}
+              disabled={!canGoNextWeek}
+              aria-label="Semaine suivante"
+              className="grid size-9 shrink-0 place-items-center rounded-full border disabled:opacity-30"
+            >
+              <ChevronRight className="size-4" />
+            </button>
           </div>
           <div className="mt-6">
             <p className="flex items-center gap-2 text-sm font-medium">
@@ -384,7 +420,7 @@ export const ReservationWizard = ({
             Elles serviront aussi à retrouver ce rendez-vous.
           </p>
           <div className="mt-6 grid gap-4 sm:grid-cols-2">
-            <label className="space-y-2 text-sm font-medium">
+            <label className="flex flex-col gap-2 text-sm font-medium">
               Prénom
               <input
                 name="firstName"
@@ -393,7 +429,7 @@ export const ReservationWizard = ({
                 className={fieldClass}
               />
             </label>
-            <label className="space-y-2 text-sm font-medium">
+            <label className="flex flex-col gap-2 text-sm font-medium">
               Nom
               <input
                 name="lastName"
@@ -402,7 +438,7 @@ export const ReservationWizard = ({
                 className={fieldClass}
               />
             </label>
-            <label className="space-y-2 text-sm font-medium">
+            <label className="flex flex-col gap-2 text-sm font-medium">
               Email
               <input
                 name="email"
@@ -412,7 +448,7 @@ export const ReservationWizard = ({
                 className={fieldClass}
               />
             </label>
-            <label className="space-y-2 text-sm font-medium">
+            <label className="flex flex-col gap-2 text-sm font-medium">
               Téléphone
               <input
                 name="phone"
@@ -424,7 +460,7 @@ export const ReservationWizard = ({
               />
             </label>
           </div>
-          <label className="mt-4 block space-y-2 text-sm font-medium">
+          <label className="mt-4 flex flex-col gap-2 text-sm font-medium">
             Commentaire facultatif
             <textarea
               name="comment"

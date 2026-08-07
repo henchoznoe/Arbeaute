@@ -37,7 +37,7 @@ export const ServiceForm = ({
   <form action={action} className="space-y-5 rounded-2xl border bg-card p-5">
     {service?.id ? <input type="hidden" name="id" value={service.id} /> : null}
     <div className="grid gap-5 sm:grid-cols-2">
-      <label className="space-y-2 text-sm font-medium">
+      <label className="flex flex-col gap-2 text-sm font-medium">
         Nom
         <input
           name="name"
@@ -47,7 +47,7 @@ export const ServiceForm = ({
           className={fieldClass}
         />
       </label>
-      <label className="space-y-2 text-sm font-medium">
+      <label className="flex flex-col gap-2 text-sm font-medium">
         Groupe
         <select
           name="categoryId"
@@ -67,7 +67,7 @@ export const ServiceForm = ({
       </label>
     </div>
 
-    <label className="block space-y-2 text-sm font-medium">
+    <label className="flex flex-col gap-2 text-sm font-medium">
       Description
       <textarea
         name="description"
@@ -78,7 +78,7 @@ export const ServiceForm = ({
     </label>
 
     <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
-      <label className="space-y-2 text-sm font-medium">
+      <label className="flex flex-col gap-2 text-sm font-medium">
         Durée (min)
         <input
           name="durationMinutes"
@@ -90,7 +90,7 @@ export const ServiceForm = ({
           className={fieldClass}
         />
       </label>
-      <label className="space-y-2 text-sm font-medium">
+      <label className="flex flex-col gap-2 text-sm font-medium">
         Préparation (min)
         <input
           name="preparationMinutes"
@@ -102,7 +102,7 @@ export const ServiceForm = ({
           className={fieldClass}
         />
       </label>
-      <label className="space-y-2 text-sm font-medium">
+      <label className="flex flex-col gap-2 text-sm font-medium">
         Rangement (min)
         <input
           name="cleanupMinutes"
@@ -114,7 +114,7 @@ export const ServiceForm = ({
           className={fieldClass}
         />
       </label>
-      <label className="space-y-2 text-sm font-medium">
+      <label className="flex flex-col gap-2 text-sm font-medium">
         Prix (CHF)
         <input
           name="priceChf"
@@ -129,7 +129,7 @@ export const ServiceForm = ({
     </div>
 
     <div className="grid gap-5 sm:grid-cols-2">
-      <label className="space-y-2 text-sm font-medium">
+      <label className="flex flex-col gap-2 text-sm font-medium">
         Note de prix
         <input
           name="priceNote"
@@ -137,7 +137,7 @@ export const ServiceForm = ({
           className={fieldClass}
         />
       </label>
-      <label className="space-y-2 text-sm font-medium">
+      <label className="flex flex-col gap-2 text-sm font-medium">
         Couleur
         <input
           name="color"

@@ -38,12 +38,13 @@ export async function Services() {
           </div>
         </Animate>
 
-        <div className="grid items-start gap-8 lg:grid-cols-2">
+        <div className="columns-1 gap-8 lg:columns-2">
           {categories.map((category, index) => (
             <Animate
               key={category.id}
               animation="fade-up"
               delay={(index % 4) * 75}
+              className="mb-8 break-inside-avoid"
             >
               <article className="overflow-hidden rounded-2xl border bg-card shadow-sm">
                 <header
