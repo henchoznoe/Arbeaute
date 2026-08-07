@@ -1,6 +1,8 @@
 {
   "$schema": "https://unpkg.com/knip@6/schema.json",
+  "entry": ["lib/core/session-cookies.ts"],
   "ignoreDependencies": [
+    "@prisma/client",
     "@semantic-release/commit-analyzer",
     "@semantic-release/release-notes-generator",
     "@semantic-release/npm",

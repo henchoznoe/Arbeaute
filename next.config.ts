@@ -18,7 +18,16 @@ const getLocalIp = () => {
 }
 
 const nextConfig: NextConfig = {
+  agentRules: false,
   allowedDevOrigins: [getLocalIp()],
+  images: {
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: '**.blob.vercel-storage.com',
+      },
+    ],
+  },
   // Inline Vercel env vars at build time so client components can access them
   env: {
     NEXT_PUBLIC_VERCEL_GIT_COMMIT_SHA: process.env.VERCEL_GIT_COMMIT_SHA ?? '',

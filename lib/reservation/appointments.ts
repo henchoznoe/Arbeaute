@@ -1,0 +1,213 @@
+import { createCustomerIdentityDigest } from '@/lib/core/session-cookies'
+import { getAvailableSlots } from '@/lib/reservation/availability'
+import {
+  CUSTOMER_CHANGE_CUTOFF_MS,
+  MAX_SERIALIZABLE_ATTEMPTS,
+} from '@/lib/reservation/constants'
+import { getLocalDateKey } from '@/lib/reservation/time'
+import { Prisma, type PrismaClient } from '@/prisma/generated/prisma/client'
+
+export class ReservationError extends Error {
+  constructor(
+    public readonly code: 'SLOT_UNAVAILABLE' | 'APPOINTMENT_UNAVAILABLE',
+  ) {
+    super(code)
+  }
+}
+
+interface PublicAppointmentInput {
+  serviceId: string
+  startsAt: Date
+  firstName: string
+  lastName: string
+  email: string
+  phone: string
+  comment: string | null
+}
+
+const shouldRetry = (error: unknown): boolean =>
+  error instanceof Prisma.PrismaClientKnownRequestError &&
+  error.code === 'P2034'
+
+const isOverlapConstraint = (error: unknown): boolean =>
+  error instanceof Error &&
+  (error.message.includes('appointment_no_confirmed_overlap') ||
+    error.message.includes('Exclusion constraint'))
+
+export const createAppointmentSerializable = async (
+  prisma: PrismaClient,
+  input: PublicAppointmentInput,
+) => {
+  for (let attempt = 1; attempt <= MAX_SERIALIZABLE_ATTEMPTS; attempt += 1) {
+    try {
+      return await prisma.$transaction(
+        async transaction => {
+          const service = await transaction.service.findFirst({
+            where: {
+              id: input.serviceId,
+              isBookable: true,
+              isVisible: true,
+              isArchived: false,
+            },
+          })
+          if (!service) throw new ReservationError('SLOT_UNAVAILABLE')
+
+          const slots = await getAvailableSlots({
+            database: transaction,
+            serviceId: service.id,
+            dateKey: getLocalDateKey(input.startsAt),
+          })
+          if (
+            !slots.some(slot => slot.startsAt === input.startsAt.toISOString())
+          )
+            throw new ReservationError('SLOT_UNAVAILABLE')
+
+          return transaction.appointment.create({
+            data: {
+              serviceId: service.id,
+              serviceNameSnapshot: service.name,
+              servicePriceCents: service.priceCents,
+              serviceDurationMinutes: service.durationMinutes,
+              preparationMinutes: service.preparationMinutes,
+              cleanupMinutes: service.cleanupMinutes,
+              startsAt: input.startsAt,
+              endsAt: new Date(
+                input.startsAt.getTime() + service.durationMinutes * 60_000,
+              ),
+              occupiedStartsAt: new Date(
+                input.startsAt.getTime() - service.preparationMinutes * 60_000,
+              ),
+              occupiedEndsAt: new Date(
+                input.startsAt.getTime() +
+                  (service.durationMinutes + service.cleanupMinutes) * 60_000,
+              ),
+              customerFirstName: input.firstName,
+              customerLastName: input.lastName,
+              customerEmail: input.email,
+              customerPhone: input.phone,
+              customerIdentityDigest: createCustomerIdentityDigest(
+                input.email,
+                input.phone,
+              ),
+              comment: input.comment,
+              source: 'PUBLIC',
+              status: 'CONFIRMED',
+            },
+          })
+        },
+        { isolationLevel: 'Serializable' },
+      )
+    } catch (error) {
+      if (error instanceof ReservationError) throw error
+      if (isOverlapConstraint(error))
+        throw new ReservationError('SLOT_UNAVAILABLE')
+      if (!shouldRetry(error) || attempt === MAX_SERIALIZABLE_ATTEMPTS)
+        throw error
+    }
+  }
+  throw new ReservationError('SLOT_UNAVAILABLE')
+}
+
+interface MoveAppointmentInput {
+  appointmentId: string
+  startsAt: Date
+  identityDigest: string
+  now?: Date
+}
+
+export const moveAppointmentSerializable = async (
+  prisma: PrismaClient,
+  {
+    appointmentId,
+    startsAt,
+    identityDigest,
+    now = new Date(),
+  }: MoveAppointmentInput,
+) => {
+  for (let attempt = 1; attempt <= MAX_SERIALIZABLE_ATTEMPTS; attempt += 1) {
+    try {
+      return await prisma.$transaction(
+        async transaction => {
+          const appointment = await transaction.appointment.findFirst({
+            where: {
+              id: appointmentId,
+              customerIdentityDigest: identityDigest,
+              status: 'CONFIRMED',
+              startsAt: {
+                gte: new Date(now.getTime() + CUSTOMER_CHANGE_CUTOFF_MS),
+              },
+            },
+          })
+          if (!appointment)
+            throw new ReservationError('APPOINTMENT_UNAVAILABLE')
+
+          const slots = await getAvailableSlots({
+            database: transaction,
+            serviceId: appointment.serviceId,
+            dateKey: getLocalDateKey(startsAt),
+            now,
+            excludeAppointmentId: appointment.id,
+          })
+          if (!slots.some(slot => slot.startsAt === startsAt.toISOString()))
+            throw new ReservationError('SLOT_UNAVAILABLE')
+
+          return transaction.appointment.update({
+            where: { id: appointment.id },
+            data: {
+              startsAt,
+              endsAt: new Date(
+                startsAt.getTime() +
+                  appointment.serviceDurationMinutes * 60_000,
+              ),
+              occupiedStartsAt: new Date(
+                startsAt.getTime() - appointment.preparationMinutes * 60_000,
+              ),
+              occupiedEndsAt: new Date(
+                startsAt.getTime() +
+                  (appointment.serviceDurationMinutes +
+                    appointment.cleanupMinutes) *
+                    60_000,
+              ),
+            },
+          })
+        },
+        { isolationLevel: 'Serializable' },
+      )
+    } catch (error) {
+      if (error instanceof ReservationError) throw error
+      if (isOverlapConstraint(error))
+        throw new ReservationError('SLOT_UNAVAILABLE')
+      if (!shouldRetry(error) || attempt === MAX_SERIALIZABLE_ATTEMPTS)
+        throw error
+    }
+  }
+  throw new ReservationError('SLOT_UNAVAILABLE')
+}
+
+export const cancelAppointmentSerializable = async (
+  prisma: PrismaClient,
+  appointmentId: string,
+  identityDigest: string,
+  now = new Date(),
+) =>
+  prisma.$transaction(
+    async transaction => {
+      const appointment = await transaction.appointment.findFirst({
+        where: {
+          id: appointmentId,
+          customerIdentityDigest: identityDigest,
+          status: 'CONFIRMED',
+          startsAt: {
+            gte: new Date(now.getTime() + CUSTOMER_CHANGE_CUTOFF_MS),
+          },
+        },
+      })
+      if (!appointment) throw new ReservationError('APPOINTMENT_UNAVAILABLE')
+
+      return transaction.appointment.update({
+        where: { id: appointment.id },
+        data: { status: 'CANCELLED', cancelledAt: now },
+      })
+    },
+    { isolationLevel: 'Serializable' },
+  )

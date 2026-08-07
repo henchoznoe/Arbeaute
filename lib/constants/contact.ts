@@ -5,7 +5,7 @@ export const contact = {
   phone: '+41 79 675 67 66',
   phoneRaw: '+41796756766',
   email: 'info@arbeaute.ch',
-  bookingUrl: 'https://arbeaute.agenda.ch',
+  bookingUrl: '/reservation',
   website: 'https://arbeaute-bulle.ch',
   mapsUrl: 'https://maps.app.goo.gl/CTmCBxPJNNqZ6wXx5',
   mapsEmbed:

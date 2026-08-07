@@ -64,11 +64,15 @@ export function Footer() {
               </Link>
               <Link
                 href={contact.bookingUrl}
-                target="_blank"
-                rel="noopener noreferrer"
                 className="transition-colors hover:text-foreground"
               >
                 Réserver
+              </Link>
+              <Link
+                href="/mes-rendez-vous"
+                className="transition-colors hover:text-foreground"
+              >
+                Mes rendez-vous
               </Link>
             </nav>
 
@@ -90,6 +94,14 @@ export function Footer() {
                   Noé Henchoz
                 </Link>{' '}
                 &middot; v{appVersion} &middot; {commitHash}
+              </p>
+              <p>
+                <Link
+                  href="/admin/login"
+                  className="underline underline-offset-2 transition-colors hover:text-foreground"
+                >
+                  Administration
+                </Link>
               </p>
             </div>
           </div>
