@@ -23,12 +23,12 @@ import {
   type NextAvailableSlot,
 } from '@/lib/reservation/availability'
 import { createAppointmentCalendar } from '@/lib/reservation/calendar'
-import {
-  CUSTOMER_CHANGE_CUTOFF_MS,
-  CUSTOMER_SESSION_MUTATION_LIMIT,
-} from '@/lib/reservation/constants'
+import { CUSTOMER_SESSION_MUTATION_LIMIT } from '@/lib/reservation/constants'
 import { normalizeEmail, normalizePhone } from '@/lib/reservation/identity'
-import { formatAppointmentDate } from '@/lib/reservation/time'
+import {
+  canCustomerChangeAppointment,
+  formatAppointmentDate,
+} from '@/lib/reservation/time'
 import { checkRateLimit } from '@/lib/services/rate-limit'
 import { getRequestIp, hasSameOrigin } from '@/lib/utils/request'
 
@@ -242,13 +242,11 @@ export const getCustomerMoveAvailability = async (
         id: appointmentId,
         customerIdentityDigest: session.subject,
         status: 'CONFIRMED',
-        startsAt: {
-          gte: new Date(Date.now() + CUSTOMER_CHANGE_CUTOFF_MS),
-        },
       },
-      select: { id: true, serviceId: true },
+      select: { id: true, serviceId: true, startsAt: true },
     })
-    if (!appointment) return []
+    if (!appointment || !canCustomerChangeAppointment(appointment.startsAt))
+      return []
     return getAvailableSlots({
       database: prisma,
       serviceId: appointment.serviceId,

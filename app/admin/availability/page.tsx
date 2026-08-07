@@ -2,6 +2,7 @@ import { formatInTimeZone } from 'date-fns-tz'
 import { Plus, Trash2 } from 'lucide-react'
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
+import { SubmitButton } from '@/components/ui/submit-button'
 import {
   createAvailabilityException,
   createWeeklyAvailability,
@@ -109,13 +110,12 @@ const AvailabilityPage = async ({
                           {minuteLabel(range.startMinute)}–
                           {minuteLabel(range.endMinute)}
                         </span>
-                        <button
-                          type="submit"
+                        <SubmitButton
                           aria-label={`Supprimer l’horaire du ${day.label}`}
                           className="grid size-8 place-items-center rounded-lg text-muted-foreground hover:bg-background"
                         >
                           <Trash2 className="size-4" />
-                        </button>
+                        </SubmitButton>
                       </form>
                     ))
                   ) : (
@@ -165,12 +165,12 @@ const AvailabilityPage = async ({
               className={fieldClass}
             />
           </label>
-          <button
-            type="submit"
-            className="mt-auto inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-primary px-4 text-sm font-medium text-primary-foreground"
+          <SubmitButton
+            pendingLabel="Ajout…"
+            className="mt-auto h-11 rounded-xl bg-primary px-4 text-sm font-medium text-primary-foreground"
           >
             <Plus className="size-4" /> Ajouter
-          </button>
+          </SubmitButton>
         </form>
       </section>
 
@@ -228,12 +228,12 @@ const AvailabilityPage = async ({
               className={fieldClass}
             />
           </label>
-          <button
-            type="submit"
-            className="mt-auto inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-primary px-4 text-sm font-medium text-primary-foreground"
+          <SubmitButton
+            pendingLabel="Ajout…"
+            className="mt-auto h-11 rounded-xl bg-primary px-4 text-sm font-medium text-primary-foreground"
           >
             <Plus className="size-4" /> Ajouter
-          </button>
+          </SubmitButton>
         </form>
 
         <div className="mt-6 space-y-2">
@@ -266,13 +266,12 @@ const AvailabilityPage = async ({
                 </p>
                 <form action={deleteAvailabilityException}>
                   <input type="hidden" name="id" value={exception.id} />
-                  <button
-                    type="submit"
+                  <SubmitButton
                     aria-label="Supprimer l’exception"
                     className="grid size-11 place-items-center rounded-xl text-muted-foreground hover:bg-muted"
                   >
                     <Trash2 className="size-4" />
-                  </button>
+                  </SubmitButton>
                 </form>
               </div>
             ))

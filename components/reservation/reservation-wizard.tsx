@@ -7,6 +7,7 @@ import {
   ChevronRight,
   Clock,
   Download,
+  FileText,
   Zap,
 } from 'lucide-react'
 import { useEffect, useRef, useState, useTransition } from 'react'
@@ -17,8 +18,10 @@ import {
   getPublicAvailability,
 } from '@/lib/actions/reservation'
 import type { AvailableSlot } from '@/lib/reservation/availability'
+import { formatServiceLabel } from '@/lib/reservation/service-label'
 import { cn } from '@/lib/utils/cn'
 import { downloadCalendar } from './calendar-download'
+import { CancellationPolicy } from './cancellation-policy'
 
 interface ReservationService {
   id: string
@@ -27,6 +30,7 @@ interface ReservationService {
   durationMinutes: number
   priceCents: number
   priceNote: string | null
+  consentFormUrl: string | null
   categoryName: string
 }
 
@@ -56,6 +60,30 @@ const formatQuickDate = (dateKey: string): string =>
     day: 'numeric',
     month: 'short',
   }).format(new Date(`${dateKey}T12:00:00Z`))
+
+const ConsentFormNotice = ({ url }: Readonly<{ url: string }>) => (
+  <div className="mt-5 rounded-xl border border-amber-300 bg-amber-50 p-4 text-sm text-amber-950">
+    <p className="flex items-start gap-2">
+      <FileText className="mt-0.5 size-4 shrink-0" />
+      <span>
+        <strong className="font-semibold">
+          Formulaire de consentement obligatoire.
+        </strong>{' '}
+        Cette prestation nécessite un formulaire à imprimer, remplir et apporter
+        le jour du rendez-vous.
+      </span>
+    </p>
+    <a
+      href={url}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="mt-3 inline-flex h-10 items-center gap-2 rounded-lg border border-amber-400 bg-white px-4 font-medium"
+    >
+      <FileText className="size-4" />
+      Télécharger le formulaire (PDF)
+    </a>
+  </div>
+)
 
 export const ReservationWizard = ({
   services,
@@ -180,6 +208,12 @@ export const ReservationWizard = ({
           <Download className="size-4" />
           Ajouter à mon calendrier
         </button>
+        {selectedService?.consentFormUrl ? (
+          <div className="text-left">
+            <ConsentFormNotice url={selectedService.consentFormUrl} />
+          </div>
+        ) : null}
+
         <a
           href="/mes-rendez-vous"
           className="mt-4 inline-block text-sm font-medium underline underline-offset-4"
@@ -286,7 +320,13 @@ export const ReservationWizard = ({
             Choisissez votre créneau
           </h2>
           <p className="mt-1 text-sm text-muted-foreground">
-            {selectedService?.name} · {selectedService?.durationMinutes} min
+            {selectedService
+              ? formatServiceLabel(
+                  selectedService.name,
+                  selectedService.categoryName,
+                )
+              : null}{' '}
+            · {selectedService?.durationMinutes} min
           </p>
 
           <button
@@ -489,6 +529,12 @@ export const ReservationWizard = ({
               .
             </span>
           </label>
+          {selectedService?.consentFormUrl ? (
+            <ConsentFormNotice url={selectedService.consentFormUrl} />
+          ) : null}
+
+          <CancellationPolicy className="mt-5" />
+
           {result && !result.ok ? (
             <p
               className="mt-5 rounded-xl bg-destructive/10 p-4 text-sm text-destructive"

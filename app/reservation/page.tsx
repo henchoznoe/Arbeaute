@@ -25,6 +25,7 @@ const ReservationPage = async () => {
       durationMinutes: service.durationMinutes,
       priceCents: service.priceCents,
       priceNote: service.priceNote,
+      consentFormUrl: service.consentFormUrl,
       categoryName: category.name,
     })),
   )

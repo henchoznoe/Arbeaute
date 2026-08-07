@@ -5,10 +5,12 @@ import { identifyCustomer, logoutCustomer } from '@/lib/actions/reservation'
 import prisma from '@/lib/core/prisma'
 import { getCustomerSession } from '@/lib/core/session-cookies'
 import { createAppointmentCalendar } from '@/lib/reservation/calendar'
+import { formatServiceLabel } from '@/lib/reservation/service-label'
 import {
   canCustomerChangeAppointment,
   formatAppointmentDate,
   getBookingDateLimits,
+  getCustomerChangeDeadline,
   getLocalDateKey,
 } from '@/lib/reservation/time'
 
@@ -146,17 +148,19 @@ const CustomerAppointmentsPage = async ({
                 <CustomerAppointmentCard
                   key={appointment.id}
                   id={appointment.id}
-                  serviceName={
-                    appointment.service.category
-                      ? `${appointment.service.category.name} — ${appointment.serviceNameSnapshot}`
-                      : appointment.serviceNameSnapshot
-                  }
+                  serviceName={formatServiceLabel(
+                    appointment.serviceNameSnapshot,
+                    appointment.service.category?.name,
+                  )}
                   dateLabel={formatAppointmentDate(appointment.startsAt)}
                   dateKey={getLocalDateKey(appointment.startsAt)}
                   priceLabel={`${(appointment.servicePriceCents / 100).toLocaleString('fr-CH')} CHF`}
                   canChange={canCustomerChangeAppointment(
                     appointment.startsAt,
                     now,
+                  )}
+                  changeDeadlineLabel={formatAppointmentDate(
+                    getCustomerChangeDeadline(appointment.startsAt),
                   )}
                   calendar={createAppointmentCalendar({
                     id: appointment.id,

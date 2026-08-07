@@ -1,3 +1,5 @@
+import { SubmitButton } from '@/components/ui/submit-button'
+
 interface CategoryOption {
   id: string
   name: string
@@ -183,11 +185,11 @@ export const ServiceForm = ({
       </label>
     </div>
 
-    <button
-      type="submit"
+    <SubmitButton
+      pendingLabel="Enregistrement…"
       className="h-10 rounded-lg bg-primary px-5 text-sm font-medium text-primary-foreground"
     >
       {submitLabel}
-    </button>
+    </SubmitButton>
   </form>
 )

@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
+import { SubmitButton } from '@/components/ui/submit-button'
 import { loginAdmin } from '@/lib/actions/admin-auth'
 import { getAdminSession } from '@/lib/core/session-cookies'
 
@@ -42,12 +43,12 @@ const AdminLoginPage = async ({
               tard.
             </p>
           ) : null}
-          <button
-            type="submit"
+          <SubmitButton
+            pendingLabel="Connexion…"
             className="h-12 w-full rounded-xl bg-primary px-4 font-medium text-primary-foreground"
           >
             Se connecter
-          </button>
+          </SubmitButton>
         </form>
       </section>
     </main>

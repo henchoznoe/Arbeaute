@@ -322,6 +322,14 @@ const deleteBlobIfOrphan = async (imageUrl: string): Promise<void> => {
   if (references === 0) await del(imageUrl, { storeId: env.BLOB_STORE_ID })
 }
 
+const deleteConsentBlobIfOrphan = async (fileUrl: string): Promise<void> => {
+  if (!isBlobUrl(fileUrl)) return
+  const references = await prisma.service.count({
+    where: { consentFormUrl: fileUrl },
+  })
+  if (references === 0) await del(fileUrl, { storeId: env.BLOB_STORE_ID })
+}
+
 export const assignServiceImage = async (
   serviceId: string,
   imageUrl: string,
@@ -339,6 +347,47 @@ export const assignServiceImage = async (
 
   if (previous.imageUrl && previous.imageUrl !== url)
     await deleteBlobIfOrphan(previous.imageUrl)
+  refreshCatalog()
+}
+
+export const assignServiceConsentForm = async (
+  serviceId: string,
+  fileUrl: string,
+): Promise<void> => {
+  await requireAdmin()
+  const id = z.string().min(1).parse(serviceId)
+  const url = z.url().parse(fileUrl)
+  if (!isBlobUrl(url)) throw new Error('Invalid Blob URL')
+
+  const previous = await prisma.service.findUniqueOrThrow({
+    where: { id },
+    select: { consentFormUrl: true },
+  })
+  await prisma.service.update({
+    where: { id },
+    data: { consentFormUrl: url },
+  })
+
+  if (previous.consentFormUrl && previous.consentFormUrl !== url)
+    await deleteConsentBlobIfOrphan(previous.consentFormUrl)
+  refreshCatalog()
+}
+
+export const removeServiceConsentForm = async (
+  formData: FormData,
+): Promise<void> => {
+  await requireAdmin()
+  const id = z.string().min(1).parse(formData.get('id'))
+  const service = await prisma.service.findUniqueOrThrow({
+    where: { id },
+    select: { consentFormUrl: true },
+  })
+  await prisma.service.update({
+    where: { id },
+    data: { consentFormUrl: null },
+  })
+  if (service.consentFormUrl)
+    await deleteConsentBlobIfOrphan(service.consentFormUrl)
   refreshCatalog()
 }
 

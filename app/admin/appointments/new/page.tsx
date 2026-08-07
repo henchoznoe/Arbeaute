@@ -34,7 +34,13 @@ const NewAppointmentPage = async ({
   const services = await prisma.service.findMany({
     where: { isArchived: false },
     orderBy: [{ category: { sortOrder: 'asc' } }, { sortOrder: 'asc' }],
-    select: { id: true, name: true, durationMinutes: true, priceCents: true },
+    select: {
+      id: true,
+      name: true,
+      durationMinutes: true,
+      priceCents: true,
+      category: { select: { name: true } },
+    },
   })
 
   return (

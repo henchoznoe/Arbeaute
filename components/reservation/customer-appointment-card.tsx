@@ -12,6 +12,7 @@ import {
 import type { AvailableSlot } from '@/lib/reservation/availability'
 import { cn } from '@/lib/utils/cn'
 import { downloadCalendar } from './calendar-download'
+import { CancellationPolicy } from './cancellation-policy'
 
 interface CustomerAppointmentCardProps {
   id: string
@@ -20,6 +21,7 @@ interface CustomerAppointmentCardProps {
   dateKey: string
   priceLabel: string
   canChange: boolean
+  changeDeadlineLabel: string
   calendar: string
   maxDate: string
   minDate: string
@@ -32,6 +34,7 @@ export const CustomerAppointmentCard = ({
   dateKey,
   priceLabel,
   canChange,
+  changeDeadlineLabel,
   calendar,
   maxDate,
   minDate,
@@ -137,12 +140,7 @@ export const CustomerAppointmentCard = ({
                 </button>
               )}
             </>
-          ) : (
-            <p className="text-sm text-muted-foreground">
-              Ce rendez-vous ne peut plus être modifié en ligne moins de 24
-              heures avant.
-            </p>
-          )}
+          ) : null}
         </div>
       ) : (
         <div className="mt-6 rounded-2xl bg-muted p-4">
@@ -201,6 +199,12 @@ export const CustomerAppointmentCard = ({
           </div>
         </div>
       )}
+
+      <CancellationPolicy
+        className="mt-5"
+        expired={!canChange}
+        deadlineLabel={canChange ? changeDeadlineLabel : undefined}
+      />
 
       {result && !result.ok ? (
         <p

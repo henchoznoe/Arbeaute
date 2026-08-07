@@ -1,5 +1,6 @@
 'use client'
 
+import { CalendarCheck } from 'lucide-react'
 import Link from 'next/link'
 
 import { Animate } from '@/components/ui/animate'
@@ -32,8 +33,15 @@ export function Hero() {
           </p>
         </Animate>
 
+        <Animate animation="fade-up" delay={550}>
+          <p className="mt-6 inline-flex items-center gap-2 rounded-full border border-rose-300/70 bg-white/70 px-4 py-2 text-sm font-medium text-rose-700">
+            <CalendarCheck className="size-4 shrink-0" />
+            Uniquement sur rendez-vous
+          </p>
+        </Animate>
+
         <Animate animation="fade-up" delay={650}>
-          <div className="mt-10 flex flex-col items-center gap-4 sm:flex-row sm:justify-center">
+          <div className="mt-8 flex flex-col items-center gap-4 sm:flex-row sm:justify-center">
             <Button
               asChild
               size="lg"

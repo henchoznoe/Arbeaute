@@ -16,40 +16,5 @@ export const contact = {
   },
 } as const
 
-type TimeRange = { start: string; end: string }
-
-type DaySchedule = {
-  day: string
-  ranges: TimeRange[]
-}
-
-export const hours: DaySchedule[] = [
-  {
-    day: 'Lundi',
-    ranges: [
-      { start: '08:00', end: '11:30' },
-      { start: '13:30', end: '18:30' },
-    ],
-  },
-  {
-    day: 'Mardi',
-    ranges: [
-      { start: '08:00', end: '11:30' },
-      { start: '13:30', end: '18:30' },
-    ],
-  },
-  {
-    day: 'Mercredi',
-    ranges: [
-      { start: '08:00', end: '11:30' },
-      { start: '13:30', end: '18:30' },
-    ],
-  },
-  { day: 'Jeudi', ranges: [] },
-  { day: 'Vendredi', ranges: [] },
-  { day: 'Samedi', ranges: [] },
-  { day: 'Dimanche', ranges: [] },
-]
-
 export const bio =
   "Je m'appelle Arzu, esthéticienne passionnée résidant à Bulle. J'adore mon travail et je m'efforce d'offrir des soins de qualité à chacun de mes clients. Toujours curieuse et en quête de perfection, je suis régulièrement des formations complémentaires pour rester à la pointe des nouvelles techniques et tendances."

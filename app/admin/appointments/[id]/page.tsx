@@ -22,7 +22,13 @@ const EditAppointmentPage = async ({
     prisma.service.findMany({
       where: { OR: [{ isArchived: false }, { id }] },
       orderBy: [{ category: { sortOrder: 'asc' } }, { sortOrder: 'asc' }],
-      select: { id: true, name: true, durationMinutes: true, priceCents: true },
+      select: {
+        id: true,
+        name: true,
+        durationMinutes: true,
+        priceCents: true,
+        category: { select: { name: true } },
+      },
     }),
   ])
   if (!appointment) notFound()
