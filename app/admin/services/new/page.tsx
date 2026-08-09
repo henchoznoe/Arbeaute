@@ -1,11 +1,19 @@
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
+import { Suspense } from 'react'
+import { AdminSkeleton } from '@/components/admin/admin-skeleton'
 import { ServiceForm } from '@/components/admin/service-form'
 import { createService } from '@/lib/actions/catalog'
 import prisma from '@/lib/core/prisma'
 import { getAdminSession } from '@/lib/core/session-cookies'
 
-const NewServicePage = async () => {
+const NewServicePage = () => (
+  <Suspense fallback={<AdminSkeleton maxWidth="max-w-5xl" />}>
+    <NewService />
+  </Suspense>
+)
+
+const NewService = async () => {
   if (!(await getAdminSession())) redirect('/admin/login')
   const categories = await prisma.serviceCategory.findMany({
     where: { isActive: true },

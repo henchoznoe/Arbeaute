@@ -39,6 +39,13 @@ const securityHeaders = [
 const nextConfig: NextConfig = {
   agentRules: false,
   allowedDevOrigins: [getLocalIp()],
+  /**
+   * Partial Prerendering par défaut : chaque route produit un shell statique
+   * servi depuis le CDN, et seules les parties réellement dynamiques (session,
+   * agenda, créneaux) sont rendues à la requête. C'est ce qui ramène les pages
+   * publiques à zéro invocation de fonction.
+   */
+  cacheComponents: true,
   async headers() {
     return [{ source: '/(.*)', headers: [...securityHeaders] }]
   },
@@ -49,6 +56,21 @@ const nextConfig: NextConfig = {
         hostname: '**.blob.vercel-storage.com',
       },
     ],
+    /**
+     * Vercel facture une transformation à chaque MISS *et* à chaque STALE du
+     * cache image. Le défaut de Next 16 étant de 4 h, une même vignette serait
+     * retransformée jusqu'à six fois par jour ; un an de TTL la ramène à une
+     * transformation unique, ce qui compte face aux 5 000/mois du plan Hobby.
+     */
+    minimumCacheTTL: 31_536_000,
+    /**
+     * Largeurs réellement rendues : vignettes de prestations en 48 px (donc 48
+     * et 96 en 2×) et portrait « À propos » en 144/176 px (donc 256 et 384).
+     * Le reste de l'échelle ne sert qu'aux images pleine largeur, qui n'existent
+     * pas sur le site — chaque largeur en trop est une transformation possible.
+     */
+    imageSizes: [48, 96, 128, 256, 384],
+    deviceSizes: [640, 828, 1080, 1920],
   },
   // Inline Vercel env vars at build time so client components can access them
   env: {

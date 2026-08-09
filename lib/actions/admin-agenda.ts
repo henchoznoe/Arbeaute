@@ -1,6 +1,6 @@
 'use server'
 
-import { revalidatePath } from 'next/cache'
+import { revalidatePath, updateTag } from 'next/cache'
 import { redirect } from 'next/navigation'
 import { z } from 'zod/v4'
 import {
@@ -14,6 +14,7 @@ import prisma from '@/lib/core/prisma'
 import { getAdminSession } from '@/lib/core/session-cookies'
 import { MAX_AVAILABILITY_EXCEPTION_RANGE_DAYS } from '@/lib/reservation/constants'
 import { normalizeEmail, normalizePhone } from '@/lib/reservation/identity'
+import { OPENING_HOURS_TAG } from '@/lib/reservation/opening-hours'
 import { isDateKey, localDateMinuteToUtc } from '@/lib/reservation/time'
 import { hasSameOrigin } from '@/lib/utils/request'
 
@@ -153,10 +154,10 @@ export const cancelAdminAppointment = async (
 const refreshAvailability = () => {
   revalidatePath('/admin')
   revalidatePath('/admin/availability')
-  revalidatePath('/reservation')
-  // Les horaires d'ouverture affichés sur la page d'accueil viennent des
-  // mêmes disponibilités hebdomadaires : elle doit être régénérée aussi.
-  revalidatePath('/')
+  // Les horaires d'ouverture affichés sur la page d'accueil et dans le JSON-LD
+  // viennent des mêmes disponibilités hebdomadaires. `updateTag` les expire
+  // sans attendre : Arzu voit sa modification dès le rechargement.
+  updateTag(OPENING_HOURS_TAG)
 }
 
 export const createWeeklyAvailability = async (

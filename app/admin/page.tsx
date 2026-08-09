@@ -9,6 +9,9 @@ import {
 } from 'lucide-react'
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
+import { Suspense } from 'react'
+import { AdminSkeleton } from '@/components/admin/admin-skeleton'
+import { InstallAppButton } from '@/components/pwa/install-app-button'
 import { logoutAdmin } from '@/lib/actions/admin-auth'
 import prisma from '@/lib/core/prisma'
 import { getAdminSession } from '@/lib/core/session-cookies'
@@ -37,7 +40,13 @@ const dayTitle = (dateKey: string, long = false) =>
 const formatTime = (date: Date) =>
   formatInTimeZone(date, RESERVATION_TIME_ZONE, 'HH:mm')
 
-const AdminPage = async ({ searchParams }: Readonly<AdminPageProps>) => {
+const AdminPage = ({ searchParams }: Readonly<AdminPageProps>) => (
+  <Suspense fallback={<AdminSkeleton />}>
+    <AdminAgenda searchParams={searchParams} />
+  </Suspense>
+)
+
+const AdminAgenda = async ({ searchParams }: Readonly<AdminPageProps>) => {
   if (!(await getAdminSession())) redirect('/admin/login')
   const requestedDate = (await searchParams).date
   const today = getLocalDateKey(new Date())
@@ -136,6 +145,7 @@ const AdminPage = async ({ searchParams }: Readonly<AdminPageProps>) => {
           <h1 className="font-heading text-3xl font-bold">Agenda</h1>
         </div>
         <div className="flex items-center gap-2">
+          <InstallAppButton className="min-h-11 rounded-xl border px-4 text-sm font-medium text-muted-foreground no-underline" />
           <form action={logoutAdmin}>
             <button
               type="submit"

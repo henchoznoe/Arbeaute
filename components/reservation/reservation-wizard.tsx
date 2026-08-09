@@ -15,7 +15,7 @@ import {
   type BookingResult,
   createPublicAppointment,
   getNextPublicAvailableSlot,
-  getPublicAvailability,
+  getPublicWeekAvailability,
 } from '@/lib/actions/reservation'
 import type { AvailableSlot } from '@/lib/reservation/availability'
 import { formatServiceLabel } from '@/lib/reservation/service-label'
@@ -52,6 +52,10 @@ const addDateKeyDays = (dateKey: string, amount: number): string => {
     .toISOString()
     .slice(0, 10)
 }
+
+/** Identifie la semaine chargée : les créneaux dépendent aussi de la prestation. */
+const weekCacheKey = (serviceId: string, weekStart: string): string =>
+  `${serviceId}|${weekStart}`
 
 const formatQuickDate = (dateKey: string): string =>
   new Intl.DateTimeFormat('fr-CH', {
@@ -93,7 +97,10 @@ export const ReservationWizard = ({
   const [step, setStep] = useState(1)
   const [serviceId, setServiceId] = useState('')
   const [date, setDate] = useState(minDate)
-  const [slots, setSlots] = useState<AvailableSlot[]>([])
+  const [weekSlots, setWeekSlots] = useState<Record<string, AvailableSlot[]>>(
+    {},
+  )
+  const [loadedWeek, setLoadedWeek] = useState<string | null>(null)
   const [startsAt, setStartsAt] = useState('')
   const [loadingSlots, startSlotsTransition] = useTransition()
   const [submitting, startSubmitTransition] = useTransition()
@@ -101,13 +108,18 @@ export const ReservationWizard = ({
   const [nextSlotNotice, setNextSlotNotice] = useState<string | null>(null)
   const [result, setResult] = useState<BookingResult | null>(null)
   const [viewStart, setViewStart] = useState(minDate)
-  const pendingSlotRef = useRef<string | null>(null)
+  const pendingSlotRef = useRef<{ dateKey: string; startsAt: string } | null>(
+    null,
+  )
   const selectedService = services.find(service => service.id === serviceId)
+  const weekEnd = addDateKeyDays(viewStart, 6)
   const weekDates = Array.from({ length: 7 }, (_, index) =>
     addDateKeyDays(viewStart, index),
   ).filter(dateKey => dateKey <= maxDate)
   const canGoPreviousWeek = viewStart > minDate
   const canGoNextWeek = addDateKeyDays(viewStart, 7) <= maxDate
+  const weekReady = loadedWeek === weekCacheKey(serviceId, viewStart)
+  const slots = weekSlots[date] ?? []
 
   const goToWeek = (amount: number) => {
     const next = addDateKeyDays(viewStart, amount)
@@ -116,24 +128,31 @@ export const ReservationWizard = ({
 
   const selectDate = (dateKey: string) => {
     setDate(dateKey)
-    if (dateKey < viewStart || dateKey > addDateKeyDays(viewStart, 6))
-      setViewStart(dateKey)
+    setStartsAt('')
+    if (dateKey < viewStart || dateKey > weekEnd) setViewStart(dateKey)
   }
 
+  // Une seule requête par semaine affichée : passer d'un jour à l'autre à
+  // l'intérieur de la semaine ne touche plus le serveur.
   useEffect(() => {
-    if (step !== 2 || !serviceId || !date) return
+    if (step !== 2 || !serviceId) return
     startSlotsTransition(async () => {
-      const loaded = await getPublicAvailability(serviceId, date)
-      setSlots(loaded)
+      const loaded = await getPublicWeekAvailability(serviceId, viewStart)
       const pending = pendingSlotRef.current
       pendingSlotRef.current = null
+
+      setWeekSlots(loaded)
+      setLoadedWeek(weekCacheKey(serviceId, viewStart))
       setStartsAt(
-        pending && loaded.some(slot => slot.startsAt === pending)
-          ? pending
+        pending?.startsAt &&
+          loaded[pending.dateKey]?.some(
+            slot => slot.startsAt === pending.startsAt,
+          )
+          ? pending.startsAt
           : '',
       )
     })
-  }, [date, serviceId, step])
+  }, [serviceId, step, viewStart])
 
   const findNextSlot = () => {
     if (!serviceId) return
@@ -146,12 +165,19 @@ export const ReservationWizard = ({
         )
         return
       }
-      setViewStart(found.dateKey)
-      if (found.dateKey === date) setStartsAt(found.slot.startsAt)
-      else {
-        pendingSlotRef.current = found.slot.startsAt
-        setDate(found.dateKey)
+
+      setDate(found.dateKey)
+      if (found.dateKey >= viewStart && found.dateKey <= weekEnd) {
+        setStartsAt(found.slot.startsAt)
+        return
       }
+
+      // La semaine change : le créneau sera sélectionné une fois chargée.
+      pendingSlotRef.current = {
+        dateKey: found.dateKey,
+        startsAt: found.slot.startsAt,
+      }
+      setViewStart(found.dateKey)
     })
   }
 
@@ -368,22 +394,33 @@ export const ReservationWizard = ({
               <ChevronLeft className="size-4" />
             </button>
             <div className="flex flex-1 gap-2 overflow-x-auto pb-2">
-              {weekDates.map(dateKey => (
-                <button
-                  key={dateKey}
-                  type="button"
-                  onClick={() => selectDate(dateKey)}
-                  aria-label={formatQuickDate(dateKey)}
-                  className={cn(
-                    'min-w-24 shrink-0 rounded-xl border px-3 py-2 text-sm font-medium capitalize',
-                    date === dateKey
-                      ? 'border-primary bg-primary text-primary-foreground'
-                      : 'bg-background hover:border-primary',
-                  )}
-                >
-                  {formatQuickDate(dateKey)}
-                </button>
-              ))}
+              {weekDates.map(dateKey => {
+                // Les créneaux de toute la semaine sont déjà là : autant
+                // signaler les jours complets avant que la cliente ne clique.
+                const isFull = weekReady && weekSlots[dateKey]?.length === 0
+                return (
+                  <button
+                    key={dateKey}
+                    type="button"
+                    onClick={() => selectDate(dateKey)}
+                    aria-label={
+                      isFull
+                        ? `${formatQuickDate(dateKey)} — complet`
+                        : formatQuickDate(dateKey)
+                    }
+                    className={cn(
+                      'min-w-24 shrink-0 rounded-xl border px-3 py-2 text-sm font-medium capitalize',
+                      date === dateKey
+                        ? 'border-primary bg-primary text-primary-foreground'
+                        : isFull
+                          ? 'bg-muted text-muted-foreground/60'
+                          : 'bg-background hover:border-primary',
+                    )}
+                  >
+                    {formatQuickDate(dateKey)}
+                  </button>
+                )
+              })}
             </div>
             <button
               type="button"
@@ -399,7 +436,7 @@ export const ReservationWizard = ({
             <p className="flex items-center gap-2 text-sm font-medium">
               <Clock className="size-4" /> Heures disponibles
             </p>
-            {loadingSlots ? (
+            {loadingSlots || !weekReady ? (
               <p className="mt-4 text-sm text-muted-foreground">
                 Recherche des créneaux…
               </p>

@@ -1,18 +1,18 @@
 'use client'
 
-import { faFacebook, faInstagram } from '@fortawesome/free-brands-svg-icons'
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import Link from 'next/link'
 
+import { InstallAppButton } from '@/components/pwa/install-app-button'
 import { Animate } from '@/components/ui/animate'
 import { Separator } from '@/components/ui/separator'
+import { FacebookIcon, InstagramIcon } from '@/components/ui/social-icons'
 import { contact } from '@/lib/constants/contact'
 import { getAppVersion } from '@/lib/utils/app-version'
 import { getCommitHash } from '@/lib/utils/commit-hash'
 
 const socials = [
-  { icon: faFacebook, href: contact.social.facebook, label: 'Facebook' },
-  { icon: faInstagram, href: contact.social.instagram, label: 'Instagram' },
+  { Icon: FacebookIcon, href: contact.social.facebook, label: 'Facebook' },
+  { Icon: InstagramIcon, href: contact.social.instagram, label: 'Instagram' },
 ]
 
 export function Footer() {
@@ -38,7 +38,7 @@ export function Footer() {
                   aria-label={social.label}
                   className="flex size-10 items-center justify-center rounded-full bg-background text-muted-foreground shadow-sm transition-colors hover:bg-rose-50 hover:text-rose-500"
                 >
-                  <FontAwesomeIcon icon={social.icon} className="size-4" />
+                  <social.Icon className="size-4" />
                 </Link>
               ))}
             </div>
@@ -74,6 +74,7 @@ export function Footer() {
               >
                 Mes rendez-vous
               </Link>
+              <InstallAppButton className="no-underline" />
             </nav>
 
             <Separator className="w-full max-w-md" />

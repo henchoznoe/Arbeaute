@@ -1,6 +1,8 @@
 import { formatInTimeZone } from 'date-fns-tz'
 import Link from 'next/link'
 import { notFound, redirect } from 'next/navigation'
+import { Suspense } from 'react'
+import { AdminSkeleton } from '@/components/admin/admin-skeleton'
 import { AppointmentForm } from '@/components/admin/appointment-form'
 import prisma from '@/lib/core/prisma'
 import { getAdminSession } from '@/lib/core/session-cookies'
@@ -10,7 +12,15 @@ interface EditAppointmentPageProps {
   params: Promise<{ id: string }>
 }
 
-const EditAppointmentPage = async ({
+const EditAppointmentPage = ({
+  params,
+}: Readonly<EditAppointmentPageProps>) => (
+  <Suspense fallback={<AdminSkeleton maxWidth="max-w-3xl" />}>
+    <EditAppointment params={params} />
+  </Suspense>
+)
+
+const EditAppointment = async ({
   params,
 }: Readonly<EditAppointmentPageProps>) => {
   if (!(await getAdminSession())) redirect('/admin/login')

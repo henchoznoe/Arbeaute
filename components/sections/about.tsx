@@ -26,12 +26,13 @@ export function About() {
 
         <div className="flex flex-col items-center gap-10 md:flex-row md:items-start">
           <Animate animation="scale-in" delay={200}>
-            <div className="size-32 shrink-0 overflow-hidden rounded-xl shadow-lg">
+            <div className="size-36 shrink-0 overflow-hidden rounded-2xl shadow-lg ring-1 ring-rose-100 md:size-44">
               <Image
                 src="/arzu.jpeg"
                 alt={contact.owner}
                 width={1080}
                 height={1080}
+                sizes="(min-width: 768px) 176px, 144px"
                 className="size-full object-cover"
               />
             </div>

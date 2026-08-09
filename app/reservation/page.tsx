@@ -1,11 +1,9 @@
 import Link from 'next/link'
 import { SiteHeader } from '@/components/layout/site-header'
 import { ReservationWizard } from '@/components/reservation/reservation-wizard'
+import { getBookableServices } from '@/lib/catalog/queries'
 import { createPageMetadata } from '@/lib/config/seo'
-import prisma from '@/lib/core/prisma'
-import { getBookingDateLimits } from '@/lib/reservation/time'
-
-export const dynamic = 'force-dynamic'
+import { getPublicBookingWindow } from '@/lib/reservation/booking-window'
 
 export const metadata = createPageMetadata({
   title: 'Prendre rendez-vous en ligne',
@@ -15,29 +13,10 @@ export const metadata = createPageMetadata({
 })
 
 const ReservationPage = async () => {
-  const categories = await prisma.serviceCategory.findMany({
-    where: { isActive: true },
-    orderBy: [{ sortOrder: 'asc' }, { name: 'asc' }],
-    include: {
-      services: {
-        where: { isBookable: true, isVisible: true, isArchived: false },
-        orderBy: [{ sortOrder: 'asc' }, { name: 'asc' }],
-      },
-    },
-  })
-  const services = categories.flatMap(category =>
-    category.services.map(service => ({
-      id: service.id,
-      name: service.name,
-      description: service.description,
-      durationMinutes: service.durationMinutes,
-      priceCents: service.priceCents,
-      priceNote: service.priceNote,
-      consentFormUrl: service.consentFormUrl,
-      categoryName: category.name,
-    })),
-  )
-  const limits = getBookingDateLimits()
+  const [services, window] = await Promise.all([
+    getBookableServices(),
+    getPublicBookingWindow(),
+  ])
 
   return (
     <>
@@ -66,8 +45,8 @@ const ReservationPage = async () => {
         </div>
         <ReservationWizard
           services={services}
-          minDate={limits.min}
-          maxDate={limits.max}
+          minDate={window.min}
+          maxDate={window.max}
         />
       </main>
     </>
