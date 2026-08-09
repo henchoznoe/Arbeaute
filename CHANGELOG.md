@@ -1,3 +1,10 @@
+# [1.6.0](https://github.com/henchoznoe/Arbeaute/compare/v1.5.0...v1.6.0) (2026-08-09)
+
+
+### Features
+
+* add SpeedInsights component and update dependencies ([ce2d3a1](https://github.com/henchoznoe/Arbeaute/commit/ce2d3a1b4d42eb97edfb00c99e7668af8970e4d3))
+
 # [1.5.0](https://github.com/henchoznoe/Arbeaute/compare/v1.4.0...v1.5.0) (2026-08-09)
 
 
