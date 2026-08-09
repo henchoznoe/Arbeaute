@@ -4,6 +4,7 @@ import { faFacebook, faInstagram } from '@fortawesome/free-brands-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import Link from 'next/link'
 
+import { InstallAppButton } from '@/components/pwa/install-app-button'
 import { Animate } from '@/components/ui/animate'
 import { Separator } from '@/components/ui/separator'
 import { contact } from '@/lib/constants/contact'
@@ -74,6 +75,7 @@ export function Footer() {
               >
                 Mes rendez-vous
               </Link>
+              <InstallAppButton className="no-underline" />
             </nav>
 
             <Separator className="w-full max-w-md" />

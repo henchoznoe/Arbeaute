@@ -2,11 +2,14 @@ import '@fortawesome/fontawesome-svg-core/styles.css'
 
 import { config } from '@fortawesome/fontawesome-svg-core'
 import { Analytics } from '@vercel/analytics/next'
-import type { Metadata } from 'next'
+import type { Metadata, Viewport } from 'next'
 import { Inter, Playfair_Display } from 'next/font/google'
 
 import './globals.css'
+import { InstallPrompt } from '@/components/pwa/install-prompt'
+import { ServiceWorkerRegistration } from '@/components/pwa/service-worker-registration'
 import { JsonLd } from '@/components/seo/json-ld'
+import { installTargets } from '@/lib/config/pwa'
 import { createLocalBusinessJsonLd } from '@/lib/config/seo'
 import { siteConfig } from '@/lib/config/site'
 import { contact } from '@/lib/constants/contact'
@@ -32,6 +35,16 @@ export const metadata: Metadata = {
     template: `%s | ${siteConfig.name}`,
   },
   description: siteConfig.description,
+  applicationName: siteConfig.shortName,
+  manifest: installTargets.public.manifestPath,
+  appleWebApp: {
+    capable: true,
+    title: installTargets.public.appleTitle,
+    statusBarStyle: 'default',
+  },
+  // Next n'émet que `mobile-web-app-capable` ; iOS antérieur à 16.4 attend
+  // encore la variante préfixée pour lancer le raccourci en plein écran.
+  other: { 'apple-mobile-web-app-capable': 'yes' },
   keywords: [
     'soins esthétiques Bulle',
     'institut de beauté Bulle',
@@ -89,6 +102,18 @@ export const metadata: Metadata = {
   },
 }
 
+export const viewport: Viewport = {
+  themeColor: siteConfig.themeColor,
+}
+
+/**
+ * Chrome émet `beforeinstallprompt` dès le chargement, souvent avant
+ * l'hydratation de <InstallPrompt />. Ce script conserve l'évènement pour
+ * que la bannière puisse encore déclencher l'installation.
+ */
+const captureInstallPrompt =
+  "window.__pwaInstallPrompt=null;addEventListener('beforeinstallprompt',function(e){e.preventDefault();window.__pwaInstallPrompt=e;dispatchEvent(new Event('pwa:installable'))});"
+
 export default async function RootLayout({
   children,
 }: Readonly<{
@@ -104,8 +129,14 @@ export default async function RootLayout({
       className={cn('antialiased', inter.variable, playfair.variable)}
     >
       <body suppressHydrationWarning>
+        <script
+          // biome-ignore lint/security/noDangerouslySetInnerHtml: constante littérale, sans donnée externe.
+          dangerouslySetInnerHTML={{ __html: captureInstallPrompt }}
+        />
         <JsonLd data={createLocalBusinessJsonLd(openingHours)} />
         {children}
+        <InstallPrompt />
+        <ServiceWorkerRegistration />
         <Analytics />
       </body>
     </html>

@@ -9,6 +9,7 @@ import {
 } from 'lucide-react'
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
+import { InstallAppButton } from '@/components/pwa/install-app-button'
 import { logoutAdmin } from '@/lib/actions/admin-auth'
 import prisma from '@/lib/core/prisma'
 import { getAdminSession } from '@/lib/core/session-cookies'
@@ -136,6 +137,7 @@ const AdminPage = async ({ searchParams }: Readonly<AdminPageProps>) => {
           <h1 className="font-heading text-3xl font-bold">Agenda</h1>
         </div>
         <div className="flex items-center gap-2">
+          <InstallAppButton className="min-h-11 rounded-xl border px-4 text-sm font-medium text-muted-foreground no-underline" />
           <form action={logoutAdmin}>
             <button
               type="submit"
