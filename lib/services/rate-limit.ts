@@ -16,6 +16,13 @@ export interface RateLimitResult {
   retryAfterSeconds: number
 }
 
+/**
+ * Les compteurs expirés n'ont pas besoin d'être purgés à chaque appel : le
+ * faire une fois sur cinquante suffit à borner la table, et retire une requête
+ * du chemin critique de chaque réservation ou tentative de connexion.
+ */
+const PURGE_PROBABILITY = 0.02
+
 const hashKey = (value: string): string =>
   createHmac('sha256', env.ADMIN_SESSION_SECRET)
     .update(value)
@@ -42,9 +49,10 @@ export const checkRateLimit = async ({
     select: { count: true },
   })
 
-  await prisma.rateLimitBucket.deleteMany({
-    where: { expiresAt: { lt: now } },
-  })
+  if (Math.random() < PURGE_PROBABILITY)
+    await prisma.rateLimitBucket.deleteMany({
+      where: { expiresAt: { lt: now } },
+    })
 
   const retryAfterSeconds = Math.max(
     1,

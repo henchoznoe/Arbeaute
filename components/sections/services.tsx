@@ -2,23 +2,14 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { Animate } from '@/components/ui/animate'
 import { Button } from '@/components/ui/button'
+import { getPublicCatalog } from '@/lib/catalog/queries'
 import { contact } from '@/lib/constants/contact'
-import prisma from '@/lib/core/prisma'
 
 const formatPrice = (priceCents: number): string =>
   `${(priceCents / 100).toLocaleString('fr-CH')} CHF`
 
 export async function Services() {
-  const categories = await prisma.serviceCategory.findMany({
-    where: { isActive: true },
-    orderBy: [{ sortOrder: 'asc' }, { name: 'asc' }],
-    include: {
-      services: {
-        where: { isVisible: true, isArchived: false },
-        orderBy: [{ sortOrder: 'asc' }, { name: 'asc' }],
-      },
-    },
-  })
+  const categories = await getPublicCatalog()
 
   return (
     <section id="services" className="scroll-mt-16 px-6 py-24">

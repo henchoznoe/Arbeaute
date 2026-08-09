@@ -99,6 +99,9 @@ export const InstallPrompt = () => {
           alt=""
           width={192}
           height={192}
+          // Icône PNG de 192 px affichée en 48 : l'optimiser coûterait des
+          // transformations pour un gain de poids négligeable.
+          unoptimized
           className="size-12 shrink-0 self-start rounded-lg shadow-sm"
         />
 

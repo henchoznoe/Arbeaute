@@ -20,12 +20,14 @@ import {
   type AvailableSlot,
   findNextAvailableSlot,
   getAvailableSlots,
+  getAvailableSlotsByDate,
   type NextAvailableSlot,
 } from '@/lib/reservation/availability'
 import { createAppointmentCalendar } from '@/lib/reservation/calendar'
 import { CUSTOMER_SESSION_MUTATION_LIMIT } from '@/lib/reservation/constants'
 import { normalizeEmail, normalizePhone } from '@/lib/reservation/identity'
 import {
+  addLocalDays,
   canCustomerChangeAppointment,
   formatAppointmentDate,
 } from '@/lib/reservation/time'
@@ -72,18 +74,29 @@ const genericBookingError = (): BookingResult => ({
     'La réservation n’a pas pu être confirmée. Vérifiez vos informations et le créneau choisi.',
 })
 
-export const getPublicAvailability = async (
+/** Nombre de jours affichés d'un coup par le calendrier public. */
+const PUBLIC_WEEK_LENGTH = 7
+
+/**
+ * Créneaux de la semaine affichée, en un seul aller-retour. Le calendrier
+ * changeant de jour bien plus souvent que de semaine, charger les sept jours
+ * ensemble divise d'autant les appels serveur — sans jamais mettre les
+ * créneaux en cache, qui doivent rester exacts.
+ */
+export const getPublicWeekAvailability = async (
   serviceId: string,
-  dateKey: string,
-): Promise<AvailableSlot[]> => {
+  fromDateKey: string,
+): Promise<Record<string, AvailableSlot[]>> => {
   try {
-    return await getAvailableSlots({
+    const from = z.string().min(1).parse(fromDateKey)
+    return await getAvailableSlotsByDate({
       database: prisma,
       serviceId: z.string().min(1).parse(serviceId),
-      dateKey,
+      fromDateKey: from,
+      toDateKey: addLocalDays(from, PUBLIC_WEEK_LENGTH - 1),
     })
   } catch {
-    return []
+    return {}
   }
 }
 

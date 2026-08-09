@@ -1,4 +1,8 @@
+import { cacheLife, cacheTag } from 'next/cache'
 import prisma from '@/lib/core/prisma'
+
+/** Invalidé par les actions qui modifient les disponibilités hebdomadaires. */
+export const OPENING_HOURS_TAG = 'opening-hours'
 
 export interface OpeningDay {
   day: string
@@ -28,6 +32,10 @@ const formatMinute = (minute: number): string =>
  * dans l'administration — pour que le site public reste toujours cohérent.
  */
 export const getOpeningHours = async (): Promise<OpeningDay[]> => {
+  'use cache'
+  cacheLife('max')
+  cacheTag(OPENING_HOURS_TAG)
+
   const availabilities = await prisma.weeklyAvailability.findMany({
     orderBy: [{ dayOfWeek: 'asc' }, { startMinute: 'asc' }],
   })

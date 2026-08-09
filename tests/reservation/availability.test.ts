@@ -1,5 +1,10 @@
 import { describe, expect, it, vi } from 'vitest'
-import { getAvailableSlots } from '@/lib/reservation/availability'
+import {
+  findNextAvailableSlot,
+  getAvailableSlots,
+  getAvailableSlotsByDate,
+} from '@/lib/reservation/availability'
+import { getDateKeysInRange } from '@/lib/reservation/time'
 import type { Prisma } from '@/prisma/generated/prisma/client'
 
 const makeDatabase = ({
@@ -157,5 +162,95 @@ describe('public availability', () => {
       now: new Date('2026-08-06T08:00:00.000Z'),
     })
     expect(tooFar).toHaveLength(0)
+  })
+})
+
+/**
+ * Le calcul par plage doit rester strictement équivalent au calcul jour par
+ * jour : c'est ce qui autorise à ne charger la base qu'une fois.
+ */
+describe('batched availability', () => {
+  const sunday = '2026-08-16'
+  const appointments = [
+    {
+      startsAt: new Date('2026-08-10T06:30:00.000Z'),
+      endsAt: new Date('2026-08-10T07:00:00.000Z'),
+      preparationMinutes: 15,
+      cleanupMinutes: 15,
+    },
+  ]
+  const exceptions = [
+    {
+      type: 'AVAILABLE' as const,
+      startsAt: new Date('2026-08-16T08:00:00.000Z'),
+      endsAt: new Date('2026-08-16T10:00:00.000Z'),
+    },
+  ]
+
+  it('matches the day-by-day computation over a whole week', async () => {
+    const options = { durationMinutes: 40, appointments, exceptions }
+    const byDate = await getAvailableSlotsByDate({
+      database: makeDatabase(options),
+      serviceId: 'service',
+      fromDateKey: monday,
+      toDateKey: sunday,
+      now: earlySunday,
+    })
+
+    for (const dateKey of getDateKeysInRange(monday, sunday)) {
+      const single = await getAvailableSlots({
+        database: makeDatabase(options),
+        serviceId: 'service',
+        dateKey,
+        now: earlySunday,
+      })
+      expect(byDate[dateKey]).toEqual(single)
+    }
+  })
+
+  it('loads the database once for the whole range', async () => {
+    const database = makeDatabase({})
+    await getAvailableSlotsByDate({
+      database,
+      serviceId: 'service',
+      fromDateKey: monday,
+      toDateKey: sunday,
+      now: earlySunday,
+    })
+
+    expect(database.appointment.findMany).toHaveBeenCalledTimes(1)
+    expect(database.weeklyAvailability.findMany).toHaveBeenCalledTimes(1)
+    expect(database.availabilityException.findMany).toHaveBeenCalledTimes(1)
+  })
+
+  it('finds the next open day without querying per day', async () => {
+    const database = makeDatabase({})
+    const found = await findNextAvailableSlot({
+      database,
+      serviceId: 'service',
+      fromDateKey: '2026-08-11',
+      now: earlySunday,
+    })
+
+    expect(found?.dateKey).toBe('2026-08-17')
+    expect(found?.slot.label).toBe('08:00')
+    expect(database.appointment.findMany).toHaveBeenCalledTimes(1)
+  })
+
+  it('returns nothing when the service is not bookable', async () => {
+    const database = {
+      ...makeDatabase({}),
+      service: { findFirst: vi.fn().mockResolvedValue(null) },
+    } as unknown as Prisma.TransactionClient
+
+    expect(
+      await getAvailableSlotsByDate({
+        database,
+        serviceId: 'service',
+        fromDateKey: monday,
+        toDateKey: sunday,
+        now: earlySunday,
+      }),
+    ).toEqual({})
   })
 })

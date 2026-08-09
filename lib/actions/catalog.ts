@@ -1,9 +1,10 @@
 'use server'
 
 import { del } from '@vercel/blob'
-import { revalidatePath } from 'next/cache'
+import { revalidatePath, updateTag } from 'next/cache'
 import { redirect } from 'next/navigation'
 import { z } from 'zod/v4'
+import { CATALOG_TAG } from '@/lib/catalog/queries'
 import { env } from '@/lib/core/env'
 import prisma from '@/lib/core/prisma'
 import { getAdminSession } from '@/lib/core/session-cookies'
@@ -91,7 +92,9 @@ const uniqueServiceSlug = async (name: string): Promise<string> => {
 }
 
 const refreshCatalog = () => {
-  revalidatePath('/')
+  // `updateTag` expire le catalogue mis en cache : la page d'accueil et le
+  // tunnel de réservation reflètent la modification dès la requête suivante.
+  updateTag(CATALOG_TAG)
   revalidatePath('/admin/services')
 }
 

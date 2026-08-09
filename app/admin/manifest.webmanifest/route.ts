@@ -9,8 +9,6 @@ import { installTargets } from '@/lib/config/pwa'
  * envoyer les cookies (`credentials: omit`), d'où l'exception dans
  * `proxy.ts`.
  */
-export const dynamic = 'force-static'
-
 export const GET = () =>
   Response.json(installTargets.admin.manifest, {
     headers: {

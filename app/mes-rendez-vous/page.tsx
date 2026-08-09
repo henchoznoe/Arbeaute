@@ -1,4 +1,6 @@
+import { LoaderCircle } from 'lucide-react'
 import Link from 'next/link'
+import { Suspense } from 'react'
 import { SiteHeader } from '@/components/layout/site-header'
 import { CustomerAppointmentCard } from '@/components/reservation/customer-appointment-card'
 import { identifyCustomer, logoutCustomer } from '@/lib/actions/reservation'
@@ -15,8 +17,6 @@ import {
   getLocalDateKey,
 } from '@/lib/reservation/time'
 
-export const dynamic = 'force-dynamic'
-
 export const metadata = createPageMetadata({
   title: 'Mes rendez-vous',
   description: 'Gérez vos rendez-vous Arbeauté : déplacement et annulation.',
@@ -31,7 +31,32 @@ interface CustomerAppointmentsPageProps {
 const fieldClass =
   'h-12 w-full rounded-xl border bg-background px-4 text-base outline-none focus:ring-2 focus:ring-ring'
 
-const CustomerAppointmentsPage = async ({
+/**
+ * Coquille prérendue : elle part sur le CDN sans invocation, y compris quand
+ * un `<Link>` de la page d'accueil précharge la route. Le contenu, qui dépend
+ * de la session, est diffusé juste après.
+ */
+const CustomerAppointmentsSkeleton = () => (
+  <>
+    <SiteHeader />
+    <main className="flex min-h-screen items-center justify-center px-5 pt-16 pb-12">
+      <div className="flex flex-col items-center gap-3 text-muted-foreground">
+        <LoaderCircle className="size-6 animate-spin" />
+        <p className="text-sm font-medium">Chargement de vos rendez-vous…</p>
+      </div>
+    </main>
+  </>
+)
+
+const CustomerAppointmentsPage = ({
+  searchParams,
+}: Readonly<CustomerAppointmentsPageProps>) => (
+  <Suspense fallback={<CustomerAppointmentsSkeleton />}>
+    <CustomerAppointments searchParams={searchParams} />
+  </Suspense>
+)
+
+const CustomerAppointments = async ({
   searchParams,
 }: Readonly<CustomerAppointmentsPageProps>) => {
   const session = await getCustomerSession()

@@ -1,9 +1,7 @@
-import '@fortawesome/fontawesome-svg-core/styles.css'
-
-import { config } from '@fortawesome/fontawesome-svg-core'
 import { Analytics } from '@vercel/analytics/next'
 import type { Metadata, Viewport } from 'next'
 import { Inter, Playfair_Display } from 'next/font/google'
+import { Suspense } from 'react'
 
 import './globals.css'
 import { InstallPrompt } from '@/components/pwa/install-prompt'
@@ -15,8 +13,6 @@ import { siteConfig } from '@/lib/config/site'
 import { contact } from '@/lib/constants/contact'
 import { getOpeningHours } from '@/lib/reservation/opening-hours'
 import { cn } from '@/lib/utils/cn'
-
-config.autoAddCss = false
 
 const inter = Inter({
   subsets: ['latin'],
@@ -135,7 +131,15 @@ export default async function RootLayout({
         />
         <JsonLd data={createLocalBusinessJsonLd(openingHours)} />
         {children}
-        <InstallPrompt />
+        {/*
+          La bannière lit `usePathname()` pour savoir quelle application
+          proposer ; sur une route à paramètre, cette valeur n'existe qu'à la
+          requête. La laisser diffuser après le shell garde les pages
+          prérendues, et elle n'apparaît de toute façon qu'après un délai.
+        */}
+        <Suspense fallback={null}>
+          <InstallPrompt />
+        </Suspense>
         <ServiceWorkerRegistration />
         <Analytics />
       </body>
