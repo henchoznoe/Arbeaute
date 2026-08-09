@@ -1,5 +1,7 @@
 import Link from 'next/link'
 import { notFound, redirect } from 'next/navigation'
+import { Suspense } from 'react'
+import { AdminSkeleton } from '@/components/admin/admin-skeleton'
 import { ServiceConsentUpload } from '@/components/admin/service-consent-upload'
 import { ServiceForm } from '@/components/admin/service-form'
 import { ServiceImageUpload } from '@/components/admin/service-image-upload'
@@ -12,7 +14,16 @@ interface EditServicePageProps {
   searchParams: Promise<{ saved?: string }>
 }
 
-const EditServicePage = async ({
+const EditServicePage = ({
+  params,
+  searchParams,
+}: Readonly<EditServicePageProps>) => (
+  <Suspense fallback={<AdminSkeleton maxWidth="max-w-5xl" />}>
+    <EditService params={params} searchParams={searchParams} />
+  </Suspense>
+)
+
+const EditService = async ({
   params,
   searchParams,
 }: Readonly<EditServicePageProps>) => {

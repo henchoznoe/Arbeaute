@@ -10,6 +10,8 @@ import {
 } from 'lucide-react'
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
+import { Suspense } from 'react'
+import { AdminSkeleton } from '@/components/admin/admin-skeleton'
 import { ServiceDeleteButton } from '@/components/admin/service-delete-button'
 import { SubmitButton } from '@/components/ui/submit-button'
 import {
@@ -27,7 +29,13 @@ import { getAdminSession } from '@/lib/core/session-cookies'
 const fieldClass =
   'h-9 rounded-lg border bg-background px-3 text-sm outline-none focus:ring-2 focus:ring-ring'
 
-const AdminServicesPage = async () => {
+const AdminServicesPage = () => (
+  <Suspense fallback={<AdminSkeleton maxWidth="max-w-6xl" />}>
+    <AdminServices />
+  </Suspense>
+)
+
+const AdminServices = async () => {
   if (!(await getAdminSession())) redirect('/admin/login')
   const categories = await prisma.serviceCategory.findMany({
     orderBy: [{ sortOrder: 'asc' }, { name: 'asc' }],

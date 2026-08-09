@@ -1,5 +1,7 @@
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
+import { Suspense } from 'react'
+import { AdminCardSkeleton } from '@/components/admin/admin-skeleton'
 import { SubmitButton } from '@/components/ui/submit-button'
 import { loginAdmin } from '@/lib/actions/admin-auth'
 import { getAdminSession } from '@/lib/core/session-cookies'
@@ -8,9 +10,13 @@ interface AdminLoginPageProps {
   searchParams: Promise<{ error?: string }>
 }
 
-const AdminLoginPage = async ({
-  searchParams,
-}: Readonly<AdminLoginPageProps>) => {
+const AdminLoginPage = ({ searchParams }: Readonly<AdminLoginPageProps>) => (
+  <Suspense fallback={<AdminCardSkeleton />}>
+    <AdminLogin searchParams={searchParams} />
+  </Suspense>
+)
+
+const AdminLogin = async ({ searchParams }: Readonly<AdminLoginPageProps>) => {
   if (await getAdminSession()) redirect('/admin')
   const { error } = await searchParams
 

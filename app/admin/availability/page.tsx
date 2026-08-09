@@ -2,6 +2,8 @@ import { formatInTimeZone } from 'date-fns-tz'
 import { Plus, Trash2 } from 'lucide-react'
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
+import { Suspense } from 'react'
+import { AdminSkeleton } from '@/components/admin/admin-skeleton'
 import { SubmitButton } from '@/components/ui/submit-button'
 import {
   createAvailabilityException,
@@ -43,7 +45,15 @@ interface AvailabilityPageProps {
   searchParams: Promise<{ error?: string }>
 }
 
-const AvailabilityPage = async ({
+const AvailabilityPage = ({
+  searchParams,
+}: Readonly<AvailabilityPageProps>) => (
+  <Suspense fallback={<AdminSkeleton maxWidth="max-w-5xl" />}>
+    <Availability searchParams={searchParams} />
+  </Suspense>
+)
+
+const Availability = async ({
   searchParams,
 }: Readonly<AvailabilityPageProps>) => {
   if (!(await getAdminSession())) redirect('/admin/login')
