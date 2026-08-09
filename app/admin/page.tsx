@@ -1,15 +1,9 @@
 import { formatInTimeZone } from 'date-fns-tz'
-import {
-  CalendarClock,
-  ChevronLeft,
-  ChevronRight,
-  Clock3,
-  Plus,
-  Settings2,
-} from 'lucide-react'
+import { Clock3, Plus, Settings2 } from 'lucide-react'
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { Suspense } from 'react'
+import { AdminAgendaView } from '@/components/admin/admin-agenda-view'
 import { AdminSkeleton } from '@/components/admin/admin-skeleton'
 import { InstallAppButton } from '@/components/pwa/install-app-button'
 import { logoutAdmin } from '@/lib/actions/admin-auth'
@@ -21,6 +15,7 @@ import {
   addLocalDays,
   getLocalDateKey,
   getLocalDayBounds,
+  getLocalDayOfWeek,
   getLocalWeekDateKeys,
   isDateKey,
 } from '@/lib/reservation/time'
@@ -28,6 +23,8 @@ import {
 interface AdminPageProps {
   searchParams: Promise<{ date?: string }>
 }
+
+const SHORT_DAY_LABELS = ['Di', 'Lu', 'Ma', 'Me', 'Je', 'Ve', 'Sa']
 
 const dayTitle = (dateKey: string, long = false) =>
   new Intl.DateTimeFormat('fr-CH', {
@@ -53,12 +50,8 @@ const AdminAgenda = async ({ searchParams }: Readonly<AdminPageProps>) => {
   const anchor =
     requestedDate && isDateKey(requestedDate) ? requestedDate : today
   const weekDays = getLocalWeekDateKeys(anchor)
-  const mobileDays = Array.from({ length: 7 }, (_, index) =>
-    addLocalDays(anchor, index),
-  )
-  const queryDays = [...new Set([...weekDays, ...mobileDays])].sort()
-  const queryStart = getLocalDayBounds(queryDays[0]).start
-  const queryEnd = getLocalDayBounds(queryDays.at(-1) as string).end
+  const queryStart = getLocalDayBounds(weekDays[0]).start
+  const queryEnd = getLocalDayBounds(weekDays.at(-1) as string).end
 
   const [appointments, exceptions] = await Promise.all([
     prisma.appointment.findMany({
@@ -178,159 +171,101 @@ const AdminAgenda = async ({ searchParams }: Readonly<AdminPageProps>) => {
         </Link>
       </nav>
 
-      <section className="mt-6 md:hidden">
-        <div className="flex items-center justify-between gap-2 rounded-2xl border bg-card p-2">
-          <Link
-            href={`/admin?date=${addLocalDays(anchor, -1)}`}
-            aria-label="Jour précédent"
-            className="grid size-11 place-items-center rounded-xl hover:bg-muted"
-          >
-            <ChevronLeft className="size-5" />
-          </Link>
-          <div className="text-center">
-            <p className="font-semibold capitalize">{dayTitle(anchor, true)}</p>
-            {anchor !== today ? (
-              <Link href="/admin" className="text-xs text-primary underline">
-                Revenir à aujourd’hui
-              </Link>
-            ) : (
-              <span className="text-xs text-muted-foreground">Aujourd’hui</span>
-            )}
-          </div>
-          <Link
-            href={`/admin?date=${addLocalDays(anchor, 1)}`}
-            aria-label="Jour suivant"
-            className="grid size-11 place-items-center rounded-xl hover:bg-muted"
-          >
-            <ChevronRight className="size-5" />
-          </Link>
-        </div>
-
-        <div className="mt-4 space-y-4">
-          {mobileDays.map((dateKey, dayIndex) => {
-            const dailyAppointments = appointmentsFor(dateKey)
-            const dailyExceptions = exceptionsFor(dateKey)
-            return (
-              <section key={dateKey} className="rounded-2xl border bg-card p-4">
-                <div className="flex items-center justify-between gap-3">
-                  <h2 className="font-semibold capitalize">
-                    {dayIndex === 0
-                      ? dateKey === today
-                        ? 'Aujourd’hui'
-                        : dayTitle(dateKey, true)
-                      : dayIndex === 1
-                        ? 'Demain'
-                        : dayTitle(dateKey, true)}
-                  </h2>
-                  <Link
-                    href={`/admin/appointments/new?date=${dateKey}`}
-                    aria-label={`Ajouter un rendez-vous le ${dayTitle(dateKey, true)}`}
-                    className="grid size-11 place-items-center rounded-xl bg-muted"
-                  >
-                    <Plus className="size-4" />
-                  </Link>
+      <AdminAgendaView
+        anchor={anchor}
+        today={today}
+        previousWeek={addLocalDays(anchor, -7)}
+        nextWeek={addLocalDays(anchor, 7)}
+        days={weekDays.map(dateKey => {
+          const dayOfWeek = getLocalDayOfWeek(dateKey)
+          return {
+            dayOfWeek,
+            label: dayTitle(dateKey, true),
+            shortLabel: SHORT_DAY_LABELS[dayOfWeek],
+            appointmentCount: appointmentsFor(dateKey).length,
+          }
+        })}
+        mobileDays={weekDays.map(dateKey => {
+          const dailyAppointments = appointmentsFor(dateKey)
+          const dailyExceptions = exceptionsFor(dateKey)
+          return (
+            <section key={dateKey} className="rounded-2xl border bg-card p-4">
+              <div className="flex items-center justify-between gap-3">
+                <h2 className="font-semibold capitalize">
+                  {dateKey === today ? 'Aujourd’hui' : dayTitle(dateKey, true)}
+                </h2>
+                <Link
+                  href={`/admin/appointments/new?date=${dateKey}`}
+                  aria-label={`Ajouter un rendez-vous le ${dayTitle(dateKey, true)}`}
+                  className="grid size-11 place-items-center rounded-xl bg-muted"
+                >
+                  <Plus className="size-4" />
+                </Link>
+              </div>
+              {dailyExceptions.map(exception => (
+                <div
+                  key={exception.id}
+                  className={`mt-3 rounded-xl px-3 py-2 text-xs ${exception.type === 'AVAILABLE' ? 'bg-emerald-100 text-emerald-950' : 'bg-amber-100 text-amber-950'}`}
+                >
+                  {exception.type === 'AVAILABLE' ? 'Ouverture' : 'Fermeture'}{' '}
+                  {formatTime(exception.startsAt)}–
+                  {formatTime(exception.endsAt)}
+                  {exception.label ? ` · ${exception.label}` : ''}
                 </div>
+              ))}
+              <div className="mt-3 space-y-2">
+                {dailyAppointments.length ? (
+                  dailyAppointments.map(appointment =>
+                    appointmentCard(appointment),
+                  )
+                ) : (
+                  <p className="rounded-xl bg-muted/60 px-3 py-4 text-center text-sm text-muted-foreground">
+                    Aucun rendez-vous
+                  </p>
+                )}
+              </div>
+            </section>
+          )
+        })}
+        desktopDays={weekDays.map(dateKey => {
+          const dailyAppointments = appointmentsFor(dateKey)
+          const dailyExceptions = exceptionsFor(dateKey)
+          return (
+            <section
+              key={dateKey}
+              className={`min-h-[28rem] border-r p-2 last:border-r-0 ${dateKey === today ? 'bg-primary/5' : ''}`}
+            >
+              <div className="flex items-center justify-between gap-1 border-b pb-2">
+                <h3 className="text-sm font-semibold capitalize">
+                  {dayTitle(dateKey)}
+                </h3>
+                <Link
+                  href={`/admin/appointments/new?date=${dateKey}`}
+                  aria-label={`Ajouter le ${dayTitle(dateKey, true)}`}
+                  className="grid size-8 place-items-center rounded-lg hover:bg-muted"
+                >
+                  <Plus className="size-3.5" />
+                </Link>
+              </div>
+              <div className="mt-2 space-y-2">
                 {dailyExceptions.map(exception => (
                   <div
                     key={exception.id}
-                    className={`mt-3 rounded-xl px-3 py-2 text-xs ${exception.type === 'AVAILABLE' ? 'bg-emerald-100 text-emerald-950' : 'bg-amber-100 text-amber-950'}`}
+                    className={`rounded-lg px-2 py-1.5 text-[11px] leading-snug ${exception.type === 'AVAILABLE' ? 'bg-emerald-100 text-emerald-950' : 'bg-amber-100 text-amber-950'}`}
                   >
-                    {exception.type === 'AVAILABLE' ? 'Ouverture' : 'Fermeture'}{' '}
+                    {exception.type === 'AVAILABLE' ? 'Ouvert' : 'Fermé'}{' '}
                     {formatTime(exception.startsAt)}–
                     {formatTime(exception.endsAt)}
-                    {exception.label ? ` · ${exception.label}` : ''}
                   </div>
                 ))}
-                <div className="mt-3 space-y-2">
-                  {dailyAppointments.length ? (
-                    dailyAppointments.map(appointment =>
-                      appointmentCard(appointment),
-                    )
-                  ) : (
-                    <p className="rounded-xl bg-muted/60 px-3 py-4 text-center text-sm text-muted-foreground">
-                      Aucun rendez-vous
-                    </p>
-                  )}
-                </div>
-              </section>
-            )
-          })}
-        </div>
-      </section>
-
-      <section className="mt-7 hidden md:block">
-        <div className="flex flex-wrap items-center justify-between gap-4">
-          <div>
-            <h2 className="font-heading text-2xl font-bold">Semaine</h2>
-            <p className="text-sm text-muted-foreground">
-              {dayTitle(weekDays[0], true)} – {dayTitle(weekDays[6], true)}
-            </p>
-          </div>
-          <div className="flex items-center gap-2">
-            <Link
-              href={`/admin?date=${addLocalDays(anchor, -7)}`}
-              aria-label="Semaine précédente"
-              className="grid size-10 place-items-center rounded-xl border"
-            >
-              <ChevronLeft className="size-4" />
-            </Link>
-            <Link
-              href="/admin"
-              className="inline-flex h-10 items-center gap-2 rounded-xl border px-4 text-sm font-medium"
-            >
-              <CalendarClock className="size-4" /> Aujourd’hui
-            </Link>
-            <Link
-              href={`/admin?date=${addLocalDays(anchor, 7)}`}
-              aria-label="Semaine suivante"
-              className="grid size-10 place-items-center rounded-xl border"
-            >
-              <ChevronRight className="size-4" />
-            </Link>
-          </div>
-        </div>
-
-        <div className="mt-4 grid grid-cols-7 overflow-hidden rounded-2xl border bg-card">
-          {weekDays.map(dateKey => {
-            const dailyAppointments = appointmentsFor(dateKey)
-            const dailyExceptions = exceptionsFor(dateKey)
-            return (
-              <section
-                key={dateKey}
-                className={`min-h-[28rem] border-r p-2 last:border-r-0 ${dateKey === today ? 'bg-primary/5' : ''}`}
-              >
-                <div className="flex items-center justify-between gap-1 border-b pb-2">
-                  <h3 className="text-sm font-semibold capitalize">
-                    {dayTitle(dateKey)}
-                  </h3>
-                  <Link
-                    href={`/admin/appointments/new?date=${dateKey}`}
-                    aria-label={`Ajouter le ${dayTitle(dateKey, true)}`}
-                    className="grid size-8 place-items-center rounded-lg hover:bg-muted"
-                  >
-                    <Plus className="size-3.5" />
-                  </Link>
-                </div>
-                <div className="mt-2 space-y-2">
-                  {dailyExceptions.map(exception => (
-                    <div
-                      key={exception.id}
-                      className={`rounded-lg px-2 py-1.5 text-[11px] leading-snug ${exception.type === 'AVAILABLE' ? 'bg-emerald-100 text-emerald-950' : 'bg-amber-100 text-amber-950'}`}
-                    >
-                      {exception.type === 'AVAILABLE' ? 'Ouvert' : 'Fermé'}{' '}
-                      {formatTime(exception.startsAt)}–
-                      {formatTime(exception.endsAt)}
-                    </div>
-                  ))}
-                  {dailyAppointments.map(appointment =>
-                    appointmentCard(appointment, true),
-                  )}
-                </div>
-              </section>
-            )
-          })}
-        </div>
-      </section>
+                {dailyAppointments.map(appointment =>
+                  appointmentCard(appointment, true),
+                )}
+              </div>
+            </section>
+          )
+        })}
+      />
     </main>
   )
 }
