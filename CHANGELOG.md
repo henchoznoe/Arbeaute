@@ -1,3 +1,12 @@
+# [1.5.0](https://github.com/henchoznoe/Arbeaute/compare/v1.4.0...v1.5.0) (2026-08-09)
+
+
+### Features
+
+* add AGENTS.md and CONTRIBUTING.md for project guidelines and setup instructions ([fe4b2d8](https://github.com/henchoznoe/Arbeaute/commit/fe4b2d8b09fa4a96d084e3415686c2f48dff0d59))
+* implement loading skeletons for admin pages using Suspense ([408fa66](https://github.com/henchoznoe/Arbeaute/commit/408fa6639fb4a3615809f9a534245a7dbeb418dd))
+* implement PWA support with separate manifests for admin and public apps ([259f2f7](https://github.com/henchoznoe/Arbeaute/commit/259f2f742ff9dabff53c8709ac79abf71a941cf8))
+
 # [1.4.0](https://github.com/henchoznoe/Arbeaute/compare/v1.3.0...v1.4.0) (2026-08-07)
 
 
