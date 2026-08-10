@@ -1,3 +1,10 @@
+# [1.8.0](https://github.com/henchoznoe/Arbeaute/compare/v1.7.0...v1.8.0) (2026-08-10)
+
+
+### Features
+
+* implement activity tracking with appointment activities and overview ([10825bf](https://github.com/henchoznoe/Arbeaute/commit/10825bf51d0a87b22cede00493a02130f6059c95))
+
 # [1.7.0](https://github.com/henchoznoe/Arbeaute/compare/v1.6.0...v1.7.0) (2026-08-09)
 
 
