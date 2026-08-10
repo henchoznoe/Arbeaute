@@ -1,3 +1,10 @@
+# [1.7.0](https://github.com/henchoznoe/Arbeaute/compare/v1.6.0...v1.7.0) (2026-08-09)
+
+
+### Features
+
+* refactor AdminPage to use AdminAgendaView component and optimize agenda rendering ([b9e0df3](https://github.com/henchoznoe/Arbeaute/commit/b9e0df3e5df0eb6f40aabb23fdef289d2785393e))
+
 # [1.6.0](https://github.com/henchoznoe/Arbeaute/compare/v1.5.0...v1.6.0) (2026-08-09)
 
 
