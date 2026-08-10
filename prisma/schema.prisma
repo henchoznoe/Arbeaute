@@ -19,6 +19,12 @@ enum AppointmentSource {
   ADMIN
 }
 
+enum AppointmentActivityType {
+  CREATED
+  RESCHEDULED
+  CANCELLED
+}
+
 enum AvailabilityExceptionType {
   AVAILABLE
   UNAVAILABLE
@@ -122,6 +128,7 @@ model Appointment {
   createdAt               DateTime          @default(now())
   updatedAt               DateTime          @updatedAt
   service                 Service           @relation(fields: [serviceId], references: [id], onDelete: Restrict)
+  activities              AppointmentActivity[]
 
   @@index([startsAt, endsAt, status])
   @@index([occupiedStartsAt, occupiedEndsAt, status])
@@ -129,6 +136,25 @@ model Appointment {
   @@index([customerIdentityDigest, startsAt, status])
   @@index([serviceId, startsAt])
   @@map("appointment")
+}
+
+model AppointmentActivity {
+  id                          String                  @id @default(cuid())
+  type                        AppointmentActivityType
+  appointmentId               String?
+  customerFirstNameSnapshot   String?
+  customerLastNameSnapshot    String
+  serviceNameSnapshot         String
+  appointmentStartsAt         DateTime
+  previousAppointmentStartsAt DateTime?
+  readAt                      DateTime?
+  createdAt                   DateTime                @default(now())
+  appointment                 Appointment?            @relation(fields: [appointmentId], references: [id], onDelete: SetNull)
+
+  @@index([createdAt])
+  @@index([readAt, createdAt])
+  @@index([appointmentId, createdAt])
+  @@map("appointment_activity")
 }
 
 model RateLimitBucket {
