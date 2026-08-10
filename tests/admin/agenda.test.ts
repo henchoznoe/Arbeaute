@@ -1,9 +1,11 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import {
   buildAvailabilityExceptionRows,
   isInsidePublicOpening,
   mergeIntervals,
+  saveAdminAppointmentSerializable,
 } from '@/lib/admin/agenda'
+import type { PrismaClient } from '@/prisma/generated/prisma/client'
 
 const interval = (start: string, end: string) => ({
   start: new Date(start),
@@ -119,5 +121,49 @@ describe('multi-day availability exceptions', () => {
         label: null,
       }),
     ).toThrow()
+  })
+})
+
+describe('manual admin appointments', () => {
+  it('does not create a customer activity', async () => {
+    const createActivity = vi.fn()
+    const created = {
+      id: 'appointment-admin',
+      source: 'ADMIN',
+    }
+    const transaction = {
+      appointment: {
+        findFirst: vi.fn().mockResolvedValue(null),
+        create: vi.fn().mockResolvedValue(created),
+      },
+      service: {
+        findUnique: vi.fn().mockResolvedValue({
+          id: 'service',
+          name: 'Soin',
+          priceCents: 10_000,
+          durationMinutes: 60,
+          preparationMinutes: 0,
+          cleanupMinutes: 0,
+          isArchived: false,
+        }),
+      },
+      appointmentActivity: { create: createActivity },
+    }
+    const database = {
+      $transaction: vi.fn(async callback => callback(transaction)),
+    } as unknown as PrismaClient
+
+    await expect(
+      saveAdminAppointmentSerializable(database, {
+        serviceId: 'service',
+        startsAt: new Date('2099-08-10T12:00:00.000Z'),
+        firstName: 'Arzu',
+        lastName: 'Test',
+        email: null,
+        phone: null,
+        comment: null,
+      }),
+    ).resolves.toBe(created)
+    expect(createActivity).not.toHaveBeenCalled()
   })
 })

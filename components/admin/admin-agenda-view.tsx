@@ -178,7 +178,7 @@ export const AdminAgendaView = ({
             <button
               type="button"
               onClick={showAllDays}
-              className="min-h-10 shrink-0 rounded-xl px-3 text-xs font-medium text-primary hover:bg-muted"
+              className="min-h-11 shrink-0 rounded-xl px-3 text-xs font-medium text-primary hover:bg-muted"
             >
               Tout afficher
             </button>

@@ -74,6 +74,11 @@ const genericBookingError = (): BookingResult => ({
     'La réservation n’a pas pu être confirmée. Vérifiez vos informations et le créneau choisi.',
 })
 
+const refreshAdminActivity = () => {
+  revalidatePath('/admin')
+  revalidatePath('/admin/activity')
+}
+
 /** Nombre de jours affichés d'un coup par le calendrier public. */
 const PUBLIC_WEEK_LENGTH = 7
 
@@ -158,6 +163,7 @@ export const createPublicAppointment = async (
       phone,
       comment: parsed.data.comment || null,
     })
+    refreshAdminActivity()
 
     return {
       ok: true,
@@ -290,6 +296,7 @@ export const moveCustomerAppointment = async (
       identityDigest: session.subject,
     })
     revalidatePath('/mes-rendez-vous')
+    refreshAdminActivity()
     return {
       ok: true,
       message: 'Votre rendez-vous a bien été déplacé.',
@@ -331,6 +338,7 @@ export const cancelCustomerAppointment = async (
     )
     await clearCustomerSession()
     revalidatePath('/mes-rendez-vous')
+    refreshAdminActivity()
     return { ok: true, message: 'Votre rendez-vous a bien été annulé.' }
   } catch {
     return { ok: false, message: 'Ce rendez-vous ne peut plus être annulé.' }

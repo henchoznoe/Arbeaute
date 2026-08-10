@@ -62,7 +62,7 @@ export const createAppointmentSerializable = async (
           )
             throw new ReservationError('SLOT_UNAVAILABLE')
 
-          return transaction.appointment.create({
+          const appointment = await transaction.appointment.create({
             data: {
               serviceId: service.id,
               serviceNameSnapshot: service.name,
@@ -94,6 +94,17 @@ export const createAppointmentSerializable = async (
               status: 'CONFIRMED',
             },
           })
+          await transaction.appointmentActivity.create({
+            data: {
+              type: 'CREATED',
+              appointmentId: appointment.id,
+              customerFirstNameSnapshot: appointment.customerFirstName,
+              customerLastNameSnapshot: appointment.customerLastName,
+              serviceNameSnapshot: appointment.serviceNameSnapshot,
+              appointmentStartsAt: appointment.startsAt,
+            },
+          })
+          return appointment
         },
         { isolationLevel: 'Serializable' },
       )
@@ -151,7 +162,7 @@ export const moveAppointmentSerializable = async (
           if (!slots.some(slot => slot.startsAt === startsAt.toISOString()))
             throw new ReservationError('SLOT_UNAVAILABLE')
 
-          return transaction.appointment.update({
+          const updated = await transaction.appointment.update({
             where: { id: appointment.id },
             data: {
               startsAt,
@@ -170,6 +181,18 @@ export const moveAppointmentSerializable = async (
               ),
             },
           })
+          await transaction.appointmentActivity.create({
+            data: {
+              type: 'RESCHEDULED',
+              appointmentId: updated.id,
+              customerFirstNameSnapshot: updated.customerFirstName,
+              customerLastNameSnapshot: updated.customerLastName,
+              serviceNameSnapshot: updated.serviceNameSnapshot,
+              appointmentStartsAt: updated.startsAt,
+              previousAppointmentStartsAt: appointment.startsAt,
+            },
+          })
+          return updated
         },
         { isolationLevel: 'Serializable' },
       )
@@ -205,10 +228,21 @@ export const cancelAppointmentSerializable = async (
       )
         throw new ReservationError('APPOINTMENT_UNAVAILABLE')
 
-      return transaction.appointment.update({
+      const cancelled = await transaction.appointment.update({
         where: { id: appointment.id },
         data: { status: 'CANCELLED', cancelledAt: now },
       })
+      await transaction.appointmentActivity.create({
+        data: {
+          type: 'CANCELLED',
+          appointmentId: cancelled.id,
+          customerFirstNameSnapshot: cancelled.customerFirstName,
+          customerLastNameSnapshot: cancelled.customerLastName,
+          serviceNameSnapshot: cancelled.serviceNameSnapshot,
+          appointmentStartsAt: cancelled.startsAt,
+        },
+      })
+      return cancelled
     },
     { isolationLevel: 'Serializable' },
   )

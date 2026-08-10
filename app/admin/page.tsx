@@ -3,10 +3,12 @@ import { Clock3, Plus, Settings2 } from 'lucide-react'
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { Suspense } from 'react'
+import { ActivityOverview } from '@/components/admin/activity-overview'
 import { AdminAgendaView } from '@/components/admin/admin-agenda-view'
 import { AdminSkeleton } from '@/components/admin/admin-skeleton'
 import { InstallAppButton } from '@/components/pwa/install-app-button'
 import { logoutAdmin } from '@/lib/actions/admin-auth'
+import { getActivityOverview } from '@/lib/admin/activity'
 import prisma from '@/lib/core/prisma'
 import { getAdminSession } from '@/lib/core/session-cookies'
 import { RESERVATION_TIME_ZONE } from '@/lib/reservation/constants'
@@ -53,7 +55,7 @@ const AdminAgenda = async ({ searchParams }: Readonly<AdminPageProps>) => {
   const queryStart = getLocalDayBounds(weekDays[0]).start
   const queryEnd = getLocalDayBounds(weekDays.at(-1) as string).end
 
-  const [appointments, exceptions] = await Promise.all([
+  const [appointments, exceptions, activityOverview] = await Promise.all([
     prisma.appointment.findMany({
       where: {
         status: 'CONFIRMED',
@@ -78,6 +80,7 @@ const AdminAgenda = async ({ searchParams }: Readonly<AdminPageProps>) => {
       where: { startsAt: { lt: queryEnd }, endsAt: { gt: queryStart } },
       orderBy: { startsAt: 'asc' },
     }),
+    getActivityOverview(),
   ])
 
   const appointmentsFor = (dateKey: string) =>
@@ -170,6 +173,8 @@ const AdminAgenda = async ({ searchParams }: Readonly<AdminPageProps>) => {
           <Settings2 className="size-4" /> Prestations
         </Link>
       </nav>
+
+      <ActivityOverview {...activityOverview} />
 
       <AdminAgendaView
         anchor={anchor}
