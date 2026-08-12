@@ -8,6 +8,8 @@ import {
   Clock,
   Download,
   FileText,
+  MailX,
+  Settings2,
   Zap,
 } from 'lucide-react'
 import { useEffect, useRef, useState, useTransition } from 'react'
@@ -210,8 +212,12 @@ export const ReservationWizard = ({
           Rendez-vous confirmé
         </p>
         <h2 className="mt-2 font-heading text-3xl font-bold">
-          Merci pour votre réservation
+          Votre rendez-vous est bien enregistré
         </h2>
+        <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
+          Votre créneau est réservé chez Arbeauté. Vous n’avez rien d’autre à
+          faire pour le confirmer.
+        </p>
         <div className="mt-6 rounded-2xl bg-muted p-5 text-left">
           <p className="font-semibold">{result.appointment.serviceName}</p>
           <p className="mt-2 text-sm capitalize">
@@ -219,6 +225,16 @@ export const ReservationWizard = ({
           </p>
           <p className="mt-1 text-sm text-muted-foreground">
             {result.appointment.priceLabel}
+          </p>
+        </div>
+        <div className="mt-5 rounded-2xl border border-amber-300 bg-amber-50 p-5 text-left text-amber-950">
+          <p className="flex items-start gap-3 font-semibold">
+            <MailX className="mt-0.5 size-5 shrink-0" />
+            Aucun e-mail de confirmation ne sera envoyé
+          </p>
+          <p className="mt-2 pl-8 text-sm leading-relaxed">
+            Cet écran confirme définitivement votre réservation. Pensez à
+            ajouter le rendez-vous à votre calendrier ci-dessous.
           </p>
         </div>
         <button
@@ -240,12 +256,23 @@ export const ReservationWizard = ({
           </div>
         ) : null}
 
-        <a
-          href="/mes-rendez-vous"
-          className="mt-4 inline-block text-sm font-medium underline underline-offset-4"
-        >
-          Gérer mes rendez-vous
-        </a>
+        <div className="mt-5 rounded-2xl border p-5 text-left">
+          <p className="flex items-start gap-3 font-semibold">
+            <Settings2 className="mt-0.5 size-5 shrink-0 text-primary" />
+            Modifier ou annuler ce rendez-vous
+          </p>
+          <p className="mt-2 pl-8 text-sm leading-relaxed text-muted-foreground">
+            Retrouvez-le maintenant dans « Mes rendez-vous ». Lors d’une
+            prochaine visite, utilisez exactement l’adresse e-mail et le numéro
+            de téléphone saisis lors de la réservation.
+          </p>
+          <a
+            href="/mes-rendez-vous"
+            className="mt-4 inline-flex h-11 w-full items-center justify-center rounded-xl border border-primary px-4 text-sm font-medium text-primary"
+          >
+            Accéder à mes rendez-vous
+          </a>
+        </div>
       </section>
     )
 
@@ -494,7 +521,9 @@ export const ReservationWizard = ({
             Vos coordonnées
           </h2>
           <p className="mt-1 text-sm text-muted-foreground">
-            Elles serviront aussi à retrouver ce rendez-vous.
+            Aucun e-mail de confirmation ne sera envoyé. Votre e-mail et votre
+            téléphone serviront à retrouver, modifier ou annuler ce rendez-vous
+            dans « Mes rendez-vous ».
           </p>
           <div className="mt-6 grid gap-4 sm:grid-cols-2">
             <label className="flex flex-col gap-2 text-sm font-medium">
