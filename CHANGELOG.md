@@ -1,3 +1,10 @@
+## [1.8.2](https://github.com/henchoznoe/Arbeaute/compare/v1.8.1...v1.8.2) (2026-08-12)
+
+
+### Bug Fixes
+
+* improve reservation confirmation messaging and clarify email notification policy ([1d681c2](https://github.com/henchoznoe/Arbeaute/commit/1d681c2a7b58267e844a1e8ccbc05edb2dcada6b))
+
 ## [1.8.1](https://github.com/henchoznoe/Arbeaute/compare/v1.8.0...v1.8.1) (2026-08-12)
 
 
