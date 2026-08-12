@@ -1,3 +1,10 @@
+## [1.8.1](https://github.com/henchoznoe/Arbeaute/compare/v1.8.0...v1.8.1) (2026-08-12)
+
+
+### Bug Fixes
+
+* enhance activity message formatting to include service category ([0babef6](https://github.com/henchoznoe/Arbeaute/commit/0babef6532be3843177b399590e0d2b4cbef7b67))
+
 # [1.8.0](https://github.com/henchoznoe/Arbeaute/compare/v1.7.0...v1.8.0) (2026-08-10)
 
 
