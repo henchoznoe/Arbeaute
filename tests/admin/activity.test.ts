@@ -28,12 +28,16 @@ const baseActivity = {
   serviceNameSnapshot: 'Soin du visage',
   appointmentStartsAt: new Date('2026-08-10T12:00:00.000Z'),
   previousAppointmentStartsAt: null,
+  appointment: {
+    status: 'CONFIRMED' as const,
+    service: { category: { name: 'Soins visage' } },
+  },
 }
 
 describe('admin activity formatting', () => {
   it('formats a public booking in the salon time zone', () => {
     expect(formatActivityMessage(baseActivity)).toBe(
-      'Marie Dupont a réservé Soin du visage pour le lundi 10 août à 14:00.',
+      'Marie Dupont a réservé Soins visage — Soin du visage pour le lundi 10 août à 14:00.',
     )
     expect(formatActivityCreatedAt(new Date('2026-08-10T10:30:00.000Z'))).toBe(
       '10.08.26 12:30',
@@ -49,7 +53,7 @@ describe('admin activity formatting', () => {
         previousAppointmentStartsAt: baseActivity.appointmentStartsAt,
       }),
     ).toBe(
-      'Marie Dupont a déplacé Soin du visage du lundi 10 août à 14:00 au mardi 11 août à 15:00.',
+      'Marie Dupont a déplacé Soins visage — Soin du visage du lundi 10 août à 14:00 au mardi 11 août à 15:00.',
     )
   })
 
@@ -60,7 +64,15 @@ describe('admin activity formatting', () => {
         type: 'CANCELLED',
         customerFirstNameSnapshot: null,
       }),
-    ).toBe('Dupont a annulé Soin du visage, prévu le lundi 10 août à 14:00.')
+    ).toBe(
+      'Dupont a annulé Soins visage — Soin du visage, prévu le lundi 10 août à 14:00.',
+    )
+  })
+
+  it('keeps the service name when the appointment no longer exists', () => {
+    expect(formatActivityMessage({ ...baseActivity, appointment: null })).toBe(
+      'Marie Dupont a réservé Soin du visage pour le lundi 10 août à 14:00.',
+    )
   })
 })
 

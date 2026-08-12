@@ -1,5 +1,6 @@
 import prisma from '@/lib/core/prisma'
 import { RESERVATION_TIME_ZONE } from '@/lib/reservation/constants'
+import { formatServiceLabel } from '@/lib/reservation/service-label'
 import type { Prisma } from '@/prisma/generated/prisma/client'
 
 const activitySelect = {
@@ -13,7 +14,12 @@ const activitySelect = {
   previousAppointmentStartsAt: true,
   readAt: true,
   createdAt: true,
-  appointment: { select: { status: true } },
+  appointment: {
+    select: {
+      status: true,
+      service: { select: { category: { select: { name: true } } } },
+    },
+  },
 } satisfies Prisma.AppointmentActivitySelect
 
 export type AppointmentActivityItem = Prisma.AppointmentActivityGetPayload<{
@@ -76,6 +82,7 @@ export const formatActivityMessage = (
     | 'serviceNameSnapshot'
     | 'appointmentStartsAt'
     | 'previousAppointmentStartsAt'
+    | 'appointment'
   >,
 ): string => {
   const customerName = [
@@ -87,12 +94,16 @@ export const formatActivityMessage = (
   const appointmentMoment = formatAppointmentMoment(
     activity.appointmentStartsAt,
   )
+  const serviceLabel = formatServiceLabel(
+    activity.serviceNameSnapshot,
+    activity.appointment?.service.category?.name,
+  )
 
   if (activity.type === 'RESCHEDULED' && activity.previousAppointmentStartsAt)
-    return `${customerName} a déplacé ${activity.serviceNameSnapshot} du ${formatAppointmentMoment(activity.previousAppointmentStartsAt)} au ${appointmentMoment}.`
+    return `${customerName} a déplacé ${serviceLabel} du ${formatAppointmentMoment(activity.previousAppointmentStartsAt)} au ${appointmentMoment}.`
 
   if (activity.type === 'CANCELLED')
-    return `${customerName} a annulé ${activity.serviceNameSnapshot}, prévu le ${appointmentMoment}.`
+    return `${customerName} a annulé ${serviceLabel}, prévu le ${appointmentMoment}.`
 
-  return `${customerName} a réservé ${activity.serviceNameSnapshot} pour le ${appointmentMoment}.`
+  return `${customerName} a réservé ${serviceLabel} pour le ${appointmentMoment}.`
 }
