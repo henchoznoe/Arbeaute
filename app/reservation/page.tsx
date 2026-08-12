@@ -39,8 +39,8 @@ const ReservationPage = async () => {
             Prendre rendez-vous
           </h1>
           <p className="mt-3 text-muted-foreground">
-            Choisissez votre soin et un créneau disponible. La confirmation est
-            immédiate.
+            Choisissez votre soin et un créneau disponible. La réservation est
+            confirmée immédiatement à l’écran, sans envoi d’e-mail.
           </p>
         </div>
         <ReservationWizard
