@@ -4,6 +4,7 @@ import { CalendarDays, Phone, Search, X } from 'lucide-react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { useDeferredValue, useLayoutEffect, useRef, useState } from 'react'
+import { ServiceDetails } from '@/components/catalog/service-details'
 import { Button } from '@/components/ui/button'
 import { filterCatalog } from '@/lib/catalog/filter'
 import type { CatalogCategory } from '@/lib/catalog/queries'
@@ -140,15 +141,16 @@ export const ServiceCatalog = ({
                 {category.services.map(service => (
                   <div
                     key={service.id}
-                    className="flex items-start gap-3 px-4 py-4 even:bg-muted/45"
+                    className="flex items-start gap-4 px-4 py-4 even:bg-muted/45"
                   >
                     {service.imageUrl ? (
                       <Image
                         src={service.imageUrl}
                         alt=""
-                        width={56}
-                        height={56}
-                        className="size-14 shrink-0 rounded-xl object-cover"
+                        width={96}
+                        height={96}
+                        sizes="(min-width: 640px) 96px, 80px"
+                        className="size-20 shrink-0 rounded-xl object-cover sm:size-24"
                       />
                     ) : null}
                     <div className="min-w-0 flex-1">
@@ -193,6 +195,7 @@ export const ServiceCatalog = ({
                           </Button>
                         )}
                       </div>
+                      <ServiceDetails service={service} className="mt-3" />
                     </div>
                   </div>
                 ))}

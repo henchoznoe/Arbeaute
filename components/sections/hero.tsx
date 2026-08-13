@@ -1,74 +1,92 @@
 'use client'
 
 import { CalendarCheck } from 'lucide-react'
+import Image from 'next/image'
 import Link from 'next/link'
-
 import { Animate } from '@/components/ui/animate'
 import { Button } from '@/components/ui/button'
 import { contact } from '@/lib/constants/contact'
 
 export function Hero() {
   return (
-    <section className="relative flex min-h-svh flex-col items-center justify-center overflow-hidden px-6 text-center">
-      <div className="absolute inset-0 bg-linear-to-br from-rose-50 via-amber-50/60 to-orange-50/40" />
-      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,var(--tw-gradient-stops))] from-rose-100/40 via-transparent to-transparent" />
+    <section className="relative flex min-h-svh items-center overflow-hidden px-5 pt-20 pb-8 sm:px-8">
+      <div className="absolute inset-0 bg-linear-to-br from-rose-50 via-amber-50/70 to-orange-50/40" />
+      <div className="absolute -top-32 -right-32 size-96 rounded-full bg-rose-200/25 blur-3xl" />
+      <div className="absolute -bottom-40 -left-32 size-96 rounded-full bg-amber-200/25 blur-3xl" />
 
-      <div className="relative z-10 mx-auto max-w-3xl">
-        <Animate animation="fade-in" delay={100}>
-          <p className="mb-4 text-sm font-medium tracking-[0.3em] text-rose-400/80 uppercase">
-            Soins esthétiques à Bulle
-          </p>
-        </Animate>
+      <div className="relative mx-auto grid w-full max-w-6xl items-center gap-10 md:grid-cols-[1.05fr_0.95fr] lg:gap-16">
+        <div className="relative z-10">
+          <Animate animation="fade-in" delay={100}>
+            <p className="pr-32 text-xs font-medium tracking-[0.25em] text-rose-500 uppercase sm:text-sm md:pr-0">
+              Soins esthétiques à Bulle
+            </p>
+          </Animate>
 
-        <Animate animation="fade-up" delay={250}>
-          <h1 className="font-heading text-5xl font-bold tracking-tight text-foreground sm:text-7xl">
-            Arbeauté
-          </h1>
-        </Animate>
+          <Animate animation="fade-up" delay={200}>
+            <h1 className="mt-3 pr-28 font-heading text-5xl font-bold tracking-tight text-foreground sm:text-6xl md:pr-0 lg:text-7xl">
+              La beauté,
+              <span className="block text-primary">avec attention.</span>
+            </h1>
+          </Animate>
 
-        <Animate animation="fade-up" delay={450}>
-          <p className="mx-auto mt-6 max-w-xl text-lg leading-relaxed text-muted-foreground">
-            Un large éventail de soins esthétiques professionnels : épilation
-            laser, soins du visage, onglerie, microblading et bien plus encore.
-          </p>
-        </Animate>
+          <Animate animation="fade-up" delay={300}>
+            <p className="mt-5 max-w-xl text-base leading-relaxed text-muted-foreground sm:text-lg">
+              Arzu vous accueille personnellement pour des soins esthétiques
+              adaptés à vos envies, dans son institut au cœur de Bulle.
+            </p>
+          </Animate>
 
-        <Animate animation="fade-up" delay={550}>
-          <p className="mt-6 inline-flex items-center gap-2 rounded-full border border-rose-300/70 bg-white/70 px-4 py-2 text-sm font-medium text-rose-700">
-            <CalendarCheck className="size-4 shrink-0" />
-            Uniquement sur rendez-vous
-          </p>
-        </Animate>
+          <Animate animation="fade-up" delay={400}>
+            <p className="mt-5 inline-flex min-h-11 items-center gap-2 rounded-full border border-rose-300/70 bg-white/75 px-4 text-sm font-medium text-rose-700 shadow-sm backdrop-blur-sm">
+              <CalendarCheck className="size-4 shrink-0" />
+              Uniquement sur rendez-vous
+            </p>
+          </Animate>
 
-        <Animate animation="fade-up" delay={650}>
-          <div
-            data-primary-booking-cta
-            className="mt-8 flex flex-col items-center gap-4 sm:flex-row sm:justify-center"
-          >
-            <Button
-              asChild
-              size="lg"
-              className="h-12 rounded-full px-8 text-base"
-            >
-              <Link href={contact.bookingUrl}>Prendre rendez-vous</Link>
-            </Button>
+          <Animate animation="fade-up" delay={500}>
+            <div data-primary-booking-cta className="mt-6 flex flex-wrap gap-3">
+              <Button
+                asChild
+                size="lg"
+                className="h-12 flex-1 rounded-full px-6 text-base sm:flex-none"
+              >
+                <Link href={contact.bookingUrl}>Prendre rendez-vous</Link>
+              </Button>
+              <Button
+                asChild
+                variant="outline"
+                size="lg"
+                className="h-12 flex-1 rounded-full bg-white/60 px-6 text-base sm:flex-none"
+              >
+                <Link href="#services">Voir les soins</Link>
+              </Button>
+            </div>
+          </Animate>
+        </div>
 
-            <Button
-              asChild
-              variant="outline"
-              size="lg"
-              className="h-12 rounded-full px-8 text-base"
-            >
-              <Link href="#services">Nos prestations</Link>
-            </Button>
+        <Animate
+          animation="scale-in"
+          delay={250}
+          className="absolute top-1 right-0 md:static"
+        >
+          <div className="relative size-28 overflow-hidden rounded-[2rem] border-4 border-white shadow-xl sm:size-32 md:aspect-[4/5] md:h-auto md:w-full md:max-w-md md:rounded-[3rem] md:border-8">
+            <Image
+              src="/arzu.jpeg"
+              alt="Arzu Yurdakul, esthéticienne chez Arbeauté"
+              fill
+              loading="eager"
+              fetchPriority="high"
+              sizes="(min-width: 768px) 42vw, 128px"
+              className="object-cover"
+            />
+            <div className="absolute inset-x-0 bottom-0 hidden bg-linear-to-t from-black/55 to-transparent px-6 pt-20 pb-6 text-white md:block">
+              <p className="font-heading text-2xl font-bold">Arzu Yurdakul</p>
+              <p className="mt-1 text-sm text-white/85">
+                Votre esthéticienne à Bulle
+              </p>
+            </div>
           </div>
         </Animate>
-      </div>
-
-      <div className="absolute bottom-8 animate-bounce">
-        <div className="h-8 w-5 rounded-full border-2 border-muted-foreground/30">
-          <div className="mx-auto mt-1.5 h-2 w-1 rounded-full bg-muted-foreground/40" />
-        </div>
       </div>
     </section>
   )

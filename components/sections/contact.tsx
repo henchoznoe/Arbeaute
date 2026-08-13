@@ -1,4 +1,11 @@
-import { CalendarCheck, Clock, Mail, MapPin, Phone } from 'lucide-react'
+import {
+  CalendarCheck,
+  Clock,
+  ExternalLink,
+  Mail,
+  MapPin,
+  Phone,
+} from 'lucide-react'
 import Link from 'next/link'
 
 import { Animate } from '@/components/ui/animate'
@@ -134,7 +141,26 @@ export async function Contact() {
           </div>
 
           <Animate animation="fade-right" delay={200}>
-            <div className="h-full overflow-hidden rounded-2xl shadow-lg">
+            <Link
+              href={contact.mapsUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="relative flex min-h-56 items-center justify-center overflow-hidden rounded-2xl border bg-[linear-gradient(90deg,transparent_24%,rgba(146,123,89,0.08)_25%,rgba(146,123,89,0.08)_26%,transparent_27%,transparent_74%,rgba(146,123,89,0.08)_75%,rgba(146,123,89,0.08)_76%,transparent_77%),linear-gradient(0deg,transparent_24%,rgba(146,123,89,0.08)_25%,rgba(146,123,89,0.08)_26%,transparent_27%,transparent_74%,rgba(146,123,89,0.08)_75%,rgba(146,123,89,0.08)_76%,transparent_77%)] bg-[length:48px_48px] shadow-sm lg:hidden"
+            >
+              <span className="rounded-2xl border bg-card/95 p-5 text-center shadow-lg backdrop-blur-sm">
+                <MapPin className="mx-auto size-8 text-rose-500" />
+                <span className="mt-3 block font-heading text-lg font-bold">
+                  Place du marché 25
+                </span>
+                <span className="mt-1 block text-sm text-muted-foreground">
+                  1630 Bulle
+                </span>
+                <span className="mt-4 inline-flex min-h-11 items-center gap-2 rounded-full bg-primary px-4 text-sm font-medium text-primary-foreground">
+                  Ouvrir dans Maps <ExternalLink className="size-4" />
+                </span>
+              </span>
+            </Link>
+            <div className="hidden h-full overflow-hidden rounded-2xl shadow-lg lg:block">
               <iframe
                 src={contact.mapsEmbed}
                 width="100%"

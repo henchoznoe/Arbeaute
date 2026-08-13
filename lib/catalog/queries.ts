@@ -17,6 +17,16 @@ interface CatalogService {
   slug: string
   name: string
   description: string | null
+  preparationAdvice: string | null
+  contraindications: string | null
+  expectedResults: string | null
+  aftercareAdvice: string | null
+  faqQuestion1: string | null
+  faqAnswer1: string | null
+  faqQuestion2: string | null
+  faqAnswer2: string | null
+  faqQuestion3: string | null
+  faqAnswer3: string | null
   durationMinutes: number
   priceCents: number
   priceNote: string | null
@@ -42,6 +52,16 @@ const serviceFields = {
   slug: true,
   name: true,
   description: true,
+  preparationAdvice: true,
+  contraindications: true,
+  expectedResults: true,
+  aftercareAdvice: true,
+  faqQuestion1: true,
+  faqAnswer1: true,
+  faqQuestion2: true,
+  faqAnswer2: true,
+  faqQuestion3: true,
+  faqAnswer3: true,
   durationMinutes: true,
   priceCents: true,
   priceNote: true,

@@ -64,12 +64,12 @@ const nextConfig: NextConfig = {
      */
     minimumCacheTTL: 31_536_000,
     /**
-     * Largeurs réellement rendues : vignettes de prestations en 48 px (donc 48
-     * et 96 en 2×) et portrait « À propos » en 144/176 px (donc 256 et 384).
-     * Le reste de l'échelle ne sert qu'aux images pleine largeur, qui n'existent
-     * pas sur le site — chaque largeur en trop est une transformation possible.
+     * Largeurs réellement rendues : vignettes de prestations en 80/96 px,
+     * portrait compact en 128 px et portrait « À propos » en 144/176 px. Les
+     * visuels larges du hero et de la galerie passent par `deviceSizes` ; chaque
+     * largeur en trop reste une transformation possible sur le plan Hobby.
      */
-    imageSizes: [48, 96, 128, 256, 384],
+    imageSizes: [48, 96, 128, 192, 256, 384],
     deviceSizes: [640, 828, 1080, 1920],
   },
   // Inline Vercel env vars at build time so client components can access them

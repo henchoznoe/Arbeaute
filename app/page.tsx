@@ -4,8 +4,10 @@ import { SiteHeader } from '@/components/layout/site-header'
 import { About } from '@/components/sections/about'
 import { Contact } from '@/components/sections/contact'
 import { Footer } from '@/components/sections/footer'
+import { Gallery } from '@/components/sections/gallery'
 import { Hero } from '@/components/sections/hero'
 import { Services } from '@/components/sections/services'
+import { TrustHighlights } from '@/components/sections/trust-highlights'
 import { Button } from '@/components/ui/button'
 import { contact } from '@/lib/constants/contact'
 
@@ -32,7 +34,9 @@ export default function Page() {
       <div className="pb-[calc(4.75rem+env(safe-area-inset-bottom))] sm:pb-0">
         <main>
           <Hero />
+          <TrustHighlights />
           <Services />
+          <Gallery />
           <About />
           <Contact />
         </main>

@@ -14,12 +14,14 @@ import {
 } from 'lucide-react'
 import { useSearchParams } from 'next/navigation'
 import { useEffect, useRef, useState, useTransition } from 'react'
+import { ServiceDetails } from '@/components/catalog/service-details'
 import {
   type BookingResult,
   createPublicAppointment,
   getNextPublicAvailableSlot,
   getPublicWeekAvailability,
 } from '@/lib/actions/reservation'
+import type { ServiceCareDetails } from '@/lib/catalog/service-content'
 import type { AvailableSlot } from '@/lib/reservation/availability'
 import { resolveInitialServiceId } from '@/lib/reservation/deep-link'
 import { formatServiceLabel } from '@/lib/reservation/service-label'
@@ -27,7 +29,7 @@ import { cn } from '@/lib/utils/cn'
 import { downloadCalendar } from './calendar-download'
 import { CancellationPolicy } from './cancellation-policy'
 
-interface ReservationService {
+interface ReservationService extends ServiceCareDetails {
   id: string
   slug: string
   name: string
@@ -389,6 +391,12 @@ export const ReservationWizard = ({
               : null}{' '}
             · {selectedService?.durationMinutes} min
           </p>
+          {selectedService ? (
+            <ServiceDetails
+              service={selectedService}
+              className="mt-4 rounded-xl border px-4 pt-0 [&>summary]:pt-1"
+            />
+          ) : null}
 
           <button
             type="button"

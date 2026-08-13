@@ -17,6 +17,12 @@ const optionalText = z.preprocess(
   z.string().nullable(),
 )
 
+const optionalTextWithMax = (max: number) =>
+  z.preprocess(
+    value => (typeof value === 'string' && value.trim() ? value.trim() : null),
+    z.string().max(max).nullable(),
+  )
+
 const categorySchema = z.object({
   name: z.string().trim().min(1).max(100),
   description: optionalText,
@@ -27,6 +33,16 @@ const serviceSchema = z.object({
   categoryId: z.string().min(1),
   name: z.string().trim().min(1).max(150),
   description: optionalText,
+  preparationAdvice: optionalTextWithMax(2000),
+  contraindications: optionalTextWithMax(2000),
+  expectedResults: optionalTextWithMax(2000),
+  aftercareAdvice: optionalTextWithMax(2000),
+  faqQuestion1: optionalTextWithMax(200),
+  faqAnswer1: optionalTextWithMax(1000),
+  faqQuestion2: optionalTextWithMax(200),
+  faqAnswer2: optionalTextWithMax(1000),
+  faqQuestion3: optionalTextWithMax(200),
+  faqAnswer3: optionalTextWithMax(1000),
   durationMinutes: z.coerce.number().int().min(1).max(720),
   preparationMinutes: z.coerce.number().int().min(0).max(240),
   cleanupMinutes: z.coerce.number().int().min(0).max(240),

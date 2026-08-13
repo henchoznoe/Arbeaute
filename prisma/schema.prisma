@@ -53,6 +53,16 @@ model Service {
   categoryId         String?
   name               String
   description        String?
+  preparationAdvice  String?
+  contraindications  String?
+  expectedResults    String?
+  aftercareAdvice    String?
+  faqQuestion1       String?
+  faqAnswer1         String?
+  faqQuestion2       String?
+  faqAnswer2         String?
+  faqQuestion3       String?
+  faqAnswer3         String?
   priceNote          String?
   durationMinutes    Int
   preparationMinutes Int              @default(0)
