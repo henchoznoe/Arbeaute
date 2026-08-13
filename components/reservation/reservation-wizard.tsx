@@ -18,7 +18,7 @@ import {
   Zap,
 } from 'lucide-react'
 import { useSearchParams } from 'next/navigation'
-import { useEffect, useRef, useState, useTransition } from 'react'
+import { useCallback, useEffect, useRef, useState, useTransition } from 'react'
 import { ServiceDetails } from '@/components/catalog/service-details'
 import { BookingSummary } from '@/components/reservation/booking-summary'
 import {
@@ -155,6 +155,7 @@ export const ReservationWizard = ({
   const [customerErrors, setCustomerErrors] = useState<CustomerFormErrors>({})
   const [website, setWebsite] = useState('')
   const [viewStart, setViewStart] = useState(minDate)
+  const wizardRef = useRef<HTMLElement>(null)
   const customerFormRef = useRef<HTMLFormElement>(null)
   const pendingSlotRef = useRef<{ dateKey: string; startsAt: string } | null>(
     null,
@@ -173,6 +174,27 @@ export const ReservationWizard = ({
   const weekReady = loadedWeek === weekCacheKey(serviceId, viewStart)
   const selectedDay = weekAvailability[date]
   const slots = selectedDay?.slots ?? []
+
+  const scrollToWizardTop = useCallback(() => {
+    const wizard = wizardRef.current
+    if (!wizard) return
+    const target = wizard.getBoundingClientRect().top + window.scrollY - 80
+    const behavior = window.matchMedia('(prefers-reduced-motion: reduce)')
+      .matches
+      ? 'auto'
+      : 'smooth'
+    requestAnimationFrame(() =>
+      window.scrollTo({ top: Math.max(0, target), behavior }),
+    )
+  }, [])
+
+  const goToStep = useCallback(
+    (nextStep: number) => {
+      setStep(nextStep)
+      scrollToWizardTop()
+    },
+    [scrollToWizardTop],
+  )
 
   const goToWeek = (amount: number) => {
     const candidate = addDateKeyDays(viewStart, amount)
@@ -216,7 +238,7 @@ export const ReservationWizard = ({
     setStartsAt('')
     setNextSlotNotice(null)
     setResult(null)
-    setStep(2)
+    goToStep(2)
   }
 
   // L'état React peut survivre à une navigation cliente vers la même route.
@@ -231,7 +253,7 @@ export const ReservationWizard = ({
     if (requestedServiceSlug === null || initialServiceId === null) {
       setServiceId('')
       setStartsAt('')
-      setStep(1)
+      goToStep(1)
       return
     }
 
@@ -240,8 +262,14 @@ export const ReservationWizard = ({
     setViewStart(minDate)
     setStartsAt('')
     setNextSlotNotice(null)
-    setStep(2)
-  }, [deepLinkSelectionKey, initialServiceId, minDate, requestedServiceSlug])
+    goToStep(2)
+  }, [
+    deepLinkSelectionKey,
+    goToStep,
+    initialServiceId,
+    minDate,
+    requestedServiceSlug,
+  ])
 
   // Une seule requête par semaine affichée : passer d'un jour à l'autre à
   // l'intérieur de la semaine ne touche plus le serveur.
@@ -333,7 +361,7 @@ export const ReservationWizard = ({
 
     setCustomer(normalizeCustomerFormDisplay(customer))
     setResult(null)
-    setStep(4)
+    goToStep(4)
   }
 
   const submitBooking = () => {
@@ -351,17 +379,23 @@ export const ReservationWizard = ({
         website,
       })
       setResult(response)
-      if (response.ok) return
+      if (response.ok) {
+        scrollToWizardTop()
+        return
+      }
       if (response.reason === 'SLOT_CONFLICT') {
         setStartsAt('')
-        setStep(2)
-      } else if (response.reason === 'INVALID_CUSTOMER') setStep(3)
+        goToStep(2)
+      } else if (response.reason === 'INVALID_CUSTOMER') goToStep(3)
     })
   }
 
   if (result?.appointment)
     return (
-      <section className="mx-auto max-w-xl rounded-3xl border bg-card p-6 text-center shadow-sm sm:p-10">
+      <section
+        ref={wizardRef}
+        className="mx-auto max-w-xl rounded-3xl border bg-card p-6 text-center shadow-sm sm:p-10"
+      >
         <div className="mx-auto flex size-14 items-center justify-center rounded-full bg-emerald-100 text-emerald-700">
           <Check className="size-7" />
         </div>
@@ -434,7 +468,7 @@ export const ReservationWizard = ({
     )
 
   return (
-    <section className="mx-auto max-w-3xl">
+    <section ref={wizardRef} className="mx-auto max-w-3xl">
       <ol
         className="mb-5 grid grid-cols-4 gap-1 sm:mb-8 sm:gap-2"
         aria-label="Étapes"
@@ -449,7 +483,7 @@ export const ReservationWizard = ({
                 <button
                   type="button"
                   disabled={!canGoBack}
-                  onClick={() => setStep(number)}
+                  onClick={() => goToStep(number)}
                   aria-current={step === number ? 'step' : undefined}
                   className={cn(
                     'flex min-h-16 w-full flex-col items-center justify-center gap-1 rounded-2xl border px-0.5 py-2 text-center transition sm:min-h-0 sm:flex-row sm:gap-2 sm:rounded-full sm:px-3 sm:py-2.5',
@@ -530,7 +564,7 @@ export const ReservationWizard = ({
         <div className="rounded-3xl border bg-card p-5 sm:p-8">
           <button
             type="button"
-            onClick={() => setStep(1)}
+            onClick={() => goToStep(1)}
             className="inline-flex items-center gap-1 text-sm font-medium"
           >
             <ChevronLeft className="size-4" /> Changer de prestation
@@ -713,7 +747,7 @@ export const ReservationWizard = ({
           <button
             type="button"
             disabled={!startsAt}
-            onClick={() => setStep(3)}
+            onClick={() => goToStep(3)}
             className="mt-7 h-12 w-full rounded-xl bg-primary px-5 font-medium text-primary-foreground disabled:opacity-40"
           >
             Continuer
@@ -733,7 +767,7 @@ export const ReservationWizard = ({
         >
           <button
             type="button"
-            onClick={() => setStep(2)}
+            onClick={() => goToStep(2)}
             className="inline-flex items-center gap-1 text-sm font-medium"
           >
             <ChevronLeft className="size-4" /> Changer de créneau
@@ -968,7 +1002,7 @@ export const ReservationWizard = ({
         <section className="rounded-3xl border bg-card p-5 sm:p-8">
           <button
             type="button"
-            onClick={() => setStep(3)}
+            onClick={() => goToStep(3)}
             className="inline-flex items-center gap-1 text-sm font-medium"
           >
             <ChevronLeft className="size-4" /> Modifier mes coordonnées
@@ -1000,7 +1034,7 @@ export const ReservationWizard = ({
               </div>
               <button
                 type="button"
-                onClick={() => setStep(1)}
+                onClick={() => goToStep(1)}
                 className="inline-flex h-10 shrink-0 items-center gap-1.5 rounded-full border px-3 text-xs font-medium"
               >
                 <Pencil className="size-3.5" /> Modifier
@@ -1017,7 +1051,7 @@ export const ReservationWizard = ({
               </div>
               <button
                 type="button"
-                onClick={() => setStep(2)}
+                onClick={() => goToStep(2)}
                 className="inline-flex h-10 shrink-0 items-center gap-1.5 rounded-full border px-3 text-xs font-medium"
               >
                 <Pencil className="size-3.5" /> Modifier
@@ -1043,7 +1077,7 @@ export const ReservationWizard = ({
               </div>
               <button
                 type="button"
-                onClick={() => setStep(3)}
+                onClick={() => goToStep(3)}
                 className="inline-flex h-10 shrink-0 items-center gap-1.5 rounded-full border px-3 text-xs font-medium"
               >
                 <Pencil className="size-3.5" /> Modifier
