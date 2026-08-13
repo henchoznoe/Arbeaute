@@ -2,6 +2,8 @@ import { isDateKey } from '@/lib/reservation/time'
 
 export type AdminNavigationItem = 'agenda' | 'activity' | 'create' | 'settings'
 
+export const ADMIN_AGENDA_DATE_EVENT = 'admin-agenda-date-change'
+
 export const getActiveAdminNavigationItem = (
   pathname: string,
 ): AdminNavigationItem => {

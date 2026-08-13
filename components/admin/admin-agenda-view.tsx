@@ -1,24 +1,19 @@
 'use client'
 
-import { CalendarClock, ChevronLeft, ChevronRight } from 'lucide-react'
+import { CalendarClock, ChevronLeft, ChevronRight, Plus } from 'lucide-react'
 import Link from 'next/link'
 import { type ReactNode, useEffect, useState } from 'react'
+import { AdminDayTimeline } from '@/components/admin/admin-day-timeline'
+import type { AdminTimelineDay } from '@/lib/admin/agenda-timeline'
+import { ADMIN_AGENDA_DATE_EVENT } from '@/lib/admin/navigation'
 
 const STORAGE_KEY = 'admin-agenda-visible-days'
 const ALL_DAYS = [1, 2, 3, 4, 5, 6, 0]
 
-interface AgendaDayOption {
-  dayOfWeek: number
-  label: string
-  shortLabel: string
-  appointmentCount: number
-}
-
 interface AdminAgendaViewProps {
   anchor: string
   today: string
-  days: AgendaDayOption[]
-  mobileDays: ReactNode[]
+  days: AdminTimelineDay[]
   desktopDays: ReactNode[]
   previousWeek: string
   nextWeek: string
@@ -41,12 +36,12 @@ export const AdminAgendaView = ({
   anchor,
   today,
   days,
-  mobileDays,
   desktopDays,
   previousWeek,
   nextWeek,
 }: Readonly<AdminAgendaViewProps>) => {
   const [visibleDays, setVisibleDays] = useState(ALL_DAYS)
+  const [selectedDate, setSelectedDate] = useState(anchor)
 
   useEffect(() => {
     try {
@@ -58,6 +53,18 @@ export const AdminAgendaView = ({
       // Une préférence invalide ne doit jamais bloquer l'agenda.
     }
   }, [])
+
+  useEffect(() => setSelectedDate(anchor), [anchor])
+
+  const selectDate = (dateKey: string) => {
+    setSelectedDate(dateKey)
+    const url = new URL(window.location.href)
+    url.searchParams.set('date', dateKey)
+    window.history.replaceState(window.history.state, '', url)
+    window.dispatchEvent(
+      new CustomEvent(ADMIN_AGENDA_DATE_EVENT, { detail: dateKey }),
+    )
+  }
 
   const toggleDay = (dayOfWeek: number) => {
     setVisibleDays(currentDays => {
@@ -82,6 +89,7 @@ export const AdminAgendaView = ({
   )
   const firstVisibleDay = days[visibleIndexes[0]]
   const lastVisibleDay = days[visibleIndexes.at(-1) as number]
+  const selectedDay = days.find(day => day.dateKey === selectedDate) ?? days[0]
 
   return (
     <>
@@ -96,9 +104,12 @@ export const AdminAgendaView = ({
               <ChevronLeft className="size-5" />
             </Link>
             <div className="text-center">
-              <p className="font-semibold">Semaine</p>
-              <p className="text-xs capitalize text-muted-foreground">
-                {firstVisibleDay.label} – {lastVisibleDay.label}
+              <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                Semaine
+              </p>
+              <p className="text-xs font-semibold capitalize sm:text-sm">
+                {days[0].label.replace(/^\S+\s/, '')} –{' '}
+                {days.at(-1)?.label.replace(/^\S+\s/, '')}
               </p>
             </div>
             <Link
@@ -109,7 +120,44 @@ export const AdminAgendaView = ({
               <ChevronRight className="size-5" />
             </Link>
           </div>
-          {anchor !== today ? (
+
+          <div className="mt-3 grid grid-cols-7 gap-1" role="tablist">
+            {days.map(day => {
+              const isSelected = day.dateKey === selectedDay.dateKey
+              return (
+                <button
+                  key={day.dateKey}
+                  id={`admin-day-tab-${day.dateKey}`}
+                  type="button"
+                  role="tab"
+                  aria-controls="admin-day-panel"
+                  aria-selected={isSelected}
+                  aria-label={`${day.label}${day.appointments.length ? `, ${day.appointments.length} rendez-vous` : ''}`}
+                  onClick={() => selectDate(day.dateKey)}
+                  className={`relative flex min-h-14 flex-col items-center justify-center rounded-xl text-xs font-semibold transition ${
+                    isSelected
+                      ? 'bg-primary text-primary-foreground shadow-sm'
+                      : day.isToday
+                        ? 'bg-primary/10 text-primary'
+                        : 'text-muted-foreground hover:bg-muted'
+                  }`}
+                >
+                  <span className="text-[10px] uppercase">
+                    {day.shortLabel}
+                  </span>
+                  <span className="mt-0.5 text-sm">{day.dayNumber}</span>
+                  {day.appointments.length > 0 ? (
+                    <span
+                      aria-hidden="true"
+                      className={`absolute bottom-1 size-1 rounded-full ${isSelected ? 'bg-primary-foreground' : 'bg-rose-500'}`}
+                    />
+                  ) : null}
+                </button>
+              )
+            })}
+          </div>
+
+          {selectedDay.dateKey !== today ? (
             <Link
               href="/admin"
               className="mt-2 flex min-h-10 items-center justify-center gap-2 rounded-xl bg-muted px-3 text-sm font-medium"
@@ -119,8 +167,29 @@ export const AdminAgendaView = ({
           ) : null}
         </div>
 
-        <div className="mt-4 space-y-4">
-          {visibleIndexes.map(index => mobileDays[index])}
+        <div
+          id="admin-day-panel"
+          role="tabpanel"
+          aria-labelledby={`admin-day-tab-${selectedDay.dateKey}`}
+        >
+          <div className="mt-4 flex items-center justify-between gap-3">
+            <div>
+              <p className="text-xs font-medium text-rose-500">
+                {selectedDay.isToday ? 'Aujourd’hui' : 'Journée sélectionnée'}
+              </p>
+              <h2 className="font-heading text-2xl font-bold capitalize">
+                {selectedDay.label}
+              </h2>
+            </div>
+            <Link
+              href={`/admin/appointments/new?date=${selectedDay.dateKey}`}
+              aria-label={`Ajouter un rendez-vous le ${selectedDay.label}`}
+              className="grid size-11 shrink-0 place-items-center rounded-xl bg-primary text-primary-foreground"
+            >
+              <Plus className="size-5" />
+            </Link>
+          </div>
+          <AdminDayTimeline day={selectedDay} />
         </div>
       </section>
 
@@ -166,7 +235,7 @@ export const AdminAgendaView = ({
         </div>
       </section>
 
-      <section className="mt-6 rounded-2xl border bg-card p-3 sm:p-4">
+      <section className="mt-6 hidden rounded-2xl border bg-card p-3 sm:p-4 md:block">
         <div className="flex items-center justify-between gap-3">
           <div>
             <h2 className="font-semibold">Jours affichés</h2>
@@ -191,19 +260,19 @@ export const AdminAgendaView = ({
               <button
                 key={day.dayOfWeek}
                 type="button"
-                aria-label={`${isVisible ? 'Masquer' : 'Afficher'} ${day.label}${day.appointmentCount ? `, ${day.appointmentCount} rendez-vous` : ''}`}
+                aria-label={`${isVisible ? 'Masquer' : 'Afficher'} ${day.label}${day.appointments.length ? `, ${day.appointments.length} rendez-vous` : ''}`}
                 aria-pressed={isVisible}
                 onClick={() => toggleDay(day.dayOfWeek)}
                 disabled={isVisible && visibleDays.length === 1}
                 className={`relative grid min-h-11 place-items-center rounded-xl border text-xs font-semibold transition disabled:cursor-not-allowed ${isVisible ? 'border-primary bg-primary text-primary-foreground' : 'bg-background text-muted-foreground hover:bg-muted'}`}
               >
                 {day.shortLabel}
-                {day.appointmentCount > 0 ? (
+                {day.appointments.length > 0 ? (
                   <span
-                    className={`hidden md:absolute right-1 top-1 md:grid size-4 place-items-center rounded-full text-[9px] ${isVisible ? 'bg-primary-foreground text-primary' : 'bg-primary text-primary-foreground'}`}
+                    className={`absolute right-1 top-1 grid size-4 place-items-center rounded-full text-[9px] ${isVisible ? 'bg-primary-foreground text-primary' : 'bg-primary text-primary-foreground'}`}
                     aria-hidden="true"
                   >
-                    {day.appointmentCount}
+                    {day.appointments.length}
                   </span>
                 ) : null}
               </button>

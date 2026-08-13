@@ -7,6 +7,7 @@ import { ActivityOverview } from '@/components/admin/activity-overview'
 import { AdminAgendaView } from '@/components/admin/admin-agenda-view'
 import { AdminSkeleton } from '@/components/admin/admin-skeleton'
 import { getActivityOverview } from '@/lib/admin/activity'
+import { buildAdminTimelineDay } from '@/lib/admin/agenda-timeline'
 import prisma from '@/lib/core/prisma'
 import { getAdminSession } from '@/lib/core/session-cookies'
 import { RESERVATION_TIME_ZONE } from '@/lib/reservation/constants'
@@ -53,33 +54,43 @@ const AdminAgenda = async ({ searchParams }: Readonly<AdminPageProps>) => {
   const queryStart = getLocalDayBounds(weekDays[0]).start
   const queryEnd = getLocalDayBounds(weekDays.at(-1) as string).end
 
-  const [appointments, exceptions, activityOverview] = await Promise.all([
-    prisma.appointment.findMany({
-      where: {
-        status: 'CONFIRMED',
-        startsAt: { gte: queryStart, lt: queryEnd },
-      },
-      orderBy: { startsAt: 'asc' },
-      select: {
-        id: true,
-        startsAt: true,
-        endsAt: true,
-        customerFirstName: true,
-        customerLastName: true,
-        customerPhone: true,
-        serviceNameSnapshot: true,
-        service: {
-          select: { color: true, category: { select: { name: true } } },
+  const [appointments, exceptions, weekly, activityOverview] =
+    await Promise.all([
+      prisma.appointment.findMany({
+        where: {
+          status: 'CONFIRMED',
+          occupiedStartsAt: { lt: queryEnd },
+          occupiedEndsAt: { gt: queryStart },
         },
-        source: true,
-      },
-    }),
-    prisma.availabilityException.findMany({
-      where: { startsAt: { lt: queryEnd }, endsAt: { gt: queryStart } },
-      orderBy: { startsAt: 'asc' },
-    }),
-    getActivityOverview(),
-  ])
+        orderBy: { startsAt: 'asc' },
+        select: {
+          id: true,
+          startsAt: true,
+          endsAt: true,
+          occupiedStartsAt: true,
+          occupiedEndsAt: true,
+          preparationMinutes: true,
+          cleanupMinutes: true,
+          customerFirstName: true,
+          customerLastName: true,
+          customerPhone: true,
+          serviceNameSnapshot: true,
+          service: {
+            select: { color: true, category: { select: { name: true } } },
+          },
+          source: true,
+        },
+      }),
+      prisma.availabilityException.findMany({
+        where: { startsAt: { lt: queryEnd }, endsAt: { gt: queryStart } },
+        orderBy: { startsAt: 'asc' },
+      }),
+      prisma.weeklyAvailability.findMany({
+        orderBy: [{ dayOfWeek: 'asc' }, { startMinute: 'asc' }],
+        select: { dayOfWeek: true, startMinute: true, endMinute: true },
+      }),
+      getActivityOverview(),
+    ])
 
   const appointmentsFor = (dateKey: string) =>
     appointments.filter(
@@ -131,6 +142,39 @@ const AdminAgenda = async ({ searchParams }: Readonly<AdminPageProps>) => {
       ) : null}
     </Link>
   )
+  const timelineDays = weekDays.map(dateKey => {
+    const dayOfWeek = getLocalDayOfWeek(dateKey)
+    return buildAdminTimelineDay({
+      dateKey,
+      today,
+      label: dayTitle(dateKey, true),
+      shortLabel: SHORT_DAY_LABELS[dayOfWeek],
+      weekly,
+      exceptions,
+      appointments: appointments.map(appointment => ({
+        id: appointment.id,
+        startsAt: appointment.startsAt,
+        endsAt: appointment.endsAt,
+        occupiedStartsAt: appointment.occupiedStartsAt,
+        occupiedEndsAt: appointment.occupiedEndsAt,
+        preparationMinutes: appointment.preparationMinutes,
+        cleanupMinutes: appointment.cleanupMinutes,
+        customerName: [
+          appointment.customerFirstName,
+          appointment.customerLastName,
+        ]
+          .filter(Boolean)
+          .join(' '),
+        customerPhone: appointment.customerPhone,
+        serviceLabel: formatServiceLabel(
+          appointment.serviceNameSnapshot,
+          appointment.service.category?.name,
+        ),
+        serviceColor: appointment.service.color,
+        source: appointment.source,
+      })),
+    })
+  })
 
   return (
     <main className="mx-auto min-h-screen max-w-7xl px-4 py-5 sm:px-8 sm:py-8">
@@ -141,64 +185,16 @@ const AdminAgenda = async ({ searchParams }: Readonly<AdminPageProps>) => {
         </div>
       </header>
 
-      <ActivityOverview {...activityOverview} />
+      <div className="hidden md:block">
+        <ActivityOverview {...activityOverview} />
+      </div>
 
       <AdminAgendaView
         anchor={anchor}
         today={today}
         previousWeek={addLocalDays(anchor, -7)}
         nextWeek={addLocalDays(anchor, 7)}
-        days={weekDays.map(dateKey => {
-          const dayOfWeek = getLocalDayOfWeek(dateKey)
-          return {
-            dayOfWeek,
-            label: dayTitle(dateKey, true),
-            shortLabel: SHORT_DAY_LABELS[dayOfWeek],
-            appointmentCount: appointmentsFor(dateKey).length,
-          }
-        })}
-        mobileDays={weekDays.map(dateKey => {
-          const dailyAppointments = appointmentsFor(dateKey)
-          const dailyExceptions = exceptionsFor(dateKey)
-          return (
-            <section key={dateKey} className="rounded-2xl border bg-card p-4">
-              <div className="flex items-center justify-between gap-3">
-                <h2 className="font-semibold capitalize">
-                  {dateKey === today ? 'Aujourd’hui' : dayTitle(dateKey, true)}
-                </h2>
-                <Link
-                  href={`/admin/appointments/new?date=${dateKey}`}
-                  aria-label={`Ajouter un rendez-vous le ${dayTitle(dateKey, true)}`}
-                  className="grid size-11 place-items-center rounded-xl bg-muted"
-                >
-                  <Plus className="size-4" />
-                </Link>
-              </div>
-              {dailyExceptions.map(exception => (
-                <div
-                  key={exception.id}
-                  className={`mt-3 rounded-xl px-3 py-2 text-xs ${exception.type === 'AVAILABLE' ? 'bg-emerald-100 text-emerald-950' : 'bg-amber-100 text-amber-950'}`}
-                >
-                  {exception.type === 'AVAILABLE' ? 'Ouverture' : 'Fermeture'}{' '}
-                  {formatTime(exception.startsAt)}–
-                  {formatTime(exception.endsAt)}
-                  {exception.label ? ` · ${exception.label}` : ''}
-                </div>
-              ))}
-              <div className="mt-3 space-y-2">
-                {dailyAppointments.length ? (
-                  dailyAppointments.map(appointment =>
-                    appointmentCard(appointment, dateKey),
-                  )
-                ) : (
-                  <p className="rounded-xl bg-muted/60 px-3 py-4 text-center text-sm text-muted-foreground">
-                    Aucun rendez-vous
-                  </p>
-                )}
-              </div>
-            </section>
-          )
-        })}
+        days={timelineDays}
         desktopDays={weekDays.map(dateKey => {
           const dailyAppointments = appointmentsFor(dateKey)
           const dailyExceptions = exceptionsFor(dateKey)

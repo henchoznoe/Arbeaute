@@ -10,9 +10,11 @@ import {
 } from 'lucide-react'
 import Link from 'next/link'
 import { usePathname, useSearchParams } from 'next/navigation'
+import { useEffect, useState } from 'react'
 import { InstallAppButton } from '@/components/pwa/install-app-button'
 import { logoutAdmin } from '@/lib/actions/admin-auth'
 import {
+  ADMIN_AGENDA_DATE_EVENT,
   type AdminNavigationItem,
   getActiveAdminNavigationItem,
   getNewAppointmentHref,
@@ -60,10 +62,25 @@ export const AdminNavigation = ({
   const pathname = usePathname()
   const searchParams = useSearchParams()
   const activeItem = getActiveAdminNavigationItem(pathname)
-  const createHref = getNewAppointmentHref(
-    searchParams.get('date'),
-    getLocalDateKey(new Date()),
+  const fallbackDate = getLocalDateKey(new Date())
+  const [agendaDate, setAgendaDate] = useState(
+    searchParams.get('date') ?? fallbackDate,
   )
+
+  useEffect(() => {
+    setAgendaDate(searchParams.get('date') ?? fallbackDate)
+  }, [fallbackDate, searchParams])
+
+  useEffect(() => {
+    const updateDate = (event: Event) => {
+      if (event instanceof CustomEvent && typeof event.detail === 'string')
+        setAgendaDate(event.detail)
+    }
+    window.addEventListener(ADMIN_AGENDA_DATE_EVENT, updateDate)
+    return () => window.removeEventListener(ADMIN_AGENDA_DATE_EVENT, updateDate)
+  }, [])
+
+  const createHref = getNewAppointmentHref(agendaDate, fallbackDate)
   const items: Array<{
     key: AdminNavigationItem
     label: string

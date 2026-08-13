@@ -4,13 +4,14 @@ import { redirect } from 'next/navigation'
 import { Suspense } from 'react'
 import { AdminSkeleton } from '@/components/admin/admin-skeleton'
 import { AppointmentForm } from '@/components/admin/appointment-form'
+import { isAdminAppointmentTime } from '@/lib/admin/agenda-timeline'
 import prisma from '@/lib/core/prisma'
 import { getAdminSession } from '@/lib/core/session-cookies'
 import { RESERVATION_TIME_ZONE } from '@/lib/reservation/constants'
 import { getLocalDateKey, isDateKey } from '@/lib/reservation/time'
 
 interface NewAppointmentPageProps {
-  searchParams: Promise<{ date?: string }>
+  searchParams: Promise<{ date?: string; time?: string }>
 }
 
 const NewAppointmentPage = ({
@@ -25,7 +26,7 @@ const NewAppointment = async ({
   searchParams,
 }: Readonly<NewAppointmentPageProps>) => {
   if (!(await getAdminSession())) redirect('/admin/login')
-  const requestedDate = (await searchParams).date
+  const { date: requestedDate, time: requestedTime } = await searchParams
   const now = new Date()
   const date =
     requestedDate && isDateKey(requestedDate)
@@ -35,12 +36,16 @@ const NewAppointment = async ({
     Number(formatInTimeZone(now, RESERVATION_TIME_ZONE, 'H')) * 60 +
     Number(formatInTimeZone(now, RESERVATION_TIME_ZONE, 'm'))
   const nextQuarter = Math.ceil((currentMinute + 1) / 15) * 15
-  const time =
+  const fallbackTime =
     date === getLocalDateKey(now) && nextQuarter < 24 * 60
       ? `${Math.floor(nextQuarter / 60)
           .toString()
           .padStart(2, '0')}:${(nextQuarter % 60).toString().padStart(2, '0')}`
       : '09:00'
+  const time =
+    requestedTime && isAdminAppointmentTime(requestedTime)
+      ? requestedTime
+      : fallbackTime
   const services = await prisma.service.findMany({
     where: { isArchived: false },
     orderBy: [{ category: { sortOrder: 'asc' } }, { sortOrder: 'asc' }],
