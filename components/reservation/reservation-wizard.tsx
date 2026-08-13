@@ -116,9 +116,10 @@ export const ReservationWizard = ({
   maxDate,
 }: Readonly<ReservationWizardProps>) => {
   const searchParams = useSearchParams()
+  const requestedServiceSlug = searchParams.get('service')
   const initialServiceId = resolveInitialServiceId(
     services,
-    searchParams.get('service'),
+    requestedServiceSlug,
   )
   const [step, setStep] = useState(initialServiceId ? 2 : 1)
   const [serviceId, setServiceId] = useState(initialServiceId ?? '')
@@ -194,6 +195,30 @@ export const ReservationWizard = ({
     setNextSlotNotice(null)
     setStep(2)
   }
+
+  // L'état React peut survivre à une navigation cliente vers la même route.
+  // On resynchronise donc le tunnel avec l'URL au lieu de ne lire le slug
+  // qu'une seule fois lors de l'initialisation des useState.
+  useEffect(() => {
+    if (requestedServiceSlug === null) return
+    const linkedServiceId = resolveInitialServiceId(
+      services,
+      requestedServiceSlug,
+    )
+    if (linkedServiceId === null) {
+      setServiceId('')
+      setStartsAt('')
+      setStep(1)
+      return
+    }
+
+    setServiceId(linkedServiceId)
+    setDate(minDate)
+    setViewStart(minDate)
+    setStartsAt('')
+    setNextSlotNotice(null)
+    setStep(2)
+  }, [minDate, requestedServiceSlug, services])
 
   // Une seule requête par semaine affichée : passer d'un jour à l'autre à
   // l'intérieur de la semaine ne touche plus le serveur.
