@@ -296,6 +296,25 @@ describe('batched availability', () => {
     expect(database.appointment.findMany).toHaveBeenCalledTimes(1)
   })
 
+  it('excludes the moved appointment while scanning the next slot', async () => {
+    const database = makeDatabase({})
+    await findNextAvailableSlot({
+      database,
+      serviceId: 'service',
+      fromDateKey: '2026-08-11',
+      now: earlySunday,
+      excludeAppointmentId: 'current-appointment',
+    })
+
+    expect(database.appointment.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({
+          id: { not: 'current-appointment' },
+        }),
+      }),
+    )
+  })
+
   it('returns nothing when the service is not bookable', async () => {
     const database = {
       ...makeDatabase({}),

@@ -1,6 +1,6 @@
 const CALENDAR_MIME_TYPE = 'text/calendar;charset=utf-8'
 
-export const downloadCalendar = (calendar: string, filename: string): void => {
+const downloadCalendar = (calendar: string, filename: string): void => {
   const blob = new Blob([calendar], { type: CALENDAR_MIME_TYPE })
   const url = URL.createObjectURL(blob)
   const anchor = document.createElement('a')

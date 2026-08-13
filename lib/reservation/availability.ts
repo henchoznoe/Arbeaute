@@ -359,6 +359,7 @@ interface NextAvailableOptions {
   serviceId: string
   fromDateKey: string
   now?: Date
+  excludeAppointmentId?: string
 }
 
 const MAX_NEXT_AVAILABLE_SEARCH_DAYS = 100
@@ -368,6 +369,7 @@ export const findNextAvailableSlot = async ({
   serviceId,
   fromDateKey,
   now = new Date(),
+  excludeAppointmentId,
 }: NextAvailableOptions): Promise<NextAvailableSlot | null> => {
   if (!isDateKey(fromDateKey)) return null
   const { max } = getBookingDateLimits(now)
@@ -384,6 +386,7 @@ export const findNextAvailableSlot = async ({
     serviceId,
     fromDateKey,
     toDateKey,
+    excludeAppointmentId,
   })
   if (!window) return null
 

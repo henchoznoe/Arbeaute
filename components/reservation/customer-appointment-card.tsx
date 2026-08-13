@@ -1,63 +1,162 @@
 'use client'
 
-import { CalendarDays, Download, X } from 'lucide-react'
+import { CalendarDays, Download, Repeat2, X, Zap } from 'lucide-react'
+import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { useEffect, useState, useTransition } from 'react'
+import { useEffect, useRef, useState, useTransition } from 'react'
+import { WeekAvailabilityPicker } from '@/components/reservation/week-availability-picker'
 import {
   cancelCustomerAppointment,
-  getCustomerMoveAvailability,
+  getCustomerMoveWeekAvailability,
+  getNextCustomerMoveAvailableSlot,
   type MutationResult,
   moveCustomerAppointment,
 } from '@/lib/actions/reservation'
-import type { AvailableSlot } from '@/lib/reservation/availability'
-import { cn } from '@/lib/utils/cn'
-import { downloadCalendar } from './calendar-download'
+import type { DayAvailability } from '@/lib/reservation/availability'
+import {
+  availabilityStateLabels,
+  formatCalendarDate,
+  formatCalendarPeriod,
+} from '@/lib/reservation/calendar-view'
+import { addLocalDays } from '@/lib/reservation/time'
+import { openCalendar } from './calendar-download'
 import { CancellationPolicy } from './cancellation-policy'
 
 interface CustomerAppointmentCardProps {
-  id: string
-  serviceName: string
-  dateLabel: string
-  dateKey: string
-  priceLabel: string
+  bookingPath: string | null
+  calendar: string
   canChange: boolean
   changeDeadlineLabel: string
-  calendar: string
+  dateLabel: string
+  id: string
   maxDate: string
   minDate: string
+  priceLabel: string
+  serviceName: string
 }
 
+const weekCacheKey = (appointmentId: string, weekStart: string): string =>
+  `${appointmentId}|${weekStart}`
+
 export const CustomerAppointmentCard = ({
-  id,
-  serviceName,
-  dateLabel,
-  dateKey,
-  priceLabel,
+  bookingPath,
+  calendar,
   canChange,
   changeDeadlineLabel,
-  calendar,
+  dateLabel,
+  id,
   maxDate,
   minDate,
+  priceLabel,
+  serviceName,
 }: Readonly<CustomerAppointmentCardProps>) => {
   const router = useRouter()
   const [moving, setMoving] = useState(false)
-  const [date, setDate] = useState(dateKey)
-  const [slots, setSlots] = useState<AvailableSlot[]>([])
+  const [date, setDate] = useState(minDate)
+  const [viewStart, setViewStart] = useState(minDate)
+  const [availability, setAvailability] = useState<
+    Record<string, DayAvailability>
+  >({})
+  const [loadedWeek, setLoadedWeek] = useState<string | null>(null)
   const [startsAt, setStartsAt] = useState('')
+  const [calendarAnnouncement, setCalendarAnnouncement] = useState('')
+  const [nextSlotNotice, setNextSlotNotice] = useState<string | null>(null)
+  const [calendarNotice, setCalendarNotice] = useState<string | null>(null)
   const [result, setResult] = useState<MutationResult | null>(null)
   const [confirmingCancel, setConfirmingCancel] = useState(false)
-  const [pending, startTransition] = useTransition()
+  const [loadingWeek, startWeekTransition] = useTransition()
+  const [searchingNext, startNextTransition] = useTransition()
+  const [mutating, startMutationTransition] = useTransition()
+  const pendingSlotRef = useRef<{ startsAt: string } | null>(null)
+  const weekEnd = addLocalDays(viewStart, 6)
+  const lastCompleteWeekStart = addLocalDays(maxDate, -6)
+  const maxViewStart =
+    lastCompleteWeekStart < minDate ? minDate : lastCompleteWeekStart
+  const weekReady = loadedWeek === weekCacheKey(id, viewStart)
 
   useEffect(() => {
     if (!moving) return
-    startTransition(async () => {
-      setStartsAt('')
-      setSlots(await getCustomerMoveAvailability(id, date))
+    startWeekTransition(async () => {
+      const loaded = await getCustomerMoveWeekAvailability(id, viewStart)
+      const pending = pendingSlotRef.current
+      pendingSlotRef.current = null
+      setAvailability(loaded)
+      setLoadedWeek(weekCacheKey(id, viewStart))
+      setStartsAt(current => {
+        const candidate = pending?.startsAt ?? current
+        const stillAvailable = Object.values(loaded).some(day =>
+          day.slots.some(slot => slot.startsAt === candidate),
+        )
+        return stillAvailable ? candidate : ''
+      })
     })
-  }, [date, id, moving])
+  }, [id, moving, viewStart])
+
+  const openMoveCalendar = () => {
+    setDate(minDate)
+    setViewStart(minDate)
+    setStartsAt('')
+    setResult(null)
+    setNextSlotNotice(null)
+    setMoving(true)
+  }
+
+  const changeWeek = (amount: number) => {
+    const candidate = addLocalDays(viewStart, amount)
+    const next =
+      candidate < minDate
+        ? minDate
+        : candidate > maxViewStart
+          ? maxViewStart
+          : candidate
+    setViewStart(next)
+    setDate(next)
+    setStartsAt('')
+    setNextSlotNotice(null)
+    setCalendarAnnouncement(
+      `Période du ${formatCalendarPeriod(next, addLocalDays(next, 6))} affichée.`,
+    )
+  }
+
+  const selectDate = (dateKey: string) => {
+    setDate(dateKey)
+    setStartsAt('')
+    setNextSlotNotice(null)
+    const state = availability[dateKey]?.state
+    setCalendarAnnouncement(
+      `${formatCalendarDate(dateKey)} sélectionné${
+        state ? ` : ${availabilityStateLabels[state].toLowerCase()}` : ''
+      }.`,
+    )
+  }
+
+  const findNextSlot = () => {
+    setNextSlotNotice(null)
+    startNextTransition(async () => {
+      const found = await getNextCustomerMoveAvailableSlot(id, date)
+      if (!found) {
+        setNextSlotNotice(
+          'Aucun autre créneau disponible dans les prochains mois.',
+        )
+        return
+      }
+
+      setDate(found.dateKey)
+      setNextSlotNotice(
+        `Prochain créneau trouvé : ${formatCalendarDate(found.dateKey)} à ${found.slot.label}.`,
+      )
+      if (found.dateKey >= viewStart && found.dateKey <= weekEnd) {
+        setStartsAt(found.slot.startsAt)
+        return
+      }
+      pendingSlotRef.current = { startsAt: found.slot.startsAt }
+      setViewStart(found.dateKey > maxViewStart ? maxViewStart : found.dateKey)
+    })
+  }
 
   const move = () => {
-    startTransition(async () => {
+    setResult(null)
+    startMutationTransition(async () => {
       const response = await moveCustomerAppointment({
         appointmentId: id,
         startsAt,
@@ -65,76 +164,88 @@ export const CustomerAppointmentCard = ({
       setResult(response)
       if (response.ok) {
         setMoving(false)
-        if (response.calendar)
-          downloadCalendar(response.calendar, 'rendez-vous-arbeaute.ics')
         router.refresh()
       }
     })
   }
 
   const cancel = () => {
-    startTransition(async () => {
+    setResult(null)
+    startMutationTransition(async () => {
       const response = await cancelCustomerAppointment({ appointmentId: id })
       setResult(response)
-      // L'annulation supprime la session client côté serveur : on redirige avec
-      // un marqueur plutôt que de compter sur un état local, qui serait perdu au
-      // rafraîchissement automatique déclenché par l'action serveur.
-      if (response.ok) router.push('/mes-rendez-vous?cancelled=1')
+      if (response.ok) router.refresh()
     })
+  }
+
+  const addToCalendar = async () => {
+    const opened = await openCalendar(calendar, 'rendez-vous-arbeaute.ics')
+    if (opened === 'DOWNLOADED')
+      setCalendarNotice(
+        'Le fichier a été téléchargé. Ouvrez-le depuis vos téléchargements avec votre application calendrier.',
+      )
+    else if (opened === 'SHARED')
+      setCalendarNotice('Le calendrier a été transmis à l’application choisie.')
   }
 
   return (
     <article className="rounded-3xl border bg-card p-5 shadow-sm sm:p-7">
       <p className="text-sm font-medium text-rose-600">Rendez-vous confirmé</p>
-      <h2 className="mt-1 font-heading text-2xl font-bold">{serviceName}</h2>
+      <h3 className="mt-1 font-heading text-2xl font-bold">{serviceName}</h3>
       <p className="mt-3 capitalize">{dateLabel}</p>
       <p className="mt-1 text-sm text-muted-foreground">{priceLabel}</p>
 
       {!moving ? (
-        <div className="mt-6 flex flex-col gap-3 sm:flex-row">
+        <div className="mt-6 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
           <button
             type="button"
-            onClick={() =>
-              downloadCalendar(calendar, 'rendez-vous-arbeaute.ics')
-            }
-            className="inline-flex h-11 items-center justify-center gap-2 rounded-xl border px-4 text-sm font-medium"
+            onClick={addToCalendar}
+            className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border px-4 text-sm font-medium"
           >
             <Download className="size-4" /> Calendrier
           </button>
+          {bookingPath ? (
+            <Link
+              href={bookingPath}
+              className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-primary/30 bg-primary/5 px-4 text-sm font-medium text-primary"
+            >
+              <Repeat2 className="size-4" /> Réserver à nouveau
+            </Link>
+          ) : null}
           {canChange ? (
             <>
               <button
                 type="button"
-                onClick={() => setMoving(true)}
-                className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-primary px-4 text-sm font-medium text-primary-foreground"
+                onClick={openMoveCalendar}
+                className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-primary px-4 text-sm font-medium text-primary-foreground"
               >
                 <CalendarDays className="size-4" /> Déplacer
               </button>
               {confirmingCancel ? (
-                <div className="flex gap-2">
+                <div className="grid grid-cols-2 gap-2 sm:col-span-2 lg:col-span-1 lg:grid-cols-1">
                   <button
                     type="button"
-                    disabled={pending}
+                    disabled={mutating}
                     onClick={() => setConfirmingCancel(false)}
-                    className="h-11 rounded-xl border px-4 text-sm font-medium"
+                    className="min-h-11 rounded-xl border px-3 text-sm font-medium"
                   >
                     Garder
                   </button>
                   <button
                     type="button"
-                    disabled={pending}
+                    disabled={mutating}
                     onClick={cancel}
-                    className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-destructive px-4 text-sm font-medium text-destructive-foreground"
+                    className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-destructive px-3 text-sm font-medium text-destructive-foreground"
                   >
-                    <X className="size-4" /> Confirmer l’annulation
+                    <X className="size-4" /> Confirmer
                   </button>
                 </div>
               ) : (
                 <button
                   type="button"
-                  disabled={pending}
+                  disabled={mutating}
                   onClick={() => setConfirmingCancel(true)}
-                  className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-destructive/10 px-4 text-sm font-medium text-destructive"
+                  className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-destructive/10 px-4 text-sm font-medium text-destructive"
                 >
                   <X className="size-4" /> Annuler
                 </button>
@@ -143,62 +254,70 @@ export const CustomerAppointmentCard = ({
           ) : null}
         </div>
       ) : (
-        <div className="mt-6 rounded-2xl bg-muted p-4">
-          <label className="text-sm font-medium">
-            Nouvelle date
-            <input
-              type="date"
-              min={minDate}
-              max={maxDate}
-              value={date}
-              onChange={event => setDate(event.target.value)}
-              className="mt-2 h-11 w-full rounded-xl border bg-background px-3"
-            />
-          </label>
-          {pending ? (
-            <p className="mt-4 text-sm text-muted-foreground">Recherche…</p>
-          ) : (
-            <div className="mt-4 grid grid-cols-3 gap-2 sm:grid-cols-5">
-              {slots.map(slot => (
-                <button
-                  key={slot.startsAt}
-                  type="button"
-                  onClick={() => setStartsAt(slot.startsAt)}
-                  className={cn(
-                    'h-10 rounded-lg border bg-background text-sm',
-                    startsAt === slot.startsAt &&
-                      'border-primary bg-primary text-primary-foreground',
-                  )}
-                >
-                  {slot.label}
-                </button>
-              ))}
+        <div className="mt-6 rounded-2xl bg-muted p-4 sm:p-5">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <h4 className="font-heading text-xl font-bold">
+                Choisissez le nouveau créneau
+              </h4>
+              <p className="mt-1 text-sm text-muted-foreground">
+                La prestation reste inchangée.
+              </p>
             </div>
-          )}
-          {!pending && slots.length === 0 ? (
-            <p className="mt-4 text-sm text-muted-foreground">
-              Aucun créneau ce jour-là.
+            <button
+              type="button"
+              onClick={findNextSlot}
+              disabled={searchingNext}
+              className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-primary/30 bg-background px-4 text-sm font-medium text-primary"
+            >
+              <Zap className="size-4" />
+              {searchingNext ? 'Recherche…' : 'Prochain créneau'}
+            </button>
+          </div>
+          {nextSlotNotice ? (
+            <p className="mt-3 text-sm text-muted-foreground" role="status">
+              {nextSlotNotice}
             </p>
           ) : null}
+          <WeekAvailabilityPicker
+            announcement={calendarAnnouncement}
+            availability={availability}
+            date={date}
+            loading={loadingWeek}
+            maxDate={maxDate}
+            minDate={minDate}
+            onChangeWeek={changeWeek}
+            onSelectDate={selectDate}
+            onSelectSlot={setStartsAt}
+            ready={weekReady}
+            startsAt={startsAt}
+            viewStart={viewStart}
+          />
           <div className="mt-5 flex gap-3">
             <button
               type="button"
               onClick={() => setMoving(false)}
-              className="h-11 flex-1 rounded-xl border bg-background px-4 text-sm font-medium"
+              className="min-h-11 flex-1 rounded-xl border bg-background px-4 text-sm font-medium"
             >
               Retour
             </button>
             <button
               type="button"
-              disabled={!startsAt || pending}
+              disabled={!startsAt || mutating}
               onClick={move}
-              className="h-11 flex-1 rounded-xl bg-primary px-4 text-sm font-medium text-primary-foreground disabled:opacity-40"
+              className="min-h-11 flex-1 rounded-xl bg-primary px-4 text-sm font-medium text-primary-foreground disabled:opacity-40"
             >
-              Confirmer
+              Confirmer le déplacement
             </button>
           </div>
         </div>
       )}
+
+      {calendarNotice ? (
+        <p className="mt-3 text-sm text-muted-foreground" role="status">
+          {calendarNotice}
+        </p>
+      ) : null}
 
       <CancellationPolicy
         className="mt-5"
@@ -206,10 +325,14 @@ export const CustomerAppointmentCard = ({
         deadlineLabel={canChange ? changeDeadlineLabel : undefined}
       />
 
-      {result && !result.ok ? (
+      {result ? (
         <p
-          className="mt-4 rounded-xl bg-destructive/10 p-3 text-sm text-destructive"
-          role="alert"
+          className={
+            result.ok
+              ? 'mt-4 rounded-xl bg-emerald-50 p-3 text-sm text-emerald-800'
+              : 'mt-4 rounded-xl bg-destructive/10 p-3 text-sm text-destructive'
+          }
+          role={result.ok ? 'status' : 'alert'}
         >
           {result.message}
         </p>

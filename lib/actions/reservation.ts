@@ -17,11 +17,9 @@ import {
   ReservationError,
 } from '@/lib/reservation/appointments'
 import {
-  type AvailableSlot,
   type DayAvailability,
   findNextAvailableSlot,
   getAvailabilityByDate,
-  getAvailableSlots,
   type NextAvailableSlot,
 } from '@/lib/reservation/availability'
 import { createAppointmentCalendar } from '@/lib/reservation/calendar'
@@ -247,8 +245,6 @@ export const identifyCustomer = async (formData: FormData): Promise<void> => {
       const exists = await prisma.appointment.findFirst({
         where: {
           customerIdentityDigest: candidateDigest,
-          status: 'CONFIRMED',
-          startsAt: { gt: new Date() },
         },
         select: { id: true },
       })
@@ -278,13 +274,13 @@ const requireCustomerMutation = async () => {
   return rateLimit.allowed ? session : null
 }
 
-export const getCustomerMoveAvailability = async (
+export const getCustomerMoveWeekAvailability = async (
   appointmentId: string,
-  dateKey: string,
-): Promise<AvailableSlot[]> => {
+  fromDateKey: string,
+): Promise<Record<string, DayAvailability>> => {
   try {
     const session = await getCustomerSession()
-    if (!session) return []
+    if (!session) return {}
     const appointment = await prisma.appointment.findFirst({
       where: {
         id: appointmentId,
@@ -294,15 +290,44 @@ export const getCustomerMoveAvailability = async (
       select: { id: true, serviceId: true, startsAt: true },
     })
     if (!appointment || !canCustomerChangeAppointment(appointment.startsAt))
-      return []
-    return getAvailableSlots({
+      return {}
+    return getAvailabilityByDate({
       database: prisma,
       serviceId: appointment.serviceId,
-      dateKey,
+      fromDateKey,
+      toDateKey: addLocalDays(fromDateKey, PUBLIC_WEEK_LENGTH - 1),
       excludeAppointmentId: appointment.id,
     })
   } catch {
-    return []
+    return {}
+  }
+}
+
+export const getNextCustomerMoveAvailableSlot = async (
+  appointmentId: string,
+  fromDateKey: string,
+): Promise<NextAvailableSlot | null> => {
+  try {
+    const session = await getCustomerSession()
+    if (!session) return null
+    const appointment = await prisma.appointment.findFirst({
+      where: {
+        id: appointmentId,
+        customerIdentityDigest: session.subject,
+        status: 'CONFIRMED',
+      },
+      select: { id: true, serviceId: true, startsAt: true },
+    })
+    if (!appointment || !canCustomerChangeAppointment(appointment.startsAt))
+      return null
+    return findNextAvailableSlot({
+      database: prisma,
+      serviceId: appointment.serviceId,
+      fromDateKey,
+      excludeAppointmentId: appointment.id,
+    })
+  } catch {
+    return null
   }
 }
 
@@ -365,7 +390,6 @@ export const cancelCustomerAppointment = async (
       parsed.data.appointmentId,
       session.subject,
     )
-    await clearCustomerSession()
     revalidatePath('/mes-rendez-vous')
     refreshAdminActivity()
     return { ok: true, message: 'Votre rendez-vous a bien été annulé.' }

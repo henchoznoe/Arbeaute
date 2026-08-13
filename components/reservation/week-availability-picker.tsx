@@ -1,0 +1,212 @@
+'use client'
+
+import {
+  CalendarDays,
+  ChevronLeft,
+  ChevronRight,
+  CircleCheck,
+  Clock,
+  Minus,
+  X,
+} from 'lucide-react'
+import type {
+  AvailabilityDayState,
+  DayAvailability,
+} from '@/lib/reservation/availability'
+import {
+  availabilityStateLabels,
+  formatCalendarDate,
+  formatCalendarDayNumber,
+  formatCalendarPeriod,
+  formatCalendarWeekday,
+} from '@/lib/reservation/calendar-view'
+import { addLocalDays } from '@/lib/reservation/time'
+import { cn } from '@/lib/utils/cn'
+
+interface WeekAvailabilityPickerProps {
+  announcement: string
+  availability: Record<string, DayAvailability>
+  date: string
+  loading: boolean
+  maxDate: string
+  minDate: string
+  onChangeWeek: (amount: number) => void
+  onSelectDate: (dateKey: string) => void
+  onSelectSlot: (startsAt: string) => void
+  ready: boolean
+  startsAt: string
+  viewStart: string
+}
+
+const stateIcon = {
+  AVAILABLE: CircleCheck,
+  FULL: X,
+  CLOSED: Minus,
+} satisfies Record<AvailabilityDayState, typeof CircleCheck>
+
+export const WeekAvailabilityPicker = ({
+  announcement,
+  availability,
+  date,
+  loading,
+  maxDate,
+  minDate,
+  onChangeWeek,
+  onSelectDate,
+  onSelectSlot,
+  ready,
+  startsAt,
+  viewStart,
+}: Readonly<WeekAvailabilityPickerProps>) => {
+  const weekEnd = addLocalDays(viewStart, 6)
+  const weekDates = Array.from({ length: 7 }, (_, index) =>
+    addLocalDays(viewStart, index),
+  )
+  const lastCompleteWeekStart = addLocalDays(maxDate, -6)
+  const maxViewStart =
+    lastCompleteWeekStart < minDate ? minDate : lastCompleteWeekStart
+  const selectedDay = availability[date]
+  const slots = selectedDay?.slots ?? []
+
+  return (
+    <>
+      <p className="sr-only" role="status" aria-live="polite">
+        {announcement}
+      </p>
+      <div className="-mx-3 mt-6 rounded-2xl border bg-muted/25 p-2 sm:mx-0 sm:p-4">
+        <div className="flex items-center justify-between gap-2">
+          <button
+            type="button"
+            onClick={() => onChangeWeek(-7)}
+            disabled={viewStart <= minDate}
+            aria-label="Période précédente"
+            className="grid size-11 shrink-0 place-items-center rounded-full border bg-background transition hover:border-primary disabled:opacity-30"
+          >
+            <ChevronLeft className="size-4" />
+          </button>
+          <p className="flex min-w-0 items-center gap-2 text-center text-sm font-semibold sm:text-base">
+            <CalendarDays className="hidden size-4 shrink-0 sm:block" />
+            {formatCalendarPeriod(viewStart, weekEnd)}
+          </p>
+          <button
+            type="button"
+            onClick={() => onChangeWeek(7)}
+            disabled={viewStart >= maxViewStart}
+            aria-label="Période suivante"
+            className="grid size-11 shrink-0 place-items-center rounded-full border bg-background transition hover:border-primary disabled:opacity-30"
+          >
+            <ChevronRight className="size-4" />
+          </button>
+        </div>
+
+        <div className="mt-3 grid grid-cols-7 gap-px sm:gap-2">
+          {weekDates.map(dateKey => {
+            const state = ready
+              ? (availability[dateKey]?.state ?? 'CLOSED')
+              : null
+            const StateIcon = state ? stateIcon[state] : null
+            const selected = date === dateKey
+            return (
+              <button
+                key={dateKey}
+                type="button"
+                onClick={() => onSelectDate(dateKey)}
+                disabled={!ready}
+                aria-pressed={selected}
+                aria-label={`${formatCalendarDate(dateKey)}${
+                  state ? ` — ${availabilityStateLabels[state]}` : ''
+                }`}
+                className={cn(
+                  'flex min-h-20 min-w-0 flex-col items-center justify-center rounded-xl border bg-background px-0.5 py-2 text-center transition disabled:opacity-50',
+                  selected &&
+                    'border-primary bg-primary text-primary-foreground ring-2 ring-primary/20',
+                  !selected &&
+                    state === 'AVAILABLE' &&
+                    'border-emerald-300 text-emerald-800 hover:border-primary',
+                  !selected &&
+                    state === 'FULL' &&
+                    'border-amber-300 bg-amber-50 text-amber-900',
+                  !selected &&
+                    state === 'CLOSED' &&
+                    'border-dashed bg-muted text-muted-foreground',
+                )}
+              >
+                <span className="text-[10px] leading-none font-semibold uppercase sm:text-xs">
+                  {formatCalendarWeekday(dateKey)}
+                </span>
+                <span className="mt-1 text-lg leading-none font-bold sm:text-xl">
+                  {formatCalendarDayNumber(dateKey)}
+                </span>
+                <span className="mt-1.5 flex min-w-0 items-center justify-center gap-0.5 text-[8px] leading-none font-semibold sm:text-[10px]">
+                  {StateIcon ? <StateIcon className="size-3 shrink-0" /> : null}
+                  {state === 'AVAILABLE'
+                    ? 'Libre'
+                    : state === 'FULL'
+                      ? 'Complet'
+                      : state === 'CLOSED'
+                        ? 'Fermé'
+                        : '…'}
+                </span>
+              </button>
+            )
+          })}
+        </div>
+
+        <ul
+          className="mt-3 flex flex-wrap justify-center gap-x-4 gap-y-2 text-[11px] text-muted-foreground sm:text-xs"
+          aria-label="Légende des disponibilités"
+        >
+          <li className="flex items-center gap-1">
+            <CircleCheck className="size-3.5 text-emerald-700" />
+            Disponible
+          </li>
+          <li className="flex items-center gap-1">
+            <X className="size-3.5 text-amber-800" /> Complet
+          </li>
+          <li className="flex items-center gap-1">
+            <Minus className="size-3.5" /> Fermé
+          </li>
+        </ul>
+      </div>
+
+      <div className="mt-6">
+        <p className="flex items-center gap-2 text-sm font-medium">
+          <Clock className="size-4" /> Heures disponibles
+        </p>
+        {loading || !ready ? (
+          <p className="mt-4 text-sm text-muted-foreground">
+            Recherche des créneaux…
+          </p>
+        ) : selectedDay?.state === 'AVAILABLE' ? (
+          <div className="mt-3 grid grid-cols-3 gap-2 sm:grid-cols-5">
+            {slots.map(slot => (
+              <button
+                key={slot.startsAt}
+                type="button"
+                onClick={() => onSelectSlot(slot.startsAt)}
+                className={cn(
+                  'h-11 rounded-xl border text-sm font-medium',
+                  startsAt === slot.startsAt
+                    ? 'border-primary bg-primary text-primary-foreground'
+                    : 'bg-background hover:border-primary',
+                )}
+              >
+                {slot.label}
+              </button>
+            ))}
+          </div>
+        ) : selectedDay?.state === 'FULL' ? (
+          <p className="mt-4 rounded-xl bg-muted p-4 text-sm text-muted-foreground">
+            Tous les créneaux de ce jour sont déjà pris. Essayez une autre date
+            ou recherchez le prochain créneau.
+          </p>
+        ) : (
+          <p className="mt-4 rounded-xl bg-muted p-4 text-sm text-muted-foreground">
+            L’institut est fermé ce jour-là. Choisissez une date indiquée comme
+            disponible.
+          </p>
+        )}
+      </div>
+    </>
+  )
+}
