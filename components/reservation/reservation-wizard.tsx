@@ -121,6 +121,7 @@ export const ReservationWizard = ({
     services,
     requestedServiceSlug,
   )
+  const deepLinkSelectionKey = `${requestedServiceSlug ?? ''}:${initialServiceId ?? ''}`
   const [step, setStep] = useState(initialServiceId ? 2 : 1)
   const [serviceId, setServiceId] = useState(initialServiceId ?? '')
   const [date, setDate] = useState(minDate)
@@ -139,6 +140,7 @@ export const ReservationWizard = ({
   const pendingSlotRef = useRef<{ dateKey: string; startsAt: string } | null>(
     null,
   )
+  const synchronizedDeepLinkRef = useRef(deepLinkSelectionKey)
   const selectedService = services.find(service => service.id === serviceId)
   const weekEnd = addDateKeyDays(viewStart, 6)
   const lastCompleteWeekStart = addDateKeyDays(maxDate, -6)
@@ -200,25 +202,25 @@ export const ReservationWizard = ({
   // On resynchronise donc le tunnel avec l'URL au lieu de ne lire le slug
   // qu'une seule fois lors de l'initialisation des useState.
   useEffect(() => {
-    if (requestedServiceSlug === null) return
-    const linkedServiceId = resolveInitialServiceId(
-      services,
-      requestedServiceSlug,
-    )
-    if (linkedServiceId === null) {
+    // Une action serveur peut recréer le tableau `services` sans changer son
+    // contenu. Seule cette clé stable doit alors pouvoir réinitialiser l'étape.
+    if (synchronizedDeepLinkRef.current === deepLinkSelectionKey) return
+    synchronizedDeepLinkRef.current = deepLinkSelectionKey
+
+    if (requestedServiceSlug === null || initialServiceId === null) {
       setServiceId('')
       setStartsAt('')
       setStep(1)
       return
     }
 
-    setServiceId(linkedServiceId)
+    setServiceId(initialServiceId)
     setDate(minDate)
     setViewStart(minDate)
     setStartsAt('')
     setNextSlotNotice(null)
     setStep(2)
-  }, [minDate, requestedServiceSlug, services])
+  }, [deepLinkSelectionKey, initialServiceId, minDate, requestedServiceSlug])
 
   // Une seule requête par semaine affichée : passer d'un jour à l'autre à
   // l'intérieur de la semaine ne touche plus le serveur.
