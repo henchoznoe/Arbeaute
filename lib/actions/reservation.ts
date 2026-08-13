@@ -60,6 +60,8 @@ export interface BookingResult {
     serviceName: string
     dateLabel: string
     priceLabel: string
+    startsAt: string
+    endsAt: string
     calendar: string
   }
 }
@@ -196,6 +198,8 @@ export const createPublicAppointment = async (
         serviceName: appointment.serviceNameSnapshot,
         dateLabel: formatAppointmentDate(appointment.startsAt),
         priceLabel: `${(appointment.servicePriceCents / 100).toLocaleString('fr-CH')} CHF`,
+        startsAt: appointment.startsAt.toISOString(),
+        endsAt: appointment.endsAt.toISOString(),
         calendar: createAppointmentCalendar({
           id: appointment.id,
           serviceName: appointment.serviceNameSnapshot,

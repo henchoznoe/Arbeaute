@@ -7,11 +7,12 @@ import {
   ChevronRight,
   CircleCheck,
   Clock,
-  Download,
   FileText,
   MailX,
+  MapPin,
   Minus,
   Pencil,
+  Phone,
   Settings2,
   UserRound,
   X,
@@ -21,6 +22,7 @@ import { useSearchParams } from 'next/navigation'
 import { useCallback, useEffect, useRef, useState, useTransition } from 'react'
 import { ServiceDetails } from '@/components/catalog/service-details'
 import { BookingSummary } from '@/components/reservation/booking-summary'
+import { ConfirmationActions } from '@/components/reservation/confirmation-actions'
 import {
   type BookingResult,
   createPublicAppointment,
@@ -28,6 +30,7 @@ import {
   getPublicWeekAvailability,
 } from '@/lib/actions/reservation'
 import type { ServiceCareDetails } from '@/lib/catalog/service-content'
+import { contact } from '@/lib/constants/contact'
 import type {
   AvailabilityDayState,
   DayAvailability,
@@ -56,7 +59,6 @@ import {
 import { formatServiceLabel } from '@/lib/reservation/service-label'
 import { formatAppointmentDate } from '@/lib/reservation/time'
 import { cn } from '@/lib/utils/cn'
-import { downloadCalendar } from './calendar-download'
 import { CancellationPolicy } from './cancellation-policy'
 
 interface ReservationService extends ServiceCareDetails {
@@ -394,6 +396,7 @@ export const ReservationWizard = ({
     return (
       <section
         ref={wizardRef}
+        data-print-receipt
         className="mx-auto max-w-xl rounded-3xl border bg-card p-6 text-center shadow-sm sm:p-10"
       >
         <div className="mx-auto flex size-14 items-center justify-center rounded-full bg-emerald-100 text-emerald-700">
@@ -417,7 +420,22 @@ export const ReservationWizard = ({
           <p className="mt-1 text-sm text-muted-foreground">
             {result.appointment.priceLabel}
           </p>
+          <div className="mt-4 space-y-2 border-t pt-4 text-sm text-muted-foreground">
+            <p className="flex items-start gap-2">
+              <MapPin className="mt-0.5 size-4 shrink-0" />
+              {contact.address}
+            </p>
+            <p className="flex items-center gap-2">
+              <Phone className="size-4 shrink-0" />
+              {contact.phone}
+            </p>
+          </div>
         </div>
+        {selectedService?.consentFormUrl ? (
+          <div className="text-left">
+            <ConsentFormNotice url={selectedService.consentFormUrl} />
+          </div>
+        ) : null}
         <div className="mt-5 rounded-2xl border border-amber-300 bg-amber-50 p-5 text-left text-amber-950">
           <p className="flex items-start gap-3 font-semibold">
             <MailX className="mt-0.5 size-5 shrink-0" />
@@ -428,26 +446,10 @@ export const ReservationWizard = ({
             ajouter le rendez-vous à votre calendrier ci-dessous.
           </p>
         </div>
-        <button
-          type="button"
-          onClick={() =>
-            downloadCalendar(
-              result.appointment?.calendar ?? '',
-              'rendez-vous-arbeaute.ics',
-            )
-          }
-          className="mt-6 inline-flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-primary px-5 font-medium text-primary-foreground"
-        >
-          <Download className="size-4" />
-          Ajouter à mon calendrier
-        </button>
-        {selectedService?.consentFormUrl ? (
-          <div className="text-left">
-            <ConsentFormNotice url={selectedService.consentFormUrl} />
-          </div>
-        ) : null}
 
-        <div className="mt-5 rounded-2xl border p-5 text-left">
+        <ConfirmationActions appointment={result.appointment} />
+
+        <div className="mt-5 rounded-2xl border p-5 text-left" data-no-print>
           <p className="flex items-start gap-3 font-semibold">
             <Settings2 className="mt-0.5 size-5 shrink-0 text-primary" />
             Modifier ou annuler ce rendez-vous

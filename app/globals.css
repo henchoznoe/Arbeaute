@@ -101,3 +101,28 @@
 #service-search::-webkit-search-cancel-button {
   appearance: none;
 }
+
+@media print {
+  body:has([data-print-receipt]) * {
+    visibility: hidden;
+  }
+
+  [data-print-receipt],
+  [data-print-receipt] * {
+    visibility: visible;
+  }
+
+  [data-print-receipt] {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    max-width: none;
+    border: 0;
+    box-shadow: none;
+  }
+
+  [data-no-print],
+  [data-no-print] * {
+    display: none;
+  }
+}
