@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import { MobileBookingBar } from '@/components/layout/mobile-booking-bar'
 import { SiteHeader } from '@/components/layout/site-header'
 import { About } from '@/components/sections/about'
 import { Contact } from '@/components/sections/contact'
@@ -22,19 +23,22 @@ export default function Page() {
           <Button
             asChild
             size="lg"
-            className="h-9 rounded-full px-4 text-sm sm:h-11 sm:px-6 sm:text-base"
+            className="hidden h-11 rounded-full px-6 text-base sm:inline-flex"
           >
             <Link href={contact.bookingUrl}>Réserver</Link>
           </Button>
         }
       />
-      <main>
-        <Hero />
-        <Services />
-        <About />
-        <Contact />
-      </main>
-      <Footer />
+      <div className="pb-[calc(4.75rem+env(safe-area-inset-bottom))] sm:pb-0">
+        <main>
+          <Hero />
+          <Services />
+          <About />
+          <Contact />
+        </main>
+        <Footer />
+      </div>
+      <MobileBookingBar />
     </>
   )
 }

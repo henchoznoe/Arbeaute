@@ -90,6 +90,7 @@ export const InstallPrompt = () => {
 
   return (
     <section
+      data-install-prompt
       aria-label="Installer l’application"
       className="fixed inset-x-0 bottom-0 z-50 px-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]"
     >

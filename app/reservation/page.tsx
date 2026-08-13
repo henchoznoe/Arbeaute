@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import { Suspense } from 'react'
 import { SiteHeader } from '@/components/layout/site-header'
 import { ReservationWizard } from '@/components/reservation/reservation-wizard'
 import { getBookableServices } from '@/lib/catalog/queries'
@@ -43,11 +44,17 @@ const ReservationPage = async () => {
             confirmée immédiatement à l’écran, sans envoi d’e-mail.
           </p>
         </div>
-        <ReservationWizard
-          services={services}
-          minDate={window.min}
-          maxDate={window.max}
-        />
+        <Suspense
+          fallback={
+            <div className="mx-auto h-72 max-w-3xl animate-pulse rounded-3xl border bg-muted/50" />
+          }
+        >
+          <ReservationWizard
+            services={services}
+            minDate={window.min}
+            maxDate={window.max}
+          />
+        </Suspense>
       </main>
     </>
   )

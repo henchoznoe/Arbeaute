@@ -12,6 +12,7 @@ import {
   Settings2,
   Zap,
 } from 'lucide-react'
+import { useSearchParams } from 'next/navigation'
 import { useEffect, useRef, useState, useTransition } from 'react'
 import {
   type BookingResult,
@@ -20,6 +21,7 @@ import {
   getPublicWeekAvailability,
 } from '@/lib/actions/reservation'
 import type { AvailableSlot } from '@/lib/reservation/availability'
+import { resolveInitialServiceId } from '@/lib/reservation/deep-link'
 import { formatServiceLabel } from '@/lib/reservation/service-label'
 import { cn } from '@/lib/utils/cn'
 import { downloadCalendar } from './calendar-download'
@@ -27,6 +29,7 @@ import { CancellationPolicy } from './cancellation-policy'
 
 interface ReservationService {
   id: string
+  slug: string
   name: string
   description: string | null
   durationMinutes: number
@@ -96,8 +99,13 @@ export const ReservationWizard = ({
   minDate,
   maxDate,
 }: Readonly<ReservationWizardProps>) => {
-  const [step, setStep] = useState(1)
-  const [serviceId, setServiceId] = useState('')
+  const searchParams = useSearchParams()
+  const initialServiceId = resolveInitialServiceId(
+    services,
+    searchParams.get('service'),
+  )
+  const [step, setStep] = useState(initialServiceId ? 2 : 1)
+  const [serviceId, setServiceId] = useState(initialServiceId ?? '')
   const [date, setDate] = useState(minDate)
   const [weekSlots, setWeekSlots] = useState<Record<string, AvailableSlot[]>>(
     {},

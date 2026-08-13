@@ -14,6 +14,7 @@ export const CATALOG_TAG = 'catalog'
 
 interface CatalogService {
   id: string
+  slug: string
   name: string
   description: string | null
   durationMinutes: number
@@ -21,9 +22,10 @@ interface CatalogService {
   priceNote: string | null
   imageUrl: string | null
   consentFormUrl: string | null
+  isBookable: boolean
 }
 
-interface CatalogCategory {
+export interface CatalogCategory {
   id: string
   name: string
   description: string | null
@@ -37,6 +39,7 @@ interface BookableService extends CatalogService {
 
 const serviceFields = {
   id: true,
+  slug: true,
   name: true,
   description: true,
   durationMinutes: true,
@@ -44,6 +47,7 @@ const serviceFields = {
   priceNote: true,
   imageUrl: true,
   consentFormUrl: true,
+  isBookable: true,
 } as const
 
 const serviceOrder = [{ sortOrder: 'asc' }, { name: 'asc' }] as const

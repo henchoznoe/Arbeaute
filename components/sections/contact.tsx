@@ -118,7 +118,10 @@ export async function Contact() {
             </Animate>
 
             <Animate animation="fade-up" delay={400}>
-              <div className="text-center lg:text-left">
+              <div
+                data-primary-booking-cta
+                className="text-center lg:text-left"
+              >
                 <Button
                   asChild
                   size="lg"

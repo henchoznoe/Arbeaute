@@ -41,7 +41,10 @@ export function Hero() {
         </Animate>
 
         <Animate animation="fade-up" delay={650}>
-          <div className="mt-8 flex flex-col items-center gap-4 sm:flex-row sm:justify-center">
+          <div
+            data-primary-booking-cta
+            className="mt-8 flex flex-col items-center gap-4 sm:flex-row sm:justify-center"
+          >
             <Button
               asChild
               size="lg"

@@ -97,3 +97,7 @@
     @apply scroll-smooth font-sans;
   }
 }
+
+#service-search::-webkit-search-cancel-button {
+  appearance: none;
+}
