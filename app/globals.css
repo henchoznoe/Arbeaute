@@ -107,22 +107,25 @@
     visibility: hidden;
   }
 
-  [data-print-receipt],
-  [data-print-receipt] * {
+  /* Le même préfixe que la règle de masquage est nécessaire pour que le reçu
+     reste visible dans le moteur d'impression de Chromium. */
+  body:has([data-print-receipt]) [data-print-receipt],
+  body:has([data-print-receipt]) [data-print-receipt] * {
     visibility: visible;
   }
 
-  [data-print-receipt] {
+  body:has([data-print-receipt]) [data-print-receipt] {
     position: absolute;
     inset: 0;
     width: 100%;
     max-width: none;
     border: 0;
     box-shadow: none;
+    print-color-adjust: exact;
   }
 
-  [data-no-print],
-  [data-no-print] * {
+  body:has([data-print-receipt]) [data-no-print],
+  body:has([data-print-receipt]) [data-no-print] * {
     display: none;
   }
 }
