@@ -24,6 +24,7 @@ import {
 } from '@/lib/reservation/availability'
 import { createAppointmentCalendar } from '@/lib/reservation/calendar'
 import { CUSTOMER_SESSION_MUTATION_LIMIT } from '@/lib/reservation/constants'
+import { findCustomerForSession } from '@/lib/reservation/customers'
 import { normalizeEmail, normalizePhone } from '@/lib/reservation/identity'
 import {
   addLocalDays,
@@ -223,7 +224,8 @@ export const identifyCustomer = async (formData: FormData): Promise<void> => {
   const phoneValue = formData.get('phone')
   const honeypot = formData.get('website')
   const ip = await getRequestIp()
-  let identityDigest: string | null = null
+  let customer: { identityDigest: string; identityVersion: number } | null =
+    null
 
   try {
     if (!(await hasSameOrigin())) throw new Error('Invalid origin')
@@ -242,18 +244,15 @@ export const identifyCustomer = async (formData: FormData): Promise<void> => {
       const email = normalizeEmail(emailValue)
       const phone = normalizePhone(phoneValue)
       const candidateDigest = createCustomerIdentityDigest(email, phone)
-      const exists = await prisma.appointment.findFirst({
-        where: {
-          customerIdentityDigest: candidateDigest,
-        },
-        select: { id: true },
+      customer = await prisma.customer.findUnique({
+        where: { identityDigest: candidateDigest },
+        select: { identityDigest: true, identityVersion: true },
       })
-      if (exists) identityDigest = candidateDigest
     }
   } catch {}
 
-  if (!identityDigest) redirect('/mes-rendez-vous?error=invalid')
-  await setCustomerSession(identityDigest, 1)
+  if (!customer) redirect('/mes-rendez-vous?error=invalid')
+  await setCustomerSession(customer.identityDigest, customer.identityVersion)
   redirect('/mes-rendez-vous')
 }
 
@@ -262,16 +261,22 @@ export const logoutCustomer = async (): Promise<void> => {
   redirect('/mes-rendez-vous')
 }
 
-const requireCustomerMutation = async () => {
+const getSessionCustomer = async () => {
   const session = await getCustomerSession()
   if (!session) return null
+  return findCustomerForSession(prisma, session)
+}
+
+const requireCustomerMutation = async () => {
+  const customer = await getSessionCustomer()
+  if (!customer) return null
   const rateLimit = await checkRateLimit({
     action: 'customer-mutation',
-    key: session.subject,
+    key: customer.identityDigest,
     limit: CUSTOMER_SESSION_MUTATION_LIMIT,
     windowMs: 60 * 60 * 1000,
   })
-  return rateLimit.allowed ? session : null
+  return rateLimit.allowed ? customer : null
 }
 
 export const getCustomerMoveWeekAvailability = async (
@@ -279,12 +284,12 @@ export const getCustomerMoveWeekAvailability = async (
   fromDateKey: string,
 ): Promise<Record<string, DayAvailability>> => {
   try {
-    const session = await getCustomerSession()
-    if (!session) return {}
+    const customer = await getSessionCustomer()
+    if (!customer) return {}
     const appointment = await prisma.appointment.findFirst({
       where: {
         id: appointmentId,
-        customerIdentityDigest: session.subject,
+        customerId: customer.id,
         status: 'CONFIRMED',
       },
       select: { id: true, serviceId: true, startsAt: true },
@@ -308,12 +313,12 @@ export const getNextCustomerMoveAvailableSlot = async (
   fromDateKey: string,
 ): Promise<NextAvailableSlot | null> => {
   try {
-    const session = await getCustomerSession()
-    if (!session) return null
+    const customer = await getSessionCustomer()
+    if (!customer) return null
     const appointment = await prisma.appointment.findFirst({
       where: {
         id: appointmentId,
-        customerIdentityDigest: session.subject,
+        customerId: customer.id,
         status: 'CONFIRMED',
       },
       select: { id: true, serviceId: true, startsAt: true },
@@ -341,13 +346,13 @@ export const moveCustomerAppointment = async (
     return { ok: false, message: 'Le nouveau créneau est invalide.' }
 
   try {
-    const session = await requireCustomerMutation()
-    if (!session)
+    const customer = await requireCustomerMutation()
+    if (!customer)
       return { ok: false, message: 'Votre session a expiré. Reconnectez-vous.' }
     const appointment = await moveAppointmentSerializable(prisma, {
       appointmentId: parsed.data.appointmentId,
       startsAt: new Date(parsed.data.startsAt),
-      identityDigest: session.subject,
+      customerId: customer.id,
     })
     revalidatePath('/mes-rendez-vous')
     refreshAdminActivity()
@@ -382,13 +387,13 @@ export const cancelCustomerAppointment = async (
     return { ok: false, message: 'Ce rendez-vous est invalide.' }
 
   try {
-    const session = await requireCustomerMutation()
-    if (!session)
+    const customer = await requireCustomerMutation()
+    if (!customer)
       return { ok: false, message: 'Votre session a expiré. Reconnectez-vous.' }
     await cancelAppointmentSerializable(
       prisma,
       parsed.data.appointmentId,
-      session.subject,
+      customer.id,
     )
     revalidatePath('/mes-rendez-vous')
     refreshAdminActivity()

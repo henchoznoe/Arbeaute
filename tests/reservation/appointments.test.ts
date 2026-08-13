@@ -32,6 +32,7 @@ const service = {
 const appointment = {
   id: 'appointment-1',
   serviceId: service.id,
+  customerId: 'customer-1',
   serviceNameSnapshot: service.name,
   servicePriceCents: service.priceCents,
   serviceDurationMinutes: service.durationMinutes,
@@ -58,6 +59,20 @@ const appointment = {
 const makeDatabase = () => {
   const transaction = {
     service: { findFirst: vi.fn().mockResolvedValue(service) },
+    customer: {
+      upsert: vi.fn().mockResolvedValue({
+        id: 'customer-1',
+        identityDigest: 'identity-digest',
+        emailNormalized: 'marie@example.com',
+        phoneNormalized: '+41791234567',
+      }),
+      update: vi.fn().mockResolvedValue({
+        id: 'customer-1',
+        identityDigest: 'identity-digest',
+        emailNormalized: 'marie@example.com',
+        phoneNormalized: '+41791234567',
+      }),
+    },
     appointment: {
       create: vi.fn().mockResolvedValue(appointment),
       findFirst: vi.fn().mockResolvedValue(appointment),
@@ -102,6 +117,16 @@ describe('customer appointment activity', () => {
         appointmentStartsAt: startsAt,
       },
     })
+    expect(transaction.appointment.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        customerId: 'customer-1',
+        customerFirstName: 'Marie',
+        customerLastName: 'Dupont',
+        customerEmail: 'marie@example.com',
+        customerPhone: '+41791234567',
+        customerIdentityDigest: 'identity-digest',
+      }),
+    })
   })
 
   it('records both slots when a customer moves an appointment', async () => {
@@ -119,7 +144,7 @@ describe('customer appointment activity', () => {
     await moveAppointmentSerializable(database, {
       appointmentId: appointment.id,
       startsAt: movedStartsAt,
-      identityDigest: 'identity-digest',
+      customerId: 'customer-1',
       now: new Date('2099-08-01T10:00:00.000Z'),
     })
 

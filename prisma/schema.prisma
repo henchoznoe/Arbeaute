@@ -111,39 +111,65 @@ model AvailabilityException {
   @@map("availability_exception")
 }
 
+model Customer {
+  id              String        @id @default(cuid())
+  identityDigest  String        @unique
+  identityVersion Int           @default(1)
+  firstName       String?
+  lastName        String
+  email           String
+  emailNormalized String
+  phone           String
+  phoneNormalized String
+  searchName      String
+  firstSeenAt     DateTime      @default(now())
+  lastSeenAt      DateTime      @default(now())
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+  appointments    Appointment[]
+
+  @@index([emailNormalized])
+  @@index([phoneNormalized])
+  @@index([searchName])
+  @@map("customer")
+}
+
 model Appointment {
-  id                      String            @id @default(cuid())
+  id                      String                @id @default(cuid())
   serviceId               String
+  customerId              String?
   serviceNameSnapshot     String
   servicePriceCents       Int
   serviceDurationMinutes  Int
-  preparationMinutes      Int               @default(0)
-  cleanupMinutes          Int               @default(0)
+  preparationMinutes      Int                   @default(0)
+  cleanupMinutes          Int                   @default(0)
   startsAt                DateTime
   endsAt                  DateTime
   // timestamptz est imposé par la contrainte d'exclusion GIST
   // `appointment_no_confirmed_overlap`, qui s'appuie sur tstzrange().
-  occupiedStartsAt        DateTime          @db.Timestamptz(3)
-  occupiedEndsAt          DateTime          @db.Timestamptz(3)
+  occupiedStartsAt        DateTime              @db.Timestamptz(3)
+  occupiedEndsAt          DateTime              @db.Timestamptz(3)
   customerFirstName       String?
   customerLastName        String
   customerEmail           String?
   customerPhone           String?
   customerIdentityDigest  String?
-  customerIdentityVersion Int               @default(1)
+  customerIdentityVersion Int                   @default(1)
   comment                 String?
   source                  AppointmentSource
-  status                  AppointmentStatus @default(CONFIRMED)
+  status                  AppointmentStatus     @default(CONFIRMED)
   cancelledAt             DateTime?
-  createdAt               DateTime          @default(now())
-  updatedAt               DateTime          @updatedAt
-  service                 Service           @relation(fields: [serviceId], references: [id], onDelete: Restrict)
+  createdAt               DateTime              @default(now())
+  updatedAt               DateTime              @updatedAt
+  service                 Service               @relation(fields: [serviceId], references: [id], onDelete: Restrict)
+  customer                Customer?             @relation(fields: [customerId], references: [id], onDelete: SetNull)
   activities              AppointmentActivity[]
 
   @@index([startsAt, endsAt, status])
   @@index([occupiedStartsAt, occupiedEndsAt, status])
   @@index([customerEmail, customerPhone, startsAt])
   @@index([customerIdentityDigest, startsAt, status])
+  @@index([customerId, startsAt, status])
   @@index([serviceId, startsAt])
   @@map("appointment")
 }

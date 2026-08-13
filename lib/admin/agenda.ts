@@ -1,5 +1,6 @@
 import { createCustomerIdentityDigest } from '@/lib/core/session-cookies'
 import { MAX_SERIALIZABLE_ATTEMPTS } from '@/lib/reservation/constants'
+import { upsertCustomerIdentity } from '@/lib/reservation/customers'
 import {
   getDateKeysInRange,
   getLocalDateKey,
@@ -161,9 +162,6 @@ const isOverlapConstraint = (error: unknown): boolean =>
   (error.message.includes('appointment_no_confirmed_overlap') ||
     error.message.includes('Exclusion constraint'))
 
-const identityDigest = (email: string | null, phone: string | null) =>
-  email && phone ? createCustomerIdentityDigest(email, phone) : null
-
 export const saveAdminAppointmentSerializable = async (
   prisma: PrismaClient,
   input: AdminAppointmentInput,
@@ -210,8 +208,19 @@ export const saveAdminAppointmentSerializable = async (
           })
           if (conflict) throw new AdminAgendaError('OVERLAP')
 
+          const customer =
+            input.email && input.phone
+              ? await upsertCustomerIdentity(transaction, {
+                  firstName: input.firstName,
+                  lastName: input.lastName,
+                  email: input.email,
+                  phone: input.phone,
+                })
+              : null
+
           const data = {
             serviceId: service.id,
+            customerId: customer?.id ?? null,
             serviceNameSnapshot: service.name,
             servicePriceCents: service.priceCents,
             serviceDurationMinutes: service.durationMinutes,
@@ -225,7 +234,10 @@ export const saveAdminAppointmentSerializable = async (
             customerLastName: input.lastName,
             customerEmail: input.email,
             customerPhone: input.phone,
-            customerIdentityDigest: identityDigest(input.email, input.phone),
+            customerIdentityDigest:
+              input.email && input.phone
+                ? createCustomerIdentityDigest(input.email, input.phone)
+                : null,
             comment: input.comment,
           }
 
@@ -234,17 +246,9 @@ export const saveAdminAppointmentSerializable = async (
               data: { ...data, source: 'ADMIN', status: 'CONFIRMED' },
             })
 
-          const identityChanged =
-            current.customerEmail !== input.email ||
-            current.customerPhone !== input.phone
           return transaction.appointment.update({
             where: { id: current.id },
-            data: {
-              ...data,
-              customerIdentityVersion: identityChanged
-                ? { increment: 1 }
-                : undefined,
-            },
+            data,
           })
         },
         { isolationLevel: 'Serializable' },

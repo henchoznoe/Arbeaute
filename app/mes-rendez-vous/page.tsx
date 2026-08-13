@@ -14,6 +14,7 @@ import {
   getCustomerAppointmentState,
   getCustomerRebookingPath,
 } from '@/lib/reservation/customer-appointments'
+import { findCustomerForSession } from '@/lib/reservation/customers'
 import { formatServiceLabel } from '@/lib/reservation/service-label'
 import {
   canCustomerChangeAppointment,
@@ -66,10 +67,13 @@ const CustomerAppointments = async ({
   searchParams,
 }: Readonly<CustomerAppointmentsPageProps>) => {
   const session = await getCustomerSession()
+  const customer = session
+    ? await findCustomerForSession(prisma, session)
+    : null
   const { error, cancelled } = await searchParams
   const now = new Date()
 
-  if (!session)
+  if (!customer)
     return (
       <>
         <SiteHeader
@@ -160,7 +164,7 @@ const CustomerAppointments = async ({
   const [upcomingAppointments, historyAppointments] = await Promise.all([
     prisma.appointment.findMany({
       where: {
-        customerIdentityDigest: session.subject,
+        customerId: customer.id,
         status: 'CONFIRMED',
         startsAt: { gt: now },
       },
@@ -169,7 +173,7 @@ const CustomerAppointments = async ({
     }),
     prisma.appointment.findMany({
       where: {
-        customerIdentityDigest: session.subject,
+        customerId: customer.id,
         OR: [{ status: { not: 'CONFIRMED' } }, { startsAt: { lte: now } }],
       },
       orderBy: { startsAt: 'desc' },

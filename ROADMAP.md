@@ -35,14 +35,14 @@ est réévalué après chaque livraison.
 
 | Statut | Éléments |
 | --- | --- |
-| ✅ Terminés | 1 à 12, 23 |
+| ✅ Terminés | 1 à 12, 19 et 23 |
 | 🟡 En cours | 24, enrichi progressivement à chaque livraison |
-| ⏳ Prêt à démarrer | 19 |
-| 🔒 Bloqués | 13 à 18, 20 à 22 |
+| ⏳ Prêt à démarrer | 13, 14 et 21 |
+| 🔒 Bloqués | 15 à 18, 20 et 22 |
 
-**Prochain élément recommandé : 19.** Il débloque ensuite le journal d’audit
-(21), puis la création accélérée et les séries (13), la recherche (14) et la
-fiche cliente (15).
+**Prochain élément recommandé : 21.** Le journal d’audit débloque directement
+les statuts métier (16), le calendrier d’exceptions (17), les règles configurables
+(20) et la politique de conservation (22), puis la fiche cliente (15).
 
 - **Priorité P0** : corrige une friction importante ou prépare plusieurs autres
   éléments.
@@ -365,7 +365,7 @@ la grille hebdomadaire actuelle comme vue secondaire sur grand écran.
 
 **Dépendances :** éléments 11 et 23.
 
-### 13. Accélérer la création, la duplication et les séries de rendez-vous — 🔒 Bloqué par 19
+### 13. Accélérer la création, la duplication et les séries de rendez-vous — ⏳ Prêt à démarrer
 
 **Priorité : P0 · Effort : L · Nature : nouvelle capacité**
 
@@ -389,7 +389,7 @@ La série doit être écrite atomiquement ou ne rien créer.
 
 **Dépendances :** éléments 12, 19 et 23.
 
-### 14. Ajouter une recherche et des filtres globaux — 🔒 Bloqué par 19
+### 14. Ajouter une recherche et des filtres globaux — ⏳ Prêt à démarrer
 
 **Priorité : P0 · Effort : L · Nature : nouvelle capacité**
 
@@ -413,7 +413,7 @@ sont jamais placés dans un cache partagé.
 
 **Dépendances :** élément 19 pour la recherche centrée sur les clientes.
 
-### 15. Créer une fiche cliente exploitable par Arzu — 🔒 Bloqué par 19, 21 et 22
+### 15. Créer une fiche cliente exploitable par Arzu — 🔒 Bloqué par 21 et 22
 
 **Priorité : P1 · Effort : L · Nature : nouvelle capacité**
 
@@ -515,7 +515,7 @@ l’application, sans outil analytique payant.
 
 ## Modèle de données et exploitation
 
-### 19. Introduire un modèle `Customer` normalisé — ⏳ Prêt à démarrer
+### 19. Introduire un modèle `Customer` normalisé — ✅ Terminé
 
 **Priorité : P0 · Effort : L · Nature : nouvelle capacité**
 
@@ -567,7 +567,7 @@ ce tag après modification.
 
 **Dépendances :** élément 21 pour journaliser les modifications.
 
-### 21. Étendre le journal d’audit à toutes les mutations sensibles — 🔒 Bloqué par 19
+### 21. Étendre le journal d’audit à toutes les mutations sensibles — ⏳ Prêt à démarrer
 
 **Priorité : P1 · Effort : L · Nature : amélioration**
 
@@ -592,7 +592,7 @@ dupliquer les fichiers, secrets, mots de passe ou contenus binaires. Fournir un
 
 **Dépendances :** élément 19 pour identifier les événements liés aux clientes.
 
-### 22. Formaliser export, anonymisation et restauration — 🔒 Bloqué par 19 et 21
+### 22. Formaliser export, anonymisation et restauration — 🔒 Bloqué par 21
 
 **Priorité : P1 · Effort : L · Nature : nouvelle capacité**
 

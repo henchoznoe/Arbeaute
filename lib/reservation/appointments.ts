@@ -1,6 +1,7 @@
 import { createCustomerIdentityDigest } from '@/lib/core/session-cookies'
 import { getAvailableSlots } from '@/lib/reservation/availability'
 import { MAX_SERIALIZABLE_ATTEMPTS } from '@/lib/reservation/constants'
+import { upsertCustomerIdentity } from '@/lib/reservation/customers'
 import {
   canCustomerChangeAppointment,
   getLocalDateKey,
@@ -62,9 +63,17 @@ export const createAppointmentSerializable = async (
           )
             throw new ReservationError('SLOT_UNAVAILABLE')
 
+          const customer = await upsertCustomerIdentity(transaction, {
+            firstName: input.firstName,
+            lastName: input.lastName,
+            email: input.email,
+            phone: input.phone,
+          })
+
           const appointment = await transaction.appointment.create({
             data: {
               serviceId: service.id,
+              customerId: customer?.id,
               serviceNameSnapshot: service.name,
               servicePriceCents: service.priceCents,
               serviceDurationMinutes: service.durationMinutes,
@@ -122,7 +131,7 @@ export const createAppointmentSerializable = async (
 interface MoveAppointmentInput {
   appointmentId: string
   startsAt: Date
-  identityDigest: string
+  customerId: string
   now?: Date
 }
 
@@ -131,7 +140,7 @@ export const moveAppointmentSerializable = async (
   {
     appointmentId,
     startsAt,
-    identityDigest,
+    customerId,
     now = new Date(),
   }: MoveAppointmentInput,
 ) => {
@@ -142,7 +151,7 @@ export const moveAppointmentSerializable = async (
           const appointment = await transaction.appointment.findFirst({
             where: {
               id: appointmentId,
-              customerIdentityDigest: identityDigest,
+              customerId,
               status: 'CONFIRMED',
             },
           })
@@ -210,7 +219,7 @@ export const moveAppointmentSerializable = async (
 export const cancelAppointmentSerializable = async (
   prisma: PrismaClient,
   appointmentId: string,
-  identityDigest: string,
+  customerId: string,
   now = new Date(),
 ) =>
   prisma.$transaction(
@@ -218,7 +227,7 @@ export const cancelAppointmentSerializable = async (
       const appointment = await transaction.appointment.findFirst({
         where: {
           id: appointmentId,
-          customerIdentityDigest: identityDigest,
+          customerId,
           status: 'CONFIRMED',
         },
       })
