@@ -31,12 +31,16 @@ describe('normalized customers', () => {
       identityDigest: 'identity-digest',
       emailNormalized: 'elodie@example.com',
       phoneNormalized: '+41791234567',
+      createdAt: new Date('2026-08-13T10:00:00.000Z'),
+      updatedAt: new Date('2026-08-13T11:00:00.000Z'),
     }
     const transaction = {
       customer: {
+        findUnique: vi.fn().mockResolvedValue({ id: 'customer-1' }),
         upsert: vi.fn().mockResolvedValue(customer),
         update: vi.fn().mockResolvedValue(customer),
       },
+      auditEvent: { create: vi.fn().mockResolvedValue({ id: 'audit-event' }) },
     } as unknown as Prisma.TransactionClient
 
     await expect(upsertCustomerIdentity(transaction, identity)).resolves.toBe(
@@ -53,12 +57,23 @@ describe('normalized customers', () => {
         lastSeenAt: expect.any(Date),
       },
     })
+    expect(transaction.auditEvent.create).toHaveBeenCalledWith({
+      data: {
+        actorType: 'CUSTOMER',
+        actorId: 'customer-1',
+        entityType: 'CUSTOMER',
+        entityId: 'customer-1',
+        action: 'UPDATED',
+        changes: undefined,
+      },
+    })
   })
 
   it('refuses an automatic merge when the normalized values differ', async () => {
     const update = vi.fn()
     const transaction = {
       customer: {
+        findUnique: vi.fn().mockResolvedValue({ id: 'customer-1' }),
         upsert: vi.fn().mockResolvedValue({
           id: 'customer-1',
           identityDigest: 'identity-digest',
@@ -67,12 +82,14 @@ describe('normalized customers', () => {
         }),
         update,
       },
+      auditEvent: { create: vi.fn() },
     } as unknown as Prisma.TransactionClient
 
     await expect(
       upsertCustomerIdentity(transaction, identity),
     ).resolves.toBeNull()
     expect(update).not.toHaveBeenCalled()
+    expect(transaction.auditEvent.create).not.toHaveBeenCalled()
   })
 
   it('rejects a session whose identity version is obsolete', async () => {

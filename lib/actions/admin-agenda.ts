@@ -10,6 +10,7 @@ import {
   isAdminAppointmentInsidePublicHours,
   saveAdminAppointmentSerializable,
 } from '@/lib/admin/agenda'
+import { runAuditedMutation, writeAuditEvent } from '@/lib/admin/audit'
 import prisma from '@/lib/core/prisma'
 import { getAdminSession } from '@/lib/core/session-cookies'
 import { MAX_AVAILABILITY_EXCEPTION_RANGE_DAYS } from '@/lib/reservation/constants'
@@ -185,9 +186,22 @@ export const createWeeklyAvailability = async (
     },
   })
   if (conflict) redirect('/admin/availability?error=overlap-range')
-  await prisma.weeklyAvailability.create({
-    data: { dayOfWeek: parsed.data.dayOfWeek, startMinute, endMinute },
-  })
+  await runAuditedMutation(
+    prisma,
+    transaction =>
+      transaction.weeklyAvailability.create({
+        data: { dayOfWeek: parsed.data.dayOfWeek, startMinute, endMinute },
+      }),
+    created => ({
+      actorType: 'ADMIN',
+      actorId: 'admin',
+      entityType: 'WEEKLY_AVAILABILITY',
+      entityId: created.id,
+      entityLabel: `Jour ${created.dayOfWeek}`,
+      action: 'CREATED',
+      after: { dayOfWeek: created.dayOfWeek, startMinute, endMinute },
+    }),
+  )
   refreshAvailability()
 }
 
@@ -196,7 +210,23 @@ export const deleteWeeklyAvailability = async (
 ): Promise<void> => {
   if (!(await requireAdminMutation())) redirect('/admin/login')
   const id = z.string().min(1).parse(formData.get('id'))
-  await prisma.weeklyAvailability.delete({ where: { id } })
+  await runAuditedMutation(
+    prisma,
+    transaction => transaction.weeklyAvailability.delete({ where: { id } }),
+    deleted => ({
+      actorType: 'ADMIN',
+      actorId: 'admin',
+      entityType: 'WEEKLY_AVAILABILITY',
+      entityId: deleted.id,
+      entityLabel: `Jour ${deleted.dayOfWeek}`,
+      action: 'DELETED',
+      before: {
+        dayOfWeek: deleted.dayOfWeek,
+        startMinute: deleted.startMinute,
+        endMinute: deleted.endMinute,
+      },
+    }),
+  )
   refreshAvailability()
 }
 
@@ -237,7 +267,30 @@ export const createAvailabilityException = async (
   if (rows.length > MAX_AVAILABILITY_EXCEPTION_RANGE_DAYS)
     redirect('/admin/availability?error=range-too-long')
 
-  await prisma.availabilityException.createMany({ data: rows })
+  await prisma.$transaction(async transaction => {
+    const created = await transaction.availabilityException.createManyAndReturn(
+      {
+        data: rows,
+        select: { id: true },
+      },
+    )
+    const first = created[0]
+    if (!first) return
+    await writeAuditEvent(transaction, {
+      actorType: 'ADMIN',
+      actorId: 'admin',
+      entityType: 'AVAILABILITY_EXCEPTION',
+      entityId: first.id,
+      entityLabel: parsed.data.label || `${rows.length} jour(s)`,
+      action: 'CREATED',
+      after: {
+        type: parsed.data.type,
+        from: rows[0]?.startsAt.toISOString() ?? null,
+        to: rows.at(-1)?.endsAt.toISOString() ?? null,
+        count: rows.length,
+      },
+    })
+  })
   refreshAvailability()
 }
 
@@ -246,6 +299,22 @@ export const deleteAvailabilityException = async (
 ): Promise<void> => {
   if (!(await requireAdminMutation())) redirect('/admin/login')
   const id = z.string().min(1).parse(formData.get('id'))
-  await prisma.availabilityException.delete({ where: { id } })
+  await runAuditedMutation(
+    prisma,
+    transaction => transaction.availabilityException.delete({ where: { id } }),
+    deleted => ({
+      actorType: 'ADMIN',
+      actorId: 'admin',
+      entityType: 'AVAILABILITY_EXCEPTION',
+      entityId: deleted.id,
+      entityLabel: deleted.label,
+      action: 'DELETED',
+      before: {
+        type: deleted.type,
+        startsAt: deleted.startsAt.toISOString(),
+        endsAt: deleted.endsAt.toISOString(),
+      },
+    }),
+  )
   refreshAvailability()
 }

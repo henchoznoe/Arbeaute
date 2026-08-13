@@ -1,3 +1,4 @@
+import { writeAuditEvent } from '@/lib/admin/audit'
 import { createCustomerIdentityDigest } from '@/lib/core/session-cookies'
 import { normalizeEmail, normalizePhone } from '@/lib/reservation/identity'
 import type { Prisma } from '@/prisma/generated/prisma/client'
@@ -47,6 +48,10 @@ export const upsertCustomerIdentity = async (
     lastName: input.lastName.trim(),
     searchName: normalizeCustomerSearchName(input.firstName, input.lastName),
   }
+  const existing = await transaction.customer.findUnique({
+    where: { identityDigest },
+    select: { id: true },
+  })
   const customer = await transaction.customer.upsert({
     where: { identityDigest },
     update: {},
@@ -66,7 +71,7 @@ export const upsertCustomerIdentity = async (
   )
     return null
 
-  return transaction.customer.update({
+  const updated = await transaction.customer.update({
     where: { id: customer.id },
     data: {
       ...names,
@@ -75,6 +80,14 @@ export const upsertCustomerIdentity = async (
       lastSeenAt: new Date(),
     },
   })
+  await writeAuditEvent(transaction, {
+    actorType: 'CUSTOMER',
+    actorId: updated.id,
+    entityType: 'CUSTOMER',
+    entityId: updated.id,
+    action: existing ? 'UPDATED' : 'CREATED',
+  })
+  return updated
 }
 
 export const findCustomerForSession = (

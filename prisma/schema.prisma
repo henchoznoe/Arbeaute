@@ -30,6 +30,33 @@ enum AvailabilityExceptionType {
   UNAVAILABLE
 }
 
+enum AuditActorType {
+  ADMIN
+  CUSTOMER
+}
+
+enum AuditEntityType {
+  APPOINTMENT
+  CUSTOMER
+  SERVICE
+  SERVICE_CATEGORY
+  WEEKLY_AVAILABILITY
+  AVAILABILITY_EXCEPTION
+}
+
+enum AuditActionType {
+  CREATED
+  UPDATED
+  DELETED
+  CANCELLED
+  RESCHEDULED
+  REORDERED
+  ARCHIVED
+  RESTORED
+  FILE_ASSIGNED
+  FILE_REMOVED
+}
+
 model ServiceCategory {
   id          String    @id @default(cuid())
   slug        String    @unique
@@ -191,6 +218,24 @@ model AppointmentActivity {
   @@index([readAt, createdAt])
   @@index([appointmentId, createdAt])
   @@map("appointment_activity")
+}
+
+model AuditEvent {
+  id          String          @id @default(cuid())
+  actorType   AuditActorType
+  actorId     String
+  entityType  AuditEntityType
+  entityId    String
+  entityLabel String?
+  action      AuditActionType
+  changes     Json?
+  createdAt   DateTime        @default(now())
+
+  @@index([createdAt])
+  @@index([entityType, entityId, createdAt])
+  @@index([action, createdAt])
+  @@index([actorType, createdAt])
+  @@map("audit_event")
 }
 
 model RateLimitBucket {

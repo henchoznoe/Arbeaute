@@ -3,6 +3,7 @@ import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { Suspense } from 'react'
 import { ActivityList } from '@/components/admin/activity-list'
+import { ActivityTabs } from '@/components/admin/activity-tabs'
 import { AdminSkeleton } from '@/components/admin/admin-skeleton'
 import { StatusBadge } from '@/components/ui/status-badge'
 import { markAllAppointmentActivitiesRead } from '@/lib/actions/admin-activity'
@@ -57,6 +58,8 @@ const ActivityHistory = async ({
           </StatusBadge>
         ) : null}
       </header>
+
+      <ActivityTabs active="customer" />
 
       {unreadCount > 0 ? (
         <form action={markAllAppointmentActivitiesRead} className="mt-5">

@@ -1,3 +1,4 @@
+import { writeAuditEvent } from '@/lib/admin/audit'
 import { createCustomerIdentityDigest } from '@/lib/core/session-cookies'
 import { getAvailableSlots } from '@/lib/reservation/availability'
 import { MAX_SERIALIZABLE_ATTEMPTS } from '@/lib/reservation/constants'
@@ -113,6 +114,19 @@ export const createAppointmentSerializable = async (
               appointmentStartsAt: appointment.startsAt,
             },
           })
+          await writeAuditEvent(transaction, {
+            actorType: 'CUSTOMER',
+            actorId: customer?.id ?? 'unlinked-customer',
+            entityType: 'APPOINTMENT',
+            entityId: appointment.id,
+            entityLabel: appointment.serviceNameSnapshot,
+            action: 'CREATED',
+            after: {
+              serviceId: appointment.serviceId,
+              startsAt: appointment.startsAt.toISOString(),
+              status: appointment.status,
+            },
+          })
           return appointment
         },
         { isolationLevel: 'Serializable' },
@@ -201,6 +215,16 @@ export const moveAppointmentSerializable = async (
               previousAppointmentStartsAt: appointment.startsAt,
             },
           })
+          await writeAuditEvent(transaction, {
+            actorType: 'CUSTOMER',
+            actorId: customerId,
+            entityType: 'APPOINTMENT',
+            entityId: updated.id,
+            entityLabel: updated.serviceNameSnapshot,
+            action: 'RESCHEDULED',
+            before: { startsAt: appointment.startsAt.toISOString() },
+            after: { startsAt: updated.startsAt.toISOString() },
+          })
           return updated
         },
         { isolationLevel: 'Serializable' },
@@ -250,6 +274,16 @@ export const cancelAppointmentSerializable = async (
           serviceNameSnapshot: cancelled.serviceNameSnapshot,
           appointmentStartsAt: cancelled.startsAt,
         },
+      })
+      await writeAuditEvent(transaction, {
+        actorType: 'CUSTOMER',
+        actorId: customerId,
+        entityType: 'APPOINTMENT',
+        entityId: cancelled.id,
+        entityLabel: cancelled.serviceNameSnapshot,
+        action: 'CANCELLED',
+        before: { status: appointment.status },
+        after: { status: cancelled.status },
       })
       return cancelled
     },

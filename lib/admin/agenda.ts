@@ -1,3 +1,4 @@
+import { writeAuditEvent } from '@/lib/admin/audit'
 import { createCustomerIdentityDigest } from '@/lib/core/session-cookies'
 import { MAX_SERIALIZABLE_ATTEMPTS } from '@/lib/reservation/constants'
 import { upsertCustomerIdentity } from '@/lib/reservation/customers'
@@ -241,15 +242,47 @@ export const saveAdminAppointmentSerializable = async (
             comment: input.comment,
           }
 
-          if (!current)
-            return transaction.appointment.create({
+          if (!current) {
+            const created = await transaction.appointment.create({
               data: { ...data, source: 'ADMIN', status: 'CONFIRMED' },
             })
+            await writeAuditEvent(transaction, {
+              actorType: 'ADMIN',
+              actorId: 'admin',
+              entityType: 'APPOINTMENT',
+              entityId: created.id,
+              entityLabel: created.serviceNameSnapshot,
+              action: 'CREATED',
+              after: {
+                serviceId: created.serviceId,
+                startsAt: created.startsAt.toISOString(),
+                status: created.status,
+              },
+            })
+            return created
+          }
 
-          return transaction.appointment.update({
+          const updated = await transaction.appointment.update({
             where: { id: current.id },
             data,
           })
+          await writeAuditEvent(transaction, {
+            actorType: 'ADMIN',
+            actorId: 'admin',
+            entityType: 'APPOINTMENT',
+            entityId: updated.id,
+            entityLabel: updated.serviceNameSnapshot,
+            action: 'UPDATED',
+            before: {
+              serviceId: current.serviceId,
+              startsAt: current.startsAt.toISOString(),
+            },
+            after: {
+              serviceId: updated.serviceId,
+              startsAt: updated.startsAt.toISOString(),
+            },
+          })
+          return updated
         },
         { isolationLevel: 'Serializable' },
       )
@@ -271,13 +304,24 @@ export const cancelAdminAppointmentSerializable = async (
     async transaction => {
       const appointment = await transaction.appointment.findFirst({
         where: { id: appointmentId, status: 'CONFIRMED' },
-        select: { id: true },
+        select: { id: true, status: true, serviceNameSnapshot: true },
       })
       if (!appointment) throw new AdminAgendaError('APPOINTMENT_NOT_FOUND')
-      return transaction.appointment.update({
+      const cancelled = await transaction.appointment.update({
         where: { id: appointment.id },
         data: { status: 'CANCELLED', cancelledAt: new Date() },
       })
+      await writeAuditEvent(transaction, {
+        actorType: 'ADMIN',
+        actorId: 'admin',
+        entityType: 'APPOINTMENT',
+        entityId: cancelled.id,
+        entityLabel: cancelled.serviceNameSnapshot,
+        action: 'CANCELLED',
+        before: { status: appointment.status },
+        after: { status: cancelled.status },
+      })
+      return cancelled
     },
     { isolationLevel: 'Serializable' },
   )

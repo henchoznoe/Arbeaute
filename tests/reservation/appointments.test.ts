@@ -60,17 +60,22 @@ const makeDatabase = () => {
   const transaction = {
     service: { findFirst: vi.fn().mockResolvedValue(service) },
     customer: {
+      findUnique: vi.fn().mockResolvedValue({ id: 'customer-1' }),
       upsert: vi.fn().mockResolvedValue({
         id: 'customer-1',
         identityDigest: 'identity-digest',
         emailNormalized: 'marie@example.com',
         phoneNormalized: '+41791234567',
+        createdAt: new Date('2099-08-01T10:00:00.000Z'),
+        updatedAt: new Date('2099-08-01T11:00:00.000Z'),
       }),
       update: vi.fn().mockResolvedValue({
         id: 'customer-1',
         identityDigest: 'identity-digest',
         emailNormalized: 'marie@example.com',
         phoneNormalized: '+41791234567',
+        createdAt: new Date('2099-08-01T10:00:00.000Z'),
+        updatedAt: new Date('2099-08-01T11:00:00.000Z'),
       }),
     },
     appointment: {
@@ -79,6 +84,7 @@ const makeDatabase = () => {
       update: vi.fn(),
     },
     appointmentActivity: { create: vi.fn().mockResolvedValue({ id: 'event' }) },
+    auditEvent: { create: vi.fn().mockResolvedValue({ id: 'audit-event' }) },
   }
   const database = {
     $transaction: vi.fn(async callback => callback(transaction)),
@@ -127,6 +133,15 @@ describe('customer appointment activity', () => {
         customerIdentityDigest: 'identity-digest',
       }),
     })
+    expect(transaction.auditEvent.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        actorType: 'CUSTOMER',
+        actorId: 'customer-1',
+        entityType: 'APPOINTMENT',
+        entityId: appointment.id,
+        action: 'CREATED',
+      }),
+    })
   })
 
   it('records both slots when a customer moves an appointment', async () => {
@@ -159,6 +174,13 @@ describe('customer appointment activity', () => {
         previousAppointmentStartsAt: startsAt,
       },
     })
+    expect(transaction.auditEvent.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        actorType: 'CUSTOMER',
+        entityId: appointment.id,
+        action: 'RESCHEDULED',
+      }),
+    })
   })
 
   it('records a customer cancellation', async () => {
@@ -172,7 +194,7 @@ describe('customer appointment activity', () => {
     await cancelAppointmentSerializable(
       database,
       appointment.id,
-      'identity-digest',
+      'customer-1',
       new Date('2099-08-01T10:00:00.000Z'),
     )
 
@@ -185,6 +207,13 @@ describe('customer appointment activity', () => {
         serviceNameSnapshot: service.name,
         appointmentStartsAt: startsAt,
       },
+    })
+    expect(transaction.auditEvent.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        actorType: 'CUSTOMER',
+        entityId: appointment.id,
+        action: 'CANCELLED',
+      }),
     })
   })
 
@@ -205,5 +234,6 @@ describe('customer appointment activity', () => {
     ).rejects.toEqual(new ReservationError('SLOT_UNAVAILABLE'))
     expect(transaction.appointment.create).not.toHaveBeenCalled()
     expect(transaction.appointmentActivity.create).not.toHaveBeenCalled()
+    expect(transaction.auditEvent.create).not.toHaveBeenCalled()
   })
 })

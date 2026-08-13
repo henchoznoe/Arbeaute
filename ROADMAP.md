@@ -35,14 +35,14 @@ est réévalué après chaque livraison.
 
 | Statut | Éléments |
 | --- | --- |
-| ✅ Terminés | 1 à 12, 19 et 23 |
+| ✅ Terminés | 1 à 12, 19, 21 et 23 |
 | 🟡 En cours | 24, enrichi progressivement à chaque livraison |
-| ⏳ Prêt à démarrer | 13, 14 et 21 |
-| 🔒 Bloqués | 15 à 18, 20 et 22 |
+| ⏳ Prêt à démarrer | 13, 14, 16, 17, 20 et 22 |
+| 🔒 Bloqués | 15 et 18 |
 
-**Prochain élément recommandé : 21.** Le journal d’audit débloque directement
-les statuts métier (16), le calendrier d’exceptions (17), les règles configurables
-(20) et la politique de conservation (22), puis la fiche cliente (15).
+**Prochain élément recommandé : 22.** La politique d’export, d’anonymisation et de
+restauration complète les fondations de données et débloque directement la fiche
+cliente (15). Les éléments 13, 14, 16, 17 et 20 peuvent aussi démarrer.
 
 - **Priorité P0** : corrige une friction importante ou prépare plusieurs autres
   éléments.
@@ -413,7 +413,7 @@ sont jamais placés dans un cache partagé.
 
 **Dépendances :** élément 19 pour la recherche centrée sur les clientes.
 
-### 15. Créer une fiche cliente exploitable par Arzu — 🔒 Bloqué par 21 et 22
+### 15. Créer une fiche cliente exploitable par Arzu — 🔒 Bloqué par 22
 
 **Priorité : P1 · Effort : L · Nature : nouvelle capacité**
 
@@ -437,7 +437,7 @@ accessibles en haut de l’écran mobile.
 
 **Dépendances :** éléments 19, 21 et 22.
 
-### 16. Exploiter les statuts « terminé » et « absence » — 🔒 Bloqué par 21
+### 16. Exploiter les statuts « terminé » et « absence » — ⏳ Prêt à démarrer
 
 **Priorité : P1 · Effort : M · Nature : amélioration**
 
@@ -462,7 +462,7 @@ snapshots de prix, durée ou service.
 
 **Dépendances :** élément 21 pour la traçabilité ; débloque les éléments 10 et 18.
 
-### 17. Remplacer les formulaires d’horaires par un calendrier d’exceptions — 🔒 Bloqué par 21
+### 17. Remplacer les formulaires d’horaires par un calendrier d’exceptions — ⏳ Prêt à démarrer
 
 **Priorité : P1 · Effort : L · Nature : amélioration**
 
@@ -543,7 +543,7 @@ pas. La session client continue de contenir uniquement un digest, jamais de PII.
 sont définies avec cet élément puis réutilisées par l’élément 22. Débloque les
 éléments 13, 14, 15 et 21.
 
-### 20. Rendre les règles de réservation configurables en base — 🔒 Bloqué par 21
+### 20. Rendre les règles de réservation configurables en base — ⏳ Prêt à démarrer
 
 **Priorité : P1 · Effort : M · Nature : amélioration**
 
@@ -567,7 +567,7 @@ ce tag après modification.
 
 **Dépendances :** élément 21 pour journaliser les modifications.
 
-### 21. Étendre le journal d’audit à toutes les mutations sensibles — ⏳ Prêt à démarrer
+### 21. Étendre le journal d’audit à toutes les mutations sensibles — ✅ Terminé
 
 **Priorité : P1 · Effort : L · Nature : amélioration**
 
@@ -592,7 +592,7 @@ dupliquer les fichiers, secrets, mots de passe ou contenus binaires. Fournir un
 
 **Dépendances :** élément 19 pour identifier les événements liés aux clientes.
 
-### 22. Formaliser export, anonymisation et restauration — 🔒 Bloqué par 21
+### 22. Formaliser export, anonymisation et restauration — ⏳ Prêt à démarrer
 
 **Priorité : P1 · Effort : L · Nature : nouvelle capacité**
 

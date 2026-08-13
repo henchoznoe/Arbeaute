@@ -129,7 +129,11 @@ describe('manual admin appointments', () => {
     const createActivity = vi.fn()
     const created = {
       id: 'appointment-admin',
+      serviceId: 'service',
+      serviceNameSnapshot: 'Soin',
+      startsAt: new Date('2099-08-10T12:00:00.000Z'),
       source: 'ADMIN',
+      status: 'CONFIRMED',
     }
     const transaction = {
       appointment: {
@@ -148,6 +152,7 @@ describe('manual admin appointments', () => {
         }),
       },
       appointmentActivity: { create: createActivity },
+      auditEvent: { create: vi.fn().mockResolvedValue({ id: 'audit-event' }) },
     }
     const database = {
       $transaction: vi.fn(async callback => callback(transaction)),
@@ -165,5 +170,14 @@ describe('manual admin appointments', () => {
       }),
     ).resolves.toBe(created)
     expect(createActivity).not.toHaveBeenCalled()
+    expect(transaction.auditEvent.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        actorType: 'ADMIN',
+        actorId: 'admin',
+        entityType: 'APPOINTMENT',
+        entityId: created.id,
+        action: 'CREATED',
+      }),
+    })
   })
 })
