@@ -55,6 +55,7 @@ const appointmentMutationSchema = z.object({
 export interface BookingResult {
   ok: boolean
   message: string
+  reason?: 'INVALID_CUSTOMER' | 'SLOT_CONFLICT' | 'UNKNOWN'
   appointment?: {
     serviceName: string
     dateLabel: string
@@ -71,8 +72,16 @@ export interface MutationResult {
 
 const genericBookingError = (): BookingResult => ({
   ok: false,
+  reason: 'UNKNOWN',
   message:
     'La réservation n’a pas pu être confirmée. Vérifiez vos informations et le créneau choisi.',
+})
+
+const invalidCustomerError = (): BookingResult => ({
+  ok: false,
+  reason: 'INVALID_CUSTOMER',
+  message:
+    'Certaines coordonnées ne sont pas valides. Vérifiez votre adresse e-mail et votre numéro de téléphone.',
 })
 
 const refreshAdminActivity = () => {
@@ -126,7 +135,21 @@ export const createPublicAppointment = async (
 ): Promise<BookingResult> => {
   if (!(await hasSameOrigin())) return genericBookingError()
   const parsed = bookingSchema.safeParse(input)
-  if (!parsed.success) return genericBookingError()
+  if (!parsed.success) {
+    const customerFields = new Set([
+      'firstName',
+      'lastName',
+      'email',
+      'phone',
+      'comment',
+      'consent',
+    ])
+    return parsed.error.issues.some(issue =>
+      customerFields.has(String(issue.path[0])),
+    )
+      ? invalidCustomerError()
+      : genericBookingError()
+  }
 
   let email: string
   let phone: string
@@ -134,7 +157,7 @@ export const createPublicAppointment = async (
     email = normalizeEmail(parsed.data.email)
     phone = normalizePhone(parsed.data.phone)
   } catch {
-    return genericBookingError()
+    return invalidCustomerError()
   }
 
   try {
@@ -185,6 +208,7 @@ export const createPublicAppointment = async (
     if (error instanceof ReservationError)
       return {
         ok: false,
+        reason: 'SLOT_CONFLICT',
         message:
           'Ce créneau vient d’être réservé. Choisissez-en un autre, s’il vous plaît.',
       }

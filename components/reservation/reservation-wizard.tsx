@@ -11,13 +11,16 @@ import {
   FileText,
   MailX,
   Minus,
+  Pencil,
   Settings2,
+  UserRound,
   X,
   Zap,
 } from 'lucide-react'
 import { useSearchParams } from 'next/navigation'
 import { useEffect, useRef, useState, useTransition } from 'react'
 import { ServiceDetails } from '@/components/catalog/service-details'
+import { BookingSummary } from '@/components/reservation/booking-summary'
 import {
   type BookingResult,
   createPublicAppointment,
@@ -37,10 +40,21 @@ import {
   formatCalendarWeekday,
 } from '@/lib/reservation/calendar-view'
 import {
+  type CustomerFormErrors,
+  type CustomerFormField,
+  type CustomerFormValues,
+  customerFieldOrder,
+  emptyCustomerForm,
+  normalizeCustomerFormDisplay,
+  validateCustomerField,
+  validateCustomerForm,
+} from '@/lib/reservation/customer-form'
+import {
   buildServiceReservationPath,
   resolveInitialServiceId,
 } from '@/lib/reservation/deep-link'
 import { formatServiceLabel } from '@/lib/reservation/service-label'
+import { formatAppointmentDate } from '@/lib/reservation/time'
 import { cn } from '@/lib/utils/cn'
 import { downloadCalendar } from './calendar-download'
 import { CancellationPolicy } from './cancellation-policy'
@@ -64,7 +78,7 @@ interface ReservationWizardProps {
 }
 
 const fieldClass =
-  'h-12 w-full rounded-xl border bg-background px-4 text-base outline-none transition focus:ring-2 focus:ring-ring'
+  'h-12 w-full rounded-xl border bg-background px-4 text-base outline-none transition focus:ring-2 focus:ring-ring aria-invalid:border-destructive aria-invalid:ring-2 aria-invalid:ring-destructive/20'
 
 const formatPrice = (priceCents: number): string =>
   `${(priceCents / 100).toLocaleString('fr-CH')} CHF`
@@ -136,7 +150,12 @@ export const ReservationWizard = ({
   const [nextSlotNotice, setNextSlotNotice] = useState<string | null>(null)
   const [calendarAnnouncement, setCalendarAnnouncement] = useState('')
   const [result, setResult] = useState<BookingResult | null>(null)
+  const [customer, setCustomer] =
+    useState<CustomerFormValues>(emptyCustomerForm)
+  const [customerErrors, setCustomerErrors] = useState<CustomerFormErrors>({})
+  const [website, setWebsite] = useState('')
   const [viewStart, setViewStart] = useState(minDate)
+  const customerFormRef = useRef<HTMLFormElement>(null)
   const pendingSlotRef = useRef<{ dateKey: string; startsAt: string } | null>(
     null,
   )
@@ -176,6 +195,7 @@ export const ReservationWizard = ({
     setDate(dateKey)
     setStartsAt('')
     setNextSlotNotice(null)
+    setResult(null)
     const state = weekAvailability[dateKey]?.state
     setCalendarAnnouncement(
       `${formatCalendarDate(dateKey)} sélectionné${
@@ -195,6 +215,7 @@ export const ReservationWizard = ({
     setViewStart(minDate)
     setStartsAt('')
     setNextSlotNotice(null)
+    setResult(null)
     setStep(2)
   }
 
@@ -233,14 +254,13 @@ export const ReservationWizard = ({
 
       setWeekAvailability(loaded)
       setLoadedWeek(weekCacheKey(serviceId, viewStart))
-      setStartsAt(
-        pending?.startsAt &&
-          loaded[pending.dateKey]?.slots.some(
-            slot => slot.startsAt === pending.startsAt,
-          )
-          ? pending.startsAt
-          : '',
-      )
+      setStartsAt(current => {
+        const candidate = pending?.startsAt ?? current
+        const stillAvailable = Object.values(loaded).some(day =>
+          day.slots.some(slot => slot.startsAt === candidate),
+        )
+        return stillAvailable ? candidate : ''
+      })
     })
   }, [serviceId, step, viewStart])
 
@@ -275,26 +295,71 @@ export const ReservationWizard = ({
     })
   }
 
-  const submitBooking = (formData: FormData) => {
+  const updateCustomerField = <Field extends CustomerFormField>(
+    field: Field,
+    value: CustomerFormValues[Field],
+  ) => {
+    const next = { ...customer, [field]: value }
+    setCustomer(next)
+    if (customerErrors[field]) {
+      const error = validateCustomerField(field, next)
+      setCustomerErrors(current => ({
+        ...current,
+        [field]: error ?? undefined,
+      }))
+    }
+  }
+
+  const validateCustomerOnBlur = (field: CustomerFormField) => {
+    const error = validateCustomerField(field, customer)
+    setCustomerErrors(current => ({
+      ...current,
+      [field]: error ?? undefined,
+    }))
+  }
+
+  const reviewBooking = () => {
+    const errors = validateCustomerForm(customer)
+    setCustomerErrors(errors)
+    const firstInvalidField = customerFieldOrder.find(field => errors[field])
+    if (firstInvalidField) {
+      requestAnimationFrame(() => {
+        const element =
+          customerFormRef.current?.elements.namedItem(firstInvalidField)
+        if (element instanceof HTMLElement) element.focus()
+      })
+      return
+    }
+
+    setCustomer(normalizeCustomerFormDisplay(customer))
+    setResult(null)
+    setStep(4)
+  }
+
+  const submitBooking = () => {
     setResult(null)
     startSubmitTransition(async () => {
       const response = await createPublicAppointment({
         serviceId,
         startsAt,
-        firstName: formData.get('firstName'),
-        lastName: formData.get('lastName'),
-        email: formData.get('email'),
-        phone: formData.get('phone'),
-        comment: formData.get('comment'),
-        consent: formData.get('consent') === 'on',
-        website: formData.get('website'),
+        firstName: customer.firstName,
+        lastName: customer.lastName,
+        email: customer.email,
+        phone: customer.phone,
+        comment: customer.comment,
+        consent: customer.consent,
+        website,
       })
       setResult(response)
-      if (response.ok) setStep(4)
+      if (response.ok) return
+      if (response.reason === 'SLOT_CONFLICT') {
+        setStartsAt('')
+        setStep(2)
+      } else if (response.reason === 'INVALID_CUSTOMER') setStep(3)
     })
   }
 
-  if (step === 4 && result?.appointment)
+  if (result?.appointment)
     return (
       <section className="mx-auto max-w-xl rounded-3xl border bg-card p-6 text-center shadow-sm sm:p-10">
         <div className="mx-auto flex size-14 items-center justify-center rounded-full bg-emerald-100 text-emerald-700">
@@ -371,42 +436,54 @@ export const ReservationWizard = ({
   return (
     <section className="mx-auto max-w-3xl">
       <ol
-        className="mb-8 grid grid-cols-3 gap-1.5 sm:gap-2"
+        className="mb-5 grid grid-cols-4 gap-1 sm:mb-8 sm:gap-2"
         aria-label="Étapes"
       >
-        {['Prestation', 'Créneau', 'Coordonnées'].map((label, index) => {
-          const number = index + 1
-          const canGoBack = step > number
-          const active = step >= number
-          return (
-            <li key={label}>
-              <button
-                type="button"
-                disabled={!canGoBack}
-                onClick={() => setStep(number)}
-                aria-current={step === number ? 'step' : undefined}
-                className={cn(
-                  'flex w-full flex-col items-center gap-1 rounded-2xl border px-1.5 py-2.5 text-center transition sm:flex-row sm:justify-center sm:gap-2 sm:rounded-full sm:px-3',
-                  active && 'border-primary bg-primary text-primary-foreground',
-                  canGoBack ? 'cursor-pointer' : 'cursor-default',
-                )}
-              >
-                <span
+        {['Prestation', 'Créneau', 'Coordonnées', 'Vérification'].map(
+          (label, index) => {
+            const number = index + 1
+            const canGoBack = step > number
+            const active = step >= number
+            return (
+              <li key={label}>
+                <button
+                  type="button"
+                  disabled={!canGoBack}
+                  onClick={() => setStep(number)}
+                  aria-current={step === number ? 'step' : undefined}
                   className={cn(
-                    'grid size-5 shrink-0 place-items-center rounded-full text-[11px] font-semibold',
-                    active ? 'bg-primary-foreground/20' : 'bg-foreground/10',
+                    'flex min-h-16 w-full flex-col items-center justify-center gap-1 rounded-2xl border px-0.5 py-2 text-center transition sm:min-h-0 sm:flex-row sm:gap-2 sm:rounded-full sm:px-3 sm:py-2.5',
+                    active &&
+                      'border-primary bg-primary text-primary-foreground',
+                    canGoBack ? 'cursor-pointer' : 'cursor-default',
                   )}
                 >
-                  {number}
-                </span>
-                <span className="text-[11px] leading-tight font-medium text-balance sm:text-sm">
-                  {label}
-                </span>
-              </button>
-            </li>
-          )
-        })}
+                  <span
+                    className={cn(
+                      'grid size-5 shrink-0 place-items-center rounded-full text-[11px] font-semibold',
+                      active ? 'bg-primary-foreground/20' : 'bg-foreground/10',
+                    )}
+                  >
+                    {number}
+                  </span>
+                  <span className="text-[9px] leading-tight font-medium text-balance min-[370px]:text-[10px] sm:text-sm">
+                    {label}
+                  </span>
+                </button>
+              </li>
+            )
+          },
+        )}
       </ol>
+
+      {selectedService && step >= 2 ? (
+        <BookingSummary
+          service={selectedService}
+          startsAt={startsAt}
+          sticky={step === 2 || step === 3}
+          className="mb-5"
+        />
+      ) : null}
 
       {step === 1 ? (
         <div className="space-y-8">
@@ -461,20 +538,20 @@ export const ReservationWizard = ({
           <h2 className="mt-5 font-heading text-2xl font-bold">
             Choisissez votre créneau
           </h2>
-          <p className="mt-1 text-sm text-muted-foreground">
-            {selectedService
-              ? formatServiceLabel(
-                  selectedService.name,
-                  selectedService.categoryName,
-                )
-              : null}{' '}
-            · {selectedService?.durationMinutes} min
-          </p>
           {selectedService ? (
             <ServiceDetails
               service={selectedService}
               className="mt-4 rounded-xl border px-4 pt-0 [&>summary]:pt-1"
             />
+          ) : null}
+
+          {result?.reason === 'SLOT_CONFLICT' ? (
+            <p
+              className="mt-5 rounded-xl bg-destructive/10 p-4 text-sm text-destructive"
+              role="alert"
+            >
+              {result.message}
+            </p>
           ) : null}
 
           <button
@@ -606,7 +683,10 @@ export const ReservationWizard = ({
                   <button
                     key={slot.startsAt}
                     type="button"
-                    onClick={() => setStartsAt(slot.startsAt)}
+                    onClick={() => {
+                      setStartsAt(slot.startsAt)
+                      setResult(null)
+                    }}
                     className={cn(
                       'h-11 rounded-xl border text-sm font-medium',
                       startsAt === slot.startsAt
@@ -643,9 +723,11 @@ export const ReservationWizard = ({
 
       {step === 3 ? (
         <form
+          ref={customerFormRef}
+          noValidate
           onSubmit={event => {
             event.preventDefault()
-            submitBooking(new FormData(event.currentTarget))
+            reviewBooking()
           }}
           className="rounded-3xl border bg-card p-5 sm:p-8"
         >
@@ -666,63 +748,175 @@ export const ReservationWizard = ({
           </p>
           <div className="mt-6 grid gap-4 sm:grid-cols-2">
             <label className="flex flex-col gap-2 text-sm font-medium">
-              Prénom
+              <span>Prénom</span>
               <input
                 name="firstName"
-                required
+                value={customer.firstName}
+                onChange={event =>
+                  updateCustomerField('firstName', event.target.value)
+                }
+                onBlur={() => validateCustomerOnBlur('firstName')}
                 maxLength={100}
+                autoComplete="given-name"
+                aria-invalid={Boolean(customerErrors.firstName)}
+                aria-describedby={
+                  customerErrors.firstName ? 'firstName-error' : undefined
+                }
                 className={fieldClass}
               />
+              {customerErrors.firstName ? (
+                <span
+                  id="firstName-error"
+                  className="text-xs text-destructive"
+                  role="alert"
+                >
+                  {customerErrors.firstName}
+                </span>
+              ) : null}
             </label>
             <label className="flex flex-col gap-2 text-sm font-medium">
-              Nom
+              <span>Nom</span>
               <input
                 name="lastName"
-                required
+                value={customer.lastName}
+                onChange={event =>
+                  updateCustomerField('lastName', event.target.value)
+                }
+                onBlur={() => validateCustomerOnBlur('lastName')}
                 maxLength={100}
+                autoComplete="family-name"
+                aria-invalid={Boolean(customerErrors.lastName)}
+                aria-describedby={
+                  customerErrors.lastName ? 'lastName-error' : undefined
+                }
                 className={fieldClass}
               />
+              {customerErrors.lastName ? (
+                <span
+                  id="lastName-error"
+                  className="text-xs text-destructive"
+                  role="alert"
+                >
+                  {customerErrors.lastName}
+                </span>
+              ) : null}
             </label>
             <label className="flex flex-col gap-2 text-sm font-medium">
-              Email
+              <span>Adresse e-mail</span>
               <input
                 name="email"
                 type="email"
-                required
+                inputMode="email"
+                value={customer.email}
+                onChange={event =>
+                  updateCustomerField('email', event.target.value)
+                }
+                onBlur={() => validateCustomerOnBlur('email')}
                 autoComplete="email"
+                spellCheck={false}
+                aria-invalid={Boolean(customerErrors.email)}
+                aria-describedby={
+                  customerErrors.email ? 'email-error' : undefined
+                }
                 className={fieldClass}
               />
+              {customerErrors.email ? (
+                <span
+                  id="email-error"
+                  className="text-xs text-destructive"
+                  role="alert"
+                >
+                  {customerErrors.email}
+                </span>
+              ) : null}
             </label>
             <label className="flex flex-col gap-2 text-sm font-medium">
-              Téléphone
+              <span>Téléphone</span>
               <input
                 name="phone"
                 type="tel"
-                required
+                inputMode="tel"
+                value={customer.phone}
+                onChange={event =>
+                  updateCustomerField('phone', event.target.value)
+                }
+                onBlur={() => validateCustomerOnBlur('phone')}
                 autoComplete="tel"
                 placeholder="079 123 45 67"
+                aria-invalid={Boolean(customerErrors.phone)}
+                aria-describedby={
+                  customerErrors.phone ? 'phone-help phone-error' : 'phone-help'
+                }
                 className={fieldClass}
               />
+              <span
+                id="phone-help"
+                className="text-xs leading-relaxed font-normal text-muted-foreground"
+              >
+                Les espaces sont acceptés. Avant confirmation, le numéro sera
+                présenté au format international, par exemple +41 79 123 45 67.
+              </span>
+              {customerErrors.phone ? (
+                <span
+                  id="phone-error"
+                  className="text-xs text-destructive"
+                  role="alert"
+                >
+                  {customerErrors.phone}
+                </span>
+              ) : null}
             </label>
           </div>
           <label className="mt-4 flex flex-col gap-2 text-sm font-medium">
             Commentaire facultatif
             <textarea
               name="comment"
+              value={customer.comment}
+              onChange={event =>
+                updateCustomerField('comment', event.target.value)
+              }
+              onBlur={() => validateCustomerOnBlur('comment')}
               rows={4}
               maxLength={1000}
+              aria-invalid={Boolean(customerErrors.comment)}
+              aria-describedby={
+                customerErrors.comment ? 'comment-error' : undefined
+              }
               className="w-full rounded-xl border bg-background px-4 py-3 outline-none focus:ring-2 focus:ring-ring"
             />
+            {customerErrors.comment ? (
+              <span
+                id="comment-error"
+                className="text-xs text-destructive"
+                role="alert"
+              >
+                {customerErrors.comment}
+              </span>
+            ) : null}
           </label>
           <label className="sr-only" aria-hidden="true">
             Site web
-            <input name="website" tabIndex={-1} autoComplete="off" />
+            <input
+              name="website"
+              value={website}
+              onChange={event => setWebsite(event.target.value)}
+              tabIndex={-1}
+              autoComplete="off"
+            />
           </label>
           <label className="mt-5 flex items-start gap-3 text-sm">
             <input
               name="consent"
               type="checkbox"
-              required
+              checked={customer.consent}
+              onChange={event =>
+                updateCustomerField('consent', event.target.checked)
+              }
+              onBlur={() => validateCustomerOnBlur('consent')}
+              aria-invalid={Boolean(customerErrors.consent)}
+              aria-describedby={
+                customerErrors.consent ? 'consent-error' : undefined
+              }
               className="mt-1 size-4"
             />
             <span>
@@ -738,6 +932,15 @@ export const ReservationWizard = ({
               .
             </span>
           </label>
+          {customerErrors.consent ? (
+            <p
+              id="consent-error"
+              className="mt-2 text-xs text-destructive"
+              role="alert"
+            >
+              {customerErrors.consent}
+            </p>
+          ) : null}
           {selectedService?.consentFormUrl ? (
             <ConsentFormNotice url={selectedService.consentFormUrl} />
           ) : null}
@@ -754,12 +957,121 @@ export const ReservationWizard = ({
           ) : null}
           <button
             type="submit"
+            className="mt-6 h-12 w-full rounded-xl bg-primary px-5 font-medium text-primary-foreground disabled:opacity-50"
+          >
+            Vérifier mes informations
+          </button>
+        </form>
+      ) : null}
+
+      {step === 4 && selectedService ? (
+        <section className="rounded-3xl border bg-card p-5 sm:p-8">
+          <button
+            type="button"
+            onClick={() => setStep(3)}
+            className="inline-flex items-center gap-1 text-sm font-medium"
+          >
+            <ChevronLeft className="size-4" /> Modifier mes coordonnées
+          </button>
+          <h2 className="mt-5 font-heading text-2xl font-bold">
+            Vérifiez votre réservation
+          </h2>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Rien n’est encore créé. Relisez ces informations avant la
+            confirmation définitive.
+          </p>
+
+          <div className="mt-6 divide-y rounded-2xl border">
+            <div className="flex items-start justify-between gap-4 p-4">
+              <div>
+                <p className="text-xs font-semibold tracking-wider text-muted-foreground uppercase">
+                  Prestation
+                </p>
+                <p className="mt-1 font-semibold">
+                  {formatServiceLabel(
+                    selectedService.name,
+                    selectedService.categoryName,
+                  )}
+                </p>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  {selectedService.durationMinutes} min ·{' '}
+                  {formatPrice(selectedService.priceCents)}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setStep(1)}
+                className="inline-flex h-10 shrink-0 items-center gap-1.5 rounded-full border px-3 text-xs font-medium"
+              >
+                <Pencil className="size-3.5" /> Modifier
+              </button>
+            </div>
+            <div className="flex items-start justify-between gap-4 p-4">
+              <div>
+                <p className="text-xs font-semibold tracking-wider text-muted-foreground uppercase">
+                  Créneau
+                </p>
+                <p className="mt-1 font-semibold capitalize">
+                  {formatAppointmentDate(new Date(startsAt))}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setStep(2)}
+                className="inline-flex h-10 shrink-0 items-center gap-1.5 rounded-full border px-3 text-xs font-medium"
+              >
+                <Pencil className="size-3.5" /> Modifier
+              </button>
+            </div>
+            <div className="flex items-start justify-between gap-4 p-4">
+              <div className="min-w-0">
+                <p className="flex items-center gap-1.5 text-xs font-semibold tracking-wider text-muted-foreground uppercase">
+                  <UserRound className="size-3.5" /> Coordonnées
+                </p>
+                <p className="mt-1 font-semibold">
+                  {customer.firstName} {customer.lastName}
+                </p>
+                <p className="mt-1 break-all text-sm text-muted-foreground">
+                  {customer.email}
+                </p>
+                <p className="text-sm text-muted-foreground">
+                  {customer.phone}
+                </p>
+                {customer.comment ? (
+                  <p className="mt-2 text-sm">« {customer.comment} »</p>
+                ) : null}
+              </div>
+              <button
+                type="button"
+                onClick={() => setStep(3)}
+                className="inline-flex h-10 shrink-0 items-center gap-1.5 rounded-full border px-3 text-xs font-medium"
+              >
+                <Pencil className="size-3.5" /> Modifier
+              </button>
+            </div>
+          </div>
+
+          <CancellationPolicy className="mt-5" />
+
+          {result && !result.ok ? (
+            <p
+              className="mt-5 rounded-xl bg-destructive/10 p-4 text-sm text-destructive"
+              role="alert"
+            >
+              {result.message}
+            </p>
+          ) : null}
+          <button
+            type="button"
+            onClick={submitBooking}
             disabled={submitting}
             className="mt-6 h-12 w-full rounded-xl bg-primary px-5 font-medium text-primary-foreground disabled:opacity-50"
           >
-            {submitting ? 'Confirmation…' : 'Confirmer le rendez-vous'}
+            {submitting
+              ? 'Création du rendez-vous…'
+              : 'Confirmer et créer le rendez-vous'}
           </button>
-        </form>
+        </section>
       ) : null}
     </section>
   )
