@@ -80,7 +80,7 @@ export const ServiceCatalog = ({
               type="button"
               onClick={() => setQuery('')}
               aria-label="Effacer la recherche"
-              className="absolute top-1/2 right-1 grid size-10 -translate-y-1/2 place-items-center rounded-full text-muted-foreground hover:bg-muted hover:text-foreground"
+              className="absolute top-1/2 right-0.5 grid size-11 -translate-y-1/2 place-items-center rounded-full text-muted-foreground hover:bg-muted hover:text-foreground"
             >
               <X className="size-4" />
             </button>

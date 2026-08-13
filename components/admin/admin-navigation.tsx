@@ -12,6 +12,7 @@ import Link from 'next/link'
 import { usePathname, useSearchParams } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import { InstallAppButton } from '@/components/pwa/install-app-button'
+import { navigationItemBaseClass } from '@/components/ui/navigation'
 import { logoutAdmin } from '@/lib/actions/admin-auth'
 import {
   ADMIN_AGENDA_DATE_EVENT,
@@ -126,7 +127,7 @@ export const AdminNavigation = ({
                   key={item.key}
                   href={item.href}
                   aria-current={isActive ? 'page' : undefined}
-                  className={`inline-flex min-h-11 items-center gap-2 rounded-xl px-3 text-sm font-medium transition ${
+                  className={`${navigationItemBaseClass} gap-2 px-3 ${
                     isActive
                       ? 'bg-primary text-primary-foreground shadow-sm'
                       : 'text-muted-foreground hover:bg-muted hover:text-foreground'
@@ -183,7 +184,7 @@ export const AdminNavigation = ({
                 key={item.key}
                 href={item.href}
                 aria-current={isActive ? 'page' : undefined}
-                className={`relative flex min-h-[4.25rem] flex-col items-center justify-center gap-1 rounded-xl text-[11px] font-semibold transition ${
+                className={`${navigationItemBaseClass} relative min-h-[4.25rem] flex-col gap-1 text-[11px] font-semibold ${
                   isActive ? 'text-primary' : 'text-muted-foreground'
                 }`}
               >

@@ -2,6 +2,7 @@
 
 import { AlertTriangle, Plus } from 'lucide-react'
 import Link from 'next/link'
+import { EmptyState } from '@/components/ui/empty-state'
 import {
   type AdminTimelineDay,
   formatTimelineMinute,
@@ -41,18 +42,19 @@ export const AdminDayTimeline = ({
 
   if (!day.openings.length && !day.appointments.length)
     return (
-      <div className="mt-4 rounded-2xl border bg-card px-5 py-8 text-center">
-        <p className="font-semibold">Institut fermé</p>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Aucun horaire ni rendez-vous pour cette journée.
-        </p>
-        <Link
-          href={`/admin/appointments/new?date=${day.dateKey}`}
-          className="mt-5 inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-primary px-4 text-sm font-medium text-primary-foreground"
-        >
-          <Plus className="size-4" /> Ajouter manuellement
-        </Link>
-      </div>
+      <EmptyState
+        title="Institut fermé"
+        description="Aucun horaire ni rendez-vous pour cette journée."
+        className="mt-4"
+        action={
+          <Link
+            href={`/admin/appointments/new?date=${day.dateKey}`}
+            className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-primary px-4 text-sm font-medium text-primary-foreground"
+          >
+            <Plus className="size-4" /> Ajouter manuellement
+          </Link>
+        }
+      />
     )
 
   return (

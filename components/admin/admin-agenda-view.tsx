@@ -160,7 +160,7 @@ export const AdminAgendaView = ({
           {selectedDay.dateKey !== today ? (
             <Link
               href="/admin"
-              className="mt-2 flex min-h-10 items-center justify-center gap-2 rounded-xl bg-muted px-3 text-sm font-medium"
+              className="mt-2 flex min-h-11 items-center justify-center gap-2 rounded-xl bg-muted px-3 text-sm font-medium"
             >
               <CalendarClock className="size-4" /> Revenir à aujourd’hui
             </Link>
@@ -205,20 +205,20 @@ export const AdminAgendaView = ({
             <Link
               href={`/admin?date=${previousWeek}`}
               aria-label="Semaine précédente"
-              className="grid size-10 place-items-center rounded-xl border"
+              className="grid size-11 place-items-center rounded-xl border"
             >
               <ChevronLeft className="size-4" />
             </Link>
             <Link
               href="/admin"
-              className="inline-flex h-10 items-center gap-2 rounded-xl border px-4 text-sm font-medium"
+              className="inline-flex min-h-11 items-center gap-2 rounded-xl border px-4 text-sm font-medium"
             >
               <CalendarClock className="size-4" /> Aujourd’hui
             </Link>
             <Link
               href={`/admin?date=${nextWeek}`}
               aria-label="Semaine suivante"
-              className="grid size-10 place-items-center rounded-xl border"
+              className="grid size-11 place-items-center rounded-xl border"
             >
               <ChevronRight className="size-4" />
             </Link>

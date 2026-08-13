@@ -4,6 +4,7 @@ import { redirect } from 'next/navigation'
 import { Suspense } from 'react'
 import { ActivityList } from '@/components/admin/activity-list'
 import { AdminSkeleton } from '@/components/admin/admin-skeleton'
+import { StatusBadge } from '@/components/ui/status-badge'
 import { markAllAppointmentActivitiesRead } from '@/lib/actions/admin-activity'
 import { getActivityPage } from '@/lib/admin/activity'
 import { getAdminSession } from '@/lib/core/session-cookies'
@@ -50,10 +51,10 @@ const ActivityHistory = async ({
           </p>
         </div>
         {unreadCount > 0 ? (
-          <span className="shrink-0 rounded-full bg-rose-600 px-2.5 py-1 text-xs font-bold text-white">
+          <StatusBadge variant="danger" className="shrink-0">
             {unreadCount > 99 ? '99+' : unreadCount} nouvelle
             {unreadCount > 1 ? 's' : ''}
-          </span>
+          </StatusBadge>
         ) : null}
       </header>
 

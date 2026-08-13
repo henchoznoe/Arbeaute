@@ -27,6 +27,23 @@ augmenter les frais récurrents.
 
 ## Lecture du backlog
 
+**Statuts :** ✅ terminé · 🟡 en cours · ⏳ prêt à démarrer · 🔒 bloqué par
+une ou plusieurs dépendances. Le statut figure directement dans chaque titre et
+est réévalué après chaque livraison.
+
+### État actuel
+
+| Statut | Éléments |
+| --- | --- |
+| ✅ Terminés | 1 à 12, 23 |
+| 🟡 En cours | 24, enrichi progressivement à chaque livraison |
+| ⏳ Prêt à démarrer | 19 |
+| 🔒 Bloqués | 13 à 18, 20 à 22 |
+
+**Prochain élément recommandé : 19.** Il débloque ensuite le journal d’audit
+(21), puis la création accélérée et les séries (13), la recherche (14) et la
+fiche cliente (15).
+
 - **Priorité P0** : corrige une friction importante ou prépare plusieurs autres
   éléments.
 - **Priorité P1** : apporte un gain métier net après les fondations P0.
@@ -40,7 +57,7 @@ augmenter les frais récurrents.
 
 ## Site vitrine et découverte des prestations
 
-### 1. Rendre le catalogue filtrable et directement réservable
+### 1. Rendre le catalogue filtrable et directement réservable — ✅ Terminé
 
 **Priorité : P0 · Effort : M · Nature : amélioration**
 
@@ -66,7 +83,7 @@ données supplémentaire.
 
 **Dépendances :** élément 5 pour la présélection dans le tunnel.
 
-### 2. Installer un appel à la réservation persistant sur mobile
+### 2. Installer un appel à la réservation persistant sur mobile — ✅ Terminé
 
 **Priorité : P0 · Effort : S · Nature : amélioration**
 
@@ -90,7 +107,7 @@ légales et l’administration.
 **Dépendances :** élément 23 pour les règles communes de navigation et de safe
 area.
 
-### 3. Enrichir les informations utiles avant de réserver un soin
+### 3. Enrichir les informations utiles avant de réserver un soin — ✅ Terminé
 
 **Priorité : P1 · Effort : L · Nature : nouvelle capacité**
 
@@ -116,7 +133,7 @@ depuis le même écran.
 
 **Dépendances :** élément 23 pour le composant d’accordéon et les états de contenu.
 
-### 4. Renforcer l’identité visuelle et les preuves de confiance
+### 4. Renforcer l’identité visuelle et les preuves de confiance — ✅ Terminé
 
 **Priorité : P2 · Effort : M · Nature : amélioration**
 
@@ -146,7 +163,7 @@ de performance.
 
 ## Réservation et espace client
 
-### 5. Permettre les liens profonds vers une prestation
+### 5. Permettre les liens profonds vers une prestation — ✅ Terminé
 
 **Priorité : P0 · Effort : S · Nature : nouvelle capacité**
 
@@ -168,7 +185,7 @@ inconnue, invisible, archivée ou non réservable retombe proprement sur la prem
 
 **Dépendances :** aucune ; débloque l’élément 1.
 
-### 6. Repenser le calendrier mobile de réservation
+### 6. Repenser le calendrier mobile de réservation — ✅ Terminé
 
 **Priorité : P0 · Effort : L · Nature : amélioration**
 
@@ -197,7 +214,7 @@ semaine entière en un seul appel.
 **Dépendances :** élément 23 pour les composants d’état et élément 24 pour les
 tests mobiles.
 
-### 7. Afficher un récapitulatif persistant et une vraie étape de vérification
+### 7. Afficher un récapitulatif persistant et une vraie étape de vérification — ✅ Terminé
 
 **Priorité : P0 · Effort : M · Nature : amélioration**
 
@@ -221,7 +238,7 @@ coordonnées.
 
 **Dépendances :** élément 6 pour le nouveau calendrier.
 
-### 8. Améliorer la saisie et les erreurs du formulaire client
+### 8. Améliorer la saisie et les erreurs du formulaire client — ✅ Terminé
 
 **Priorité : P0 · Effort : M · Nature : amélioration**
 
@@ -246,7 +263,7 @@ fait autorité.
 
 **Dépendances :** élément 23 pour un composant de champ et d’erreur commun.
 
-### 9. Rendre la confirmation durable sans notification externe
+### 9. Rendre la confirmation durable sans notification externe — ✅ Terminé
 
 **Priorité : P1 · Effort : S · Nature : amélioration**
 
@@ -269,7 +286,7 @@ les fonctions natives du navigateur, puis expliquer en une phrase l’accès à
 
 **Dépendances :** élément 7 pour le composant de récapitulatif.
 
-### 10. Enrichir « Mes rendez-vous » et faciliter une nouvelle réservation
+### 10. Enrichir « Mes rendez-vous » et faciliter une nouvelle réservation — ✅ Terminé
 
 **Priorité : P1 · Effort : L · Nature : amélioration**
 
@@ -298,7 +315,7 @@ session courte, sans compte ni mot de passe client.
 
 ## Dashboard admin mobile
 
-### 11. Ajouter une navigation admin persistante
+### 11. Ajouter une navigation admin persistante — ✅ Terminé
 
 **Priorité : P0 · Effort : M · Nature : amélioration**
 
@@ -320,7 +337,7 @@ d’installation et la déconnexion restent dans un menu secondaire.
 
 **Dépendances :** élément 23 pour la navigation et les badges partagés.
 
-### 12. Transformer l’agenda mobile en chronologie journalière
+### 12. Transformer l’agenda mobile en chronologie journalière — ✅ Terminé
 
 **Priorité : P0 · Effort : L · Nature : amélioration**
 
@@ -348,7 +365,7 @@ la grille hebdomadaire actuelle comme vue secondaire sur grand écran.
 
 **Dépendances :** éléments 11 et 23.
 
-### 13. Accélérer la création, la duplication et les séries de rendez-vous
+### 13. Accélérer la création, la duplication et les séries de rendez-vous — 🔒 Bloqué par 19
 
 **Priorité : P0 · Effort : L · Nature : nouvelle capacité**
 
@@ -372,7 +389,7 @@ La série doit être écrite atomiquement ou ne rien créer.
 
 **Dépendances :** éléments 12, 19 et 23.
 
-### 14. Ajouter une recherche et des filtres globaux
+### 14. Ajouter une recherche et des filtres globaux — 🔒 Bloqué par 19
 
 **Priorité : P0 · Effort : L · Nature : nouvelle capacité**
 
@@ -396,7 +413,7 @@ sont jamais placés dans un cache partagé.
 
 **Dépendances :** élément 19 pour la recherche centrée sur les clientes.
 
-### 15. Créer une fiche cliente exploitable par Arzu
+### 15. Créer une fiche cliente exploitable par Arzu — 🔒 Bloqué par 19, 21 et 22
 
 **Priorité : P1 · Effort : L · Nature : nouvelle capacité**
 
@@ -420,7 +437,7 @@ accessibles en haut de l’écran mobile.
 
 **Dépendances :** éléments 19, 21 et 22.
 
-### 16. Exploiter les statuts « terminé » et « absence »
+### 16. Exploiter les statuts « terminé » et « absence » — 🔒 Bloqué par 21
 
 **Priorité : P1 · Effort : M · Nature : amélioration**
 
@@ -445,7 +462,7 @@ snapshots de prix, durée ou service.
 
 **Dépendances :** élément 21 pour la traçabilité ; débloque les éléments 10 et 18.
 
-### 17. Remplacer les formulaires d’horaires par un calendrier d’exceptions
+### 17. Remplacer les formulaires d’horaires par un calendrier d’exceptions — 🔒 Bloqué par 21
 
 **Priorité : P1 · Effort : L · Nature : amélioration**
 
@@ -470,7 +487,7 @@ tout en conservant les lignes journalières nécessaires au moteur actuel.
 
 **Dépendances :** éléments 21 et 23.
 
-### 18. Afficher des indicateurs internes utiles
+### 18. Afficher des indicateurs internes utiles — 🔒 Bloqué par 16
 
 **Priorité : P2 · Effort : M · Nature : nouvelle capacité**
 
@@ -498,7 +515,7 @@ l’application, sans outil analytique payant.
 
 ## Modèle de données et exploitation
 
-### 19. Introduire un modèle `Customer` normalisé
+### 19. Introduire un modèle `Customer` normalisé — ⏳ Prêt à démarrer
 
 **Priorité : P0 · Effort : L · Nature : nouvelle capacité**
 
@@ -522,10 +539,11 @@ pas. La session client continue de contenir uniquement un digest, jamais de PII.
 - les index couvrent digest, email normalisé, téléphone normalisé et nom de
   recherche.
 
-**Dépendances :** élément 22 pour les règles de conservation ; débloque les
-éléments 10, 13, 14 et 15.
+**Dépendances :** aucune. Les règles de conservation nécessaires à la migration
+sont définies avec cet élément puis réutilisées par l’élément 22. Débloque les
+éléments 13, 14, 15 et 21.
 
-### 20. Rendre les règles de réservation configurables en base
+### 20. Rendre les règles de réservation configurables en base — 🔒 Bloqué par 21
 
 **Priorité : P1 · Effort : M · Nature : amélioration**
 
@@ -549,7 +567,7 @@ ce tag après modification.
 
 **Dépendances :** élément 21 pour journaliser les modifications.
 
-### 21. Étendre le journal d’audit à toutes les mutations sensibles
+### 21. Étendre le journal d’audit à toutes les mutations sensibles — 🔒 Bloqué par 19
 
 **Priorité : P1 · Effort : L · Nature : amélioration**
 
@@ -574,7 +592,7 @@ dupliquer les fichiers, secrets, mots de passe ou contenus binaires. Fournir un
 
 **Dépendances :** élément 19 pour identifier les événements liés aux clientes.
 
-### 22. Formaliser export, anonymisation et restauration
+### 22. Formaliser export, anonymisation et restauration — 🔒 Bloqué par 19 et 21
 
 **Priorité : P1 · Effort : L · Nature : nouvelle capacité**
 
@@ -605,7 +623,7 @@ et ne sont pas conservés dans Blob.
 
 ## Cohérence, accessibilité et fiabilité
 
-### 23. Construire un système visuel commun public et admin
+### 23. Construire un système visuel commun public et admin — ✅ Terminé
 
 **Priorité : P0 · Effort : L · Nature : amélioration**
 
@@ -632,7 +650,7 @@ et admin, puis auditer contraste, focus, tailles tactiles, zoom texte et
 
 **Dépendances :** aucune ; socle UI des autres éléments.
 
-### 24. Ajouter une recette automatisée mobile et des budgets de qualité
+### 24. Ajouter une recette automatisée mobile et des budgets de qualité — 🟡 En cours
 
 **Priorité : P0 · Effort : L · Nature : nouvelle capacité**
 

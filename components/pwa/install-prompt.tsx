@@ -134,7 +134,7 @@ export const InstallPrompt = () => {
               type="button"
               onClick={install}
               size="lg"
-              className="mt-3 h-9 rounded-full px-4"
+              className="mt-3 min-h-11 rounded-full px-4"
             >
               <Download className="size-4" />
               Installer
@@ -146,7 +146,7 @@ export const InstallPrompt = () => {
           type="button"
           onClick={dismiss}
           aria-label="Masquer cette proposition"
-          className="-mt-1 -mr-1 grid size-8 shrink-0 place-items-center self-start rounded-full text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+          className="-mt-1 -mr-1 grid size-11 shrink-0 place-items-center self-start rounded-full text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
         >
           <X className="size-4" />
         </button>

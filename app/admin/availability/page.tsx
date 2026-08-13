@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { Suspense } from 'react'
 import { AdminSkeleton } from '@/components/admin/admin-skeleton'
+import { formControlClass } from '@/components/ui/form-field'
 import { SubmitButton } from '@/components/ui/submit-button'
 import {
   createAvailabilityException,
@@ -31,8 +32,7 @@ const minuteLabel = (minute: number) =>
     .toString()
     .padStart(2, '0')}:${(minute % 60).toString().padStart(2, '0')}`
 
-const fieldClass =
-  'h-11 min-w-0 rounded-xl border bg-background px-3 text-base outline-none focus:ring-2 focus:ring-ring sm:text-sm'
+const fieldClass = `${formControlClass} min-w-0`
 
 const errorMessages: Record<string, string> = {
   'invalid-range': 'La plage horaire est invalide.',
@@ -123,7 +123,7 @@ const Availability = async ({
                         </span>
                         <SubmitButton
                           aria-label={`Supprimer l’horaire du ${day.label}`}
-                          className="grid size-8 place-items-center rounded-lg text-muted-foreground hover:bg-background"
+                          className="grid size-11 place-items-center rounded-xl text-muted-foreground hover:bg-background"
                         >
                           <Trash2 className="size-4" />
                         </SubmitButton>

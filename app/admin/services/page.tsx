@@ -13,6 +13,7 @@ import { redirect } from 'next/navigation'
 import { Suspense } from 'react'
 import { AdminSkeleton } from '@/components/admin/admin-skeleton'
 import { ServiceDeleteButton } from '@/components/admin/service-delete-button'
+import { formControlClass } from '@/components/ui/form-field'
 import { SubmitButton } from '@/components/ui/submit-button'
 import {
   createCategory,
@@ -26,8 +27,7 @@ import {
 import prisma from '@/lib/core/prisma'
 import { getAdminSession } from '@/lib/core/session-cookies'
 
-const fieldClass =
-  'h-9 rounded-lg border bg-background px-3 text-sm outline-none focus:ring-2 focus:ring-ring'
+const fieldClass = formControlClass
 
 const AdminServicesPage = () => (
   <Suspense fallback={<AdminSkeleton maxWidth="max-w-6xl" />}>
@@ -62,7 +62,7 @@ const AdminServices = async () => {
         </div>
         <Link
           href="/admin/services/new"
-          className="inline-flex h-10 items-center gap-2 rounded-lg bg-primary px-4 text-sm font-medium text-primary-foreground"
+          className="inline-flex min-h-11 items-center gap-2 rounded-xl bg-primary px-4 text-sm font-medium text-primary-foreground"
         >
           <Plus className="size-4" />
           Nouvelle prestation
@@ -123,7 +123,7 @@ const AdminServices = async () => {
                   <SubmitButton
                     disabled={categoryIndex === 0}
                     aria-label={`Monter ${category.name}`}
-                    className="grid size-8 place-items-center rounded-lg border"
+                    className="grid size-11 place-items-center rounded-xl border"
                   >
                     <ChevronUp className="size-4" />
                   </SubmitButton>
@@ -134,7 +134,7 @@ const AdminServices = async () => {
                   <SubmitButton
                     disabled={categoryIndex === categories.length - 1}
                     aria-label={`Descendre ${category.name}`}
-                    className="grid size-8 place-items-center rounded-lg border"
+                    className="grid size-11 place-items-center rounded-xl border"
                   >
                     <ChevronDown className="size-4" />
                   </SubmitButton>
@@ -163,11 +163,11 @@ const AdminServices = async () => {
                 type="color"
                 required
                 defaultValue={category.color}
-                className="h-9 w-12 rounded-lg border bg-background p-1"
+                className="h-11 w-12 rounded-xl border bg-background p-1"
               />
               <SubmitButton
                 pendingLabel="Enregistrement…"
-                className="h-9 rounded-lg border px-3 text-sm font-medium"
+                className="min-h-11 rounded-xl border px-3 text-sm font-medium"
               >
                 <Settings2 className="size-4" />
                 Enregistrer

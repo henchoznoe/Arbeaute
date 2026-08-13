@@ -81,7 +81,7 @@ export const ServiceImageUpload = ({
         <button
           type="submit"
           disabled={isUploading}
-          className="inline-flex h-9 items-center gap-2 rounded-lg bg-primary px-3 text-sm font-medium text-primary-foreground disabled:opacity-50"
+          className="inline-flex min-h-11 items-center gap-2 rounded-xl bg-primary px-3 text-sm font-medium text-primary-foreground disabled:opacity-50"
         >
           {isUploading ? (
             <LoaderCircle className="size-4 animate-spin" />

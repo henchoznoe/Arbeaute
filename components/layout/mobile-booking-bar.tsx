@@ -3,6 +3,7 @@
 import { CalendarDays } from 'lucide-react'
 import Link from 'next/link'
 import { useEffect, useState } from 'react'
+import { navigationItemBaseClass } from '@/components/ui/navigation'
 
 export const MobileBookingBar = () => {
   const [primaryActionVisible, setPrimaryActionVisible] = useState(true)
@@ -63,14 +64,14 @@ export const MobileBookingBar = () => {
           href="/mes-rendez-vous"
           aria-label="Mes rendez-vous"
           tabIndex={hidden ? -1 : undefined}
-          className="inline-flex h-12 items-center justify-center rounded-xl border bg-background px-3 text-center text-sm font-medium outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
+          className={`${navigationItemBaseClass} h-12 border bg-background px-3 text-center`}
         >
           Mes RDV
         </Link>
         <Link
           href="/reservation"
           tabIndex={hidden ? -1 : undefined}
-          className="inline-flex h-12 items-center justify-center gap-2 rounded-xl bg-primary px-4 text-sm font-medium text-primary-foreground outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
+          className={`${navigationItemBaseClass} h-12 gap-2 bg-primary px-4 text-primary-foreground`}
         >
           <CalendarDays className="size-4" />
           Réserver

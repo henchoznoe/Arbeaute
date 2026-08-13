@@ -210,7 +210,7 @@ const AdminAgenda = async ({ searchParams }: Readonly<AdminPageProps>) => {
                 <Link
                   href={`/admin/appointments/new?date=${dateKey}`}
                   aria-label={`Ajouter le ${dayTitle(dateKey, true)}`}
-                  className="grid size-8 place-items-center rounded-lg hover:bg-muted"
+                  className="grid size-11 place-items-center rounded-xl hover:bg-muted"
                 >
                   <Plus className="size-3.5" />
                 </Link>

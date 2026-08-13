@@ -3,6 +3,10 @@
 import { AlertTriangle, LoaderCircle, Save, Trash2 } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { useState, useTransition } from 'react'
+import { AppToast } from '@/components/ui/app-toast'
+import { Button } from '@/components/ui/button'
+import { ConfirmDialog } from '@/components/ui/confirm-dialog'
+import { FormField, formControlClass } from '@/components/ui/form-field'
 import {
   cancelAdminAppointment,
   saveAdminAppointment,
@@ -34,9 +38,6 @@ interface AppointmentFormProps {
   appointment: AppointmentValues
 }
 
-const fieldClass =
-  'h-11 w-full rounded-xl border bg-background px-3 text-base outline-none focus:ring-2 focus:ring-ring sm:text-sm'
-
 export const AppointmentForm = ({
   services,
   appointment,
@@ -45,11 +46,12 @@ export const AppointmentForm = ({
   const [pending, startTransition] = useTransition()
   const [message, setMessage] = useState<string | null>(null)
   const [outsideWarning, setOutsideWarning] = useState(false)
-  const [confirmingCancel, setConfirmingCancel] = useState(false)
+  const [toastOpen, setToastOpen] = useState(false)
 
   const resetWarning = () => {
     setOutsideWarning(false)
     setMessage(null)
+    setToastOpen(false)
   }
 
   const submit = (formData: FormData) => {
@@ -72,6 +74,7 @@ export const AppointmentForm = ({
         setOutsideWarning(true)
         return
       }
+      if (!result.ok) setToastOpen(true)
       if (result.ok) router.push(`/admin?date=${date}`)
     })
   }
@@ -82,6 +85,7 @@ export const AppointmentForm = ({
       const result = await cancelAdminAppointment(appointment.id as string)
       setMessage(result.message)
       if (result.ok) router.push(`/admin?date=${appointment.date}`)
+      else setToastOpen(true)
     })
   }
 
@@ -94,13 +98,13 @@ export const AppointmentForm = ({
       onChange={resetWarning}
       className="space-y-6 rounded-3xl border bg-card p-5 shadow-sm sm:p-7"
     >
-      <label className="flex flex-col gap-2 text-sm font-medium">
-        Prestation
+      <FormField controlId="admin-appointment-service" label="Prestation">
         <select
+          id="admin-appointment-service"
           name="serviceId"
           required
           defaultValue={appointment.serviceId ?? ''}
-          className={fieldClass}
+          className={formControlClass}
         >
           <option value="" disabled>
             Choisir une prestation
@@ -113,7 +117,7 @@ export const AppointmentForm = ({
             </option>
           ))}
         </select>
-      </label>
+      </FormField>
 
       <div className="grid gap-5 sm:grid-cols-2">
         <label className="flex flex-col gap-2 text-sm font-medium">
@@ -123,7 +127,7 @@ export const AppointmentForm = ({
             type="date"
             required
             defaultValue={appointment.date}
-            className={fieldClass}
+            className={formControlClass}
           />
         </label>
         <label className="flex flex-col gap-2 text-sm font-medium">
@@ -134,7 +138,7 @@ export const AppointmentForm = ({
             step={900}
             required
             defaultValue={appointment.time}
-            className={fieldClass}
+            className={formControlClass}
           />
         </label>
       </div>
@@ -151,7 +155,7 @@ export const AppointmentForm = ({
             name="firstName"
             maxLength={100}
             defaultValue={appointment.firstName ?? ''}
-            className={fieldClass}
+            className={formControlClass}
             autoComplete="given-name"
           />
         </label>
@@ -162,7 +166,7 @@ export const AppointmentForm = ({
             required
             maxLength={100}
             defaultValue={appointment.lastName ?? ''}
-            className={fieldClass}
+            className={formControlClass}
             autoComplete="family-name"
           />
         </label>
@@ -181,7 +185,7 @@ export const AppointmentForm = ({
             type="email"
             maxLength={254}
             defaultValue={appointment.email ?? ''}
-            className={fieldClass}
+            className={formControlClass}
             autoComplete="email"
           />
         </label>
@@ -197,7 +201,7 @@ export const AppointmentForm = ({
             type="tel"
             maxLength={40}
             defaultValue={appointment.phone ?? ''}
-            className={fieldClass}
+            className={formControlClass}
             autoComplete="tel"
           />
         </label>
@@ -207,81 +211,58 @@ export const AppointmentForm = ({
         l’email et le téléphone sont tous les deux renseignés.
       </p>
 
-      <label className="flex flex-col gap-2 text-sm font-medium">
-        <span>
-          Commentaire{' '}
-          <span className="font-normal text-muted-foreground">
-            (facultatif)
-          </span>
-        </span>
+      <FormField
+        controlId="admin-appointment-comment"
+        label="Commentaire"
+        optional
+      >
         <textarea
+          id="admin-appointment-comment"
           name="comment"
           rows={4}
           maxLength={1000}
           defaultValue={appointment.comment ?? ''}
-          className="w-full rounded-xl border bg-background px-3 py-3 text-base outline-none focus:ring-2 focus:ring-ring sm:text-sm"
+          className={`${formControlClass} py-3`}
         />
-      </label>
+      </FormField>
 
-      {message ? (
+      {message && outsideWarning ? (
         <div
           role="status"
-          className={`rounded-xl border p-4 text-sm ${outsideWarning ? 'border-amber-300 bg-amber-50 text-amber-950' : 'border-rose-200 bg-rose-50 text-rose-900'}`}
+          className="rounded-xl border border-amber-300 bg-amber-50 p-4 text-sm text-amber-950"
         >
           <div className="flex gap-2">
-            {outsideWarning ? (
-              <AlertTriangle className="mt-0.5 size-4 shrink-0" />
-            ) : null}
+            <AlertTriangle className="mt-0.5 size-4 shrink-0" />
             <span>{message}</span>
           </div>
-          {outsideWarning ? (
-            <p className="mt-2 font-medium">
-              Appuyez une seconde fois pour confirmer cette exception.
-            </p>
-          ) : null}
+          <p className="mt-2 font-medium">
+            Appuyez une seconde fois pour confirmer cette exception.
+          </p>
         </div>
       ) : null}
 
       <div className="flex flex-col-reverse gap-3 sm:flex-row sm:items-center sm:justify-between">
         {appointment.id ? (
-          confirmingCancel ? (
-            <div className="flex gap-2">
-              <button
-                type="button"
-                onClick={() => setConfirmingCancel(false)}
-                disabled={pending}
-                className="h-11 rounded-xl border px-4 text-sm font-medium"
-              >
-                Garder
-              </button>
-              <button
-                type="button"
-                onClick={cancel}
-                disabled={pending}
-                className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-destructive px-4 text-sm font-medium text-destructive-foreground"
-              >
+          <ConfirmDialog
+            title="Annuler ce rendez-vous ?"
+            description="Le créneau sera libéré immédiatement. Cette action restera visible dans l’historique de la cliente."
+            confirmLabel="Annuler le rendez-vous"
+            onConfirm={cancel}
+            pending={pending}
+            trigger={
+              <Button type="button" variant="destructive" disabled={pending}>
                 <Trash2 className="size-4" />
-                Confirmer l’annulation
-              </button>
-            </div>
-          ) : (
-            <button
-              type="button"
-              onClick={() => setConfirmingCancel(true)}
-              disabled={pending}
-              className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-destructive/10 px-4 text-sm font-medium text-destructive"
-            >
-              <Trash2 className="size-4" />
-              Annuler le rendez-vous
-            </button>
-          )
+                Annuler le rendez-vous
+              </Button>
+            }
+          />
         ) : (
           <span />
         )}
-        <button
+        <Button
           type="submit"
           disabled={pending}
-          className={`inline-flex h-11 items-center justify-center gap-2 rounded-xl px-5 text-sm font-medium ${outsideWarning ? 'bg-amber-600 text-white' : 'bg-primary text-primary-foreground'}`}
+          className={outsideWarning ? 'bg-amber-700 text-white' : undefined}
         >
           {pending ? (
             <LoaderCircle className="size-4 animate-spin" />
@@ -295,8 +276,15 @@ export const AppointmentForm = ({
             : appointment.id
               ? 'Enregistrer les modifications'
               : 'Créer le rendez-vous'}
-        </button>
+        </Button>
       </div>
+      <AppToast
+        open={toastOpen}
+        onOpenChange={setToastOpen}
+        title="Action impossible"
+        description={message ?? undefined}
+        variant="danger"
+      />
     </form>
   )
 }

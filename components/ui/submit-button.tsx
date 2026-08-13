@@ -36,7 +36,7 @@ export const SubmitButton = ({
       aria-label={ariaLabel}
       aria-busy={pending}
       className={cn(
-        'inline-flex items-center justify-center gap-2 transition disabled:opacity-30',
+        'inline-flex min-h-11 items-center justify-center gap-2 outline-none transition focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/40 disabled:opacity-30',
         pending && 'cursor-progress',
         className,
       )}

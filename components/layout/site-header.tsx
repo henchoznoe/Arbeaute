@@ -58,7 +58,7 @@ export const SiteHeader = ({
               onClick={() => setOpen(value => !value)}
               aria-label={open ? 'Fermer le menu' : 'Ouvrir le menu'}
               aria-expanded={open}
-              className="grid size-10 place-items-center rounded-full hover:bg-foreground/5 sm:hidden"
+              className="grid size-11 place-items-center rounded-full hover:bg-foreground/5 sm:hidden"
             >
               {open ? <X className="size-5" /> : <Menu className="size-5" />}
             </button>

@@ -18,6 +18,7 @@ import { ServiceDetails } from '@/components/catalog/service-details'
 import { BookingSummary } from '@/components/reservation/booking-summary'
 import { ConfirmationActions } from '@/components/reservation/confirmation-actions'
 import { WeekAvailabilityPicker } from '@/components/reservation/week-availability-picker'
+import { formControlClass } from '@/components/ui/form-field'
 import {
   type BookingResult,
   createPublicAppointment,
@@ -69,8 +70,7 @@ interface ReservationWizardProps {
   maxDate: string
 }
 
-const fieldClass =
-  'h-12 w-full rounded-xl border bg-background px-4 text-base outline-none transition focus:ring-2 focus:ring-ring aria-invalid:border-destructive aria-invalid:ring-2 aria-invalid:ring-destructive/20'
+const fieldClass = cn(formControlClass, 'min-h-12 px-4')
 
 const formatPrice = (priceCents: number): string =>
   `${(priceCents / 100).toLocaleString('fr-CH')} CHF`
@@ -102,7 +102,7 @@ const ConsentFormNotice = ({ url }: Readonly<{ url: string }>) => (
       href={url}
       target="_blank"
       rel="noopener noreferrer"
-      className="mt-3 inline-flex h-10 items-center gap-2 rounded-lg border border-amber-400 bg-white px-4 font-medium"
+      className="mt-3 inline-flex min-h-11 items-center gap-2 rounded-xl border border-amber-400 bg-white px-4 font-medium"
     >
       <FileText className="size-4" />
       Télécharger le formulaire (PDF)
@@ -890,7 +890,7 @@ export const ReservationWizard = ({
               <button
                 type="button"
                 onClick={() => goToStep(1)}
-                className="inline-flex h-10 shrink-0 items-center gap-1.5 rounded-full border px-3 text-xs font-medium"
+                className="inline-flex min-h-11 shrink-0 items-center gap-1.5 rounded-full border px-3 text-xs font-medium"
               >
                 <Pencil className="size-3.5" /> Modifier
               </button>
@@ -907,7 +907,7 @@ export const ReservationWizard = ({
               <button
                 type="button"
                 onClick={() => goToStep(2)}
-                className="inline-flex h-10 shrink-0 items-center gap-1.5 rounded-full border px-3 text-xs font-medium"
+                className="inline-flex min-h-11 shrink-0 items-center gap-1.5 rounded-full border px-3 text-xs font-medium"
               >
                 <Pencil className="size-3.5" /> Modifier
               </button>
@@ -933,7 +933,7 @@ export const ReservationWizard = ({
               <button
                 type="button"
                 onClick={() => goToStep(3)}
-                className="inline-flex h-10 shrink-0 items-center gap-1.5 rounded-full border px-3 text-xs font-medium"
+                className="inline-flex min-h-11 shrink-0 items-center gap-1.5 rounded-full border px-3 text-xs font-medium"
               >
                 <Pencil className="size-3.5" /> Modifier
               </button>

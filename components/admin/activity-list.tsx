@@ -5,6 +5,7 @@ import {
   ChevronRight,
 } from 'lucide-react'
 import Link from 'next/link'
+import { EmptyState } from '@/components/ui/empty-state'
 import {
   type AppointmentActivityItem,
   formatActivityCreatedAt,
@@ -30,9 +31,11 @@ export const ActivityList = ({
 }>) => {
   if (!activities.length)
     return (
-      <p className="rounded-xl bg-muted/60 px-4 py-6 text-center text-sm text-muted-foreground">
-        Aucune activité cliente pour le moment.
-      </p>
+      <EmptyState
+        title="Aucune activité cliente"
+        description="Les nouvelles réservations et modifications apparaîtront ici."
+        className="border-0 bg-muted/60 py-6"
+      />
     )
 
   return (

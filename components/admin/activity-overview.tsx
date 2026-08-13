@@ -1,6 +1,7 @@
 import { Bell, CheckCheck, List } from 'lucide-react'
 import Link from 'next/link'
 import { ActivityList } from '@/components/admin/activity-list'
+import { StatusBadge } from '@/components/ui/status-badge'
 import { markAllAppointmentActivitiesRead } from '@/lib/actions/admin-activity'
 import type { AppointmentActivityItem } from '@/lib/admin/activity'
 
@@ -28,7 +29,7 @@ export const ActivityOverview = ({
         </div>
       </div>
       {unreadCount > 0 ? (
-        <span className="shrink-0 rounded-full bg-rose-600 px-2.5 py-1 text-xs font-bold text-white">
+        <StatusBadge variant="danger" className="shrink-0">
           <span aria-hidden="true">
             {unreadCount > 99 ? '99+' : unreadCount}
           </span>
@@ -36,7 +37,7 @@ export const ActivityOverview = ({
             {unreadCount} activité{unreadCount > 1 ? 's' : ''} non lue
             {unreadCount > 1 ? 's' : ''}
           </span>
-        </span>
+        </StatusBadge>
       ) : null}
     </div>
 
