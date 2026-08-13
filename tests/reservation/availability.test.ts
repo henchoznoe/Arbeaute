@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from 'vitest'
 import {
   findNextAvailableSlot,
+  getAvailabilityByDate,
   getAvailableSlots,
   getAvailableSlotsByDate,
 } from '@/lib/reservation/availability'
@@ -218,6 +219,64 @@ describe('batched availability', () => {
       now: earlySunday,
     })
 
+    expect(database.appointment.findMany).toHaveBeenCalledTimes(1)
+    expect(database.weeklyAvailability.findMany).toHaveBeenCalledTimes(1)
+    expect(database.availabilityException.findMany).toHaveBeenCalledTimes(1)
+  })
+
+  it('distinguishes available, full and closed days in one range', async () => {
+    const availability = await getAvailabilityByDate({
+      database: makeDatabase({
+        weekly: [
+          { dayOfWeek: 1, startMinute: 8 * 60, endMinute: 9 * 60 },
+          { dayOfWeek: 2, startMinute: 8 * 60, endMinute: 9 * 60 },
+          { dayOfWeek: 3, startMinute: 8 * 60, endMinute: 9 * 60 },
+        ],
+        appointments: [
+          {
+            startsAt: new Date('2026-08-11T06:00:00.000Z'),
+            endsAt: new Date('2026-08-11T07:00:00.000Z'),
+            preparationMinutes: 0,
+            cleanupMinutes: 0,
+          },
+        ],
+        exceptions: [
+          {
+            type: 'UNAVAILABLE',
+            startsAt: new Date('2026-08-12T05:00:00.000Z'),
+            endsAt: new Date('2026-08-12T18:00:00.000Z'),
+          },
+        ],
+      }),
+      serviceId: 'service',
+      fromDateKey: monday,
+      toDateKey: '2026-08-13',
+      now: earlySunday,
+    })
+
+    expect(availability[monday]?.state).toBe('AVAILABLE')
+    expect(availability['2026-08-11']).toEqual({ state: 'FULL', slots: [] })
+    expect(availability['2026-08-12']).toEqual({
+      state: 'CLOSED',
+      slots: [],
+    })
+    expect(availability['2026-08-13']).toEqual({
+      state: 'CLOSED',
+      slots: [],
+    })
+  })
+
+  it('loads each availability source once for calendar states', async () => {
+    const database = makeDatabase({})
+    await getAvailabilityByDate({
+      database,
+      serviceId: 'service',
+      fromDateKey: monday,
+      toDateKey: sunday,
+      now: earlySunday,
+    })
+
+    expect(database.service.findFirst).toHaveBeenCalledTimes(1)
     expect(database.appointment.findMany).toHaveBeenCalledTimes(1)
     expect(database.weeklyAvailability.findMany).toHaveBeenCalledTimes(1)
     expect(database.availabilityException.findMany).toHaveBeenCalledTimes(1)

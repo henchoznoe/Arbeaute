@@ -26,6 +26,13 @@ export interface AvailableSlot {
   label: string
 }
 
+export type AvailabilityDayState = 'AVAILABLE' | 'FULL' | 'CLOSED'
+
+export interface DayAvailability {
+  state: AvailabilityDayState
+  slots: AvailableSlot[]
+}
+
 interface WeeklyRange {
   dayOfWeek: number
   startMinute: number
@@ -161,12 +168,12 @@ const loadAvailabilityWindow = async ({
 }
 
 /** Calcul pur : aucune requête, tout vient de la fenêtre déjà chargée. */
-const computeSlotsForDay = (
+const computeAvailabilityForDay = (
   window: AvailabilityWindow,
   dateKey: string,
   now: Date,
-): AvailableSlot[] => {
-  if (!isDateKey(dateKey)) return []
+): DayAvailability => {
+  if (!isDateKey(dateKey)) return { state: 'CLOSED', slots: [] }
 
   const { service } = window
   const { start: dayStart, end: dayEnd } = getLocalDayBounds(dateKey)
@@ -189,12 +196,23 @@ const computeSlotsForDay = (
         end: exception.endsAt > dayEnd ? dayEnd : exception.endsAt,
       })),
   ])
-  if (openings.length === 0) return []
+  if (openings.length === 0) return { state: 'CLOSED', slots: [] }
 
-  const blocked = [
-    ...exceptionsToday
+  const unavailable = mergeIntervals(
+    exceptionsToday
       .filter(exception => exception.type === 'UNAVAILABLE')
       .map(exception => ({ start: exception.startsAt, end: exception.endsAt })),
+  )
+  const hasUnblockedOpening = openings.some(
+    opening =>
+      !unavailable.some(
+        closure => closure.start <= opening.start && closure.end >= opening.end,
+      ),
+  )
+  if (!hasUnblockedOpening) return { state: 'CLOSED', slots: [] }
+
+  const blocked = [
+    ...unavailable,
     ...window.appointments.map(appointment => ({
       start: new Date(
         appointment.startsAt.getTime() -
@@ -230,8 +248,20 @@ const computeSlotsForDay = (
     })
   }
 
-  return [...new Map(slots.map(slot => [slot.startsAt, slot])).values()]
+  const uniqueSlots = [
+    ...new Map(slots.map(slot => [slot.startsAt, slot])).values(),
+  ]
+  return {
+    state: uniqueSlots.length > 0 ? 'AVAILABLE' : 'FULL',
+    slots: uniqueSlots,
+  }
 }
+
+const computeSlotsForDay = (
+  window: AvailabilityWindow,
+  dateKey: string,
+  now: Date,
+): AvailableSlot[] => computeAvailabilityForDay(window, dateKey, now).slots
 
 export const getAvailableSlots = async ({
   database,
@@ -282,6 +312,39 @@ export const getAvailableSlotsByDate = async ({
     getDateKeysInRange(fromDateKey, toDateKey).map(dateKey => [
       dateKey,
       computeSlotsForDay(window, dateKey, now),
+    ]),
+  )
+}
+
+/**
+ * Même chargement groupé que `getAvailableSlotsByDate`, avec l'état éditorial
+ * nécessaire au calendrier. « Fermé » dépend des horaires et exceptions ;
+ * « complet » signifie que l'institut ouvre mais qu'aucun créneau ne convient.
+ */
+export const getAvailabilityByDate = async ({
+  database,
+  serviceId,
+  fromDateKey,
+  toDateKey,
+  now = new Date(),
+  excludeAppointmentId,
+}: RangeAvailabilityOptions): Promise<Record<string, DayAvailability>> => {
+  if (!isDateKey(fromDateKey) || !isDateKey(toDateKey)) return {}
+  if (toDateKey < fromDateKey) return {}
+
+  const window = await loadAvailabilityWindow({
+    database,
+    serviceId,
+    fromDateKey,
+    toDateKey,
+    excludeAppointmentId,
+  })
+  if (!window) return {}
+
+  return Object.fromEntries(
+    getDateKeysInRange(fromDateKey, toDateKey).map(dateKey => [
+      dateKey,
+      computeAvailabilityForDay(window, dateKey, now),
     ]),
   )
 }

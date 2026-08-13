@@ -5,11 +5,14 @@ import {
   Check,
   ChevronLeft,
   ChevronRight,
+  CircleCheck,
   Clock,
   Download,
   FileText,
   MailX,
+  Minus,
   Settings2,
+  X,
   Zap,
 } from 'lucide-react'
 import { useSearchParams } from 'next/navigation'
@@ -22,8 +25,21 @@ import {
   getPublicWeekAvailability,
 } from '@/lib/actions/reservation'
 import type { ServiceCareDetails } from '@/lib/catalog/service-content'
-import type { AvailableSlot } from '@/lib/reservation/availability'
-import { resolveInitialServiceId } from '@/lib/reservation/deep-link'
+import type {
+  AvailabilityDayState,
+  DayAvailability,
+} from '@/lib/reservation/availability'
+import {
+  availabilityStateLabels,
+  formatCalendarDate,
+  formatCalendarDayNumber,
+  formatCalendarPeriod,
+  formatCalendarWeekday,
+} from '@/lib/reservation/calendar-view'
+import {
+  buildServiceReservationPath,
+  resolveInitialServiceId,
+} from '@/lib/reservation/deep-link'
 import { formatServiceLabel } from '@/lib/reservation/service-label'
 import { cn } from '@/lib/utils/cn'
 import { downloadCalendar } from './calendar-download'
@@ -64,13 +80,11 @@ const addDateKeyDays = (dateKey: string, amount: number): string => {
 const weekCacheKey = (serviceId: string, weekStart: string): string =>
   `${serviceId}|${weekStart}`
 
-const formatQuickDate = (dateKey: string): string =>
-  new Intl.DateTimeFormat('fr-CH', {
-    timeZone: 'UTC',
-    weekday: 'short',
-    day: 'numeric',
-    month: 'short',
-  }).format(new Date(`${dateKey}T12:00:00Z`))
+const stateIcon = {
+  AVAILABLE: CircleCheck,
+  FULL: X,
+  CLOSED: Minus,
+} satisfies Record<AvailabilityDayState, typeof CircleCheck>
 
 const ConsentFormNotice = ({ url }: Readonly<{ url: string }>) => (
   <div className="mt-5 rounded-xl border border-amber-300 bg-amber-50 p-4 text-sm text-amber-950">
@@ -109,15 +123,16 @@ export const ReservationWizard = ({
   const [step, setStep] = useState(initialServiceId ? 2 : 1)
   const [serviceId, setServiceId] = useState(initialServiceId ?? '')
   const [date, setDate] = useState(minDate)
-  const [weekSlots, setWeekSlots] = useState<Record<string, AvailableSlot[]>>(
-    {},
-  )
+  const [weekAvailability, setWeekAvailability] = useState<
+    Record<string, DayAvailability>
+  >({})
   const [loadedWeek, setLoadedWeek] = useState<string | null>(null)
   const [startsAt, setStartsAt] = useState('')
   const [loadingSlots, startSlotsTransition] = useTransition()
   const [submitting, startSubmitTransition] = useTransition()
   const [searchingNext, startNextTransition] = useTransition()
   const [nextSlotNotice, setNextSlotNotice] = useState<string | null>(null)
+  const [calendarAnnouncement, setCalendarAnnouncement] = useState('')
   const [result, setResult] = useState<BookingResult | null>(null)
   const [viewStart, setViewStart] = useState(minDate)
   const pendingSlotRef = useRef<{ dateKey: string; startsAt: string } | null>(
@@ -125,23 +140,59 @@ export const ReservationWizard = ({
   )
   const selectedService = services.find(service => service.id === serviceId)
   const weekEnd = addDateKeyDays(viewStart, 6)
+  const lastCompleteWeekStart = addDateKeyDays(maxDate, -6)
+  const maxViewStart =
+    lastCompleteWeekStart < minDate ? minDate : lastCompleteWeekStart
   const weekDates = Array.from({ length: 7 }, (_, index) =>
     addDateKeyDays(viewStart, index),
-  ).filter(dateKey => dateKey <= maxDate)
+  )
   const canGoPreviousWeek = viewStart > minDate
-  const canGoNextWeek = addDateKeyDays(viewStart, 7) <= maxDate
+  const canGoNextWeek = viewStart < maxViewStart
   const weekReady = loadedWeek === weekCacheKey(serviceId, viewStart)
-  const slots = weekSlots[date] ?? []
+  const selectedDay = weekAvailability[date]
+  const slots = selectedDay?.slots ?? []
 
   const goToWeek = (amount: number) => {
-    const next = addDateKeyDays(viewStart, amount)
-    setViewStart(next < minDate ? minDate : next > maxDate ? maxDate : next)
+    const candidate = addDateKeyDays(viewStart, amount)
+    const next =
+      candidate < minDate
+        ? minDate
+        : candidate > maxViewStart
+          ? maxViewStart
+          : candidate
+    setViewStart(next)
+    setDate(next)
+    setStartsAt('')
+    setNextSlotNotice(null)
+    setCalendarAnnouncement(
+      `Période du ${formatCalendarPeriod(next, addDateKeyDays(next, 6))} affichée.`,
+    )
   }
 
   const selectDate = (dateKey: string) => {
     setDate(dateKey)
     setStartsAt('')
-    if (dateKey < viewStart || dateKey > weekEnd) setViewStart(dateKey)
+    setNextSlotNotice(null)
+    const state = weekAvailability[dateKey]?.state
+    setCalendarAnnouncement(
+      `${formatCalendarDate(dateKey)} sélectionné${
+        state ? ` : ${availabilityStateLabels[state].toLowerCase()}` : ''
+      }.`,
+    )
+  }
+
+  const selectService = (service: ReservationService) => {
+    window.history.replaceState(
+      window.history.state,
+      '',
+      buildServiceReservationPath(service.slug),
+    )
+    setServiceId(service.id)
+    setDate(minDate)
+    setViewStart(minDate)
+    setStartsAt('')
+    setNextSlotNotice(null)
+    setStep(2)
   }
 
   // Une seule requête par semaine affichée : passer d'un jour à l'autre à
@@ -153,11 +204,11 @@ export const ReservationWizard = ({
       const pending = pendingSlotRef.current
       pendingSlotRef.current = null
 
-      setWeekSlots(loaded)
+      setWeekAvailability(loaded)
       setLoadedWeek(weekCacheKey(serviceId, viewStart))
       setStartsAt(
         pending?.startsAt &&
-          loaded[pending.dateKey]?.some(
+          loaded[pending.dateKey]?.slots.some(
             slot => slot.startsAt === pending.startsAt,
           )
           ? pending.startsAt
@@ -179,6 +230,10 @@ export const ReservationWizard = ({
       }
 
       setDate(found.dateKey)
+      const foundNotice = `Prochain créneau trouvé : ${formatCalendarDate(
+        found.dateKey,
+      )} à ${found.slot.label}.`
+      setNextSlotNotice(foundNotice)
       if (found.dateKey >= viewStart && found.dateKey <= weekEnd) {
         setStartsAt(found.slot.startsAt)
         return
@@ -189,7 +244,7 @@ export const ReservationWizard = ({
         dateKey: found.dateKey,
         startsAt: found.slot.startsAt,
       }
-      setViewStart(found.dateKey)
+      setViewStart(found.dateKey > maxViewStart ? maxViewStart : found.dateKey)
     })
   }
 
@@ -339,10 +394,7 @@ export const ReservationWizard = ({
                       <button
                         key={service.id}
                         type="button"
-                        onClick={() => {
-                          setServiceId(service.id)
-                          setStep(2)
-                        }}
+                        onClick={() => selectService(service)}
                         className="rounded-2xl border bg-card p-5 text-left transition hover:border-primary hover:shadow-sm focus-visible:ring-2 focus-visible:ring-ring"
                       >
                         <span className="block font-semibold">
@@ -408,72 +460,110 @@ export const ReservationWizard = ({
             {searchingNext ? 'Recherche…' : 'Prochain créneau disponible'}
           </button>
           {nextSlotNotice ? (
-            <p className="mt-2 text-sm text-muted-foreground">
+            <p className="mt-2 text-sm text-muted-foreground" role="status">
               {nextSlotNotice}
             </p>
           ) : null}
 
-          <label className="mt-6 flex flex-col gap-2 text-sm font-medium">
-            <span className="flex items-center gap-2">
-              <CalendarDays className="size-4" /> Date
-            </span>
-            <input
-              type="date"
-              value={date}
-              min={minDate}
-              max={maxDate}
-              onChange={event => selectDate(event.target.value)}
-              className={fieldClass}
-            />
-          </label>
-          <div className="mt-4 flex items-center gap-2">
-            <button
-              type="button"
-              onClick={() => goToWeek(-7)}
-              disabled={!canGoPreviousWeek}
-              aria-label="Semaine précédente"
-              className="grid size-9 shrink-0 place-items-center rounded-full border disabled:opacity-30"
-            >
-              <ChevronLeft className="size-4" />
-            </button>
-            <div className="flex flex-1 gap-2 overflow-x-auto pb-2">
+          <p className="sr-only" role="status" aria-live="polite">
+            {calendarAnnouncement}
+          </p>
+          <div className="-mx-3 mt-6 rounded-2xl border bg-muted/25 p-2 sm:mx-0 sm:p-4">
+            <div className="flex items-center justify-between gap-2">
+              <button
+                type="button"
+                onClick={() => goToWeek(-7)}
+                disabled={!canGoPreviousWeek}
+                aria-label="Période précédente"
+                className="grid size-11 shrink-0 place-items-center rounded-full border bg-background transition hover:border-primary disabled:opacity-30"
+              >
+                <ChevronLeft className="size-4" />
+              </button>
+              <p className="flex min-w-0 items-center gap-2 text-center text-sm font-semibold sm:text-base">
+                <CalendarDays className="hidden size-4 shrink-0 sm:block" />
+                {formatCalendarPeriod(viewStart, weekEnd)}
+              </p>
+              <button
+                type="button"
+                onClick={() => goToWeek(7)}
+                disabled={!canGoNextWeek}
+                aria-label="Période suivante"
+                className="grid size-11 shrink-0 place-items-center rounded-full border bg-background transition hover:border-primary disabled:opacity-30"
+              >
+                <ChevronRight className="size-4" />
+              </button>
+            </div>
+
+            <div className="mt-3 grid grid-cols-7 gap-px sm:gap-2">
               {weekDates.map(dateKey => {
-                // Les créneaux de toute la semaine sont déjà là : autant
-                // signaler les jours complets avant que la cliente ne clique.
-                const isFull = weekReady && weekSlots[dateKey]?.length === 0
+                const state = weekReady
+                  ? (weekAvailability[dateKey]?.state ?? 'CLOSED')
+                  : null
+                const StateIcon = state ? stateIcon[state] : null
+                const selected = date === dateKey
                 return (
                   <button
                     key={dateKey}
                     type="button"
                     onClick={() => selectDate(dateKey)}
-                    aria-label={
-                      isFull
-                        ? `${formatQuickDate(dateKey)} — complet`
-                        : formatQuickDate(dateKey)
-                    }
+                    disabled={!weekReady}
+                    aria-pressed={selected}
+                    aria-label={`${formatCalendarDate(dateKey)}${
+                      state ? ` — ${availabilityStateLabels[state]}` : ''
+                    }`}
                     className={cn(
-                      'min-w-24 shrink-0 rounded-xl border px-3 py-2 text-sm font-medium capitalize',
-                      date === dateKey
-                        ? 'border-primary bg-primary text-primary-foreground'
-                        : isFull
-                          ? 'bg-muted text-muted-foreground/60'
-                          : 'bg-background hover:border-primary',
+                      'flex min-h-20 min-w-0 flex-col items-center justify-center rounded-xl border bg-background px-0.5 py-2 text-center transition disabled:opacity-50',
+                      selected &&
+                        'border-primary bg-primary text-primary-foreground ring-2 ring-primary/20',
+                      !selected &&
+                        state === 'AVAILABLE' &&
+                        'border-emerald-300 text-emerald-800 hover:border-primary',
+                      !selected &&
+                        state === 'FULL' &&
+                        'border-amber-300 bg-amber-50 text-amber-900',
+                      !selected &&
+                        state === 'CLOSED' &&
+                        'border-dashed bg-muted text-muted-foreground',
                     )}
                   >
-                    {formatQuickDate(dateKey)}
+                    <span className="text-[10px] leading-none font-semibold uppercase sm:text-xs">
+                      {formatCalendarWeekday(dateKey)}
+                    </span>
+                    <span className="mt-1 text-lg leading-none font-bold sm:text-xl">
+                      {formatCalendarDayNumber(dateKey)}
+                    </span>
+                    <span className="mt-1.5 flex min-w-0 items-center justify-center gap-0.5 text-[8px] leading-none font-semibold sm:text-[10px]">
+                      {StateIcon ? (
+                        <StateIcon className="size-3 shrink-0" />
+                      ) : null}
+                      {state === 'AVAILABLE'
+                        ? 'Libre'
+                        : state === 'FULL'
+                          ? 'Complet'
+                          : state === 'CLOSED'
+                            ? 'Fermé'
+                            : '…'}
+                    </span>
                   </button>
                 )
               })}
             </div>
-            <button
-              type="button"
-              onClick={() => goToWeek(7)}
-              disabled={!canGoNextWeek}
-              aria-label="Semaine suivante"
-              className="grid size-9 shrink-0 place-items-center rounded-full border disabled:opacity-30"
+
+            <ul
+              className="mt-3 flex flex-wrap justify-center gap-x-4 gap-y-2 text-[11px] text-muted-foreground sm:text-xs"
+              aria-label="Légende des disponibilités"
             >
-              <ChevronRight className="size-4" />
-            </button>
+              <li className="flex items-center gap-1">
+                <CircleCheck className="size-3.5 text-emerald-700" />
+                Disponible
+              </li>
+              <li className="flex items-center gap-1">
+                <X className="size-3.5 text-amber-800" /> Complet
+              </li>
+              <li className="flex items-center gap-1">
+                <Minus className="size-3.5" /> Fermé
+              </li>
+            </ul>
           </div>
           <div className="mt-6">
             <p className="flex items-center gap-2 text-sm font-medium">
@@ -483,7 +573,7 @@ export const ReservationWizard = ({
               <p className="mt-4 text-sm text-muted-foreground">
                 Recherche des créneaux…
               </p>
-            ) : slots.length > 0 ? (
+            ) : selectedDay?.state === 'AVAILABLE' ? (
               <div className="mt-3 grid grid-cols-3 gap-2 sm:grid-cols-5">
                 {slots.map(slot => (
                   <button
@@ -501,9 +591,15 @@ export const ReservationWizard = ({
                   </button>
                 ))}
               </div>
+            ) : selectedDay?.state === 'FULL' ? (
+              <p className="mt-4 rounded-xl bg-muted p-4 text-sm text-muted-foreground">
+                Tous les créneaux de ce jour sont déjà pris. Essayez une autre
+                date ou recherchez le prochain créneau.
+              </p>
             ) : (
               <p className="mt-4 rounded-xl bg-muted p-4 text-sm text-muted-foreground">
-                Aucun créneau disponible ce jour-là. Essayez une autre date.
+                L’institut est fermé ce jour-là. Choisissez une date indiquée
+                comme disponible.
               </p>
             )}
           </div>

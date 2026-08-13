@@ -1,5 +1,8 @@
 import { describe, expect, it } from 'vitest'
-import { resolveInitialServiceId } from '@/lib/reservation/deep-link'
+import {
+  buildServiceReservationPath,
+  resolveInitialServiceId,
+} from '@/lib/reservation/deep-link'
 
 const services = [
   { id: 'service-1', slug: 'soin-visage' },
@@ -7,6 +10,12 @@ const services = [
 ]
 
 describe('lien profond de réservation', () => {
+  it('construit une URL stable et encode le slug', () => {
+    expect(buildServiceReservationPath('soin visage')).toBe(
+      '/reservation?service=soin%20visage',
+    )
+  })
+
   it('résout un slug issu du catalogue réservable', () => {
     expect(resolveInitialServiceId(services, 'onglerie')).toBe('service-2')
   })

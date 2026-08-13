@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button'
 import { filterCatalog } from '@/lib/catalog/filter'
 import type { CatalogCategory } from '@/lib/catalog/queries'
 import { contact } from '@/lib/constants/contact'
+import { buildServiceReservationPath } from '@/lib/reservation/deep-link'
 
 const formatPrice = (priceCents: number): string =>
   `${(priceCents / 100).toLocaleString('fr-CH')} CHF`
@@ -176,7 +177,9 @@ export const ServiceCatalog = ({
                             size="lg"
                             className="h-11 rounded-full px-4"
                           >
-                            <Link href={`/reservation?service=${service.slug}`}>
+                            <Link
+                              href={buildServiceReservationPath(service.slug)}
+                            >
                               <CalendarDays className="size-4" />
                               Réserver
                             </Link>

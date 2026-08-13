@@ -18,9 +18,10 @@ import {
 } from '@/lib/reservation/appointments'
 import {
   type AvailableSlot,
+  type DayAvailability,
   findNextAvailableSlot,
+  getAvailabilityByDate,
   getAvailableSlots,
-  getAvailableSlotsByDate,
   type NextAvailableSlot,
 } from '@/lib/reservation/availability'
 import { createAppointmentCalendar } from '@/lib/reservation/calendar'
@@ -91,10 +92,10 @@ const PUBLIC_WEEK_LENGTH = 7
 export const getPublicWeekAvailability = async (
   serviceId: string,
   fromDateKey: string,
-): Promise<Record<string, AvailableSlot[]>> => {
+): Promise<Record<string, DayAvailability>> => {
   try {
     const from = z.string().min(1).parse(fromDateKey)
-    return await getAvailableSlotsByDate({
+    return await getAvailabilityByDate({
       database: prisma,
       serviceId: z.string().min(1).parse(serviceId),
       fromDateKey: from,
