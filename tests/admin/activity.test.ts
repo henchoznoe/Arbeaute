@@ -19,6 +19,7 @@ import {
   formatActivityMessage,
   getActivityOverview,
   getActivityPage,
+  getUnreadActivityCount,
 } from '@/lib/admin/activity'
 
 const baseActivity = {
@@ -90,6 +91,13 @@ describe('admin activity queries', () => {
     expect(mocks.findMany).toHaveBeenCalledWith(
       expect.objectContaining({ take: 3, orderBy: { createdAt: 'desc' } }),
     )
+    expect(mocks.count).toHaveBeenCalledWith({ where: { readAt: null } })
+  })
+
+  it('loads the unread count for the persistent navigation', async () => {
+    mocks.count.mockResolvedValue(7)
+
+    await expect(getUnreadActivityCount()).resolves.toBe(7)
     expect(mocks.count).toHaveBeenCalledWith({ where: { readAt: null } })
   })
 

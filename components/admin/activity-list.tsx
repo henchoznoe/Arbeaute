@@ -10,6 +10,7 @@ import {
   formatActivityCreatedAt,
   formatActivityMessage,
 } from '@/lib/admin/activity'
+import { getLocalDateKey } from '@/lib/reservation/time'
 
 const ActivityIcon = ({
   type,
@@ -71,7 +72,7 @@ export const ActivityList = ({
                   </time>
                   {canOpenAppointment ? (
                     <Link
-                      href={`/admin/appointments/${activity.appointmentId}`}
+                      href={`/admin/appointments/${activity.appointmentId}?date=${getLocalDateKey(activity.appointmentStartsAt)}`}
                       className="inline-flex min-h-11 items-center gap-1 text-xs font-semibold text-primary"
                     >
                       Voir le rendez-vous

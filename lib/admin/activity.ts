@@ -40,6 +40,9 @@ export const getActivityOverview = async () => {
   return { activities, unreadCount }
 }
 
+export const getUnreadActivityCount = async (): Promise<number> =>
+  prisma.appointmentActivity.count({ where: { readAt: null } })
+
 export const getActivityPage = async (requestedPage: number) => {
   const totalCount = await prisma.appointmentActivity.count()
   const totalPages = Math.max(1, Math.ceil(totalCount / ACTIVITY_PAGE_SIZE))

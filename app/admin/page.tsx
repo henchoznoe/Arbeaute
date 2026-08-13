@@ -1,13 +1,11 @@
 import { formatInTimeZone } from 'date-fns-tz'
-import { Clock3, Plus, Settings2 } from 'lucide-react'
+import { Plus } from 'lucide-react'
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { Suspense } from 'react'
 import { ActivityOverview } from '@/components/admin/activity-overview'
 import { AdminAgendaView } from '@/components/admin/admin-agenda-view'
 import { AdminSkeleton } from '@/components/admin/admin-skeleton'
-import { InstallAppButton } from '@/components/pwa/install-app-button'
-import { logoutAdmin } from '@/lib/actions/admin-auth'
 import { getActivityOverview } from '@/lib/admin/activity'
 import prisma from '@/lib/core/prisma'
 import { getAdminSession } from '@/lib/core/session-cookies'
@@ -96,11 +94,12 @@ const AdminAgenda = async ({ searchParams }: Readonly<AdminPageProps>) => {
   }
   const appointmentCard = (
     appointment: (typeof appointments)[number],
+    dateKey: string,
     compact = false,
   ) => (
     <Link
       key={appointment.id}
-      href={`/admin/appointments/${appointment.id}`}
+      href={`/admin/appointments/${appointment.id}?date=${dateKey}`}
       className={`block rounded-xl border bg-background p-3 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md ${compact ? 'text-xs' : ''}`}
       style={{ borderLeftColor: appointment.service.color, borderLeftWidth: 4 }}
     >
@@ -135,44 +134,12 @@ const AdminAgenda = async ({ searchParams }: Readonly<AdminPageProps>) => {
 
   return (
     <main className="mx-auto min-h-screen max-w-7xl px-4 py-5 sm:px-8 sm:py-8">
-      <header className="flex flex-wrap items-center justify-between gap-4">
+      <header>
         <div>
           <p className="text-sm font-medium text-rose-500">Arbeauté</p>
           <h1 className="font-heading text-3xl font-bold">Agenda</h1>
         </div>
-        <div className="flex items-center gap-2">
-          <InstallAppButton className="min-h-11 rounded-xl border px-4 text-sm font-medium text-muted-foreground no-underline" />
-          <form action={logoutAdmin}>
-            <button
-              type="submit"
-              className="min-h-11 rounded-xl border px-4 text-sm font-medium"
-            >
-              Se déconnecter
-            </button>
-          </form>
-        </div>
       </header>
-
-      <nav className="mt-6 grid grid-cols-2 gap-3 sm:flex sm:flex-wrap">
-        <Link
-          href={`/admin/appointments/new?date=${anchor}`}
-          className="col-span-2 inline-flex min-h-12 items-center justify-center gap-2 rounded-xl bg-primary px-4 text-sm font-medium text-primary-foreground sm:col-span-1"
-        >
-          <Plus className="size-4" /> Nouveau rendez-vous
-        </Link>
-        <Link
-          href="/admin/availability"
-          className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border px-4 text-sm font-medium"
-        >
-          <Clock3 className="size-4" /> Horaires
-        </Link>
-        <Link
-          href="/admin/services"
-          className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border px-4 text-sm font-medium"
-        >
-          <Settings2 className="size-4" /> Prestations
-        </Link>
-      </nav>
 
       <ActivityOverview {...activityOverview} />
 
@@ -221,7 +188,7 @@ const AdminAgenda = async ({ searchParams }: Readonly<AdminPageProps>) => {
               <div className="mt-3 space-y-2">
                 {dailyAppointments.length ? (
                   dailyAppointments.map(appointment =>
-                    appointmentCard(appointment),
+                    appointmentCard(appointment, dateKey),
                   )
                 ) : (
                   <p className="rounded-xl bg-muted/60 px-3 py-4 text-center text-sm text-muted-foreground">
@@ -264,7 +231,7 @@ const AdminAgenda = async ({ searchParams }: Readonly<AdminPageProps>) => {
                   </div>
                 ))}
                 {dailyAppointments.map(appointment =>
-                  appointmentCard(appointment, true),
+                  appointmentCard(appointment, dateKey, true),
                 )}
               </div>
             </section>
