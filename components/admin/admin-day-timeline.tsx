@@ -2,7 +2,9 @@
 
 import { AlertTriangle, Plus } from 'lucide-react'
 import Link from 'next/link'
+import { AppointmentStatusActions } from '@/components/admin/appointment-status-actions'
 import { EmptyState } from '@/components/ui/empty-state'
+import { StatusBadge } from '@/components/ui/status-badge'
 import {
   type AdminTimelineDay,
   formatTimelineMinute,
@@ -11,6 +13,20 @@ import {
 } from '@/lib/admin/agenda-timeline'
 
 const PIXELS_PER_MINUTE = 1.5
+
+const statusLabels = {
+  CONFIRMED: 'Confirmé',
+  COMPLETED: 'Terminé',
+  CANCELLED: 'Annulé',
+  NO_SHOW: 'Absence',
+} as const
+
+const statusVariants = {
+  CONFIRMED: 'success',
+  COMPLETED: 'info',
+  CANCELLED: 'neutral',
+  NO_SHOW: 'danger',
+} as const
 
 const positionStyle = (
   interval: TimelineInterval,
@@ -80,6 +96,53 @@ export const AdminDayTimeline = ({
           <AlertTriangle className="mt-0.5 size-4 shrink-0" />
           Deux rendez-vous se chevauchent visuellement. Vérifiez leurs horaires.
         </p>
+      ) : null}
+
+      {day.appointments.length ? (
+        <section
+          className="mt-3 rounded-2xl border bg-card p-3"
+          aria-labelledby="daily-status-actions"
+        >
+          <h3 id="daily-status-actions" className="text-sm font-semibold">
+            Actions rapides
+          </h3>
+          <ul className="mt-3 space-y-3">
+            {day.appointments.map(appointment => (
+              <li
+                key={appointment.id}
+                className="rounded-xl border bg-background p-3"
+              >
+                <Link
+                  href={`/admin/appointments/${appointment.id}?date=${day.dateKey}`}
+                  className="flex min-h-11 items-start justify-between gap-3"
+                >
+                  <span className="min-w-0">
+                    <span className="block text-sm font-semibold">
+                      {formatTimelineMinute(appointment.startMinute)} ·{' '}
+                      {appointment.customerName}
+                    </span>
+                    <span className="mt-0.5 block truncate text-xs text-muted-foreground">
+                      {appointment.serviceLabel}
+                    </span>
+                  </span>
+                  <StatusBadge
+                    variant={statusVariants[appointment.status]}
+                    className="shrink-0"
+                  >
+                    {statusLabels[appointment.status]}
+                  </StatusBadge>
+                </Link>
+                <AppointmentStatusActions
+                  appointmentId={appointment.id}
+                  status={appointment.status}
+                  startsAt={appointment.startsAt}
+                  compact
+                  className="mt-2"
+                />
+              </li>
+            ))}
+          </ul>
+        </section>
       ) : null}
 
       <div className="relative mt-3 overflow-hidden rounded-2xl border bg-muted/35">
@@ -168,11 +231,15 @@ export const AdminDayTimeline = ({
               <Link
                 key={appointment.id}
                 href={`/admin/appointments/${appointment.id}?date=${day.dateKey}`}
-                aria-label={`${formatTimelineMinute(appointment.startMinute)}, ${appointment.customerName}, ${appointment.serviceLabel}`}
+                aria-label={`${formatTimelineMinute(appointment.startMinute)}, ${appointment.customerName}, ${appointment.serviceLabel}, ${statusLabels[appointment.status]}`}
                 className={`absolute left-12 right-1 z-30 overflow-visible rounded-xl border border-dashed bg-background/75 shadow-sm transition hover:shadow-md ${
                   appointment.hasVisualOverlap
                     ? 'border-destructive ring-2 ring-destructive/60'
-                    : 'border-muted-foreground/40'
+                    : appointment.status === 'NO_SHOW'
+                      ? 'border-destructive/60 bg-destructive/5 opacity-75'
+                      : appointment.status === 'COMPLETED'
+                        ? 'border-primary/40 bg-primary/5 opacity-75'
+                        : 'border-muted-foreground/40'
                 }`}
                 style={occupiedStyle}
               >
@@ -206,6 +273,9 @@ export const AdminDayTimeline = ({
                   </span>
                   <span className="block truncate text-[10px] text-muted-foreground">
                     {appointment.serviceLabel}
+                  </span>
+                  <span className="mt-0.5 block text-[9px] font-semibold">
+                    {statusLabels[appointment.status]}
                   </span>
                 </span>
                 {appointment.cleanupMinutes > 0 ? (

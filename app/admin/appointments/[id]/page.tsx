@@ -1,17 +1,35 @@
 import { formatInTimeZone } from 'date-fns-tz'
-import { Copy } from 'lucide-react'
+import { CalendarClock, Copy, UserRound } from 'lucide-react'
 import Link from 'next/link'
 import { notFound, redirect } from 'next/navigation'
 import { Suspense } from 'react'
 import { AdminSkeleton } from '@/components/admin/admin-skeleton'
 import { AppointmentForm } from '@/components/admin/appointment-form'
+import { AppointmentStatusActions } from '@/components/admin/appointment-status-actions'
+import { StatusBadge } from '@/components/ui/status-badge'
 import prisma from '@/lib/core/prisma'
 import { getAdminSession } from '@/lib/core/session-cookies'
 import { RESERVATION_TIME_ZONE } from '@/lib/reservation/constants'
+import { formatServiceLabel } from '@/lib/reservation/service-label'
+import type { AppointmentStatus } from '@/prisma/generated/prisma/enums'
 
 interface EditAppointmentPageProps {
   params: Promise<{ id: string }>
 }
+
+const statusLabels: Record<AppointmentStatus, string> = {
+  CONFIRMED: 'Confirmé',
+  COMPLETED: 'Terminé',
+  CANCELLED: 'Annulé',
+  NO_SHOW: 'Absence',
+}
+
+const statusVariants = {
+  CONFIRMED: 'success',
+  COMPLETED: 'info',
+  CANCELLED: 'neutral',
+  NO_SHOW: 'danger',
+} as const
 
 const EditAppointmentPage = ({
   params,
@@ -26,23 +44,29 @@ const EditAppointment = async ({
 }: Readonly<EditAppointmentPageProps>) => {
   if (!(await getAdminSession())) redirect('/admin/login')
   const { id } = await params
-  const [appointment, services] = await Promise.all([
-    prisma.appointment.findFirst({
-      where: { id, status: 'CONFIRMED' },
-    }),
-    prisma.service.findMany({
-      where: { OR: [{ isArchived: false }, { id }] },
-      orderBy: [{ category: { sortOrder: 'asc' } }, { sortOrder: 'asc' }],
-      select: {
-        id: true,
-        name: true,
-        durationMinutes: true,
-        priceCents: true,
-        category: { select: { name: true } },
-      },
-    }),
-  ])
+  const appointment = await prisma.appointment.findFirst({
+    where: { id },
+    include: {
+      service: { select: { category: { select: { name: true } } } },
+    },
+  })
   if (!appointment) notFound()
+  const services =
+    appointment.status === 'CONFIRMED'
+      ? await prisma.service.findMany({
+          where: {
+            OR: [{ isArchived: false }, { id: appointment.serviceId }],
+          },
+          orderBy: [{ category: { sortOrder: 'asc' } }, { sortOrder: 'asc' }],
+          select: {
+            id: true,
+            name: true,
+            durationMinutes: true,
+            priceCents: true,
+            category: { select: { name: true } },
+          },
+        })
+      : []
 
   const date = formatInTimeZone(
     appointment.startsAt,
@@ -64,9 +88,19 @@ const EditAppointment = async ({
         ← Agenda
       </Link>
       <div className="mt-2 flex flex-wrap items-center justify-between gap-3">
-        <h1 className="font-heading text-3xl font-bold">
-          Modifier le rendez-vous
-        </h1>
+        <div>
+          <h1 className="font-heading text-3xl font-bold">
+            {appointment.status === 'CONFIRMED'
+              ? 'Modifier le rendez-vous'
+              : 'Détail du rendez-vous'}
+          </h1>
+          <StatusBadge
+            variant={statusVariants[appointment.status]}
+            className="mt-2"
+          >
+            {statusLabels[appointment.status]}
+          </StatusBadge>
+        </div>
         <Link
           href={`/admin/appointments/new?duplicate=${appointment.id}`}
           className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border bg-background px-4 text-sm font-medium transition hover:bg-muted"
@@ -75,26 +109,95 @@ const EditAppointment = async ({
         </Link>
       </div>
       <p className="mt-2 text-sm text-muted-foreground">
-        Le changement de prestation actualise la durée et le prix conservés sur
-        ce rendez-vous.
+        {appointment.status === 'CONFIRMED'
+          ? 'Le changement de prestation actualise la durée et le prix conservés sur ce rendez-vous.'
+          : 'Les informations sont conservées en lecture seule tant que le rendez-vous n’est pas rétabli.'}
       </p>
-      <div className="mt-7">
-        <AppointmentForm
-          key={appointment.id}
-          services={services}
-          appointment={{
-            id: appointment.id,
-            serviceId: appointment.serviceId,
-            date,
-            time,
-            firstName: appointment.customerFirstName,
-            lastName: appointment.customerLastName,
-            email: appointment.customerEmail,
-            phone: appointment.customerPhone,
-            comment: appointment.comment,
-          }}
+
+      <section className="mt-6 rounded-3xl border bg-card p-5 shadow-sm sm:p-6">
+        <h2 className="text-lg font-semibold">Statut métier</h2>
+        <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
+          Chaque changement est daté et enregistré dans le journal d’audit.
+        </p>
+        <AppointmentStatusActions
+          appointmentId={appointment.id}
+          status={appointment.status}
+          startsAt={appointment.startsAt}
+          className="mt-4"
         />
-      </div>
+      </section>
+
+      {appointment.status === 'CONFIRMED' ? (
+        <div className="mt-6">
+          <AppointmentForm
+            key={appointment.id}
+            services={services}
+            appointment={{
+              id: appointment.id,
+              serviceId: appointment.serviceId,
+              date,
+              time,
+              firstName: appointment.customerFirstName,
+              lastName: appointment.customerLastName,
+              email: appointment.customerEmail,
+              phone: appointment.customerPhone,
+              comment: appointment.comment,
+            }}
+          />
+        </div>
+      ) : (
+        <section className="mt-6 rounded-3xl border bg-card p-5 shadow-sm sm:p-7">
+          <div className="flex items-start gap-3">
+            <CalendarClock className="mt-0.5 size-5 shrink-0 text-primary" />
+            <div>
+              <h2 className="text-lg font-semibold">
+                {formatServiceLabel(
+                  appointment.serviceNameSnapshot,
+                  appointment.service.category?.name,
+                )}
+              </h2>
+              <p className="mt-1 text-sm text-muted-foreground">
+                {new Intl.DateTimeFormat('fr-CH', {
+                  timeZone: RESERVATION_TIME_ZONE,
+                  dateStyle: 'long',
+                  timeStyle: 'short',
+                }).format(appointment.startsAt)}{' '}
+                ·{' '}
+                {(appointment.servicePriceCents / 100).toLocaleString('fr-CH')}{' '}
+                CHF
+              </p>
+            </div>
+          </div>
+          <div className="mt-5 flex items-start gap-3 border-t pt-5">
+            <UserRound className="mt-0.5 size-5 shrink-0 text-primary" />
+            <div className="min-w-0 text-sm">
+              <p className="font-semibold">
+                {[appointment.customerFirstName, appointment.customerLastName]
+                  .filter(Boolean)
+                  .join(' ')}
+              </p>
+              {appointment.customerEmail ? (
+                <p className="mt-1 break-all text-muted-foreground">
+                  {appointment.customerEmail}
+                </p>
+              ) : null}
+              {appointment.customerPhone ? (
+                <p className="text-muted-foreground">
+                  {appointment.customerPhone}
+                </p>
+              ) : null}
+            </div>
+          </div>
+          {appointment.comment ? (
+            <div className="mt-5 border-t pt-5">
+              <h3 className="text-sm font-semibold">Commentaire</h3>
+              <p className="mt-1 whitespace-pre-wrap text-sm text-muted-foreground">
+                {appointment.comment}
+              </p>
+            </div>
+          ) : null}
+        </section>
+      )}
     </main>
   )
 }

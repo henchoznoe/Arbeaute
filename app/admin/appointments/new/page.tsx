@@ -70,7 +70,7 @@ const NewAppointment = async ({
     }),
     duplicateId
       ? prisma.appointment.findFirst({
-          where: { id: duplicateId, status: 'CONFIRMED' },
+          where: { id: duplicateId },
           select: {
             serviceId: true,
             customerFirstName: true,

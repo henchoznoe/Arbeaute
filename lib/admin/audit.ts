@@ -181,9 +181,18 @@ const asJsonObject = (
 ): Prisma.JsonObject =>
   value && typeof value === 'object' && !Array.isArray(value) ? value : {}
 
+const appointmentStatusLabels: Record<string, string> = {
+  CONFIRMED: 'Confirmé',
+  COMPLETED: 'Terminé',
+  CANCELLED: 'Annulé',
+  NO_SHOW: 'Absence',
+}
+
 const formatAuditValue = (key: string, value: Prisma.JsonValue): string => {
   if (value === null) return '—'
   if (typeof value === 'boolean') return value ? 'Oui' : 'Non'
+  if (key === 'status' && typeof value === 'string')
+    return appointmentStatusLabels[value] ?? value
   if (key === 'priceCents' && typeof value === 'number')
     return `${(value / 100).toLocaleString('fr-CH')} CHF`
   if (

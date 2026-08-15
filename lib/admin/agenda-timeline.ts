@@ -1,6 +1,7 @@
 import { formatInTimeZone } from 'date-fns-tz'
 import { RESERVATION_TIME_ZONE } from '@/lib/reservation/constants'
 import { getLocalDayBounds, getLocalDayOfWeek } from '@/lib/reservation/time'
+import type { AppointmentStatus } from '@/prisma/generated/prisma/enums'
 
 export interface TimelineInterval {
   startMinute: number
@@ -15,6 +16,7 @@ interface AdminTimelineException extends TimelineInterval {
 
 interface AdminTimelineAppointment extends TimelineInterval {
   id: string
+  startsAt: Date
   occupiedStartMinute: number
   occupiedEndMinute: number
   preparationMinutes: number
@@ -24,6 +26,7 @@ interface AdminTimelineAppointment extends TimelineInterval {
   serviceLabel: string
   serviceColor: string
   source: 'PUBLIC' | 'ADMIN'
+  status: AppointmentStatus
   hasVisualOverlap: boolean
 }
 
@@ -66,6 +69,7 @@ interface AppointmentInput {
   serviceLabel: string
   serviceColor: string
   source: 'PUBLIC' | 'ADMIN'
+  status: AppointmentStatus
 }
 
 interface BuildTimelineDayOptions {
@@ -173,6 +177,7 @@ export const buildAdminTimelineDay = ({
     )
     .map(appointment => ({
       id: appointment.id,
+      startsAt: appointment.startsAt,
       startMinute: minuteInDay(appointment.startsAt, dateKey),
       endMinute: minuteInDay(appointment.endsAt, dateKey),
       occupiedStartMinute: minuteInDay(appointment.occupiedStartsAt, dateKey),
@@ -184,24 +189,28 @@ export const buildAdminTimelineDay = ({
       serviceLabel: appointment.serviceLabel,
       serviceColor: appointment.serviceColor,
       source: appointment.source,
+      status: appointment.status,
       hasVisualOverlap: false,
     }))
   const timelineAppointments = mappedAppointments.map((appointment, index) => ({
     ...appointment,
-    hasVisualOverlap: mappedAppointments.some(
-      (other, otherIndex) =>
-        otherIndex !== index &&
-        overlaps(
-          {
-            startMinute: appointment.occupiedStartMinute,
-            endMinute: appointment.occupiedEndMinute,
-          },
-          {
-            startMinute: other.occupiedStartMinute,
-            endMinute: other.occupiedEndMinute,
-          },
-        ),
-    ),
+    hasVisualOverlap:
+      appointment.status === 'CONFIRMED' &&
+      mappedAppointments.some(
+        (other, otherIndex) =>
+          other.status === 'CONFIRMED' &&
+          otherIndex !== index &&
+          overlaps(
+            {
+              startMinute: appointment.occupiedStartMinute,
+              endMinute: appointment.occupiedEndMinute,
+            },
+            {
+              startMinute: other.occupiedStartMinute,
+              endMinute: other.occupiedEndMinute,
+            },
+          ),
+      ),
   }))
   const bounds = getTimelineBounds(openings, timelineAppointments)
 
@@ -224,10 +233,12 @@ export const getFreeTimelineStarts = (day: AdminTimelineDay): number[] => {
   const closures = day.exceptions.filter(
     exception => exception.type === 'UNAVAILABLE',
   )
-  const occupied = day.appointments.map(appointment => ({
-    startMinute: appointment.occupiedStartMinute,
-    endMinute: appointment.occupiedEndMinute,
-  }))
+  const occupied = day.appointments
+    .filter(appointment => appointment.status === 'CONFIRMED')
+    .map(appointment => ({
+      startMinute: appointment.occupiedStartMinute,
+      endMinute: appointment.occupiedEndMinute,
+    }))
   const starts: number[] = []
 
   for (

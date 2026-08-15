@@ -163,6 +163,13 @@ describe('customer appointment activity', () => {
       now: new Date('2099-08-01T10:00:00.000Z'),
     })
 
+    expect(transaction.appointment.findFirst).toHaveBeenCalledWith({
+      where: {
+        id: appointment.id,
+        customerId: 'customer-1',
+        status: 'CONFIRMED',
+      },
+    })
     expect(transaction.appointmentActivity.create).toHaveBeenCalledWith({
       data: {
         type: 'RESCHEDULED',

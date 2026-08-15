@@ -6,6 +6,8 @@ import { Suspense } from 'react'
 import { ActivityOverview } from '@/components/admin/activity-overview'
 import { AdminAgendaView } from '@/components/admin/admin-agenda-view'
 import { AdminSkeleton } from '@/components/admin/admin-skeleton'
+import { AppointmentStatusActions } from '@/components/admin/appointment-status-actions'
+import { StatusBadge } from '@/components/ui/status-badge'
 import { getActivityOverview } from '@/lib/admin/activity'
 import { buildAdminTimelineDay } from '@/lib/admin/agenda-timeline'
 import prisma from '@/lib/core/prisma'
@@ -20,6 +22,7 @@ import {
   getLocalWeekDateKeys,
   isDateKey,
 } from '@/lib/reservation/time'
+import type { AppointmentStatus } from '@/prisma/generated/prisma/enums'
 
 interface AdminPageProps {
   searchParams: Promise<{ date?: string }>
@@ -37,6 +40,20 @@ const dayTitle = (dateKey: string, long = false) =>
 
 const formatTime = (date: Date) =>
   formatInTimeZone(date, RESERVATION_TIME_ZONE, 'HH:mm')
+
+const statusLabels: Record<AppointmentStatus, string> = {
+  CONFIRMED: 'Confirmé',
+  COMPLETED: 'Terminé',
+  CANCELLED: 'Annulé',
+  NO_SHOW: 'Absence',
+}
+
+const statusVariants = {
+  CONFIRMED: 'success',
+  COMPLETED: 'info',
+  CANCELLED: 'neutral',
+  NO_SHOW: 'danger',
+} as const
 
 const AdminPage = ({ searchParams }: Readonly<AdminPageProps>) => (
   <Suspense fallback={<AdminSkeleton />}>
@@ -58,7 +75,7 @@ const AdminAgenda = async ({ searchParams }: Readonly<AdminPageProps>) => {
     await Promise.all([
       prisma.appointment.findMany({
         where: {
-          status: 'CONFIRMED',
+          status: { in: ['CONFIRMED', 'COMPLETED', 'NO_SHOW'] },
           occupiedStartsAt: { lt: queryEnd },
           occupiedEndsAt: { gt: queryStart },
         },
@@ -79,6 +96,7 @@ const AdminAgenda = async ({ searchParams }: Readonly<AdminPageProps>) => {
             select: { color: true, category: { select: { name: true } } },
           },
           source: true,
+          status: true,
         },
       }),
       prisma.availabilityException.findMany({
@@ -108,39 +126,53 @@ const AdminAgenda = async ({ searchParams }: Readonly<AdminPageProps>) => {
     dateKey: string,
     compact = false,
   ) => (
-    <Link
+    <article
       key={appointment.id}
-      href={`/admin/appointments/${appointment.id}?date=${dateKey}`}
       className={`block rounded-xl border bg-background p-3 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md ${compact ? 'text-xs' : ''}`}
       style={{ borderLeftColor: appointment.service.color, borderLeftWidth: 4 }}
     >
-      <div className="flex items-start justify-between gap-2">
-        <span className="font-semibold">
-          {formatTime(appointment.startsAt)}–{formatTime(appointment.endsAt)}
-        </span>
-        {appointment.source === 'ADMIN' ? (
-          <span className="rounded-full bg-muted px-2 py-0.5 text-[10px] uppercase tracking-wide text-muted-foreground">
-            manuel
+      <Link href={`/admin/appointments/${appointment.id}?date=${dateKey}`}>
+        <div className="flex items-start justify-between gap-2">
+          <span className="font-semibold">
+            {formatTime(appointment.startsAt)}–{formatTime(appointment.endsAt)}
           </span>
-        ) : null}
-      </div>
-      <p className="mt-1 font-medium leading-snug">
-        {[appointment.customerFirstName, appointment.customerLastName]
-          .filter(Boolean)
-          .join(' ')}
-      </p>
-      <p className="mt-0.5 truncate text-muted-foreground">
-        {formatServiceLabel(
-          appointment.serviceNameSnapshot,
-          appointment.service.category?.name,
-        )}
-      </p>
+          {appointment.source === 'ADMIN' ? (
+            <span className="rounded-full bg-muted px-2 py-0.5 text-[10px] uppercase tracking-wide text-muted-foreground">
+              manuel
+            </span>
+          ) : null}
+        </div>
+        <p className="mt-1 font-medium leading-snug">
+          {[appointment.customerFirstName, appointment.customerLastName]
+            .filter(Boolean)
+            .join(' ')}
+        </p>
+        <p className="mt-0.5 truncate text-muted-foreground">
+          {formatServiceLabel(
+            appointment.serviceNameSnapshot,
+            appointment.service.category?.name,
+          )}
+        </p>
+      </Link>
+      <StatusBadge
+        variant={statusVariants[appointment.status]}
+        className="mt-2"
+      >
+        {statusLabels[appointment.status]}
+      </StatusBadge>
       {!compact && appointment.customerPhone ? (
         <p className="mt-1 text-xs text-muted-foreground">
           {appointment.customerPhone}
         </p>
       ) : null}
-    </Link>
+      <AppointmentStatusActions
+        appointmentId={appointment.id}
+        status={appointment.status}
+        startsAt={appointment.startsAt}
+        compact
+        className="mt-2"
+      />
+    </article>
   )
   const timelineDays = weekDays.map(dateKey => {
     const dayOfWeek = getLocalDayOfWeek(dateKey)
@@ -172,6 +204,7 @@ const AdminAgenda = async ({ searchParams }: Readonly<AdminPageProps>) => {
         ),
         serviceColor: appointment.service.color,
         source: appointment.source,
+        status: appointment.status,
       })),
     })
   })

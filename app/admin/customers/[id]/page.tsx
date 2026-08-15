@@ -10,6 +10,7 @@ import Link from 'next/link'
 import { notFound, redirect } from 'next/navigation'
 import { Suspense } from 'react'
 import { AdminSkeleton } from '@/components/admin/admin-skeleton'
+import { AppointmentStatusActions } from '@/components/admin/appointment-status-actions'
 import {
   CustomerDuplicateList,
   CustomerProfileForm,
@@ -83,31 +84,42 @@ const CustomerAppointmentList = ({
     <ol className="mt-3 space-y-2">
       {appointments.map(appointment => (
         <li key={appointment.id}>
-          <Link
-            href={`/admin/appointments/${appointment.id}`}
-            className="flex min-h-11 items-start gap-3 rounded-2xl border bg-background p-3 transition hover:border-primary/30 hover:shadow-sm"
-          >
-            <span className="min-w-0 flex-1">
-              <span className="block text-sm font-semibold capitalize">
-                {formatMoment(appointment.startsAt)}
+          <article className="rounded-2xl border bg-background p-3">
+            <Link
+              href={`/admin/appointments/${appointment.id}`}
+              className="flex min-h-11 items-start gap-3 transition hover:text-primary"
+            >
+              <span className="min-w-0 flex-1">
+                <span className="block text-sm font-semibold capitalize">
+                  {formatMoment(appointment.startsAt)}
+                </span>
+                <span className="mt-1 block truncate text-xs text-muted-foreground">
+                  {formatServiceLabel(
+                    appointment.serviceNameSnapshot,
+                    appointment.service.category?.name,
+                  )}{' '}
+                  ·{' '}
+                  {(appointment.servicePriceCents / 100).toLocaleString(
+                    'fr-CH',
+                  )}{' '}
+                  CHF
+                </span>
+                <span className="mt-2 block">
+                  <StatusBadge variant={statusVariants[appointment.status]}>
+                    {statusLabels[appointment.status]}
+                  </StatusBadge>
+                </span>
               </span>
-              <span className="mt-1 block truncate text-xs text-muted-foreground">
-                {formatServiceLabel(
-                  appointment.serviceNameSnapshot,
-                  appointment.service.category?.name,
-                )}{' '}
-                ·{' '}
-                {(appointment.servicePriceCents / 100).toLocaleString('fr-CH')}{' '}
-                CHF
-              </span>
-              <span className="mt-2 block">
-                <StatusBadge variant={statusVariants[appointment.status]}>
-                  {statusLabels[appointment.status]}
-                </StatusBadge>
-              </span>
-            </span>
-            <ChevronRight className="mt-2 size-4 shrink-0 text-muted-foreground" />
-          </Link>
+              <ChevronRight className="mt-2 size-4 shrink-0 text-muted-foreground" />
+            </Link>
+            <AppointmentStatusActions
+              appointmentId={appointment.id}
+              status={appointment.status}
+              startsAt={appointment.startsAt}
+              compact
+              className="mt-2 border-t pt-3"
+            />
+          </article>
         </li>
       ))}
     </ol>

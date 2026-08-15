@@ -65,6 +65,7 @@ describe('admin daily timeline', () => {
           serviceLabel: 'Soin visage',
           serviceColor: '#d99086',
           source: 'ADMIN',
+          status: 'CONFIRMED',
         },
       ],
     })
@@ -84,6 +85,7 @@ describe('admin daily timeline', () => {
       serviceLabel: 'Soin',
       serviceColor: '#d99086',
       source: 'PUBLIC' as const,
+      status: 'CONFIRMED' as const,
     }
     const day = buildDay({
       appointments: [
@@ -130,6 +132,7 @@ describe('admin daily timeline', () => {
           serviceLabel: 'Soin',
           serviceColor: '#d99086',
           source: 'PUBLIC',
+          status: 'CONFIRMED',
         },
       ],
     })
@@ -144,5 +147,30 @@ describe('admin daily timeline', () => {
     expect(isAdminAppointmentTime('09:30')).toBe(true)
     expect(isAdminAppointmentTime('09:07')).toBe(false)
     expect(isAdminAppointmentTime('24:00')).toBe(false)
+  })
+
+  it('shows a completed appointment without keeping its slot occupied', () => {
+    const day = buildDay({
+      appointments: [
+        {
+          id: 'completed',
+          startsAt: new Date('2026-08-10T08:00:00.000Z'),
+          endsAt: new Date('2026-08-10T09:00:00.000Z'),
+          occupiedStartsAt: new Date('2026-08-10T08:00:00.000Z'),
+          occupiedEndsAt: new Date('2026-08-10T09:00:00.000Z'),
+          preparationMinutes: 0,
+          cleanupMinutes: 0,
+          customerName: 'Cliente terminée',
+          customerPhone: null,
+          serviceLabel: 'Soin',
+          serviceColor: '#d99086',
+          source: 'PUBLIC',
+          status: 'COMPLETED',
+        },
+      ],
+    })
+
+    expect(day.appointments[0]?.status).toBe('COMPLETED')
+    expect(getFreeTimelineStarts(day)).toContain(10 * 60)
   })
 })

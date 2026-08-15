@@ -35,14 +35,14 @@ est réévalué après chaque livraison.
 
 | Statut | Éléments |
 | --- | --- |
-| ✅ Terminés | 1 à 15, 19 et 21 à 23 |
+| ✅ Terminés | 1 à 16, 19 et 21 à 23 |
 | 🟡 En cours | 24, enrichi progressivement à chaque livraison |
-| ⏳ Prêt à démarrer | 16, 17 et 20 |
-| 🔒 Bloqués | 18 |
+| ⏳ Prêt à démarrer | 17, 18 et 20 |
+| 🔒 Bloqués | Aucun |
 
-**Prochain élément recommandé : 16.** Ses dépendances d’audit sont terminées et
-les statuts fiables enrichiront directement les nouvelles fiches clientes. Il
-débloquera aussi l’élément 18. Les éléments 17 et 20 peuvent également démarrer.
+**Prochain élément recommandé : 17.** Ses dépendances d’audit et de système
+visuel sont terminées. Les éléments 18, désormais débloqué par les statuts
+fiables, et 20 peuvent également démarrer.
 
 - **Priorité P0** : corrige une friction importante ou prépare plusieurs autres
   éléments.
@@ -437,7 +437,7 @@ accessibles en haut de l’écran mobile.
 
 **Dépendances :** éléments 19, 21 et 22.
 
-### 16. Exploiter les statuts « terminé » et « absence » — ⏳ Prêt à démarrer
+### 16. Exploiter les statuts « terminé » et « absence » — ✅ Terminé
 
 **Priorité : P1 · Effort : M · Nature : amélioration**
 
@@ -487,7 +487,7 @@ tout en conservant les lignes journalières nécessaires au moteur actuel.
 
 **Dépendances :** éléments 21 et 23.
 
-### 18. Afficher des indicateurs internes utiles — 🔒 Bloqué par 16
+### 18. Afficher des indicateurs internes utiles — ⏳ Prêt à démarrer
 
 **Priorité : P2 · Effort : M · Nature : nouvelle capacité**
 

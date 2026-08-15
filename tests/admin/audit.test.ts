@@ -82,6 +82,15 @@ describe('admin audit journal', () => {
     ).toEqual(['Début : 10.08.26 12:30 → 11.08.26 13:30'])
   })
 
+  it('translates appointment status transitions', () => {
+    expect(
+      formatAuditChanges({
+        before: { status: 'CONFIRMED' },
+        after: { status: 'NO_SHOW' },
+      }),
+    ).toEqual(['Statut : Confirmé → Absence'])
+  })
+
   it('fails the mutation when its audit event cannot be written', async () => {
     const transaction = {
       service: { update: vi.fn().mockResolvedValue({ id: 'service-1' }) },

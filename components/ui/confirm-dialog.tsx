@@ -13,6 +13,7 @@ export const ConfirmDialog = ({
   cancelLabel = 'Annuler',
   onConfirm,
   pending = false,
+  confirmVariant = 'destructive',
 }: Readonly<{
   trigger: ReactNode
   title: string
@@ -21,6 +22,7 @@ export const ConfirmDialog = ({
   cancelLabel?: string
   onConfirm: () => void
   pending?: boolean
+  confirmVariant?: 'default' | 'destructive'
 }>) => (
   <AlertDialog.Root>
     <AlertDialog.Trigger asChild>{trigger}</AlertDialog.Trigger>
@@ -42,7 +44,11 @@ export const ConfirmDialog = ({
               {cancelLabel}
             </Button>
           </AlertDialog.Cancel>
-          <Button variant="destructive" disabled={pending} onClick={onConfirm}>
+          <Button
+            variant={confirmVariant}
+            disabled={pending}
+            onClick={onConfirm}
+          >
             {pending ? 'Traitement…' : confirmLabel}
           </Button>
         </div>
