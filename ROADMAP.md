@@ -1,5 +1,8 @@
 # Roadmap produit et UX — Arbeauté
 
+> **Backlog clos.** Ses 24 éléments sont livrés ; ce document est conservé comme
+> archive. La suite se pilote dans [ROADMAP-V2.md](ROADMAP-V2.md).
+
 ## Objectif
 
 Ce backlog fait évoluer le site vitrine, la réservation en ligne et la console
