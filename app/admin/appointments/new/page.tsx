@@ -11,7 +11,12 @@ import { RESERVATION_TIME_ZONE } from '@/lib/reservation/constants'
 import { getLocalDateKey, isDateKey } from '@/lib/reservation/time'
 
 interface NewAppointmentPageProps {
-  searchParams: Promise<{ date?: string; time?: string; duplicate?: string }>
+  searchParams: Promise<{
+    date?: string
+    time?: string
+    duplicate?: string
+    customerId?: string
+  }>
 }
 
 const NewAppointmentPage = ({
@@ -30,6 +35,7 @@ const NewAppointment = async ({
     date: requestedDate,
     time: requestedTime,
     duplicate: duplicateId,
+    customerId,
   } = await searchParams
   const now = new Date()
   const date =
@@ -50,7 +56,7 @@ const NewAppointment = async ({
     requestedTime && isAdminAppointmentTime(requestedTime)
       ? requestedTime
       : fallbackTime
-  const [services, duplicate] = await Promise.all([
+  const [services, duplicate, customer] = await Promise.all([
     prisma.service.findMany({
       where: { isArchived: false },
       orderBy: [{ category: { sortOrder: 'asc' } }, { sortOrder: 'asc' }],
@@ -74,7 +80,26 @@ const NewAppointment = async ({
           },
         })
       : null,
+    customerId
+      ? prisma.customer.findFirst({
+          where: { id: customerId, anonymizedAt: null },
+          select: {
+            firstName: true,
+            lastName: true,
+            email: true,
+            phone: true,
+          },
+        })
+      : null,
   ])
+  const prefilledCustomer = duplicate
+    ? {
+        firstName: duplicate.customerFirstName,
+        lastName: duplicate.customerLastName,
+        email: duplicate.customerEmail,
+        phone: duplicate.customerPhone,
+      }
+    : customer
 
   return (
     <main className="mx-auto min-h-screen max-w-3xl px-4 py-6 sm:px-8">
@@ -90,20 +115,22 @@ const NewAppointment = async ({
       <p className="mt-2 text-sm text-muted-foreground">
         {duplicate
           ? 'Le soin et les coordonnées ont été repris. Choisissez un nouveau créneau avant de créer le rendez-vous.'
-          : 'Seul le nom est obligatoire. Les créneaux hors horaires sont possibles après confirmation.'}
+          : customer
+            ? 'Les coordonnées de la cliente ont été reprises. Choisissez le soin et le créneau.'
+            : 'Seul le nom est obligatoire. Les créneaux hors horaires sont possibles après confirmation.'}
       </p>
       <div className="mt-7">
         <AppointmentForm
-          key={`new-${duplicateId ?? 'empty'}-${date}-${time}`}
+          key={`new-${duplicateId ?? customerId ?? 'empty'}-${date}-${time}`}
           services={services}
           appointment={{
             serviceId: duplicate?.serviceId,
             date,
             time,
-            firstName: duplicate?.customerFirstName,
-            lastName: duplicate?.customerLastName,
-            email: duplicate?.customerEmail,
-            phone: duplicate?.customerPhone,
+            firstName: prefilledCustomer?.firstName,
+            lastName: prefilledCustomer?.lastName,
+            email: prefilledCustomer?.email,
+            phone: prefilledCustomer?.phone,
           }}
         />
       </div>

@@ -283,10 +283,7 @@ export const AdminSearch = ({
           <ol className={`mt-3 space-y-3 ${pending ? 'opacity-60' : ''}`}>
             {result.appointments.map(appointment => (
               <li key={appointment.id}>
-                <Link
-                  href={`/admin/appointments/${appointment.id}`}
-                  className="group block min-w-0 rounded-2xl border bg-card p-4 shadow-sm transition hover:border-primary/30 hover:shadow-md"
-                >
+                <article className="min-w-0 rounded-2xl border bg-card p-4 shadow-sm">
                   <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0">
                       <p className="flex items-center gap-2 text-sm font-semibold capitalize">
@@ -315,7 +312,7 @@ export const AdminSearch = ({
                       appointment.service.category?.name,
                     )}
                   </p>
-                  <div className="mt-3 flex min-w-0 items-end justify-between gap-3 border-t pt-3">
+                  <div className="mt-3 min-w-0 border-t pt-3">
                     <div className="min-w-0 text-xs text-muted-foreground">
                       {appointment.customerEmail ? (
                         <p className="truncate">{appointment.customerEmail}</p>
@@ -330,11 +327,24 @@ export const AdminSearch = ({
                         {appointment.customerId ? ' · cliente liée' : ''}
                       </p>
                     </div>
-                    <span className="inline-flex shrink-0 items-center gap-1 text-xs font-semibold text-primary">
-                      Ouvrir <ChevronRight className="size-4" />
-                    </span>
+                    <div className="mt-3 grid gap-2 sm:flex sm:justify-end">
+                      {appointment.customerId ? (
+                        <Link
+                          href={`/admin/customers/${appointment.customerId}`}
+                          className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border px-4 text-sm font-semibold transition hover:bg-muted"
+                        >
+                          <UserRound className="size-4" /> Fiche cliente
+                        </Link>
+                      ) : null}
+                      <Link
+                        href={`/admin/appointments/${appointment.id}`}
+                        className="inline-flex min-h-11 items-center justify-center gap-1 rounded-xl bg-primary px-4 text-sm font-semibold text-primary-foreground transition hover:bg-primary/90"
+                      >
+                        Rendez-vous <ChevronRight className="size-4" />
+                      </Link>
+                    </div>
                   </div>
-                </Link>
+                </article>
               </li>
             ))}
           </ol>

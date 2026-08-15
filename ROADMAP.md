@@ -35,15 +35,14 @@ est réévalué après chaque livraison.
 
 | Statut | Éléments |
 | --- | --- |
-| ✅ Terminés | 1 à 14, 19 et 21 à 23 |
+| ✅ Terminés | 1 à 15, 19 et 21 à 23 |
 | 🟡 En cours | 24, enrichi progressivement à chaque livraison |
-| ⏳ Prêt à démarrer | 15 à 17 et 20 |
+| ⏳ Prêt à démarrer | 16, 17 et 20 |
 | 🔒 Bloqués | 18 |
 
-**Prochain élément recommandé : 15.** Ses dépendances de données, d’audit et de
-confidentialité sont toutes terminées ; la fiche cliente peut maintenant
-s’appuyer sur la recherche globale. Les éléments 16, 17 et 20 peuvent aussi
-démarrer ; l’élément 18 attend encore le 16.
+**Prochain élément recommandé : 16.** Ses dépendances d’audit sont terminées et
+les statuts fiables enrichiront directement les nouvelles fiches clientes. Il
+débloquera aussi l’élément 18. Les éléments 17 et 20 peuvent également démarrer.
 
 - **Priorité P0** : corrige une friction importante ou prépare plusieurs autres
   éléments.
@@ -414,7 +413,7 @@ sont jamais placés dans un cache partagé.
 
 **Dépendances :** élément 19 pour la recherche centrée sur les clientes.
 
-### 15. Créer une fiche cliente exploitable par Arzu — ⏳ Prêt à démarrer
+### 15. Créer une fiche cliente exploitable par Arzu — ✅ Terminé
 
 **Priorité : P1 · Effort : L · Nature : nouvelle capacité**
 

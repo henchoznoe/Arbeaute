@@ -9,6 +9,7 @@ describe('admin navigation', () => {
     ['/admin', 'agenda'],
     ['/admin/appointments/appointment-1', 'agenda'],
     ['/admin/search', 'search'],
+    ['/admin/customers/customer-1', 'search'],
     ['/admin/activity', 'activity'],
     ['/admin/activity?page=2', 'activity'],
     ['/admin/appointments/new', 'create'],

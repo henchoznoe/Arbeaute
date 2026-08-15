@@ -56,6 +56,7 @@ enum AuditActionType {
   FILE_ASSIGNED
   FILE_REMOVED
   ANONYMIZED
+  MERGED
 }
 
 model ServiceCategory {
@@ -155,6 +156,8 @@ model Customer {
   createdAt       DateTime      @default(now())
   updatedAt       DateTime      @updatedAt
   anonymizedAt    DateTime?
+  internalNote    String?
+  preferences     String?
   appointments    Appointment[]
 
   @@index([emailNormalized])

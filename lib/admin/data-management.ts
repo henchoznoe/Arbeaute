@@ -51,6 +51,7 @@ export const exportColumnDocumentation = {
   customers: [
     'Identifiant',
     'Coordonnées courantes normalisées',
+    'Préférences et note interne',
     'Première et dernière activité connue',
     'Date d’anonymisation',
     'Nombre de rendez-vous liés',
@@ -125,6 +126,8 @@ export const createCustomersExport = async (
       { header: 'nom', value: row => row.lastName },
       { header: 'email', value: row => row.email },
       { header: 'telephone', value: row => row.phone },
+      { header: 'preferences', value: row => row.preferences },
+      { header: 'note_interne', value: row => row.internalNote },
       {
         header: 'premiere_activite',
         value: row => formatLocalDateTime(row.firstSeenAt),
@@ -272,6 +275,8 @@ export const anonymizeCustomer = async (
         phone: placeholder,
         phoneNormalized: placeholder,
         searchName: 'cliente anonymisee',
+        internalNote: null,
+        preferences: null,
         anonymizedAt,
       },
     })

@@ -3,6 +3,7 @@ import {
   anonymizeCustomer,
   createAppointmentsExport,
   createCsv,
+  createCustomersExport,
   getAnonymizationConfirmation,
   getCustomerAnonymizationPreview,
 } from '@/lib/admin/data-management'
@@ -65,6 +66,33 @@ describe('CSV exports', () => {
     )
     expect(csv).toContain('"Soin visage";"120.00";"60"')
     expect(csv).toContain('"2026-08-10 14:00"')
+  })
+
+  it('includes internal follow-up fields in the customer export', async () => {
+    const database = {
+      customer: {
+        findMany: vi.fn().mockResolvedValue([
+          {
+            id: 'customer-1',
+            firstName: 'Marie',
+            lastName: 'Dupont',
+            email: 'marie@example.com',
+            phone: '+41791234567',
+            preferences: 'Le matin',
+            internalNote: 'Note privée',
+            firstSeenAt: new Date('2026-08-01T10:00:00.000Z'),
+            lastSeenAt: new Date('2026-08-10T10:00:00.000Z'),
+            anonymizedAt: null,
+            _count: { appointments: 2 },
+          },
+        ]),
+      },
+    } as unknown as PrismaClient
+
+    const csv = await createCustomersExport(database)
+
+    expect(csv).toContain('"preferences";"note_interne"')
+    expect(csv).toContain('"Le matin";"Note privée"')
   })
 })
 
@@ -140,6 +168,13 @@ describe('customer anonymization', () => {
         data: expect.objectContaining({ servicePriceCents: expect.anything() }),
       }),
     )
+    expect(transaction.customer.update).toHaveBeenCalledWith({
+      where: { id: 'customer-1' },
+      data: expect.objectContaining({
+        internalNote: null,
+        preferences: null,
+      }),
+    })
     expect(transaction.auditEvent.create).toHaveBeenCalledWith({
       data: expect.objectContaining({
         entityType: 'CUSTOMER',

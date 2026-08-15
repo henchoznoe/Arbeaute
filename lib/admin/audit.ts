@@ -117,6 +117,7 @@ export const auditActionLabels: Record<AuditActionType, string> = {
   FILE_ASSIGNED: 'Fichier ajouté',
   FILE_REMOVED: 'Fichier retiré',
   ANONYMIZED: 'Anonymisation',
+  MERGED: 'Fusion',
 }
 
 export const formatAuditCreatedAt = (date: Date): string =>
@@ -133,6 +134,8 @@ export const getAuditEntityHref = (
     return `/admin/appointments/${event.entityId}`
   if (event.entityType === 'SERVICE') return `/admin/services/${event.entityId}`
   if (event.entityType === 'SERVICE_CATEGORY') return '/admin/services'
+  if (event.entityType === 'CUSTOMER')
+    return `/admin/customers/${event.entityId}`
   if (
     event.entityType === 'WEEKLY_AVAILABILITY' ||
     event.entityType === 'AVAILABILITY_EXCEPTION'
@@ -165,6 +168,12 @@ const changeFieldLabels: Record<string, string> = {
   hasImage: 'Image présente',
   hadConsentForm: 'Consentement présent',
   hasConsentForm: 'Consentement présent',
+  identityChanged: 'Coordonnées modifiées',
+  propagatedAppointments: 'Rendez-vous futurs actualisés',
+  noteChanged: 'Note interne modifiée',
+  preferencesChanged: 'Préférences modifiées',
+  sourceCustomerId: 'Fiche source',
+  sourceAppointmentCount: 'Rendez-vous fusionnés',
 }
 
 const asJsonObject = (
