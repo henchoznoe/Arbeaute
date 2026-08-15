@@ -254,6 +254,7 @@ export const anonymizeCustomer = async (
       data: {
         customerFirstName: null,
         customerLastName: 'Cliente anonymisée',
+        customerSearchName: 'cliente anonymisee',
         customerEmail: null,
         customerPhone: null,
         customerIdentityDigest: null,

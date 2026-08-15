@@ -4,7 +4,10 @@ import {
   MAX_SERIALIZABLE_ATTEMPTS,
   RESERVATION_TIME_ZONE,
 } from '@/lib/reservation/constants'
-import { upsertCustomerIdentity } from '@/lib/reservation/customers'
+import {
+  normalizeCustomerSearchName,
+  upsertCustomerIdentity,
+} from '@/lib/reservation/customers'
 import {
   addLocalDays,
   getDateKeysInRange,
@@ -443,6 +446,10 @@ export const saveAdminAppointmentSerializable = async (
             occupiedEndsAt,
             customerFirstName: input.firstName,
             customerLastName: input.lastName,
+            customerSearchName: normalizeCustomerSearchName(
+              input.firstName,
+              input.lastName,
+            ),
             customerEmail: input.email,
             customerPhone: input.phone,
             customerIdentityDigest:
@@ -566,6 +573,10 @@ export const createAdminAppointmentSeriesSerializable = async (
                 ),
                 customerFirstName: input.firstName,
                 customerLastName: input.lastName,
+                customerSearchName: normalizeCustomerSearchName(
+                  input.firstName,
+                  input.lastName,
+                ),
                 customerEmail: input.email,
                 customerPhone: input.phone,
                 customerIdentityDigest:

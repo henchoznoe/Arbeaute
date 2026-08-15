@@ -181,6 +181,7 @@ model Appointment {
   occupiedEndsAt          DateTime              @db.Timestamptz(3)
   customerFirstName       String?
   customerLastName        String
+  customerSearchName      String
   customerEmail           String?
   customerPhone           String?
   customerIdentityDigest  String?
@@ -198,9 +199,13 @@ model Appointment {
   @@index([startsAt, endsAt, status])
   @@index([occupiedStartsAt, occupiedEndsAt, status])
   @@index([customerEmail, customerPhone, startsAt])
+  @@index([customerPhone, startsAt])
+  @@index([customerSearchName, startsAt])
+  @@index([customerSearchName(ops: raw("gin_trgm_ops"))], map: "appointment_customerSearchName_trgm_idx", type: Gin)
   @@index([customerIdentityDigest, startsAt, status])
   @@index([customerId, startsAt, status])
   @@index([serviceId, startsAt])
+  @@index([status, source, startsAt])
   @@map("appointment")
 }
 

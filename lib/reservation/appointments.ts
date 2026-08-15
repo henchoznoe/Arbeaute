@@ -2,7 +2,10 @@ import { writeAuditEvent } from '@/lib/admin/audit'
 import { createCustomerIdentityDigest } from '@/lib/core/session-cookies'
 import { getAvailableSlots } from '@/lib/reservation/availability'
 import { MAX_SERIALIZABLE_ATTEMPTS } from '@/lib/reservation/constants'
-import { upsertCustomerIdentity } from '@/lib/reservation/customers'
+import {
+  normalizeCustomerSearchName,
+  upsertCustomerIdentity,
+} from '@/lib/reservation/customers'
 import {
   canCustomerChangeAppointment,
   getLocalDateKey,
@@ -93,6 +96,10 @@ export const createAppointmentSerializable = async (
               ),
               customerFirstName: input.firstName,
               customerLastName: input.lastName,
+              customerSearchName: normalizeCustomerSearchName(
+                input.firstName,
+                input.lastName,
+              ),
               customerEmail: input.email,
               customerPhone: input.phone,
               customerIdentityDigest: createCustomerIdentityDigest(

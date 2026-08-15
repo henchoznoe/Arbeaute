@@ -35,15 +35,15 @@ est réévalué après chaque livraison.
 
 | Statut | Éléments |
 | --- | --- |
-| ✅ Terminés | 1 à 13, 19 et 21 à 23 |
+| ✅ Terminés | 1 à 14, 19 et 21 à 23 |
 | 🟡 En cours | 24, enrichi progressivement à chaque livraison |
-| ⏳ Prêt à démarrer | 14 à 17 et 20 |
+| ⏳ Prêt à démarrer | 15 à 17 et 20 |
 | 🔒 Bloqués | 18 |
 
-**Prochain élément recommandé : 14.** Ses dépendances sont terminées et la
-recherche globale apporte le prochain gain P0 dans l’usage quotidien de
-l’administration. Les éléments 15 à 17 et 20 peuvent aussi démarrer ; l’élément
-18 attend encore le 16.
+**Prochain élément recommandé : 15.** Ses dépendances de données, d’audit et de
+confidentialité sont toutes terminées ; la fiche cliente peut maintenant
+s’appuyer sur la recherche globale. Les éléments 16, 17 et 20 peuvent aussi
+démarrer ; l’élément 18 attend encore le 16.
 
 - **Priorité P0** : corrige une friction importante ou prépare plusieurs autres
   éléments.
@@ -390,7 +390,7 @@ La série doit être écrite atomiquement ou ne rien créer.
 
 **Dépendances :** éléments 12, 19 et 23.
 
-### 14. Ajouter une recherche et des filtres globaux — ⏳ Prêt à démarrer
+### 14. Ajouter une recherche et des filtres globaux — ✅ Terminé
 
 **Priorité : P0 · Effort : L · Nature : nouvelle capacité**
 

@@ -6,6 +6,7 @@ import {
   CirclePlus,
   LogOut,
   Menu,
+  Search,
   Settings2,
 } from 'lucide-react'
 import Link from 'next/link'
@@ -89,6 +90,7 @@ export const AdminNavigation = ({
     icon: typeof CalendarDays
   }> = [
     { key: 'agenda', label: 'Agenda', href: '/admin', icon: CalendarDays },
+    { key: 'search', label: 'Recherche', href: '/admin/search', icon: Search },
     {
       key: 'activity',
       label: 'Activité',
@@ -175,7 +177,7 @@ export const AdminNavigation = ({
         aria-label="Navigation de l’administration"
         className="fixed inset-x-0 bottom-0 z-50 border-t bg-background/97 px-2 pb-[env(safe-area-inset-bottom)] shadow-[0_-8px_30px_rgba(0,0,0,0.08)] backdrop-blur md:hidden"
       >
-        <div className="mx-auto grid max-w-lg grid-cols-4">
+        <div className="mx-auto grid max-w-lg grid-cols-5">
           {items.map(item => {
             const Icon = item.icon
             const isActive = activeItem === item.key
