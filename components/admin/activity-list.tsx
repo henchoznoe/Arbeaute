@@ -47,19 +47,19 @@ export const ActivityList = ({
         return (
           <li
             key={activity.id}
-            className={`min-w-0 rounded-xl border p-3 ${isUnread ? 'border-rose-200 bg-rose-50/70' : 'bg-background'}`}
+            className={`min-w-0 rounded-xl border p-3 ${isUnread ? 'border-brand-line bg-brand-subtle/70' : 'bg-background'}`}
           >
             <div className="flex min-w-0 items-start gap-3">
               <span
-                className={`mt-0.5 grid size-8 shrink-0 place-items-center rounded-full ${isUnread ? 'bg-rose-100 text-rose-700' : 'bg-muted text-muted-foreground'}`}
+                className={`mt-0.5 grid size-8 shrink-0 place-items-center rounded-full ${isUnread ? 'bg-brand-soft text-brand-strong' : 'bg-muted text-muted-foreground'}`}
                 aria-hidden="true"
               >
                 <ActivityIcon type={activity.type} />
               </span>
               <div className="min-w-0 flex-1">
                 {isUnread ? (
-                  <p className="mb-1 flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-rose-700">
-                    <span className="size-1.5 rounded-full bg-rose-600" />
+                  <p className="mb-1 flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-brand-strong">
+                    <span className="size-1.5 rounded-full bg-brand-strong" />
                     Nouveau
                   </p>
                 ) : null}

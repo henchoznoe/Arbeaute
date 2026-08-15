@@ -19,11 +19,69 @@ classes locales.
 - Les barres mobiles réservent la safe area avec
   `env(safe-area-inset-bottom)` et le contenu reçoit le dégagement équivalent.
 
+## Typographie
+
+Deux familles seulement, chargées par `next/font/google` dans `app/layout.tsx` :
+
+| Rôle | Variable | Famille |
+| --- | --- | --- |
+| Corps de texte, interface | `--font-sans` | Geist |
+| Titres (`font-heading`) | `--font-heading` | Plus Jakarta Sans |
+
+Les grandes tailles sont **fluides** et déclarées dans `app/globals.css`. Il ne
+faut plus écrire de suite `text-3xl sm:text-4xl` pour un titre de page :
+
+| Utilitaire | Usage | Bornes |
+| --- | --- | --- |
+| `text-display` | Titre du hero, une seule occurrence par page | 29,6 px → 72 px |
+| `text-title` | Titre de page et de section (`h1`, `h2`) | 25,6 px → 40 px |
+| `text-2xl` et en dessous | Sous-titres et titres de carte | échelle Tailwind |
+
+Le réglage vise un téléphone de 360 px : à cette largeur, le titre du hero tient
+sur deux lignes au maximum.
+
+## Couleur
+
+Aucune couleur littérale (`#rrggbb`) ni teinte brute de la palette Tailwind
+(`rose-500`, `amber-50`, `emerald-200`…) ne doit apparaître dans `app/` ou
+`components/`. Les intentions passent par des jetons déclarés dans
+`app/globals.css` :
+
+| Rampe | Jetons | Usage |
+| --- | --- | --- |
+| Marque | `brand-subtle`, `brand-soft`, `brand-line`, `brand`, `brand-strong` | Sur-titres, accents éditoriaux, pastilles de la vitrine |
+| Réussite | `success-subtle`, `success-soft`, `success-line`, `success-accent`, `success`, `success-strong` | Créneau libre, confirmation, statut « terminé » |
+| Mise en garde | `warning-subtle`, `warning-soft`, `warning-line`, `warning-accent`, `warning`, `warning-strong` | Fermeture, hors horaires, consentement obligatoire |
+| Danger | `destructive` et ses opacités | Annulation, suppression, absence |
+| Information | `primary` et ses opacités | État neutre mis en avant, rendez-vous en cours |
+| Prix | `price` | La seule couleur des montants, partout |
+
+Chaque rampe va du fond le plus clair (`-subtle`) au texte le plus foncé
+(`-strong`). Le jeton sans suffixe est la couleur pleine : icône, point, surface
+saturée.
+
+Le mode sombre n’est pas activé : aucune classe `dark:` ne doit être ajoutée
+tant qu’un jeu de jetons `.dark` n’existe pas dans `app/globals.css`.
+
+## Rayons
+
+Les rayons proviennent tous des jetons `--radius-*`. Aucune valeur arbitraire
+(`rounded-[2rem]`) n’est admise. La convention par famille de conteneur :
+
+| Rayon | Usage |
+| --- | --- |
+| `rounded-full` | Pastilles, badges, boutons ronds, boutons d’icône circulaires |
+| `rounded-lg` | Boutons (valeur par défaut de `Button`) |
+| `rounded-xl` | Champs de saisie, petits blocs internes, lignes de liste |
+| `rounded-2xl` | Cartes et panneaux courants |
+| `rounded-3xl` | Grandes cartes de page, formulaires, dialogues |
+
 ## Primitives
 
 | Primitive | Usage | Variantes |
 | --- | --- | --- |
 | `Button` | Actions et liens principaux | default, outline, secondary, ghost, destructive, link |
+| `SubmitButton` | Envoi de formulaire avec état de chargement | mêmes variantes que `Button` |
 | `FormField` | Libellé, aide et erreur d’un champ | requis ou facultatif |
 | `formControlClass` | `input`, `select` et `textarea` | normal, invalide, désactivé |
 | `StatusBadge` | État toujours accompagné d’un texte | neutral, info, success, warning, danger |
@@ -32,20 +90,33 @@ classes locales.
 | `AppToast` | Retour bref après une action asynchrone | success, danger |
 | `EmptyState` | Collection ou journée sans contenu | icône, explication, action facultative |
 
+Un lien qui se comporte comme un bouton passe par `<Button asChild>` autour du
+`<Link>` ou du `<a>`. Il ne faut pas réécrire à la main
+`inline-flex … rounded-xl bg-primary …`.
+
+### Ce qui reste légitimement un `<button>` brut
+
+Seuls les contrôles spécialisés, dont l’apparence est indissociable de leur
+fonction, conservent un `<button>` local : onglets (`role="tab"`), pastilles de
+jour du calendrier, cellules de calendrier, options de liste déroulante
+(`role="option"`), pastilles de filtre du catalogue, cartes de prestation
+sélectionnables et blocs de la chronologie admin.
+
 ## Confirmation destructive
 
 Le déclencheur conserve un libellé explicite. Le dialogue reçoit le focus,
 annonce son titre et sa description, bloque l’arrière-plan et rend « Annuler »
 accessible avant l’action destructive. Une confirmation intégrée sous forme de
-deux petits boutons ne doit plus être créée localement.
+deux petits boutons ne doit plus être créée localement : l’annulation d’un
+rendez-vous côté cliente passe elle aussi par `ConfirmDialog`.
 
-## Audit de livraison du point 23
+## État de la migration
 
-- Navigation public/admin : focus visible, cibles principales de 44 px et safe
-  areas vérifiées à 320, 390 et 1440 px.
-- Formulaires réservation/admin : zoom texte mobile évité par une taille de
-  police de 16 px, erreurs textuelles et états d’envoi annoncés.
-- Badges d’activité : nombre et libellé accessibles, pas uniquement une pastille.
-- Suppression de prestation et annulation admin : dialogue accessible commun.
-- États vides : composant commun dans l’activité et la chronologie admin.
-- Mouvement réduit : animations et défilement doux neutralisés globalement.
+Les points 1 et 2 de [ROADMAP-V2.md](../ROADMAP-V2.md) ont aligné l’ensemble des
+écrans sur ce document :
+
+- typographie unifiée sur Geist et Plus Jakarta Sans, avec une échelle fluide ;
+- toutes les actions passent par `Button`, `SubmitButton` ou `ConfirmDialog` ;
+- tous les champs passent par `FormField` et `formControlClass` ;
+- plus aucune couleur littérale ni teinte Tailwind brute ;
+- rayons ramenés aux jetons `--radius-*` selon la convention ci-dessus.

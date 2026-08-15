@@ -4,6 +4,7 @@ import { CalendarClock, ChevronLeft, ChevronRight, Plus } from 'lucide-react'
 import Link from 'next/link'
 import { type ReactNode, useEffect, useState } from 'react'
 import { AdminDayTimeline } from '@/components/admin/admin-day-timeline'
+import { Button } from '@/components/ui/button'
 import type { AdminTimelineDay } from '@/lib/admin/agenda-timeline'
 import { ADMIN_AGENDA_DATE_EVENT } from '@/lib/admin/navigation'
 
@@ -96,13 +97,14 @@ export const AdminAgendaView = ({
       <section className="mt-4 md:hidden">
         <div className="rounded-2xl border bg-card p-3">
           <div className="flex items-center justify-between gap-2">
-            <Link
-              href={`/admin?date=${previousWeek}`}
-              aria-label="Semaine précédente"
-              className="grid size-11 place-items-center rounded-xl hover:bg-muted"
-            >
-              <ChevronLeft className="size-5" />
-            </Link>
+            <Button asChild variant="ghost" size="icon">
+              <Link
+                href={`/admin?date=${previousWeek}`}
+                aria-label="Semaine précédente"
+              >
+                <ChevronLeft className="size-5" />
+              </Link>
+            </Button>
             <div className="text-center">
               <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
                 Semaine
@@ -112,13 +114,14 @@ export const AdminAgendaView = ({
                 {days.at(-1)?.label.replace(/^\S+\s/, '')}
               </p>
             </div>
-            <Link
-              href={`/admin?date=${nextWeek}`}
-              aria-label="Semaine suivante"
-              className="grid size-11 place-items-center rounded-xl hover:bg-muted"
-            >
-              <ChevronRight className="size-5" />
-            </Link>
+            <Button asChild variant="ghost" size="icon">
+              <Link
+                href={`/admin?date=${nextWeek}`}
+                aria-label="Semaine suivante"
+              >
+                <ChevronRight className="size-5" />
+              </Link>
+            </Button>
           </div>
 
           <div className="mt-3 grid grid-cols-7 gap-1" role="tablist">
@@ -149,7 +152,7 @@ export const AdminAgendaView = ({
                   {day.appointments.length > 0 ? (
                     <span
                       aria-hidden="true"
-                      className={`absolute bottom-1 size-1 rounded-full ${isSelected ? 'bg-primary-foreground' : 'bg-rose-500'}`}
+                      className={`absolute bottom-1 size-1 rounded-full ${isSelected ? 'bg-primary-foreground' : 'bg-brand'}`}
                     />
                   ) : null}
                 </button>
@@ -158,12 +161,11 @@ export const AdminAgendaView = ({
           </div>
 
           {selectedDay.dateKey !== today ? (
-            <Link
-              href="/admin"
-              className="mt-2 flex min-h-11 items-center justify-center gap-2 rounded-xl bg-muted px-3 text-sm font-medium"
-            >
-              <CalendarClock className="size-4" /> Revenir à aujourd’hui
-            </Link>
+            <Button asChild variant="secondary" className="mt-2 w-full">
+              <Link href="/admin">
+                <CalendarClock className="size-4" /> Revenir à aujourd’hui
+              </Link>
+            </Button>
           ) : null}
         </div>
 
@@ -174,20 +176,21 @@ export const AdminAgendaView = ({
         >
           <div className="mt-4 flex items-center justify-between gap-3">
             <div>
-              <p className="text-xs font-medium text-rose-500">
+              <p className="text-xs font-medium text-brand">
                 {selectedDay.isToday ? 'Aujourd’hui' : 'Journée sélectionnée'}
               </p>
               <h2 className="font-heading text-2xl font-bold capitalize">
                 {selectedDay.label}
               </h2>
             </div>
-            <Link
-              href={`/admin/appointments/new?date=${selectedDay.dateKey}`}
-              aria-label={`Ajouter un rendez-vous le ${selectedDay.label}`}
-              className="grid size-11 shrink-0 place-items-center rounded-xl bg-primary text-primary-foreground"
-            >
-              <Plus className="size-5" />
-            </Link>
+            <Button asChild size="icon">
+              <Link
+                href={`/admin/appointments/new?date=${selectedDay.dateKey}`}
+                aria-label={`Ajouter un rendez-vous le ${selectedDay.label}`}
+              >
+                <Plus className="size-5" />
+              </Link>
+            </Button>
           </div>
           <AdminDayTimeline day={selectedDay} />
         </div>
@@ -202,26 +205,27 @@ export const AdminAgendaView = ({
             </p>
           </div>
           <div className="flex items-center gap-2">
-            <Link
-              href={`/admin?date=${previousWeek}`}
-              aria-label="Semaine précédente"
-              className="grid size-11 place-items-center rounded-xl border"
-            >
-              <ChevronLeft className="size-4" />
-            </Link>
-            <Link
-              href="/admin"
-              className="inline-flex min-h-11 items-center gap-2 rounded-xl border px-4 text-sm font-medium"
-            >
-              <CalendarClock className="size-4" /> Aujourd’hui
-            </Link>
-            <Link
-              href={`/admin?date=${nextWeek}`}
-              aria-label="Semaine suivante"
-              className="grid size-11 place-items-center rounded-xl border"
-            >
-              <ChevronRight className="size-4" />
-            </Link>
+            <Button asChild variant="outline" size="icon">
+              <Link
+                href={`/admin?date=${previousWeek}`}
+                aria-label="Semaine précédente"
+              >
+                <ChevronLeft className="size-4" />
+              </Link>
+            </Button>
+            <Button asChild variant="outline">
+              <Link href="/admin">
+                <CalendarClock className="size-4" /> Aujourd’hui
+              </Link>
+            </Button>
+            <Button asChild variant="outline" size="icon">
+              <Link
+                href={`/admin?date=${nextWeek}`}
+                aria-label="Semaine suivante"
+              >
+                <ChevronRight className="size-4" />
+              </Link>
+            </Button>
           </div>
         </div>
 
@@ -244,13 +248,14 @@ export const AdminAgendaView = ({
             </p>
           </div>
           {visibleDays.length < ALL_DAYS.length ? (
-            <button
+            <Button
               type="button"
+              variant="ghost"
               onClick={showAllDays}
-              className="min-h-11 shrink-0 rounded-xl px-3 text-xs font-medium text-primary hover:bg-muted"
+              className="shrink-0 text-primary"
             >
               Tout afficher
-            </button>
+            </Button>
           ) : null}
         </div>
         <div className="mt-3 grid grid-cols-7 gap-1.5 sm:max-w-xl">

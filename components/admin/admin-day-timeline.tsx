@@ -3,6 +3,7 @@
 import { AlertTriangle, Plus } from 'lucide-react'
 import Link from 'next/link'
 import { AppointmentStatusActions } from '@/components/admin/appointment-status-actions'
+import { Button } from '@/components/ui/button'
 import { EmptyState } from '@/components/ui/empty-state'
 import { StatusBadge } from '@/components/ui/status-badge'
 import {
@@ -63,12 +64,11 @@ export const AdminDayTimeline = ({
         description="Aucun horaire ni rendez-vous pour cette journée."
         className="mt-4"
         action={
-          <Link
-            href={`/admin/appointments/new?date=${day.dateKey}`}
-            className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-primary px-4 text-sm font-medium text-primary-foreground"
-          >
-            <Plus className="size-4" /> Ajouter manuellement
-          </Link>
+          <Button asChild>
+            <Link href={`/admin/appointments/new?date=${day.dateKey}`}>
+              <Plus className="size-4" /> Ajouter manuellement
+            </Link>
+          </Button>
         }
       />
     )
@@ -77,14 +77,14 @@ export const AdminDayTimeline = ({
     <div className="mt-4">
       <div className="flex flex-wrap gap-x-4 gap-y-2 text-[11px] text-muted-foreground">
         <span className="inline-flex items-center gap-1.5">
-          <span className="size-2.5 rounded-full bg-emerald-300" /> Libre
+          <span className="size-2.5 rounded-full bg-success-accent" /> Libre
         </span>
         <span className="inline-flex items-center gap-1.5">
-          <span className="size-2.5 rounded-sm border border-dashed border-slate-400" />
+          <span className="size-2.5 rounded-sm border border-dashed border-muted-foreground" />
           Prépa / rangement
         </span>
         <span className="inline-flex items-center gap-1.5">
-          <span className="size-2.5 rounded-sm bg-amber-200" /> Fermeture
+          <span className="size-2.5 rounded-sm bg-warning-line" /> Fermeture
         </span>
       </div>
 
@@ -164,7 +164,7 @@ export const AdminDayTimeline = ({
           {day.openings.map(opening => (
             <div
               key={`${opening.startMinute}-${opening.endMinute}`}
-              className="pointer-events-none absolute left-12 right-0 border-y border-emerald-200/70 bg-emerald-50/70"
+              className="pointer-events-none absolute left-12 right-0 border-y border-success-line/70 bg-success-subtle/70"
               style={positionStyle(opening, day.timelineStartMinute)}
             />
           ))}
@@ -174,13 +174,13 @@ export const AdminDayTimeline = ({
               key={minute}
               href={`/admin/appointments/new?date=${day.dateKey}&time=${formatTimelineMinute(minute)}`}
               aria-label={`Ajouter un rendez-vous à ${formatTimelineMinute(minute)}`}
-              className="group absolute left-12 right-1 z-10 flex items-center justify-end rounded-lg border border-dashed border-transparent px-2 text-[10px] font-medium text-emerald-800 transition hover:border-emerald-400 hover:bg-emerald-100/90 focus:border-emerald-500 focus:bg-emerald-100 focus:outline-none"
+              className="group absolute left-12 right-1 z-10 flex items-center justify-end rounded-lg border border-dashed border-transparent px-2 text-[10px] font-medium text-success-strong transition hover:border-success-accent hover:bg-success-soft/90 focus:border-success focus:bg-success-soft focus:outline-none"
               style={positionStyle(
                 { startMinute: minute, endMinute: minute + 30 },
                 day.timelineStartMinute,
               )}
             >
-              <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100/80 px-2 py-1 opacity-70 group-hover:opacity-100 group-focus:opacity-100">
+              <span className="inline-flex items-center gap-1 rounded-full bg-success-soft/80 px-2 py-1 opacity-70 group-hover:opacity-100 group-focus:opacity-100">
                 <Plus className="size-3" /> {formatTimelineMinute(minute)}
               </span>
             </Link>
@@ -201,8 +201,8 @@ export const AdminDayTimeline = ({
                 key={exception.id}
                 className={`pointer-events-none absolute left-12 right-1 z-20 overflow-hidden rounded-lg border px-2 py-1 text-[10px] font-semibold ${
                   exception.type === 'UNAVAILABLE'
-                    ? 'border-amber-300 bg-amber-100/90 text-amber-950'
-                    : 'border-emerald-400 bg-emerald-50/40 text-emerald-950'
+                    ? 'border-warning-accent bg-warning-soft/90 text-warning-strong'
+                    : 'border-success-accent bg-success-subtle/40 text-success-strong'
                 }`}
                 style={positionStyle(visibleException, day.timelineStartMinute)}
               >

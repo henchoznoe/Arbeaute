@@ -9,6 +9,7 @@ import {
   Printer,
 } from 'lucide-react'
 import { useState } from 'react'
+import { Button } from '@/components/ui/button'
 import {
   createAppointmentDetails,
   createGoogleCalendarUrl,
@@ -123,23 +124,25 @@ export const ConfirmationActions = ({
           compatibles lorsqu’il le peut.
         </p>
         <div className="mt-4 grid gap-2 sm:grid-cols-2">
-          <a
-            href={googleCalendarUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl bg-primary px-4 text-center text-sm font-medium text-primary-foreground"
-          >
-            Google Agenda
-            <ExternalLink className="size-4" />
-          </a>
-          <button
+          <Button asChild size="lg">
+            <a
+              href={googleCalendarUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              Google Agenda
+              <ExternalLink className="size-4" />
+            </a>
+          </Button>
+          <Button
             type="button"
+            variant="outline"
+            size="lg"
             onClick={addToCalendar}
-            className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl border px-4 text-center text-sm font-medium"
           >
             <Download className="size-4" />
             Apple, Outlook ou autre
-          </button>
+          </Button>
         </div>
         {calendarFeedback ? (
           <p
@@ -147,7 +150,7 @@ export const ConfirmationActions = ({
             role="status"
           >
             {calendarFeedback.kind === 'success' ? (
-              <Check className="mt-0.5 size-4 shrink-0 text-emerald-700" />
+              <Check className="mt-0.5 size-4 shrink-0 text-success" />
             ) : null}
             {calendarFeedback.message}
           </p>
@@ -156,14 +159,15 @@ export const ConfirmationActions = ({
 
       <div className="grid gap-3 sm:grid-cols-2">
         <div className="rounded-2xl border p-4">
-          <button
+          <Button
             type="button"
+            variant="ghost"
             onClick={copyDetails}
-            className="flex min-h-11 w-full items-center gap-3 text-left font-semibold"
+            className="w-full justify-start gap-3 px-2 font-semibold"
           >
             <ClipboardCopy className="size-5 shrink-0 text-primary" />
             Copier les détails
-          </button>
+          </Button>
           <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
             Copie le soin, l’horaire, l’adresse et le téléphone.
           </p>
@@ -175,14 +179,15 @@ export const ConfirmationActions = ({
         </div>
 
         <div className="rounded-2xl border p-4">
-          <button
+          <Button
             type="button"
+            variant="ghost"
             onClick={printAppointment}
-            className="flex min-h-11 w-full items-center gap-3 text-left font-semibold"
+            className="w-full justify-start gap-3 px-2 font-semibold"
           >
             <Printer className="size-5 shrink-0 text-primary" />
             Enregistrer en PDF
-          </button>
+          </Button>
           <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
             Ouvre l’impression : choisissez « Enregistrer en PDF ».
           </p>

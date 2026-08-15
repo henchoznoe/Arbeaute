@@ -40,16 +40,20 @@ const DataManagement = async () => {
 
   return (
     <main className="mx-auto min-h-screen w-full min-w-0 max-w-5xl overflow-x-hidden px-4 py-5 sm:px-8 sm:py-8">
-      <Link
-        href="/admin/settings"
-        className="inline-flex min-h-11 items-center gap-1 text-sm text-muted-foreground"
+      <Button
+        asChild
+        variant="ghost"
+        size="sm"
+        className="-ml-2 text-muted-foreground"
       >
-        <ChevronLeft className="size-4" /> Réglages
-      </Link>
+        <Link href="/admin/settings">
+          <ChevronLeft className="size-4" /> Réglages
+        </Link>
+      </Button>
 
       <header className="mt-2">
-        <p className="text-sm font-medium text-rose-500">Arbeauté</p>
-        <h1 className="break-words font-heading text-3xl leading-tight font-bold sm:text-4xl">
+        <p className="text-sm font-medium text-brand">Arbeauté</p>
+        <h1 className="break-words font-heading text-title font-bold">
           Données et confidentialité
         </h1>
         <p className="mt-2 max-w-3xl text-sm leading-relaxed text-muted-foreground">

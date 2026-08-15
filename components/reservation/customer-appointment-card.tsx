@@ -5,6 +5,8 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useEffect, useRef, useState, useTransition } from 'react'
 import { WeekAvailabilityPicker } from '@/components/reservation/week-availability-picker'
+import { Button } from '@/components/ui/button'
+import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import {
   cancelCustomerAppointment,
   getCustomerMoveWeekAvailability,
@@ -65,7 +67,6 @@ export const CustomerAppointmentCard = ({
   const [nextSlotNotice, setNextSlotNotice] = useState<string | null>(null)
   const [calendarNotice, setCalendarNotice] = useState<string | null>(null)
   const [result, setResult] = useState<MutationResult | null>(null)
-  const [confirmingCancel, setConfirmingCancel] = useState(false)
   const [loadingWeek, startWeekTransition] = useTransition()
   const [searchingNext, startNextTransition] = useTransition()
   const [mutating, startMutationTransition] = useTransition()
@@ -192,66 +193,47 @@ export const CustomerAppointmentCard = ({
 
   return (
     <article className="rounded-3xl border bg-card p-5 shadow-sm sm:p-7">
-      <p className="text-sm font-medium text-rose-600">Rendez-vous confirmé</p>
+      <p className="text-sm font-medium text-brand-strong">
+        Rendez-vous confirmé
+      </p>
       <h3 className="mt-1 font-heading text-2xl font-bold">{serviceName}</h3>
       <p className="mt-3 capitalize">{dateLabel}</p>
       <p className="mt-1 text-sm text-muted-foreground">{priceLabel}</p>
 
       {!moving ? (
         <div className="mt-6 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
-          <button
-            type="button"
-            onClick={addToCalendar}
-            className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border px-4 text-sm font-medium"
-          >
+          <Button type="button" variant="outline" onClick={addToCalendar}>
             <Download className="size-4" /> Calendrier
-          </button>
+          </Button>
           {bookingPath ? (
-            <Link
-              href={bookingPath}
-              className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-primary/30 bg-primary/5 px-4 text-sm font-medium text-primary"
-            >
-              <Repeat2 className="size-4" /> Réserver à nouveau
-            </Link>
+            <Button asChild variant="secondary">
+              <Link href={bookingPath}>
+                <Repeat2 className="size-4" /> Réserver à nouveau
+              </Link>
+            </Button>
           ) : null}
           {canChange ? (
             <>
-              <button
-                type="button"
-                onClick={openMoveCalendar}
-                className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-primary px-4 text-sm font-medium text-primary-foreground"
-              >
+              <Button type="button" onClick={openMoveCalendar}>
                 <CalendarDays className="size-4" /> Déplacer
-              </button>
-              {confirmingCancel ? (
-                <div className="grid grid-cols-2 gap-2 sm:col-span-2 lg:col-span-1 lg:grid-cols-1">
-                  <button
+              </Button>
+              <ConfirmDialog
+                title="Annuler ce rendez-vous ?"
+                description="Le créneau sera libéré et rendu disponible pour une autre cliente. Pour revenir, il faudra en réserver un nouveau."
+                confirmLabel="Annuler le rendez-vous"
+                cancelLabel="Garder mon rendez-vous"
+                onConfirm={cancel}
+                pending={mutating}
+                trigger={
+                  <Button
                     type="button"
+                    variant="destructive"
                     disabled={mutating}
-                    onClick={() => setConfirmingCancel(false)}
-                    className="min-h-11 rounded-xl border px-3 text-sm font-medium"
                   >
-                    Garder
-                  </button>
-                  <button
-                    type="button"
-                    disabled={mutating}
-                    onClick={cancel}
-                    className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-destructive px-3 text-sm font-medium text-destructive-foreground"
-                  >
-                    <X className="size-4" /> Confirmer
-                  </button>
-                </div>
-              ) : (
-                <button
-                  type="button"
-                  disabled={mutating}
-                  onClick={() => setConfirmingCancel(true)}
-                  className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-destructive/10 px-4 text-sm font-medium text-destructive"
-                >
-                  <X className="size-4" /> Annuler
-                </button>
-              )}
+                    <X className="size-4" /> Annuler
+                  </Button>
+                }
+              />
             </>
           ) : null}
         </div>
@@ -266,15 +248,15 @@ export const CustomerAppointmentCard = ({
                 La prestation reste inchangée.
               </p>
             </div>
-            <button
+            <Button
               type="button"
+              variant="outline"
               onClick={findNextSlot}
               disabled={searchingNext}
-              className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-primary/30 bg-background px-4 text-sm font-medium text-primary"
             >
               <Zap className="size-4" />
               {searchingNext ? 'Recherche…' : 'Prochain créneau'}
-            </button>
+            </Button>
           </div>
           {nextSlotNotice ? (
             <p className="mt-3 text-sm text-muted-foreground" role="status">
@@ -295,22 +277,21 @@ export const CustomerAppointmentCard = ({
             startsAt={startsAt}
             viewStart={viewStart}
           />
-          <div className="mt-5 flex gap-3">
-            <button
+          <div className="mt-5 grid grid-cols-2 gap-3">
+            <Button
               type="button"
+              variant="outline"
               onClick={() => setMoving(false)}
-              className="min-h-11 flex-1 rounded-xl border bg-background px-4 text-sm font-medium"
             >
               Retour
-            </button>
-            <button
+            </Button>
+            <Button
               type="button"
               disabled={!startsAt || mutating}
               onClick={move}
-              className="min-h-11 flex-1 rounded-xl bg-primary px-4 text-sm font-medium text-primary-foreground disabled:opacity-40"
             >
               Confirmer le déplacement
-            </button>
+            </Button>
           </div>
         </div>
       )}
@@ -332,7 +313,7 @@ export const CustomerAppointmentCard = ({
         <p
           className={
             result.ok
-              ? 'mt-4 rounded-xl bg-emerald-50 p-3 text-sm text-emerald-800'
+              ? 'mt-4 rounded-xl bg-success-subtle p-3 text-sm text-success-strong'
               : 'mt-4 rounded-xl bg-destructive/10 p-3 text-sm text-destructive'
           }
           role={result.ok ? 'status' : 'alert'}

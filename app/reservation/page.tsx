@@ -33,10 +33,10 @@ const ReservationPage = async () => {
       />
       <main className="min-h-screen px-5 pt-24 pb-8 sm:px-8 sm:pt-28 sm:pb-12">
         <div className="mx-auto mb-9 max-w-3xl">
-          <p className="text-sm font-semibold tracking-widest text-rose-500 uppercase">
+          <p className="text-sm font-semibold tracking-widest text-brand uppercase">
             Réservation en ligne
           </p>
-          <h1 className="mt-2 font-heading text-3xl font-bold sm:text-4xl">
+          <h1 className="mt-2 font-heading text-title font-bold">
             Prendre rendez-vous
           </h1>
           <p className="mt-3 text-muted-foreground">

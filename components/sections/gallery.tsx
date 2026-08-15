@@ -20,10 +20,10 @@ export async function Gallery() {
       <div className="mx-auto max-w-6xl">
         <Animate>
           <div className="mb-10 max-w-2xl">
-            <p className="text-sm font-medium tracking-[0.2em] text-rose-500 uppercase">
+            <p className="text-sm font-medium tracking-[0.2em] text-brand uppercase">
               L’univers Arbeauté
             </p>
-            <h2 className="mt-2 font-heading text-3xl font-bold sm:text-4xl">
+            <h2 className="mt-2 font-heading text-title font-bold">
               Quelques soins en images
             </h2>
             <p className="mt-3 text-muted-foreground">

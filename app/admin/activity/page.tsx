@@ -5,6 +5,7 @@ import { Suspense } from 'react'
 import { ActivityList } from '@/components/admin/activity-list'
 import { ActivityTabs } from '@/components/admin/activity-tabs'
 import { AdminSkeleton } from '@/components/admin/admin-skeleton'
+import { Button } from '@/components/ui/button'
 import { StatusBadge } from '@/components/ui/status-badge'
 import { markAllAppointmentActivitiesRead } from '@/lib/actions/admin-activity'
 import { getActivityPage } from '@/lib/admin/activity'
@@ -35,17 +36,21 @@ const ActivityHistory = async ({
 
   return (
     <main className="mx-auto min-h-screen max-w-3xl px-4 py-5 sm:px-8 sm:py-8">
-      <Link
-        href="/admin"
-        className="inline-flex min-h-11 items-center gap-1 text-sm text-muted-foreground"
+      <Button
+        asChild
+        variant="ghost"
+        size="sm"
+        className="-ml-2 text-muted-foreground"
       >
-        <ChevronLeft className="size-4" /> Agenda
-      </Link>
+        <Link href="/admin">
+          <ChevronLeft className="size-4" /> Agenda
+        </Link>
+      </Button>
 
       <header className="mt-2 flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <p className="text-sm font-medium text-rose-500">Arbeauté</p>
-          <h1 className="font-heading text-3xl font-bold">Activité</h1>
+          <p className="text-sm font-medium text-brand">Arbeauté</p>
+          <h1 className="font-heading text-title font-bold">Activité</h1>
           <p className="mt-1 text-sm text-muted-foreground">
             {totalCount} action{totalCount > 1 ? 's' : ''} cliente
             {totalCount > 1 ? 's' : ''}
@@ -63,12 +68,9 @@ const ActivityHistory = async ({
 
       {unreadCount > 0 ? (
         <form action={markAllAppointmentActivitiesRead} className="mt-5">
-          <button
-            type="submit"
-            className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-primary px-4 text-sm font-medium text-primary-foreground"
-          >
+          <Button type="submit" className="w-full">
             <CheckCheck className="size-4" /> Tout marquer comme lu
-          </button>
+          </Button>
         </form>
       ) : null}
 
@@ -82,22 +84,20 @@ const ActivityHistory = async ({
           className="mt-5 grid grid-cols-2 gap-3"
         >
           {page > 1 ? (
-            <Link
-              href={`/admin/activity?page=${page - 1}`}
-              className="inline-flex min-h-11 items-center justify-center gap-1 rounded-xl border px-3 text-sm font-medium"
-            >
-              <ChevronLeft className="size-4" /> Précédent
-            </Link>
+            <Button asChild variant="outline">
+              <Link href={`/admin/activity?page=${page - 1}`}>
+                <ChevronLeft className="size-4" /> Précédent
+              </Link>
+            </Button>
           ) : (
             <span aria-hidden="true" />
           )}
           {page < totalPages ? (
-            <Link
-              href={`/admin/activity?page=${page + 1}`}
-              className="inline-flex min-h-11 items-center justify-center gap-1 rounded-xl border px-3 text-sm font-medium"
-            >
-              Suivant <ChevronRight className="size-4" />
-            </Link>
+            <Button asChild variant="outline">
+              <Link href={`/admin/activity?page=${page + 1}`}>
+                Suivant <ChevronRight className="size-4" />
+              </Link>
+            </Button>
           ) : null}
         </nav>
       ) : null}

@@ -6,6 +6,7 @@ import {
   Repeat2,
 } from 'lucide-react'
 import Link from 'next/link'
+import { Button } from '@/components/ui/button'
 import {
   type CustomerAppointmentState,
   customerAppointmentStateLabels,
@@ -23,7 +24,7 @@ interface CustomerAppointmentHistoryCardProps {
 const statePresentation = {
   IN_PROGRESS: {
     icon: CalendarClock,
-    className: 'border-blue-200 bg-blue-50 text-blue-800',
+    className: 'border-primary/25 bg-primary/10 text-primary',
   },
   PAST: {
     icon: CalendarClock,
@@ -31,15 +32,15 @@ const statePresentation = {
   },
   CANCELLED: {
     icon: CalendarX2,
-    className: 'border-rose-200 bg-rose-50 text-rose-800',
+    className: 'border-brand-line bg-brand-subtle text-brand-strong',
   },
   COMPLETED: {
     icon: CalendarCheck2,
-    className: 'border-emerald-200 bg-emerald-50 text-emerald-800',
+    className: 'border-success-line bg-success-subtle text-success-strong',
   },
   NO_SHOW: {
     icon: CircleSlash2,
-    className: 'border-amber-200 bg-amber-50 text-amber-900',
+    className: 'border-warning-line bg-warning-subtle text-warning-strong',
   },
 } satisfies Record<
   Exclude<CustomerAppointmentState, 'UPCOMING'>,
@@ -74,12 +75,11 @@ export const CustomerAppointmentHistoryCard = ({
           <p className="mt-1 text-sm text-muted-foreground">{priceLabel}</p>
         </div>
         {bookingPath ? (
-          <Link
-            href={bookingPath}
-            className="inline-flex min-h-11 shrink-0 items-center justify-center gap-2 rounded-xl border border-primary/30 bg-primary/5 px-4 text-sm font-medium text-primary"
-          >
-            <Repeat2 className="size-4" /> Réserver à nouveau
-          </Link>
+          <Button asChild variant="secondary" className="shrink-0">
+            <Link href={bookingPath}>
+              <Repeat2 className="size-4" /> Réserver à nouveau
+            </Link>
+          </Button>
         ) : (
           <p className="max-w-48 text-sm text-muted-foreground">
             Cette prestation n’est plus disponible à la réservation.

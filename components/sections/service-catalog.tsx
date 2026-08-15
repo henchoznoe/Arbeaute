@@ -76,14 +76,16 @@ export const ServiceCatalog = ({
             className="h-12 w-full rounded-full border bg-card pr-12 pl-12 text-base shadow-sm outline-none transition focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/30"
           />
           {query ? (
-            <button
+            <Button
               type="button"
+              variant="ghost"
+              size="icon"
               onClick={() => setQuery('')}
               aria-label="Effacer la recherche"
-              className="absolute top-1/2 right-0.5 grid size-11 -translate-y-1/2 place-items-center rounded-full text-muted-foreground hover:bg-muted hover:text-foreground"
+              className="absolute top-1/2 right-0.5 -translate-y-1/2 rounded-full text-muted-foreground"
             >
               <X className="size-4" />
-            </button>
+            </Button>
           ) : null}
         </div>
       </div>
@@ -163,7 +165,7 @@ export const ServiceCatalog = ({
                       ) : null}
                       <div className="mt-3 flex flex-wrap items-end justify-between gap-3">
                         <div>
-                          <p className="font-semibold text-[#806b4d]">
+                          <p className="font-semibold text-price">
                             {formatPrice(service.priceCents)}
                             {service.priceNote === '/ min' ? ' / min' : ''}
                           </p>
@@ -212,16 +214,17 @@ export const ServiceCatalog = ({
           <p className="mt-2 text-sm text-muted-foreground">
             Essayez un autre mot ou affichez toutes les catégories.
           </p>
-          <button
+          <Button
             type="button"
+            variant="outline"
             onClick={() => {
               setQuery('')
               setCategoryId(null)
             }}
-            className="mt-5 h-11 rounded-full border px-5 text-sm font-medium hover:bg-muted"
+            className="mt-5 rounded-full"
           >
             Réinitialiser les filtres
-          </button>
+          </Button>
         </div>
       )}
     </div>

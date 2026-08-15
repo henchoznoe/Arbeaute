@@ -26,13 +26,15 @@ export const AppToast = ({
         duration={6000}
         className={cn(
           'grid grid-cols-[auto_1fr_auto] items-start gap-3 rounded-2xl border bg-popover p-4 text-popover-foreground shadow-xl data-[state=closed]:animate-out data-[state=open]:animate-in data-[state=closed]:slide-out-to-right data-[state=open]:slide-in-from-right motion-reduce:animate-none',
-          variant === 'danger' ? 'border-destructive/30' : 'border-emerald-200',
+          variant === 'danger'
+            ? 'border-destructive/30'
+            : 'border-success-line',
         )}
       >
         <Icon
           className={cn(
             'mt-0.5 size-5',
-            variant === 'danger' ? 'text-destructive' : 'text-emerald-700',
+            variant === 'danger' ? 'text-destructive' : 'text-success',
           )}
         />
         <div>

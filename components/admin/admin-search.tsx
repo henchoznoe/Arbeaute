@@ -154,14 +154,16 @@ export const AdminSearch = ({
             className={`${formControlClass} pr-10 pl-10`}
           />
           {filters.query ? (
-            <button
+            <Button
               type="button"
+              variant="ghost"
+              size="icon"
               onClick={() => updateFilter('query', '')}
               aria-label="Effacer la recherche"
-              className="absolute top-0 right-0 grid size-11 place-items-center text-muted-foreground"
+              className="absolute top-0 right-0 text-muted-foreground"
             >
               <X className="size-4" />
-            </button>
+            </Button>
           ) : null}
         </div>
         <p className="mt-2 text-xs text-muted-foreground">
@@ -329,19 +331,19 @@ export const AdminSearch = ({
                     </div>
                     <div className="mt-3 grid gap-2 sm:flex sm:justify-end">
                       {appointment.customerId ? (
-                        <Link
-                          href={`/admin/customers/${appointment.customerId}`}
-                          className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border px-4 text-sm font-semibold transition hover:bg-muted"
-                        >
-                          <UserRound className="size-4" /> Fiche cliente
-                        </Link>
+                        <Button asChild variant="outline">
+                          <Link
+                            href={`/admin/customers/${appointment.customerId}`}
+                          >
+                            <UserRound className="size-4" /> Fiche cliente
+                          </Link>
+                        </Button>
                       ) : null}
-                      <Link
-                        href={`/admin/appointments/${appointment.id}`}
-                        className="inline-flex min-h-11 items-center justify-center gap-1 rounded-xl bg-primary px-4 text-sm font-semibold text-primary-foreground transition hover:bg-primary/90"
-                      >
-                        Rendez-vous <ChevronRight className="size-4" />
-                      </Link>
+                      <Button asChild>
+                        <Link href={`/admin/appointments/${appointment.id}`}>
+                          Rendez-vous <ChevronRight className="size-4" />
+                        </Link>
+                      </Button>
                     </div>
                   </div>
                 </article>

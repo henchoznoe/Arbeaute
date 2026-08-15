@@ -1,6 +1,7 @@
 import { WifiOff } from 'lucide-react'
 import type { Metadata } from 'next'
 import Link from 'next/link'
+import { Button } from '@/components/ui/button'
 import { contact } from '@/lib/constants/contact'
 
 export const metadata: Metadata = {
@@ -12,7 +13,7 @@ export const metadata: Metadata = {
 const OfflinePage = () => (
   <main className="flex min-h-screen items-center justify-center px-6 py-16">
     <section className="w-full max-w-sm text-center">
-      <div className="mx-auto grid size-14 place-items-center rounded-2xl bg-rose-50 text-rose-500">
+      <div className="mx-auto grid size-14 place-items-center rounded-2xl bg-brand-subtle text-brand">
         <WifiOff className="size-6" />
       </div>
 
@@ -22,12 +23,9 @@ const OfflinePage = () => (
         puis réessayez.
       </p>
 
-      <Link
-        href="/"
-        className="mt-8 inline-flex h-11 items-center justify-center rounded-xl bg-primary px-6 text-sm font-medium text-primary-foreground"
-      >
-        Réessayer
-      </Link>
+      <Button asChild className="mt-8">
+        <Link href="/">Réessayer</Link>
+      </Button>
 
       <p className="mt-6 text-xs text-muted-foreground">
         Besoin de nous joindre ?{' '}

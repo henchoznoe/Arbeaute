@@ -53,10 +53,13 @@ figure dans le titre et se réévalue après chaque livraison.
 
 | Statut | Éléments |
 | --- | --- |
-| ✅ Terminés | Aucun |
+| ✅ Terminés | 1, 2 |
 | 🟡 En cours | Aucun |
-| ⏳ Prêt à démarrer | 1 à 13 |
+| ⏳ Prêt à démarrer | 3 à 13 |
 | 🔒 Bloqués | Aucun |
+
+Les fondations visuelles sont posées : l’élément 3 peut démarrer, et tous les
+écrans suivants s’appuient désormais sur les primitives et les jetons.
 
 - **Priorité P0** : corrige une friction quotidienne ou prépare plusieurs autres
   éléments.
@@ -68,7 +71,7 @@ figure dans le titre et se réévalue après chaque livraison.
 
 ## Fondations visuelles
 
-### 1. Adopter la typographie Geist et Plus Jakarta Sans — ⏳ Prêt à démarrer
+### 1. Adopter la typographie Geist et Plus Jakarta Sans — ✅ Terminé
 
 **Priorité : P0 · Effort : S · Nature : amélioration**
 
@@ -97,9 +100,21 @@ sur un petit téléphone.
 - aucun décalage de mise en page perceptible au chargement des polices ;
 - les budgets de `scripts/verify-build-quality.ts` restent respectés.
 
+**Livré.** `Geist` et `Plus_Jakarta_Sans` remplacent `Inter` et
+`Playfair_Display` dans `app/layout.tsx`. `app/globals.css` expose deux
+utilitaires fluides, `text-display` (29,6 → 72 px) et `text-title`
+(25,6 → 40 px) ; les 23 suites `text-3xl sm:text-4xl` des titres de page ont
+disparu. Mesuré dans le navigateur : le titre du hero tient sur deux lignes à
+360 px comme à 430 px, sans débordement horizontal.
+
+**Écart assumé.** La bande réservée à la photo d’Arzu (112 px) rendait les deux
+lignes géométriquement impossibles à toute taille lisible. La vignette est
+passée à `size-24` et la réserve à `pr-24` — un ajustement minimal, la
+recomposition du premier écran restant l’élément 8.
+
 **Dépendances :** aucune ; précède les éléments 3 et 8.
 
-### 2. Terminer la migration vers le système visuel commun — ⏳ Prêt à démarrer
+### 2. Terminer la migration vers le système visuel commun — ✅ Terminé
 
 **Priorité : P0 · Effort : L · Nature : amélioration**
 
@@ -148,6 +163,34 @@ nouveau composant n’est à inventer : le tableau des primitives de
   pas l’intention ;
 - `pnpm check:com` passe sans nouvelle exception `biome-ignore`.
 
+**Livré.** Les 160 teintes brutes et les 3 hexadécimales de prix sont remplacées
+par des jetons sémantiques déclarés dans `app/globals.css` : rampes `brand`,
+`success` et `warning` en cinq à six pas, plus `price`. Toutes les actions
+passent par `Button`, `SubmitButton` ou `ConfirmDialog` ; les 28 `<label>`
+manuels sont passés à `FormField`. `SubmitButton` repose désormais sur `Button`
+au lieu de redéclarer son style, et ses douze appels ne le restylent plus à la
+main. L’annulation d’un rendez-vous côté cliente, encore faite de deux petits
+boutons alors que la v1 l’interdisait déjà, passe à `ConfirmDialog`.
+`docs/systeme-visuel.md` décrit l’état atteint, y compris la convention de rayon
+par famille de conteneur et la liste des contrôles qui restent légitimement des
+`<button>` bruts.
+
+**Deux décisions prises en cours de route.**
+
+- Les quinze classes `dark:` posées sur la palette brute sont supprimées : le
+  mode sombre n’est pas activable, aucun bloc `.dark` n’existant dans
+  `app/globals.css`. Le document l’indique explicitement.
+- La taille `sm` de `Button` valait `h-7`, soit 28 px : la migration a fait
+  chuter 43 actions sous le seuil de 44 px du projet. `sm` conserve sa
+  typographie compacte mais passe à `min-h-11`. Vérifié écran par écran : plus
+  aucune action sous 44 px.
+
+**Reste ouvert.** `text-brand` sur le fond clair mesure 3,60:1, sous le seuil AA
+de 4,5. Ce n’est pas une régression — c’est l’ancien `rose-500`, repris à
+l’identique — mais c’est désormais **une seule ligne** à changer pour les
+21 usages : `--brand: oklch(0.575 0.246 16.439)` donne 4,54:1. La décision est
+éditoriale, elle appartient à l’élément 3.
+
 **Dépendances :** aucune ; socle des éléments 3, 5, 7 et 9.
 
 ### 3. Réparer les alignements et les tailles sur mobile — ⏳ Prêt à démarrer
@@ -158,22 +201,25 @@ nouveau composant n’est à inventer : le tableau des primitives de
 sur un téléphone :
 
 - les deux boutons du hero, censés se partager la largeur à parts égales
-  (`flex-1`), n’ont **pas la même largeur** à 430 px, parce que la classe de base
-  de `Button` impose `shrink-0` ;
-- les hauteurs d’action se contredisent d’un écran à l’autre : `h-11`, `h-12`,
-  `min-h-11`, `min-h-12`, `min-h-14`, `min-h-16` ;
+  (`flex-1`), n’ont toujours **pas la même largeur** à 430 px — mesuré à 206 px
+  contre 172 px — parce que la classe de base de `Button` impose `shrink-0` ;
 - les libellés des étapes du tunnel de réservation sont rendus en `text-[9px]`
   sur mobile, soit sous le seuil de lisibilité confortable ;
 - la grille des indicateurs admin affiche cinq cartes sur deux colonnes avec une
   dernière carte qui s’étale sur toute la largeur (`last:col-span-2`), ce qui
-  produit une rupture de rythme visuel.
+  produit une rupture de rythme visuel ;
+- `text-brand` mesure 3,60:1 sur le fond clair, sous le seuil AA de 4,5. Depuis
+  l’élément 2, c’est une seule valeur à arbitrer pour les 21 sur-titres du site.
 
-**Recommandation.** Traiter ces défauts comme une passe unique, une fois les
-primitives unifiées : corriger l’interaction entre `shrink-0` et `flex-1` dans
-`Button`, retenir **deux hauteurs d’action seulement** (une standard, une
-grande), remonter les libellés d’étapes à une taille lisible quitte à les
-raccourcir, et donner à la grille d’indicateurs un nombre de cartes compatible
-avec deux colonnes.
+L’élément 2 a déjà réglé une partie du problème initial : les hauteurs d’action
+ne se contredisent plus, elles proviennent toutes de `Button`, et aucune cible
+tactile ne descend sous 44 px.
+
+**Recommandation.** Traiter le reste comme une passe unique : corriger
+l’interaction entre `shrink-0` et `flex-1` dans `Button`, remonter les libellés
+d’étapes à une taille lisible quitte à les raccourcir, donner à la grille
+d’indicateurs un nombre de cartes compatible avec deux colonnes, et trancher la
+valeur de `--brand`.
 
 **Critères d’acceptation :**
 
@@ -546,11 +592,14 @@ remplacent la couverture perdue avec l’élément 12.
 Sans calendrier, mais avec un enchaînement qui évite de refaire deux fois le même
 travail :
 
-1. **Retirer d’abord les tests E2E (12)**, avant que le changement de police ne
-   rende leurs captures fausses.
-2. **Poser les fondations visuelles (1, 2, 3)** : la police, puis la migration
-   vers les primitives, puis la passe d’alignement. Tout le reste s’appuie
-   dessus.
+1. **Retirer les tests E2E (12) sans attendre.** Les éléments 1 et 2 ayant été
+   livrés avant, les quatre captures de référence de
+   `tests/e2e/mobile-shells.spec.ts-snapshots/` montrent encore Inter et
+   Playfair : elles sont **périmées**. `pnpm check:com` n’en dépend pas, mais
+   l’étape « Mobile E2E recipe » de `.github/workflows/ci.yml` échouera au
+   prochain push tant que l’élément 12 n’est pas fait.
+2. **Terminer les fondations visuelles avec l’élément 3** (1 et 2 sont livrés) :
+   la passe d’alignement et l’arbitrage de `--brand`.
 3. **Traiter l’agenda d’Arzu (4, 5, 6)** : c’est le gain quotidien le plus
    important, et il ne dépend d’aucune infrastructure nouvelle.
 4. **Mettre en place les e-mails (11)**, qui débloquent la réécriture de la

@@ -189,19 +189,19 @@ export const AppointmentForm = ({
       />
 
       <div className="grid gap-5 sm:grid-cols-2">
-        <label className="flex flex-col gap-2 text-sm font-medium">
-          Date
+        <FormField controlId="admin-appointment-date" label="Date">
           <input
+            id="admin-appointment-date"
             name="date"
             type="date"
             required
             defaultValue={appointment.date}
             className={formControlClass}
           />
-        </label>
-        <label className="flex flex-col gap-2 text-sm font-medium">
-          Heure de début
+        </FormField>
+        <FormField controlId="admin-appointment-time" label="Heure de début">
           <input
+            id="admin-appointment-time"
             name="time"
             type="time"
             step={900}
@@ -209,7 +209,7 @@ export const AppointmentForm = ({
             defaultValue={appointment.time}
             className={formControlClass}
           />
-        </label>
+        </FormField>
       </div>
 
       {!appointment.id ? (
@@ -278,14 +278,13 @@ export const AppointmentForm = ({
       <CustomerPicker onSelect={selectCustomer} />
 
       <div className="grid gap-5 sm:grid-cols-2">
-        <label className="flex flex-col gap-2 text-sm font-medium">
-          <span>
-            Prénom{' '}
-            <span className="font-normal text-muted-foreground">
-              (facultatif)
-            </span>
-          </span>
+        <FormField
+          controlId="admin-appointment-first-name"
+          label="Prénom"
+          optional
+        >
           <input
+            id="admin-appointment-first-name"
             name="firstName"
             maxLength={100}
             value={firstName}
@@ -293,10 +292,10 @@ export const AppointmentForm = ({
             className={formControlClass}
             autoComplete="given-name"
           />
-        </label>
-        <label className="flex flex-col gap-2 text-sm font-medium">
-          Nom
+        </FormField>
+        <FormField controlId="admin-appointment-last-name" label="Nom">
           <input
+            id="admin-appointment-last-name"
             name="lastName"
             required
             maxLength={100}
@@ -305,18 +304,13 @@ export const AppointmentForm = ({
             className={formControlClass}
             autoComplete="family-name"
           />
-        </label>
+        </FormField>
       </div>
 
       <div className="grid gap-5 sm:grid-cols-2">
-        <label className="flex flex-col gap-2 text-sm font-medium">
-          <span>
-            Email{' '}
-            <span className="font-normal text-muted-foreground">
-              (facultatif)
-            </span>
-          </span>
+        <FormField controlId="admin-appointment-email" label="Email" optional>
           <input
+            id="admin-appointment-email"
             name="email"
             type="email"
             maxLength={254}
@@ -325,15 +319,14 @@ export const AppointmentForm = ({
             className={formControlClass}
             autoComplete="email"
           />
-        </label>
-        <label className="flex flex-col gap-2 text-sm font-medium">
-          <span>
-            Téléphone{' '}
-            <span className="font-normal text-muted-foreground">
-              (facultatif)
-            </span>
-          </span>
+        </FormField>
+        <FormField
+          controlId="admin-appointment-phone"
+          label="Téléphone"
+          optional
+        >
           <input
+            id="admin-appointment-phone"
             name="phone"
             type="tel"
             maxLength={40}
@@ -342,7 +335,7 @@ export const AppointmentForm = ({
             className={formControlClass}
             autoComplete="tel"
           />
-        </label>
+        </FormField>
       </div>
       <p className="-mt-3 text-xs leading-relaxed text-muted-foreground">
         Le rendez-vous sera accessible dans « Mes rendez-vous » uniquement si
@@ -391,8 +384,8 @@ export const AppointmentForm = ({
                     hasConflict
                       ? 'border-destructive/40'
                       : occurrence.outsidePublicHours
-                        ? 'border-amber-300'
-                        : 'border-emerald-200'
+                        ? 'border-warning-accent'
+                        : 'border-success-line'
                   }`}
                 >
                   <div className="flex items-start justify-between gap-3">
@@ -411,11 +404,11 @@ export const AppointmentForm = ({
                         <XCircle className="size-3" /> Conflit
                       </span>
                     ) : occurrence.outsidePublicHours ? (
-                      <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-amber-100 px-2 py-1 text-[11px] font-semibold text-amber-900">
+                      <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-warning-soft px-2 py-1 text-[11px] font-semibold text-warning-strong">
                         <AlertTriangle className="size-3" /> Hors horaires
                       </span>
                     ) : (
-                      <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-emerald-50 px-2 py-1 text-[11px] font-semibold text-emerald-800">
+                      <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-success-subtle px-2 py-1 text-[11px] font-semibold text-success-strong">
                         <CheckCircle2 className="size-3" /> Libre
                       </span>
                     )}
@@ -433,7 +426,7 @@ export const AppointmentForm = ({
           </ol>
           {seriesPreview.outsidePublicHoursCount > 0 &&
           seriesPreview.conflictCount === 0 ? (
-            <label className="mt-4 flex cursor-pointer items-start gap-3 rounded-xl border border-amber-300 bg-amber-50 p-3 text-sm text-amber-950">
+            <label className="mt-4 flex cursor-pointer items-start gap-3 rounded-xl border border-warning-accent bg-warning-subtle p-3 text-sm text-warning-strong">
               <input
                 type="checkbox"
                 checked={acknowledgeSeriesOutsideHours}
@@ -441,7 +434,7 @@ export const AppointmentForm = ({
                   event.stopPropagation()
                   setAcknowledgeSeriesOutsideHours(event.target.checked)
                 }}
-                className="mt-0.5 size-5 shrink-0 accent-amber-700"
+                className="mt-0.5 size-5 shrink-0 accent-warning"
               />
               Je confirme la création des{' '}
               {seriesPreview.outsidePublicHoursCount} occurrence
@@ -455,7 +448,7 @@ export const AppointmentForm = ({
       {message && outsideWarning ? (
         <div
           role="status"
-          className="rounded-xl border border-amber-300 bg-amber-50 p-4 text-sm text-amber-950"
+          className="rounded-xl border border-warning-accent bg-warning-subtle p-4 text-sm text-warning-strong"
         >
           <div className="flex gap-2">
             <AlertTriangle className="mt-0.5 size-4 shrink-0" />
@@ -520,7 +513,7 @@ export const AppointmentForm = ({
           <Button
             type="submit"
             disabled={pending}
-            className={outsideWarning ? 'bg-amber-700 text-white' : undefined}
+            className={outsideWarning ? 'bg-warning text-white' : undefined}
           >
             {pending ? (
               <LoaderCircle className="size-4 animate-spin" />

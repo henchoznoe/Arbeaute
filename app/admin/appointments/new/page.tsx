@@ -1,9 +1,11 @@
 import { formatInTimeZone } from 'date-fns-tz'
+import { ChevronLeft } from 'lucide-react'
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { Suspense } from 'react'
 import { AdminSkeleton } from '@/components/admin/admin-skeleton'
 import { AppointmentForm } from '@/components/admin/appointment-form'
+import { Button } from '@/components/ui/button'
 import { isAdminAppointmentTime } from '@/lib/admin/agenda-timeline'
 import prisma from '@/lib/core/prisma'
 import { getAdminSession } from '@/lib/core/session-cookies'
@@ -103,13 +105,17 @@ const NewAppointment = async ({
 
   return (
     <main className="mx-auto min-h-screen max-w-3xl px-4 py-6 sm:px-8">
-      <Link
-        href={`/admin?date=${date}`}
-        className="inline-flex min-h-11 items-center text-sm text-muted-foreground"
+      <Button
+        asChild
+        variant="ghost"
+        size="sm"
+        className="-ml-2 text-muted-foreground"
       >
-        ← Agenda
-      </Link>
-      <h1 className="mt-2 font-heading text-3xl font-bold">
+        <Link href={`/admin?date=${date}`}>
+          <ChevronLeft className="size-4" /> Agenda
+        </Link>
+      </Button>
+      <h1 className="mt-2 font-heading text-title font-bold">
         Nouveau rendez-vous
       </h1>
       <p className="mt-2 text-sm text-muted-foreground">

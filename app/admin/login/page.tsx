@@ -22,7 +22,7 @@ const AdminLogin = async ({ searchParams }: Readonly<AdminLoginPageProps>) => {
 
   return (
     <main className="flex min-h-screen items-center justify-center px-6 py-16">
-      <section className="w-full max-w-sm rounded-3xl border bg-card p-8 shadow-xl shadow-rose-100/40">
+      <section className="w-full max-w-sm rounded-3xl border bg-card p-8 shadow-xl shadow-brand-soft/40">
         <Link href="/" className="font-heading text-xl font-bold">
           Arbeauté
         </Link>
@@ -49,10 +49,7 @@ const AdminLogin = async ({ searchParams }: Readonly<AdminLoginPageProps>) => {
               tard.
             </p>
           ) : null}
-          <SubmitButton
-            pendingLabel="Connexion…"
-            className="h-12 w-full rounded-xl bg-primary px-4 font-medium text-primary-foreground"
-          >
+          <SubmitButton pendingLabel="Connexion…" size="lg" className="w-full">
             Se connecter
           </SubmitButton>
         </form>

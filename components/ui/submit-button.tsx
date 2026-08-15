@@ -1,8 +1,9 @@
 'use client'
 
 import { LoaderCircle } from 'lucide-react'
-import type { ReactNode } from 'react'
+import type { ComponentProps, ReactNode } from 'react'
 import { useFormStatus } from 'react-dom'
+import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils/cn'
 
 interface SubmitButtonProps {
@@ -11,6 +12,8 @@ interface SubmitButtonProps {
   /** Libellé affiché pendant l'envoi ; sinon seule l'icône tourne. */
   pendingLabel?: string
   disabled?: boolean
+  variant?: ComponentProps<typeof Button>['variant']
+  size?: ComponentProps<typeof Button>['size']
   'aria-label'?: string
 }
 
@@ -19,27 +22,29 @@ interface SubmitButtonProps {
  *
  * S'appuie sur useFormStatus, ce qui permet de garder les formulaires en
  * composants serveur tout en donnant un retour immédiat à l'utilisatrice.
+ * Le rendu passe par `Button` : un envoi a exactement la même apparence
+ * qu'une action ordinaire de même variante.
  */
 export const SubmitButton = ({
   children,
   className,
   pendingLabel,
   disabled = false,
+  variant,
+  size,
   'aria-label': ariaLabel,
 }: Readonly<SubmitButtonProps>) => {
   const { pending } = useFormStatus()
 
   return (
-    <button
+    <Button
       type="submit"
+      variant={variant}
+      size={size}
       disabled={disabled || pending}
       aria-label={ariaLabel}
       aria-busy={pending}
-      className={cn(
-        'inline-flex min-h-11 items-center justify-center gap-2 outline-none transition focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/40 disabled:opacity-30',
-        pending && 'cursor-progress',
-        className,
-      )}
+      className={cn(pending && 'cursor-progress', className)}
     >
       {pending ? (
         <>
@@ -49,6 +54,6 @@ export const SubmitButton = ({
       ) : (
         children
       )}
-    </button>
+    </Button>
   )
 }

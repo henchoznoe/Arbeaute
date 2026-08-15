@@ -1,9 +1,10 @@
-import { Plus, Trash2 } from 'lucide-react'
+import { ChevronLeft, Plus, Trash2 } from 'lucide-react'
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { Suspense } from 'react'
 import { AdminSkeleton } from '@/components/admin/admin-skeleton'
 import { AvailabilityExceptionCalendar } from '@/components/admin/availability-exception-calendar'
+import { Button } from '@/components/ui/button'
 import { formControlClass } from '@/components/ui/form-field'
 import { SubmitButton } from '@/components/ui/submit-button'
 import {
@@ -119,13 +120,17 @@ const Availability = async ({
   return (
     <main className="mx-auto min-h-screen max-w-5xl px-4 py-6 sm:px-8">
       <header>
-        <Link
-          href="/admin"
-          className="inline-flex min-h-11 items-center text-sm text-muted-foreground"
+        <Button
+          asChild
+          variant="ghost"
+          size="sm"
+          className="-ml-2 text-muted-foreground"
         >
-          ← Agenda
-        </Link>
-        <h1 className="mt-2 font-heading text-3xl font-bold">
+          <Link href="/admin">
+            <ChevronLeft className="size-4" /> Agenda
+          </Link>
+        </Button>
+        <h1 className="mt-2 font-heading text-title font-bold">
           Horaires et exceptions
         </h1>
         <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
@@ -137,7 +142,7 @@ const Availability = async ({
       {error && errorMessages[error] ? (
         <p
           role="alert"
-          className="mt-6 rounded-xl border border-rose-200 bg-rose-50 p-4 text-sm text-rose-900"
+          className="mt-6 rounded-xl border border-brand-line bg-brand-subtle p-4 text-sm text-brand-strong"
         >
           {errorMessages[error]}
         </p>
@@ -190,7 +195,9 @@ const Availability = async ({
                         </span>
                         <SubmitButton
                           aria-label={`Supprimer l’horaire du ${day.label}`}
-                          className="grid size-11 place-items-center rounded-xl text-muted-foreground hover:bg-background"
+                          variant="ghost"
+                          size="icon"
+                          className="text-muted-foreground"
                         >
                           <Trash2 className="size-4" />
                         </SubmitButton>
@@ -243,10 +250,7 @@ const Availability = async ({
               className={fieldClass}
             />
           </label>
-          <SubmitButton
-            pendingLabel="Ajout…"
-            className="mt-auto h-11 rounded-xl bg-primary px-4 text-sm font-medium text-primary-foreground"
-          >
+          <SubmitButton pendingLabel="Ajout…" className="mt-auto">
             <Plus className="size-4" /> Ajouter
           </SubmitButton>
         </form>

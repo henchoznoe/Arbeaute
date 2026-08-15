@@ -13,10 +13,10 @@ export async function Services() {
       <div className="mx-auto max-w-6xl">
         <Animate>
           <div className="mb-16 text-center">
-            <p className="mb-2 text-sm font-medium tracking-[0.2em] text-rose-400/80 uppercase">
+            <p className="mb-2 text-sm font-medium tracking-[0.2em] text-brand uppercase">
               Ce que nous proposons
             </p>
-            <h2 className="font-heading text-3xl font-bold tracking-tight sm:text-4xl">
+            <h2 className="font-heading text-title font-bold">
               Nos prestations
             </h2>
             <p className="mx-auto mt-4 max-w-2xl text-muted-foreground">

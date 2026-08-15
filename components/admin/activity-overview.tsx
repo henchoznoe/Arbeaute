@@ -1,6 +1,7 @@
 import { Bell, CheckCheck, List } from 'lucide-react'
 import Link from 'next/link'
 import { ActivityList } from '@/components/admin/activity-list'
+import { Button } from '@/components/ui/button'
 import { StatusBadge } from '@/components/ui/status-badge'
 import { markAllAppointmentActivitiesRead } from '@/lib/actions/admin-activity'
 import type { AppointmentActivityItem } from '@/lib/admin/activity'
@@ -16,7 +17,7 @@ export const ActivityOverview = ({
     <div className="flex items-center justify-between gap-3">
       <div className="flex min-w-0 items-center gap-2.5">
         <span
-          className="grid size-9 shrink-0 place-items-center rounded-full bg-rose-100 text-rose-700"
+          className="grid size-9 shrink-0 place-items-center rounded-full bg-brand-soft text-brand-strong"
           aria-hidden="true"
         >
           <Bell className="size-4" />
@@ -48,22 +49,21 @@ export const ActivityOverview = ({
     <div
       className={`mt-3 grid gap-2 ${unreadCount > 0 ? 'grid-cols-2' : 'grid-cols-1'}`}
     >
-      <Link
-        href="/admin/activity"
-        className="inline-flex min-h-11 min-w-0 items-center justify-center gap-2 rounded-xl border px-3 text-center text-sm font-medium"
-      >
-        <List className="size-4 shrink-0" />
-        Tout voir
-      </Link>
+      <Button asChild variant="outline" className="min-w-0">
+        <Link href="/admin/activity">
+          <List className="size-4 shrink-0" />
+          Tout voir
+        </Link>
+      </Button>
       {unreadCount > 0 ? (
         <form action={markAllAppointmentActivitiesRead}>
-          <button
+          <Button
             type="submit"
-            className="inline-flex min-h-11 w-full min-w-0 items-center justify-center gap-2 rounded-xl bg-primary px-2 text-center text-xs font-medium text-primary-foreground min-[390px]:px-3 min-[390px]:text-sm"
+            className="w-full min-w-0 px-2 min-[390px]:px-3"
           >
             <CheckCheck className="size-4 shrink-0" />
             Tout marquer comme lu
-          </button>
+          </Button>
         </form>
       ) : null}
     </div>

@@ -1,11 +1,12 @@
 import { formatInTimeZone } from 'date-fns-tz'
-import { CalendarClock, Copy, UserRound } from 'lucide-react'
+import { CalendarClock, ChevronLeft, Copy, UserRound } from 'lucide-react'
 import Link from 'next/link'
 import { notFound, redirect } from 'next/navigation'
 import { Suspense } from 'react'
 import { AdminSkeleton } from '@/components/admin/admin-skeleton'
 import { AppointmentForm } from '@/components/admin/appointment-form'
 import { AppointmentStatusActions } from '@/components/admin/appointment-status-actions'
+import { Button } from '@/components/ui/button'
 import { StatusBadge } from '@/components/ui/status-badge'
 import prisma from '@/lib/core/prisma'
 import { getAdminSession } from '@/lib/core/session-cookies'
@@ -81,15 +82,19 @@ const EditAppointment = async ({
 
   return (
     <main className="mx-auto min-h-screen max-w-3xl px-4 py-6 sm:px-8">
-      <Link
-        href={`/admin?date=${date}`}
-        className="inline-flex min-h-11 items-center text-sm text-muted-foreground"
+      <Button
+        asChild
+        variant="ghost"
+        size="sm"
+        className="-ml-2 text-muted-foreground"
       >
-        ← Agenda
-      </Link>
+        <Link href={`/admin?date=${date}`}>
+          <ChevronLeft className="size-4" /> Agenda
+        </Link>
+      </Button>
       <div className="mt-2 flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="font-heading text-3xl font-bold">
+          <h1 className="font-heading text-title font-bold">
             {appointment.status === 'CONFIRMED'
               ? 'Modifier le rendez-vous'
               : 'Détail du rendez-vous'}
@@ -101,12 +106,11 @@ const EditAppointment = async ({
             {statusLabels[appointment.status]}
           </StatusBadge>
         </div>
-        <Link
-          href={`/admin/appointments/new?duplicate=${appointment.id}`}
-          className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border bg-background px-4 text-sm font-medium transition hover:bg-muted"
-        >
-          <Copy className="size-4" /> Dupliquer
-        </Link>
+        <Button asChild variant="outline">
+          <Link href={`/admin/appointments/new?duplicate=${appointment.id}`}>
+            <Copy className="size-4" /> Dupliquer
+          </Link>
+        </Button>
       </div>
       <p className="mt-2 text-sm text-muted-foreground">
         {appointment.status === 'CONFIRMED'

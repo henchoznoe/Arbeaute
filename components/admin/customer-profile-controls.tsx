@@ -190,11 +190,11 @@ export const CustomerProfileForm = ({
         />
       </FormField>
 
-      <label className="mt-5 flex cursor-pointer items-start gap-3 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-950">
+      <label className="mt-5 flex cursor-pointer items-start gap-3 rounded-2xl border border-warning-line bg-warning-subtle p-4 text-sm text-warning-strong">
         <input
           type="checkbox"
           name="propagateFuture"
-          className="mt-0.5 size-5 shrink-0 accent-amber-700"
+          className="mt-0.5 size-5 shrink-0 accent-warning"
         />
         <span>
           <span className="block font-semibold">
@@ -262,9 +262,9 @@ export const CustomerDuplicateList = ({
   }
 
   return (
-    <section className="rounded-3xl border border-amber-200 bg-amber-50/50 p-5 sm:p-6">
+    <section className="rounded-3xl border border-warning-line bg-warning-subtle/50 p-5 sm:p-6">
       <div className="flex items-center gap-2">
-        <Merge className="size-5 text-amber-800" />
+        <Merge className="size-5 text-warning-strong" />
         <h2 className="text-lg font-semibold">Doublons possibles</h2>
       </div>
       <p className="mt-1 text-xs leading-relaxed text-muted-foreground">

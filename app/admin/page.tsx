@@ -225,8 +225,8 @@ const AdminAgenda = async ({ searchParams }: Readonly<AdminPageProps>) => {
     <main className="mx-auto min-h-screen max-w-7xl px-4 py-5 sm:px-8 sm:py-8">
       <header>
         <div>
-          <p className="text-sm font-medium text-rose-500">Arbeauté</p>
-          <h1 className="font-heading text-3xl font-bold">Agenda</h1>
+          <p className="text-sm font-medium text-brand">Arbeauté</p>
+          <h1 className="font-heading text-title font-bold">Agenda</h1>
         </div>
       </header>
 
@@ -270,7 +270,7 @@ const AdminAgenda = async ({ searchParams }: Readonly<AdminPageProps>) => {
                 {dailyExceptions.map(exception => (
                   <div
                     key={exception.id}
-                    className={`rounded-lg px-2 py-1.5 text-[11px] leading-snug ${exception.type === 'AVAILABLE' ? 'bg-emerald-100 text-emerald-950' : 'bg-amber-100 text-amber-950'}`}
+                    className={`rounded-lg px-2 py-1.5 text-[11px] leading-snug ${exception.type === 'AVAILABLE' ? 'bg-success-soft text-success-strong' : 'bg-warning-soft text-warning-strong'}`}
                   >
                     {exception.type === 'AVAILABLE' ? 'Ouvert' : 'Fermé'}{' '}
                     {formatTime(exception.startsAt)}–

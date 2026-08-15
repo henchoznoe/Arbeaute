@@ -1,4 +1,5 @@
 import { ChevronDown, FileText } from 'lucide-react'
+import { Button } from '@/components/ui/button'
 import {
   getServiceCareContent,
   type ServiceCareDetails,
@@ -51,15 +52,16 @@ export const ServiceDetails = ({
           </div>
         ) : null}
         {service.consentFormUrl ? (
-          <a
-            href={service.consentFormUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex min-h-11 items-center gap-2 rounded-lg border px-3 font-medium text-foreground hover:bg-muted"
-          >
-            <FileText className="size-4" />
-            Formulaire de consentement (PDF)
-          </a>
+          <Button asChild variant="outline">
+            <a
+              href={service.consentFormUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              <FileText className="size-4" />
+              Formulaire de consentement (PDF)
+            </a>
+          </Button>
         ) : null}
       </div>
     </details>

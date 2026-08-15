@@ -9,10 +9,8 @@ const statusBadgeVariants = cva(
       variant: {
         neutral: 'border-border bg-muted text-muted-foreground',
         info: 'border-primary/25 bg-primary/10 text-primary',
-        success:
-          'border-emerald-200 bg-emerald-50 text-emerald-800 dark:border-emerald-800 dark:bg-emerald-950 dark:text-emerald-200',
-        warning:
-          'border-amber-200 bg-amber-50 text-amber-950 dark:border-amber-800 dark:bg-amber-950 dark:text-amber-100',
+        success: 'border-success-line bg-success-subtle text-success-strong',
+        warning: 'border-warning-line bg-warning-subtle text-warning-strong',
         danger: 'border-destructive/25 bg-destructive/10 text-destructive',
       },
     },

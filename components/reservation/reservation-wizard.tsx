@@ -18,7 +18,8 @@ import { ServiceDetails } from '@/components/catalog/service-details'
 import { BookingSummary } from '@/components/reservation/booking-summary'
 import { ConfirmationActions } from '@/components/reservation/confirmation-actions'
 import { WeekAvailabilityPicker } from '@/components/reservation/week-availability-picker'
-import { formControlClass } from '@/components/ui/form-field'
+import { Button } from '@/components/ui/button'
+import { FormField, formControlClass } from '@/components/ui/form-field'
 import {
   type BookingResult,
   createPublicAppointment,
@@ -88,7 +89,7 @@ const weekCacheKey = (serviceId: string, weekStart: string): string =>
   `${serviceId}|${weekStart}`
 
 const ConsentFormNotice = ({ url }: Readonly<{ url: string }>) => (
-  <div className="mt-5 rounded-xl border border-amber-300 bg-amber-50 p-4 text-sm text-amber-950">
+  <div className="mt-5 rounded-xl border border-warning-accent bg-warning-subtle p-4 text-sm text-warning-strong">
     <p className="flex items-start gap-2">
       <FileText className="mt-0.5 size-4 shrink-0" />
       <span>
@@ -99,15 +100,16 @@ const ConsentFormNotice = ({ url }: Readonly<{ url: string }>) => (
         le jour du rendez-vous.
       </span>
     </p>
-    <a
-      href={url}
-      target="_blank"
-      rel="noopener noreferrer"
-      className="mt-3 inline-flex min-h-11 items-center gap-2 rounded-xl border border-amber-400 bg-white px-4 font-medium"
+    <Button
+      asChild
+      variant="outline"
+      className="mt-3 border-warning-accent bg-background"
     >
-      <FileText className="size-4" />
-      Télécharger le formulaire (PDF)
-    </a>
+      <a href={url} target="_blank" rel="noopener noreferrer">
+        <FileText className="size-4" />
+        Télécharger le formulaire (PDF)
+      </a>
+    </Button>
   </div>
 )
 
@@ -378,13 +380,13 @@ export const ReservationWizard = ({
         data-print-receipt
         className="mx-auto max-w-xl rounded-3xl border bg-card p-6 text-center shadow-sm sm:p-10"
       >
-        <div className="mx-auto flex size-14 items-center justify-center rounded-full bg-emerald-100 text-emerald-700">
+        <div className="mx-auto flex size-14 items-center justify-center rounded-full bg-success-soft text-success">
           <Check className="size-7" />
         </div>
-        <p className="mt-5 text-sm font-semibold tracking-widest text-emerald-700 uppercase">
+        <p className="mt-5 text-sm font-semibold tracking-widest text-success uppercase">
           Rendez-vous confirmé
         </p>
-        <h2 className="mt-2 font-heading text-3xl font-bold">
+        <h2 className="mt-2 font-heading text-title font-bold">
           Votre rendez-vous est bien enregistré
         </h2>
         <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
@@ -415,7 +417,7 @@ export const ReservationWizard = ({
             <ConsentFormNotice url={selectedService.consentFormUrl} />
           </div>
         ) : null}
-        <div className="mt-5 rounded-2xl border border-amber-300 bg-amber-50 p-5 text-left text-amber-950">
+        <div className="mt-5 rounded-2xl border border-warning-accent bg-warning-subtle p-5 text-left text-warning-strong">
           <p className="flex items-start gap-3 font-semibold">
             <MailX className="mt-0.5 size-5 shrink-0" />
             Aucun e-mail de confirmation ne sera envoyé
@@ -438,12 +440,9 @@ export const ReservationWizard = ({
             prochaine visite, utilisez exactement l’adresse e-mail et le numéro
             de téléphone saisis lors de la réservation.
           </p>
-          <a
-            href="/mes-rendez-vous"
-            className="mt-4 inline-flex h-11 w-full items-center justify-center rounded-xl border border-primary px-4 text-sm font-medium text-primary"
-          >
-            Accéder à mes rendez-vous
-          </a>
+          <Button asChild variant="outline" className="mt-4 w-full">
+            <a href="/mes-rendez-vous">Accéder à mes rendez-vous</a>
+          </Button>
         </div>
       </section>
     )
@@ -523,7 +522,7 @@ export const ReservationWizard = ({
                           <span className="text-muted-foreground">
                             {service.durationMinutes} min
                           </span>
-                          <span className="font-semibold text-[#927b59]">
+                          <span className="font-semibold text-price">
                             {formatPrice(service.priceCents)}
                           </span>
                         </span>
@@ -543,13 +542,15 @@ export const ReservationWizard = ({
 
       {step === 2 ? (
         <div className="rounded-3xl border bg-card p-5 sm:p-8">
-          <button
+          <Button
             type="button"
+            variant="ghost"
+            size="sm"
             onClick={() => goToStep(1)}
-            className="inline-flex items-center gap-1 text-sm font-medium"
+            className="-ml-2"
           >
             <ChevronLeft className="size-4" /> Changer de prestation
-          </button>
+          </Button>
           <h2 className="mt-5 font-heading text-2xl font-bold">
             Choisissez votre créneau
           </h2>
@@ -569,15 +570,16 @@ export const ReservationWizard = ({
             </p>
           ) : null}
 
-          <button
+          <Button
             type="button"
+            variant="secondary"
             onClick={findNextSlot}
             disabled={searchingNext}
-            className="mt-5 inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl border border-primary/30 bg-primary/5 px-4 text-sm font-medium whitespace-nowrap text-primary transition hover:bg-primary/10 disabled:opacity-60 sm:w-auto"
+            className="mt-5 w-full sm:w-auto"
           >
             <Zap className="size-4 shrink-0" />
             {searchingNext ? 'Recherche…' : 'Prochain créneau disponible'}
-          </button>
+          </Button>
           {nextSlotNotice ? (
             <p className="mt-2 text-sm text-muted-foreground" role="status">
               {nextSlotNotice}
@@ -601,14 +603,15 @@ export const ReservationWizard = ({
             startsAt={startsAt}
             viewStart={viewStart}
           />
-          <button
+          <Button
             type="button"
+            size="lg"
             disabled={!startsAt}
             onClick={() => goToStep(3)}
-            className="mt-7 h-12 w-full rounded-xl bg-primary px-5 font-medium text-primary-foreground disabled:opacity-40"
+            className="mt-7 w-full"
           >
             Continuer
-          </button>
+          </Button>
         </div>
       ) : null}
 
@@ -622,13 +625,15 @@ export const ReservationWizard = ({
           }}
           className="rounded-3xl border bg-card p-5 sm:p-8"
         >
-          <button
+          <Button
             type="button"
+            variant="ghost"
+            size="sm"
             onClick={() => goToStep(2)}
-            className="inline-flex items-center gap-1 text-sm font-medium"
+            className="-ml-2"
           >
             <ChevronLeft className="size-4" /> Changer de créneau
-          </button>
+          </Button>
           <h2 className="mt-5 font-heading text-2xl font-bold">
             Vos coordonnées
           </h2>
@@ -638,9 +643,14 @@ export const ReservationWizard = ({
             dans « Mes rendez-vous ».
           </p>
           <div className="mt-6 grid gap-4 sm:grid-cols-2">
-            <label className="flex flex-col gap-2 text-sm font-medium">
-              <span>Prénom</span>
+            <FormField
+              controlId="firstName"
+              label="Prénom"
+              error={customerErrors.firstName}
+              errorId="firstName-error"
+            >
               <input
+                id="firstName"
                 name="firstName"
                 value={customer.firstName}
                 onChange={event =>
@@ -655,19 +665,15 @@ export const ReservationWizard = ({
                 }
                 className={fieldClass}
               />
-              {customerErrors.firstName ? (
-                <span
-                  id="firstName-error"
-                  className="text-xs text-destructive"
-                  role="alert"
-                >
-                  {customerErrors.firstName}
-                </span>
-              ) : null}
-            </label>
-            <label className="flex flex-col gap-2 text-sm font-medium">
-              <span>Nom</span>
+            </FormField>
+            <FormField
+              controlId="lastName"
+              label="Nom"
+              error={customerErrors.lastName}
+              errorId="lastName-error"
+            >
               <input
+                id="lastName"
                 name="lastName"
                 value={customer.lastName}
                 onChange={event =>
@@ -682,19 +688,15 @@ export const ReservationWizard = ({
                 }
                 className={fieldClass}
               />
-              {customerErrors.lastName ? (
-                <span
-                  id="lastName-error"
-                  className="text-xs text-destructive"
-                  role="alert"
-                >
-                  {customerErrors.lastName}
-                </span>
-              ) : null}
-            </label>
-            <label className="flex flex-col gap-2 text-sm font-medium">
-              <span>Adresse e-mail</span>
+            </FormField>
+            <FormField
+              controlId="email"
+              label="Adresse e-mail"
+              error={customerErrors.email}
+              errorId="email-error"
+            >
               <input
+                id="email"
                 name="email"
                 type="email"
                 inputMode="email"
@@ -711,19 +713,17 @@ export const ReservationWizard = ({
                 }
                 className={fieldClass}
               />
-              {customerErrors.email ? (
-                <span
-                  id="email-error"
-                  className="text-xs text-destructive"
-                  role="alert"
-                >
-                  {customerErrors.email}
-                </span>
-              ) : null}
-            </label>
-            <label className="flex flex-col gap-2 text-sm font-medium">
-              <span>Téléphone</span>
+            </FormField>
+            <FormField
+              controlId="phone"
+              label="Téléphone"
+              error={customerErrors.phone}
+              errorId="phone-error"
+              helpId="phone-help"
+              help="Les espaces sont acceptés. Avant confirmation, le numéro sera présenté au format international, par exemple +41 79 123 45 67."
+            >
               <input
+                id="phone"
                 name="phone"
                 type="tel"
                 inputMode="tel"
@@ -740,27 +740,18 @@ export const ReservationWizard = ({
                 }
                 className={fieldClass}
               />
-              <span
-                id="phone-help"
-                className="text-xs leading-relaxed font-normal text-muted-foreground"
-              >
-                Les espaces sont acceptés. Avant confirmation, le numéro sera
-                présenté au format international, par exemple +41 79 123 45 67.
-              </span>
-              {customerErrors.phone ? (
-                <span
-                  id="phone-error"
-                  className="text-xs text-destructive"
-                  role="alert"
-                >
-                  {customerErrors.phone}
-                </span>
-              ) : null}
-            </label>
+            </FormField>
           </div>
-          <label className="mt-4 flex flex-col gap-2 text-sm font-medium">
-            Commentaire facultatif
+          <FormField
+            controlId="comment"
+            label="Commentaire"
+            optional
+            className="mt-4"
+            error={customerErrors.comment}
+            errorId="comment-error"
+          >
             <textarea
+              id="comment"
               name="comment"
               value={customer.comment}
               onChange={event =>
@@ -773,18 +764,9 @@ export const ReservationWizard = ({
               aria-describedby={
                 customerErrors.comment ? 'comment-error' : undefined
               }
-              className="w-full rounded-xl border bg-background px-4 py-3 outline-none focus:ring-2 focus:ring-ring"
+              className={cn(fieldClass, 'py-3')}
             />
-            {customerErrors.comment ? (
-              <span
-                id="comment-error"
-                className="text-xs text-destructive"
-                role="alert"
-              >
-                {customerErrors.comment}
-              </span>
-            ) : null}
-          </label>
+          </FormField>
           <label className="sr-only" aria-hidden="true">
             Site web
             <input
@@ -849,24 +831,23 @@ export const ReservationWizard = ({
               {result.message}
             </p>
           ) : null}
-          <button
-            type="submit"
-            className="mt-6 h-12 w-full rounded-xl bg-primary px-5 font-medium text-primary-foreground disabled:opacity-50"
-          >
+          <Button type="submit" size="lg" className="mt-6 w-full">
             Vérifier mes informations
-          </button>
+          </Button>
         </form>
       ) : null}
 
       {step === 4 && selectedService ? (
         <section className="rounded-3xl border bg-card p-5 sm:p-8">
-          <button
+          <Button
             type="button"
+            variant="ghost"
+            size="sm"
             onClick={() => goToStep(3)}
-            className="inline-flex items-center gap-1 text-sm font-medium"
+            className="-ml-2"
           >
             <ChevronLeft className="size-4" /> Modifier mes coordonnées
-          </button>
+          </Button>
           <h2 className="mt-5 font-heading text-2xl font-bold">
             Vérifiez votre réservation
           </h2>
@@ -892,13 +873,15 @@ export const ReservationWizard = ({
                   {formatPrice(selectedService.priceCents)}
                 </p>
               </div>
-              <button
+              <Button
                 type="button"
+                variant="outline"
+                size="sm"
                 onClick={() => goToStep(1)}
-                className="inline-flex min-h-11 shrink-0 items-center gap-1.5 rounded-full border px-3 text-xs font-medium"
+                className="min-h-11 shrink-0 rounded-full"
               >
                 <Pencil className="size-3.5" /> Modifier
-              </button>
+              </Button>
             </div>
             <div className="flex items-start justify-between gap-4 p-4">
               <div>
@@ -909,13 +892,15 @@ export const ReservationWizard = ({
                   {formatAppointmentDate(new Date(startsAt))}
                 </p>
               </div>
-              <button
+              <Button
                 type="button"
+                variant="outline"
+                size="sm"
                 onClick={() => goToStep(2)}
-                className="inline-flex min-h-11 shrink-0 items-center gap-1.5 rounded-full border px-3 text-xs font-medium"
+                className="min-h-11 shrink-0 rounded-full"
               >
                 <Pencil className="size-3.5" /> Modifier
-              </button>
+              </Button>
             </div>
             <div className="flex items-start justify-between gap-4 p-4">
               <div className="min-w-0">
@@ -935,13 +920,15 @@ export const ReservationWizard = ({
                   <p className="mt-2 text-sm">« {customer.comment} »</p>
                 ) : null}
               </div>
-              <button
+              <Button
                 type="button"
+                variant="outline"
+                size="sm"
                 onClick={() => goToStep(3)}
-                className="inline-flex min-h-11 shrink-0 items-center gap-1.5 rounded-full border px-3 text-xs font-medium"
+                className="min-h-11 shrink-0 rounded-full"
               >
                 <Pencil className="size-3.5" /> Modifier
-              </button>
+              </Button>
             </div>
           </div>
 
@@ -958,16 +945,17 @@ export const ReservationWizard = ({
               {result.message}
             </p>
           ) : null}
-          <button
+          <Button
             type="button"
+            size="lg"
             onClick={submitBooking}
             disabled={submitting}
-            className="mt-6 h-12 w-full rounded-xl bg-primary px-5 font-medium text-primary-foreground disabled:opacity-50"
+            className="mt-6 w-full"
           >
             {submitting
               ? 'Création du rendez-vous…'
               : 'Confirmer et créer le rendez-vous'}
-          </button>
+          </Button>
         </section>
       ) : null}
     </section>

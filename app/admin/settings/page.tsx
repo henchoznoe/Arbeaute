@@ -17,8 +17,8 @@ const Settings = async () => {
   return (
     <main className="mx-auto min-h-screen max-w-4xl px-4 py-6 sm:px-8 sm:py-8">
       <header>
-        <p className="text-sm font-medium text-rose-500">Arbeauté</p>
-        <h1 className="font-heading text-3xl font-bold">Réglages</h1>
+        <p className="text-sm font-medium text-brand">Arbeauté</p>
+        <h1 className="font-heading text-title font-bold">Réglages</h1>
         <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
           Gérez les disponibilités de l’institut et les prestations proposées
           aux clientes.

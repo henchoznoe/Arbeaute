@@ -9,6 +9,7 @@ import {
   Minus,
   X,
 } from 'lucide-react'
+import { Button } from '@/components/ui/button'
 import type {
   AvailabilityDayState,
   DayAvailability,
@@ -75,28 +76,32 @@ export const WeekAvailabilityPicker = ({
       </p>
       <div className="-mx-3 mt-6 rounded-2xl border bg-muted/25 p-2 sm:mx-0 sm:p-4">
         <div className="flex items-center justify-between gap-2">
-          <button
+          <Button
             type="button"
+            variant="outline"
+            size="icon"
             onClick={() => onChangeWeek(-7)}
             disabled={viewStart <= minDate}
             aria-label="Période précédente"
-            className="grid size-11 shrink-0 place-items-center rounded-full border bg-background transition hover:border-primary disabled:opacity-30"
+            className="rounded-full"
           >
             <ChevronLeft className="size-4" />
-          </button>
+          </Button>
           <p className="flex min-w-0 items-center gap-2 text-center text-sm font-semibold sm:text-base">
             <CalendarDays className="hidden size-4 shrink-0 sm:block" />
             {formatCalendarPeriod(viewStart, weekEnd)}
           </p>
-          <button
+          <Button
             type="button"
+            variant="outline"
+            size="icon"
             onClick={() => onChangeWeek(7)}
             disabled={viewStart >= maxViewStart}
             aria-label="Période suivante"
-            className="grid size-11 shrink-0 place-items-center rounded-full border bg-background transition hover:border-primary disabled:opacity-30"
+            className="rounded-full"
           >
             <ChevronRight className="size-4" />
-          </button>
+          </Button>
         </div>
 
         <div className="mt-3 grid grid-cols-7 gap-px sm:gap-2">
@@ -122,10 +127,10 @@ export const WeekAvailabilityPicker = ({
                     'border-primary bg-primary text-primary-foreground ring-2 ring-primary/20',
                   !selected &&
                     state === 'AVAILABLE' &&
-                    'border-emerald-300 text-emerald-800 hover:border-primary',
+                    'border-success-accent text-success-strong hover:border-primary',
                   !selected &&
                     state === 'FULL' &&
-                    'border-amber-300 bg-amber-50 text-amber-900',
+                    'border-warning-accent bg-warning-subtle text-warning-strong',
                   !selected &&
                     state === 'CLOSED' &&
                     'border-dashed bg-muted text-muted-foreground',
@@ -157,11 +162,11 @@ export const WeekAvailabilityPicker = ({
           aria-label="Légende des disponibilités"
         >
           <li className="flex items-center gap-1">
-            <CircleCheck className="size-3.5 text-emerald-700" />
+            <CircleCheck className="size-3.5 text-success" />
             Disponible
           </li>
           <li className="flex items-center gap-1">
-            <X className="size-3.5 text-amber-800" /> Complet
+            <X className="size-3.5 text-warning-strong" /> Complet
           </li>
           <li className="flex items-center gap-1">
             <Minus className="size-3.5" /> Fermé

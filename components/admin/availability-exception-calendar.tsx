@@ -243,13 +243,14 @@ export const AvailabilityExceptionCalendar = ({
     <>
       <section className="rounded-3xl border bg-card p-4 shadow-sm sm:p-6">
         <div className="flex items-center justify-between gap-3">
-          <Link
-            href={`/admin/availability?month=${previousMonth}`}
-            aria-label="Mois précédent"
-            className="grid size-11 shrink-0 place-items-center rounded-xl border hover:bg-muted"
-          >
-            <ChevronLeft className="size-5" />
-          </Link>
+          <Button asChild variant="outline" size="icon">
+            <Link
+              href={`/admin/availability?month=${previousMonth}`}
+              aria-label="Mois précédent"
+            >
+              <ChevronLeft className="size-5" />
+            </Link>
+          </Button>
           <div className="text-center">
             <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
               Calendrier des exceptions
@@ -258,13 +259,14 @@ export const AvailabilityExceptionCalendar = ({
               {monthLabel}
             </h2>
           </div>
-          <Link
-            href={`/admin/availability?month=${nextMonth}`}
-            aria-label="Mois suivant"
-            className="grid size-11 shrink-0 place-items-center rounded-xl border hover:bg-muted"
-          >
-            <ChevronRight className="size-5" />
-          </Link>
+          <Button asChild variant="outline" size="icon">
+            <Link
+              href={`/admin/availability?month=${nextMonth}`}
+              aria-label="Mois suivant"
+            >
+              <ChevronRight className="size-5" />
+            </Link>
+          </Button>
         </div>
 
         <div className="mt-5 grid grid-cols-7 gap-1" aria-hidden="true">
@@ -304,12 +306,12 @@ export const AvailabilityExceptionCalendar = ({
                 </span>
                 <span className="mt-auto flex w-full flex-col gap-1">
                   {openings ? (
-                    <span className="truncate rounded bg-emerald-100 px-1 py-0.5 text-[9px] font-semibold text-emerald-900">
+                    <span className="truncate rounded bg-success-soft px-1 py-0.5 text-[9px] font-semibold text-success-strong">
                       {openings} ouv.
                     </span>
                   ) : null}
                   {closures ? (
-                    <span className="truncate rounded bg-amber-100 px-1 py-0.5 text-[9px] font-semibold text-amber-950">
+                    <span className="truncate rounded bg-warning-soft px-1 py-0.5 text-[9px] font-semibold text-warning-strong">
                       {closures} ferm.
                     </span>
                   ) : null}
@@ -318,17 +320,17 @@ export const AvailabilityExceptionCalendar = ({
             )
           })}
         </div>
-        <button
+        <Button
           type="button"
           onClick={() =>
             selectDate(
               days.find(day => day.isToday)?.dateKey ?? `${monthKey}-01`,
             )
           }
-          className="mt-4 inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-primary px-4 text-sm font-medium text-primary-foreground sm:w-auto"
+          className="mt-4 w-full sm:w-auto"
         >
           <Plus className="size-4" /> Ajouter une exception
-        </button>
+        </Button>
       </section>
 
       <section className="mt-5 rounded-3xl border bg-card p-4 shadow-sm sm:p-6">
@@ -355,8 +357,8 @@ export const AvailabilityExceptionCalendar = ({
                   <span
                     className={`rounded-full px-2.5 py-1 text-xs font-semibold ${
                       group.type === 'AVAILABLE'
-                        ? 'bg-emerald-100 text-emerald-900'
-                        : 'bg-amber-100 text-amber-950'
+                        ? 'bg-success-soft text-success-strong'
+                        : 'bg-warning-soft text-warning-strong'
                     }`}
                   >
                     {group.type === 'AVAILABLE' ? 'Ouverture' : 'Fermeture'}
@@ -413,7 +415,7 @@ export const AvailabilityExceptionCalendar = ({
           <Dialog.Content className="fixed inset-x-0 bottom-0 z-[80] max-h-[calc(100dvh-1rem)] overflow-y-auto rounded-t-3xl border bg-background p-5 pb-[calc(1.25rem+env(safe-area-inset-bottom))] shadow-2xl outline-none sm:inset-y-4 sm:right-4 sm:left-auto sm:w-[30rem] sm:rounded-3xl sm:p-7">
             <div className="flex items-start justify-between gap-3">
               <div>
-                <p className="text-xs font-semibold uppercase tracking-wide text-rose-500">
+                <p className="text-xs font-semibold uppercase tracking-wide text-brand">
                   Nouvelle exception
                 </p>
                 <Dialog.Title className="mt-1 font-heading text-2xl font-bold capitalize">
@@ -424,13 +426,14 @@ export const AvailabilityExceptionCalendar = ({
                 </Dialog.Description>
               </div>
               <Dialog.Close asChild>
-                <button
+                <Button
                   type="button"
+                  variant="outline"
+                  size="icon"
                   aria-label="Fermer le panneau"
-                  className="grid size-11 shrink-0 place-items-center rounded-xl border hover:bg-muted"
                 >
                   <X className="size-5" />
-                </button>
+                </Button>
               </Dialog.Close>
             </div>
 

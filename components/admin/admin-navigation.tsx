@@ -13,6 +13,7 @@ import Link from 'next/link'
 import { usePathname, useSearchParams } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import { InstallAppButton } from '@/components/pwa/install-app-button'
+import { Button } from '@/components/ui/button'
 import { navigationItemBaseClass } from '@/components/ui/navigation'
 import { logoutAdmin } from '@/lib/actions/admin-auth'
 import {
@@ -48,7 +49,7 @@ const activityBadge = (count: number) => {
   if (count <= 0) return null
   const label = count > 99 ? '99+' : count.toString()
   return (
-    <span className="absolute -right-1 -top-1 grid min-h-4 min-w-4 place-items-center rounded-full bg-rose-600 px-1 text-[10px] font-bold leading-none text-white ring-2 ring-background">
+    <span className="absolute -right-1 -top-1 grid min-h-4 min-w-4 place-items-center rounded-full bg-brand-strong px-1 text-[10px] font-bold leading-none text-white ring-2 ring-background">
       <span aria-hidden="true">{label}</span>
       <span className="sr-only">
         {count} activité{count > 1 ? 's' : ''} non lue
@@ -114,7 +115,7 @@ export const AdminNavigation = ({
             href="/admin"
             className="mr-auto inline-flex min-h-11 items-center font-heading text-lg font-bold"
           >
-            Arbeauté <span className="ml-1 text-rose-500">Admin</span>
+            Arbeauté <span className="ml-1 text-brand">Admin</span>
           </Link>
 
           <nav
@@ -161,12 +162,13 @@ export const AdminNavigation = ({
                 className="flex min-h-11 w-full items-center rounded-xl px-3 text-left text-sm font-medium no-underline hover:bg-muted"
               />
               <form action={logoutAdmin}>
-                <button
+                <Button
                   type="submit"
-                  className="flex min-h-11 w-full items-center gap-3 rounded-xl px-3 text-left text-sm font-medium text-destructive hover:bg-destructive/10"
+                  variant="destructive"
+                  className="w-full justify-start gap-3 bg-transparent"
                 >
                   <LogOut className="size-4" /> Se déconnecter
-                </button>
+                </Button>
               </form>
             </div>
           </details>

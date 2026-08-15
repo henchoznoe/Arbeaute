@@ -1,7 +1,9 @@
+import { ChevronLeft } from 'lucide-react'
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { Suspense } from 'react'
 import { AdminSkeleton } from '@/components/admin/admin-skeleton'
+import { Button } from '@/components/ui/button'
 import { formControlClass } from '@/components/ui/form-field'
 import { SubmitButton } from '@/components/ui/submit-button'
 import { saveBookingSettings } from '@/lib/actions/admin-booking-settings'
@@ -33,13 +35,17 @@ const BookingSettingsForm = async ({
   return (
     <main className="mx-auto min-h-screen max-w-3xl px-4 py-6 sm:px-8 sm:py-8">
       <header>
-        <Link
-          href="/admin/settings"
-          className="inline-flex min-h-11 items-center text-sm text-muted-foreground"
+        <Button
+          asChild
+          variant="ghost"
+          size="sm"
+          className="-ml-2 text-muted-foreground"
         >
-          ← Réglages
-        </Link>
-        <h1 className="mt-2 font-heading text-3xl font-bold">
+          <Link href="/admin/settings">
+            <ChevronLeft className="size-4" /> Réglages
+          </Link>
+        </Button>
+        <h1 className="mt-2 font-heading text-title font-bold">
           Règles de réservation
         </h1>
         <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
@@ -51,7 +57,7 @@ const BookingSettingsForm = async ({
       {params.saved ? (
         <p
           role="status"
-          className="mt-6 rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-900"
+          className="mt-6 rounded-xl border border-success-line bg-success-subtle p-4 text-sm text-success-strong"
         >
           Les règles de réservation ont été enregistrées.
         </p>
@@ -160,7 +166,7 @@ const BookingSettingsForm = async ({
         </div>
         <SubmitButton
           pendingLabel="Enregistrement…"
-          className="mt-5 min-h-11 w-full rounded-xl bg-primary px-5 text-sm font-medium text-primary-foreground sm:w-auto"
+          className="mt-5 w-full sm:w-auto"
         >
           Enregistrer les règles
         </SubmitButton>

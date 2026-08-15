@@ -10,20 +10,20 @@ import { contact } from '@/lib/constants/contact'
 export function Hero() {
   return (
     <section className="relative flex min-h-svh items-center overflow-hidden px-5 pt-20 pb-8 sm:px-8">
-      <div className="absolute inset-0 bg-linear-to-br from-rose-50 via-amber-50/70 to-orange-50/40" />
-      <div className="absolute -top-32 -right-32 size-96 rounded-full bg-rose-200/25 blur-3xl" />
-      <div className="absolute -bottom-40 -left-32 size-96 rounded-full bg-amber-200/25 blur-3xl" />
+      <div className="absolute inset-0 bg-linear-to-br from-brand-subtle via-warning-subtle/70 to-warning-subtle/40" />
+      <div className="absolute -top-32 -right-32 size-96 rounded-full bg-brand-line/25 blur-3xl" />
+      <div className="absolute -bottom-40 -left-32 size-96 rounded-full bg-warning-line/25 blur-3xl" />
 
       <div className="relative mx-auto grid w-full max-w-6xl items-center gap-10 md:grid-cols-[1.05fr_0.95fr] lg:gap-16">
         <div className="relative z-10">
           <Animate animation="fade-in" delay={100}>
-            <p className="pr-32 text-xs font-medium tracking-[0.25em] text-rose-500 uppercase sm:text-sm md:pr-0">
+            <p className="pr-28 text-xs font-medium tracking-[0.25em] text-brand uppercase sm:pr-36 sm:text-sm md:pr-0">
               Soins esthétiques à Bulle
             </p>
           </Animate>
 
           <Animate animation="fade-up" delay={200}>
-            <h1 className="mt-3 pr-28 font-heading text-5xl font-bold tracking-tight text-foreground sm:text-6xl md:pr-0 lg:text-7xl">
+            <h1 className="mt-3 pr-24 font-heading text-display font-bold text-foreground sm:pr-32 md:pr-0">
               La beauté,
               <span className="block text-primary">avec attention.</span>
             </h1>
@@ -37,7 +37,7 @@ export function Hero() {
           </Animate>
 
           <Animate animation="fade-up" delay={400}>
-            <p className="mt-5 inline-flex min-h-11 items-center gap-2 rounded-full border border-rose-300/70 bg-white/75 px-4 text-sm font-medium text-rose-700 shadow-sm backdrop-blur-sm">
+            <p className="mt-5 inline-flex min-h-11 items-center gap-2 rounded-full border border-brand-line/70 bg-background/75 px-4 text-sm font-medium text-brand-strong shadow-sm backdrop-blur-sm">
               <CalendarCheck className="size-4 shrink-0" />
               Uniquement sur rendez-vous
             </p>
@@ -56,7 +56,7 @@ export function Hero() {
                 asChild
                 variant="outline"
                 size="lg"
-                className="h-12 flex-1 rounded-full bg-white/60 px-6 text-base sm:flex-none"
+                className="h-12 flex-1 rounded-full bg-background/60 px-6 text-base sm:flex-none"
               >
                 <Link href="#services">Voir les soins</Link>
               </Button>
@@ -69,7 +69,7 @@ export function Hero() {
           delay={250}
           className="absolute top-1 right-0 md:static"
         >
-          <div className="relative size-28 overflow-hidden rounded-[2rem] border-4 border-white shadow-xl sm:size-32 md:aspect-[4/5] md:h-auto md:w-full md:max-w-md md:rounded-[3rem] md:border-8">
+          <div className="relative size-24 overflow-hidden rounded-3xl border-4 border-background shadow-xl sm:size-28 md:aspect-[4/5] md:h-auto md:w-full md:max-w-md md:rounded-4xl md:border-8">
             <Image
               src="/arzu.jpeg"
               alt="Arzu Yurdakul, esthéticienne chez Arbeauté"

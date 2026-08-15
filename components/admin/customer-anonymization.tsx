@@ -100,7 +100,7 @@ export const CustomerAnonymization = () => {
           className={`mt-4 rounded-xl p-3 text-sm font-medium ${
             isError
               ? 'bg-destructive/10 text-destructive'
-              : 'bg-emerald-50 text-emerald-800'
+              : 'bg-success-subtle text-success-strong'
           }`}
           role={isError ? 'alert' : 'status'}
         >

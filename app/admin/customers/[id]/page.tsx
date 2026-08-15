@@ -16,6 +16,7 @@ import {
   CustomerProfileForm,
   CustomerQuickActions,
 } from '@/components/admin/customer-profile-controls'
+import { Button } from '@/components/ui/button'
 import { EmptyState } from '@/components/ui/empty-state'
 import { StatusBadge } from '@/components/ui/status-badge'
 import {
@@ -144,20 +145,24 @@ const CustomerProfile = async ({ params }: Readonly<CustomerPageProps>) => {
 
   return (
     <main className="mx-auto min-h-screen max-w-5xl px-4 py-5 sm:px-8 sm:py-8">
-      <Link
-        href="/admin/search"
-        className="inline-flex min-h-11 items-center gap-1 text-sm text-muted-foreground"
+      <Button
+        asChild
+        variant="ghost"
+        size="sm"
+        className="-ml-2 text-muted-foreground"
       >
-        <ChevronLeft className="size-4" /> Recherche
-      </Link>
+        <Link href="/admin/search">
+          <ChevronLeft className="size-4" /> Recherche
+        </Link>
+      </Button>
       <header className="mt-2 rounded-3xl border bg-card p-5 shadow-sm sm:p-6">
         <div className="flex items-start gap-3">
           <span className="grid size-12 shrink-0 place-items-center rounded-2xl bg-primary/10 text-primary">
             <UserRound className="size-6" />
           </span>
           <div className="min-w-0">
-            <p className="text-sm font-medium text-rose-500">Fiche cliente</p>
-            <h1 className="break-words font-heading text-3xl leading-tight font-bold">
+            <p className="text-sm font-medium text-brand">Fiche cliente</p>
+            <h1 className="break-words font-heading text-title font-bold">
               {customerName}
             </h1>
             <p className="mt-1 text-xs text-muted-foreground">
@@ -238,12 +243,9 @@ const CustomerProfile = async ({ params }: Readonly<CustomerPageProps>) => {
             Elle affiche le nombre exact de rendez-vous avant toute
             confirmation.
           </p>
-          <Link
-            href="/admin/data"
-            className="mt-4 inline-flex min-h-11 w-full items-center justify-center rounded-xl border px-4 text-sm font-medium transition hover:bg-muted"
-          >
-            Gérer l’anonymisation
-          </Link>
+          <Button asChild variant="outline" className="mt-4 w-full">
+            <Link href="/admin/data">Gérer l’anonymisation</Link>
+          </Button>
         </section>
       </div>
     </main>

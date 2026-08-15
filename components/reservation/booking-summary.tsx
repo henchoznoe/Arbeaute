@@ -44,7 +44,7 @@ export const BookingSummary = ({
           {formatServiceLabel(service.name, service.categoryName)}
         </p>
       </div>
-      <p className="shrink-0 text-sm font-semibold text-[#806b4d]">
+      <p className="shrink-0 text-sm font-semibold text-price">
         {formatPrice(service.priceCents, service.priceNote)}
       </p>
     </div>

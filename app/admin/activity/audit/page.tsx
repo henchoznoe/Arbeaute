@@ -5,6 +5,7 @@ import { Suspense } from 'react'
 import { ActivityTabs } from '@/components/admin/activity-tabs'
 import { AdminSkeleton } from '@/components/admin/admin-skeleton'
 import { AuditList } from '@/components/admin/audit-list'
+import { Button } from '@/components/ui/button'
 import {
   type AuditFilters,
   auditActionLabels,
@@ -72,16 +73,20 @@ const AuditHistory = async ({ searchParams }: Readonly<AuditPageProps>) => {
 
   return (
     <main className="mx-auto min-h-screen max-w-4xl px-4 py-5 sm:px-8 sm:py-8">
-      <Link
-        href="/admin"
-        className="inline-flex min-h-11 items-center gap-1 text-sm text-muted-foreground"
+      <Button
+        asChild
+        variant="ghost"
+        size="sm"
+        className="-ml-2 text-muted-foreground"
       >
-        <ChevronLeft className="size-4" /> Agenda
-      </Link>
+        <Link href="/admin">
+          <ChevronLeft className="size-4" /> Agenda
+        </Link>
+      </Button>
 
       <header className="mt-2">
-        <p className="text-sm font-medium text-rose-500">Arbeauté</p>
-        <h1 className="font-heading text-3xl font-bold">Activité</h1>
+        <p className="text-sm font-medium text-brand">Arbeauté</p>
+        <h1 className="font-heading text-title font-bold">Activité</h1>
         <p className="mt-1 text-sm text-muted-foreground">
           {totalCount} événement{totalCount > 1 ? 's' : ''} dans le journal non
           modifiable
@@ -142,19 +147,13 @@ const AuditHistory = async ({ searchParams }: Readonly<AuditPageProps>) => {
           </label>
         </div>
         <div className="mt-3 flex gap-3">
-          <button
-            type="submit"
-            className="inline-flex min-h-11 flex-1 items-center justify-center rounded-xl bg-primary px-4 text-sm font-medium text-primary-foreground"
-          >
+          <Button type="submit" className="flex-1">
             Appliquer
-          </button>
+          </Button>
           {filters.actor || filters.entity || filters.action ? (
-            <Link
-              href="/admin/activity/audit"
-              className="inline-flex min-h-11 items-center justify-center rounded-xl border px-4 text-sm font-medium"
-            >
-              Effacer
-            </Link>
+            <Button asChild variant="outline">
+              <Link href="/admin/activity/audit">Effacer</Link>
+            </Button>
           ) : null}
         </div>
       </form>
@@ -169,22 +168,20 @@ const AuditHistory = async ({ searchParams }: Readonly<AuditPageProps>) => {
           className="mt-5 grid grid-cols-2 gap-3"
         >
           {page > 1 ? (
-            <Link
-              href={auditHref(page - 1, filters)}
-              className="inline-flex min-h-11 items-center justify-center gap-1 rounded-xl border px-3 text-sm font-medium"
-            >
-              <ChevronLeft className="size-4" /> Précédent
-            </Link>
+            <Button asChild variant="outline">
+              <Link href={auditHref(page - 1, filters)}>
+                <ChevronLeft className="size-4" /> Précédent
+              </Link>
+            </Button>
           ) : (
             <span aria-hidden="true" />
           )}
           {page < totalPages ? (
-            <Link
-              href={auditHref(page + 1, filters)}
-              className="inline-flex min-h-11 items-center justify-center gap-1 rounded-xl border px-3 text-sm font-medium"
-            >
-              Suivant <ChevronRight className="size-4" />
-            </Link>
+            <Button asChild variant="outline">
+              <Link href={auditHref(page + 1, filters)}>
+                Suivant <ChevronRight className="size-4" />
+              </Link>
+            </Button>
           ) : null}
         </nav>
       ) : null}

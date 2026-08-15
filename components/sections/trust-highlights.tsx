@@ -26,7 +26,7 @@ export const TrustHighlights = () => (
           key={title}
           className="flex items-start gap-3 rounded-2xl border bg-card p-4 shadow-sm"
         >
-          <span className="grid size-11 shrink-0 place-items-center rounded-xl bg-rose-50 text-rose-600">
+          <span className="grid size-11 shrink-0 place-items-center rounded-xl bg-brand-subtle text-brand-strong">
             <Icon className="size-5" />
           </span>
           <div>

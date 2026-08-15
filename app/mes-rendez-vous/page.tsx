@@ -4,6 +4,8 @@ import { Suspense } from 'react'
 import { SiteHeader } from '@/components/layout/site-header'
 import { CustomerAppointmentCard } from '@/components/reservation/customer-appointment-card'
 import { CustomerAppointmentHistoryCard } from '@/components/reservation/customer-appointment-history-card'
+import { Button } from '@/components/ui/button'
+import { FormField, formControlClass } from '@/components/ui/form-field'
 import { identifyCustomer, logoutCustomer } from '@/lib/actions/reservation'
 import { createPageMetadata } from '@/lib/config/seo'
 import prisma from '@/lib/core/prisma'
@@ -26,6 +28,7 @@ import {
   getBookingDateLimits,
   getCustomerChangeDeadline,
 } from '@/lib/reservation/time'
+import { cn } from '@/lib/utils/cn'
 
 export const metadata = createPageMetadata({
   title: 'Mes rendez-vous',
@@ -39,8 +42,7 @@ interface CustomerAppointmentsPageProps {
   searchParams: Promise<{ error?: string; cancelled?: string }>
 }
 
-const fieldClass =
-  'h-12 w-full rounded-xl border bg-background px-4 text-base outline-none focus:ring-2 focus:ring-ring'
+const fieldClass = cn(formControlClass, 'min-h-12 px-4')
 
 /**
  * Coquille prérendue : elle part sur le CDN sans invocation, y compris quand
@@ -93,11 +95,11 @@ const CustomerAppointments = async ({
         <main className="flex min-h-screen items-center justify-center px-5 pt-16 pb-12">
           <section className="w-full max-w-md rounded-3xl border bg-card p-6 shadow-sm sm:p-9">
             {cancelled ? (
-              <p className="mt-6 rounded-xl bg-emerald-50 p-4 text-sm font-medium text-emerald-800">
+              <p className="mt-6 rounded-xl bg-success-subtle p-4 text-sm font-medium text-success-strong">
                 Votre rendez-vous a bien été annulé.
               </p>
             ) : null}
-            <h1 className="mt-8 font-heading text-3xl font-bold">
+            <h1 className="mt-8 font-heading text-title font-bold">
               Mes rendez-vous
             </h1>
             <p className="mt-3 text-sm text-muted-foreground">
@@ -105,9 +107,9 @@ const CustomerAppointments = async ({
               lors de votre réservation.
             </p>
             <form action={identifyCustomer} className="mt-7 space-y-4">
-              <label className="flex flex-col gap-2 text-sm font-medium">
-                Email
+              <FormField controlId="customer-email" label="Email">
                 <input
+                  id="customer-email"
                   name="email"
                   type="email"
                   required
@@ -115,10 +117,13 @@ const CustomerAppointments = async ({
                   autoComplete="email"
                   className={fieldClass}
                 />
-              </label>
-              <label className="flex flex-col gap-2 text-sm font-medium">
-                Numéro de téléphone complet
+              </FormField>
+              <FormField
+                controlId="customer-phone"
+                label="Numéro de téléphone complet"
+              >
                 <input
+                  id="customer-phone"
                   name="phone"
                   type="tel"
                   required
@@ -126,7 +131,7 @@ const CustomerAppointments = async ({
                   autoComplete="tel"
                   className={fieldClass}
                 />
-              </label>
+              </FormField>
               <label className="sr-only" aria-hidden="true">
                 Site web
                 <input name="website" tabIndex={-1} autoComplete="off" />
@@ -142,12 +147,9 @@ const CustomerAppointments = async ({
                   avez pas encore.
                 </p>
               ) : null}
-              <button
-                type="submit"
-                className="h-12 w-full rounded-xl bg-primary px-4 font-medium text-primary-foreground"
-              >
+              <Button type="submit" size="lg" className="w-full">
                 Voir mes rendez-vous
-              </button>
+              </Button>
             </form>
           </section>
         </main>
@@ -197,21 +199,23 @@ const CustomerAppointments = async ({
       <SiteHeader
         actions={
           <form action={logoutCustomer}>
-            <button
+            <Button
               type="submit"
-              className="rounded-full border px-4 py-2 text-sm font-medium"
+              variant="outline"
+              size="sm"
+              className="rounded-full"
             >
               Se déconnecter
-            </button>
+            </Button>
           </form>
         }
       />
       <main className="min-h-screen px-5 pt-24 pb-8 sm:px-8 sm:pt-28 sm:pb-12">
         <section className="mx-auto max-w-3xl">
-          <p className="text-sm font-semibold tracking-widest text-rose-500 uppercase">
+          <p className="text-sm font-semibold tracking-widest text-brand uppercase">
             Espace personnel
           </p>
-          <h1 className="mt-2 font-heading text-3xl font-bold sm:text-4xl">
+          <h1 className="mt-2 font-heading text-title font-bold">
             Mes rendez-vous
           </h1>
           <section className="mt-8" aria-labelledby="upcoming-title">
@@ -267,12 +271,9 @@ const CustomerAppointments = async ({
                 <p className="text-muted-foreground">
                   Aucun rendez-vous confirmé à venir.
                 </p>
-                <Link
-                  href="/reservation"
-                  className="mt-4 inline-flex min-h-11 items-center rounded-xl bg-primary px-5 text-sm font-medium text-primary-foreground"
-                >
-                  Prendre rendez-vous
-                </Link>
+                <Button asChild className="mt-4">
+                  <Link href="/reservation">Prendre rendez-vous</Link>
+                </Button>
               </div>
             )}
           </section>
