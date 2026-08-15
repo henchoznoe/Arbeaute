@@ -116,6 +116,7 @@ export const auditActionLabels: Record<AuditActionType, string> = {
   RESTORED: 'Rétablissement',
   FILE_ASSIGNED: 'Fichier ajouté',
   FILE_REMOVED: 'Fichier retiré',
+  ANONYMIZED: 'Anonymisation',
 }
 
 export const formatAuditCreatedAt = (date: Date): string =>

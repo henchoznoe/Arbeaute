@@ -35,14 +35,14 @@ est réévalué après chaque livraison.
 
 | Statut | Éléments |
 | --- | --- |
-| ✅ Terminés | 1 à 12, 19, 21 et 23 |
+| ✅ Terminés | 1 à 12, 19 et 21 à 23 |
 | 🟡 En cours | 24, enrichi progressivement à chaque livraison |
-| ⏳ Prêt à démarrer | 13, 14, 16, 17, 20 et 22 |
-| 🔒 Bloqués | 15 et 18 |
+| ⏳ Prêt à démarrer | 13 à 17 et 20 |
+| 🔒 Bloqués | 18 |
 
-**Prochain élément recommandé : 22.** La politique d’export, d’anonymisation et de
-restauration complète les fondations de données et débloque directement la fiche
-cliente (15). Les éléments 13, 14, 16, 17 et 20 peuvent aussi démarrer.
+**Prochain élément recommandé : 13.** Ses dépendances sont toutes terminées et il
+apporte le prochain gain P0 dans l’usage quotidien de l’agenda. Les éléments 14 à
+17 et 20 peuvent aussi démarrer ; l’élément 18 attend encore le 16.
 
 - **Priorité P0** : corrige une friction importante ou prépare plusieurs autres
   éléments.
@@ -413,7 +413,7 @@ sont jamais placés dans un cache partagé.
 
 **Dépendances :** élément 19 pour la recherche centrée sur les clientes.
 
-### 15. Créer une fiche cliente exploitable par Arzu — 🔒 Bloqué par 22
+### 15. Créer une fiche cliente exploitable par Arzu — ⏳ Prêt à démarrer
 
 **Priorité : P1 · Effort : L · Nature : nouvelle capacité**
 
@@ -592,7 +592,7 @@ dupliquer les fichiers, secrets, mots de passe ou contenus binaires. Fournir un
 
 **Dépendances :** élément 19 pour identifier les événements liés aux clientes.
 
-### 22. Formaliser export, anonymisation et restauration — ⏳ Prêt à démarrer
+### 22. Formaliser export, anonymisation et restauration — ✅ Terminé
 
 **Priorité : P1 · Effort : L · Nature : nouvelle capacité**
 

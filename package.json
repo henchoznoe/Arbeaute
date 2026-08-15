@@ -30,6 +30,8 @@
     "db:deploy": "prisma migrate deploy",
     "db:migrate-media": "tsx prisma/migrate-media.ts",
     "db:report-customer-migration": "tsx prisma/report-customer-migration.ts",
+    "db:backup:local": "bash scripts/backup-local.sh",
+    "db:restore:verify": "bash scripts/verify-restore-local.sh",
     "db:verify-catalog": "tsx prisma/verify-catalog.ts",
     "db:verify-concurrency": "tsx --env-file=.env.local prisma/verify-concurrency.ts",
     "db:verify-rate-limit": "tsx --env-file=.env.local prisma/verify-rate-limit.ts",

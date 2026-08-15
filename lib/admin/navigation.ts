@@ -11,6 +11,7 @@ export const getActiveAdminNavigationItem = (
   if (pathname === '/admin/appointments/new') return 'create'
   if (
     pathname.startsWith('/admin/settings') ||
+    pathname.startsWith('/admin/data') ||
     pathname.startsWith('/admin/availability') ||
     pathname.startsWith('/admin/services')
   )

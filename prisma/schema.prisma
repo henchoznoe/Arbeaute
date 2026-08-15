@@ -55,6 +55,7 @@ enum AuditActionType {
   RESTORED
   FILE_ASSIGNED
   FILE_REMOVED
+  ANONYMIZED
 }
 
 model ServiceCategory {
@@ -153,11 +154,13 @@ model Customer {
   lastSeenAt      DateTime      @default(now())
   createdAt       DateTime      @default(now())
   updatedAt       DateTime      @updatedAt
+  anonymizedAt    DateTime?
   appointments    Appointment[]
 
   @@index([emailNormalized])
   @@index([phoneNormalized])
   @@index([searchName])
+  @@index([anonymizedAt])
   @@map("customer")
 }
 

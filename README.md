@@ -133,6 +133,8 @@ l'administration sur [/admin](http://localhost:3000/admin).
 | `pnpm db:verify-catalog` | Contrôle la cohérence du catalogue |
 | `pnpm db:verify-concurrency` | Vérifie l'absence de chevauchement en réservation simultanée |
 | `pnpm db:verify-rate-limit` | Vérifie la limitation de débit |
+| `pnpm db:backup:local` | Crée une archive de la base PostgreSQL locale |
+| `pnpm db:restore:verify -- <archive>` | Restaure une archive dans une base locale jetable |
 
 ## Architecture
 

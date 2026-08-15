@@ -1,4 +1,4 @@
-import { Clock3, Settings2 } from 'lucide-react'
+import { Clock3, Database, Settings2 } from 'lucide-react'
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { Suspense } from 'react'
@@ -40,6 +40,23 @@ const Settings = async () => {
           </p>
           <span className="mt-5 inline-flex min-h-11 items-center text-sm font-medium text-primary">
             Gérer les horaires →
+          </span>
+        </Link>
+
+        <Link
+          href="/admin/data"
+          className="group rounded-3xl border bg-card p-6 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
+        >
+          <span className="grid size-12 place-items-center rounded-2xl bg-primary/10 text-primary">
+            <Database className="size-6" />
+          </span>
+          <h2 className="mt-5 text-xl font-semibold">Données</h2>
+          <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
+            Exporter les données, anonymiser une cliente et vérifier les
+            procédures de sauvegarde et restauration.
+          </p>
+          <span className="mt-5 inline-flex min-h-11 items-center text-sm font-medium text-primary">
+            Gérer les données →
           </span>
         </Link>
 
