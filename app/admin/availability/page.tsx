@@ -1,21 +1,30 @@
-import { formatInTimeZone } from 'date-fns-tz'
 import { Plus, Trash2 } from 'lucide-react'
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { Suspense } from 'react'
 import { AdminSkeleton } from '@/components/admin/admin-skeleton'
+import { AvailabilityExceptionCalendar } from '@/components/admin/availability-exception-calendar'
 import { formControlClass } from '@/components/ui/form-field'
 import { SubmitButton } from '@/components/ui/submit-button'
 import {
-  createAvailabilityException,
   createWeeklyAvailability,
-  deleteAvailabilityException,
   deleteWeeklyAvailability,
 } from '@/lib/actions/admin-agenda'
+import {
+  addLocalMonths,
+  getMonthCalendarDateKeys,
+  groupAvailabilityExceptions,
+  isMonthKey,
+  toAvailabilityCalendarSegment,
+} from '@/lib/admin/availability-calendar'
 import prisma from '@/lib/core/prisma'
 import { getAdminSession } from '@/lib/core/session-cookies'
-import { RESERVATION_TIME_ZONE } from '@/lib/reservation/constants'
-import { getLocalDateKey } from '@/lib/reservation/time'
+import { MAX_AVAILABILITY_EXCEPTION_RANGE_DAYS } from '@/lib/reservation/constants'
+import {
+  addLocalDays,
+  getLocalDateKey,
+  getLocalDayBounds,
+} from '@/lib/reservation/time'
 
 const days = [
   { value: 1, label: 'Lundi' },
@@ -38,11 +47,13 @@ const errorMessages: Record<string, string> = {
   'invalid-range': 'La plage horaire est invalide.',
   'overlap-range': 'Cette plage chevauche un horaire existant.',
   'invalid-exception': 'L’exception saisie est invalide.',
+  'overlap-exception':
+    'Cette plage chevauche une ouverture ou une fermeture existante.',
   'range-too-long': 'Cette période est trop longue (180 jours maximum).',
 }
 
 interface AvailabilityPageProps {
-  searchParams: Promise<{ error?: string }>
+  searchParams: Promise<{ error?: string; month?: string }>
 }
 
 const AvailabilityPage = ({
@@ -57,18 +68,53 @@ const Availability = async ({
   searchParams,
 }: Readonly<AvailabilityPageProps>) => {
   if (!(await getAdminSession())) redirect('/admin/login')
-  const { error } = await searchParams
+  const { error, month } = await searchParams
+  const today = getLocalDateKey(new Date())
+  const monthKey = month && isMonthKey(month) ? month : today.slice(0, 7)
+  const calendarDateKeys = getMonthCalendarDateKeys(monthKey)
+  const firstCalendarDate = calendarDateKeys[0] as string
+  const lastCalendarDate = calendarDateKeys.at(-1) as string
+  const groupMargin = MAX_AVAILABILITY_EXCEPTION_RANGE_DAYS - 1
+  const queryStart = getLocalDayBounds(
+    addLocalDays(firstCalendarDate, -groupMargin),
+  ).start
+  const queryEnd = getLocalDayBounds(
+    addLocalDays(lastCalendarDate, groupMargin),
+  ).end
   const [weekly, exceptions] = await Promise.all([
     prisma.weeklyAvailability.findMany({
       orderBy: [{ dayOfWeek: 'asc' }, { startMinute: 'asc' }],
     }),
     prisma.availabilityException.findMany({
       where: {
-        endsAt: { gte: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000) },
+        startsAt: { lt: queryEnd },
+        endsAt: { gt: queryStart },
       },
       orderBy: { startsAt: 'asc' },
     }),
   ])
+  const segments = exceptions.map(toAvailabilityCalendarSegment)
+  const calendarDateKeySet = new Set(calendarDateKeys)
+  const visibleGroupIds = new Set(
+    segments
+      .filter(segment => calendarDateKeySet.has(segment.dateKey))
+      .map(segment => segment.groupId),
+  )
+  const groups = groupAvailabilityExceptions(exceptions).filter(group =>
+    visibleGroupIds.has(group.groupId),
+  )
+  const calendarDays = calendarDateKeys.map(dateKey => ({
+    dateKey,
+    dayNumber: String(Number(dateKey.slice(-2))),
+    inMonth: dateKey.startsWith(monthKey),
+    isToday: dateKey === today,
+    segments: segments.filter(segment => segment.dateKey === dateKey),
+  }))
+  const monthLabel = new Intl.DateTimeFormat('fr-CH', {
+    month: 'long',
+    year: 'numeric',
+    timeZone: 'UTC',
+  }).format(new Date(`${monthKey}-01T12:00:00.000Z`))
 
   return (
     <main className="mx-auto min-h-screen max-w-5xl px-4 py-6 sm:px-8">
@@ -97,8 +143,29 @@ const Availability = async ({
         </p>
       ) : null}
 
-      <section className="mt-8 rounded-3xl border bg-card p-5 sm:p-7">
+      <div className="mt-8">
+        <AvailabilityExceptionCalendar
+          monthKey={monthKey}
+          monthLabel={monthLabel}
+          previousMonth={addLocalMonths(monthKey, -1)}
+          nextMonth={addLocalMonths(monthKey, 1)}
+          days={calendarDays}
+          segments={segments}
+          groups={groups}
+          weekly={weekly.map(range => ({
+            dayOfWeek: range.dayOfWeek,
+            startMinute: range.startMinute,
+            endMinute: range.endMinute,
+          }))}
+        />
+      </div>
+
+      <section className="mt-6 rounded-3xl border bg-card p-5 sm:p-7">
         <h2 className="text-xl font-semibold">Horaires hebdomadaires</h2>
+        <p className="mt-1 text-sm text-muted-foreground">
+          Ces horaires servent de base à chaque semaine et peuvent être copiés
+          dans le calendrier ci-dessus.
+        </p>
         <div className="mt-5 divide-y rounded-2xl border">
           {days.map(day => {
             const ranges = weekly.filter(range => range.dayOfWeek === day.value)
@@ -183,127 +250,6 @@ const Availability = async ({
             <Plus className="size-4" /> Ajouter
           </SubmitButton>
         </form>
-      </section>
-
-      <section className="mt-6 rounded-3xl border bg-card p-5 sm:p-7">
-        <h2 className="text-xl font-semibold">Exceptions</h2>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Renseignez « Jusqu’au » pour répéter la même plage horaire chaque jour
-          d’une période (vacances, par exemple), au lieu de créer une exception
-          par jour.
-        </p>
-        <form
-          action={createAvailabilityException}
-          className="mt-5 grid gap-3 md:grid-cols-2 lg:grid-cols-[1fr_0.9fr_0.9fr_0.7fr_0.7fr_1.3fr_auto]"
-        >
-          <label className="grid gap-1.5 text-sm font-medium">
-            Type
-            <select name="type" className={fieldClass}>
-              <option value="UNAVAILABLE">Fermeture</option>
-              <option value="AVAILABLE">Ouverture</option>
-            </select>
-          </label>
-          <label className="grid gap-1.5 text-sm font-medium">
-            Date
-            <input
-              name="date"
-              type="date"
-              defaultValue={getLocalDateKey(new Date())}
-              required
-              className={fieldClass}
-            />
-          </label>
-          <label className="grid gap-1.5 text-sm font-medium">
-            Jusqu’au{' '}
-            <span className="font-normal text-muted-foreground">
-              (optionnel)
-            </span>
-            <input name="endDate" type="date" className={fieldClass} />
-          </label>
-          <label className="grid gap-1.5 text-sm font-medium">
-            Début
-            <input
-              name="startTime"
-              type="time"
-              step={900}
-              defaultValue="08:00"
-              required
-              className={fieldClass}
-            />
-          </label>
-          <label className="grid gap-1.5 text-sm font-medium">
-            Fin
-            <input
-              name="endTime"
-              type="time"
-              step={900}
-              defaultValue="12:00"
-              required
-              className={fieldClass}
-            />
-          </label>
-          <label className="grid gap-1.5 text-sm font-medium">
-            Motif
-            <input
-              name="label"
-              maxLength={120}
-              placeholder="Vacances, ouverture…"
-              className={fieldClass}
-            />
-          </label>
-          <SubmitButton
-            pendingLabel="Ajout…"
-            className="mt-auto h-11 rounded-xl bg-primary px-4 text-sm font-medium text-primary-foreground"
-          >
-            <Plus className="size-4" /> Ajouter
-          </SubmitButton>
-        </form>
-
-        <div className="mt-6 space-y-2">
-          {exceptions.length ? (
-            exceptions.map(exception => (
-              <div
-                key={exception.id}
-                className="flex min-h-14 flex-wrap items-center gap-3 rounded-xl border px-4 py-2"
-              >
-                <span
-                  className={`rounded-full px-2.5 py-1 text-xs font-medium ${exception.type === 'AVAILABLE' ? 'bg-emerald-100 text-emerald-900' : 'bg-amber-100 text-amber-950'}`}
-                >
-                  {exception.type === 'AVAILABLE' ? 'Ouverture' : 'Fermeture'}
-                </span>
-                <p className="min-w-44 flex-1 text-sm">
-                  <span className="font-medium">
-                    {formatInTimeZone(
-                      exception.startsAt,
-                      RESERVATION_TIME_ZONE,
-                      'dd.MM.yyyy · HH:mm',
-                    )}
-                    –
-                    {formatInTimeZone(
-                      exception.endsAt,
-                      RESERVATION_TIME_ZONE,
-                      'HH:mm',
-                    )}
-                  </span>
-                  {exception.label ? ` · ${exception.label}` : ''}
-                </p>
-                <form action={deleteAvailabilityException}>
-                  <input type="hidden" name="id" value={exception.id} />
-                  <SubmitButton
-                    aria-label="Supprimer l’exception"
-                    className="grid size-11 place-items-center rounded-xl text-muted-foreground hover:bg-muted"
-                  >
-                    <Trash2 className="size-4" />
-                  </SubmitButton>
-                </form>
-              </div>
-            ))
-          ) : (
-            <p className="rounded-xl bg-muted p-4 text-sm text-muted-foreground">
-              Aucune exception à afficher.
-            </p>
-          )}
-        </div>
       </section>
     </main>
   )

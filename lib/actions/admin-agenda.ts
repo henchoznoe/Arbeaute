@@ -1,5 +1,6 @@
 'use server'
 
+import { randomUUID } from 'node:crypto'
 import { revalidatePath, updateTag } from 'next/cache'
 import { redirect } from 'next/navigation'
 import { z } from 'zod/v4'
@@ -16,7 +17,12 @@ import {
   previewAdminAppointmentSeries as previewAppointmentSeries,
   saveAdminAppointmentSerializable,
 } from '@/lib/admin/agenda'
-import { runAuditedMutation, writeAuditEvent } from '@/lib/admin/audit'
+import { runAuditedMutation } from '@/lib/admin/audit'
+import {
+  AdminAvailabilityExceptionError,
+  createAvailabilityExceptionGroupSerializable,
+  deleteAvailabilityExceptionGroupAudited,
+} from '@/lib/admin/availability-exceptions'
 import prisma from '@/lib/core/prisma'
 import { getAdminSession } from '@/lib/core/session-cookies'
 import { MAX_AVAILABILITY_EXCEPTION_RANGE_DAYS } from '@/lib/reservation/constants'
@@ -63,6 +69,13 @@ const parseMinute = (value: string): number => {
   const [, hours, minutes] = timePattern.exec(value) ?? []
   return Number(hours) * 60 + Number(minutes)
 }
+
+const countDateKeys = (startDateKey: string, endDateKey: string): number =>
+  Math.round(
+    (Date.parse(`${endDateKey}T00:00:00.000Z`) -
+      Date.parse(`${startDateKey}T00:00:00.000Z`)) /
+      (24 * 60 * 60 * 1000),
+  ) + 1
 
 export interface AdminAppointmentFormInput {
   appointmentId?: string
@@ -359,6 +372,8 @@ export const cancelAdminAppointment = async (
 const refreshAvailability = () => {
   revalidatePath('/admin')
   revalidatePath('/admin/availability')
+  revalidatePath('/reservation')
+  revalidatePath('/')
   // Les horaires d'ouverture affichés sur la page d'accueil et dans le JSON-LD
   // viennent des mêmes disponibilités hebdomadaires. `updateTag` les expire
   // sans attendre : Arzu voit sa modification dès le rechargement.
@@ -438,87 +453,128 @@ export const createAvailabilityException = async (
   formData: FormData,
 ): Promise<void> => {
   if (!(await requireAdminMutation())) redirect('/admin/login')
+  const optionalDate = z.preprocess(
+    value => (value === '' ? undefined : value),
+    z.string().refine(isDateKey).optional(),
+  )
+  const optionalTime = z.preprocess(
+    value => (value === '' ? undefined : value),
+    z.string().regex(timePattern).optional(),
+  )
   const parsed = z
     .object({
       type: z.enum(['AVAILABLE', 'UNAVAILABLE']),
       date: z.string().refine(isDateKey),
-      endDate: z.string().refine(isDateKey).optional(),
-      startTime: z.string().regex(timePattern),
-      endTime: z.string().regex(timePattern),
+      endDate: optionalDate,
+      startTime: optionalTime,
+      endTime: optionalTime,
       label: z.string().trim().max(120).optional(),
+      shortcut: z
+        .enum(['CUSTOM', 'ALL_DAY', 'COPY_WEEKLY', 'VACATION'])
+        .default('CUSTOM'),
+      copyDayOfWeek: z.coerce.number().int().min(0).max(6).optional(),
     })
     .safeParse(Object.fromEntries(formData))
   if (!parsed.success) redirect('/admin/availability?error=invalid-exception')
 
-  const startMinute = parseMinute(parsed.data.startTime)
-  const endMinute = parseMinute(parsed.data.endTime)
-  if (startMinute >= endMinute)
-    redirect('/admin/availability?error=invalid-exception')
-
-  let rows: ReturnType<typeof buildAvailabilityExceptionRows>
-  try {
-    rows = buildAvailabilityExceptionRows({
-      type: parsed.data.type,
-      startDateKey: parsed.data.date,
-      endDateKey: parsed.data.endDate || parsed.data.date,
-      startMinute,
-      endMinute,
-      label: parsed.data.label || null,
+  const groupId = randomUUID()
+  const label =
+    parsed.data.label ||
+    (parsed.data.shortcut === 'VACATION' ? 'Vacances' : null)
+  let rows: ReturnType<typeof buildAvailabilityExceptionRows> = []
+  if (parsed.data.shortcut === 'COPY_WEEKLY') {
+    if (parsed.data.copyDayOfWeek === undefined)
+      redirect('/admin/availability?error=invalid-exception')
+    const copiedRanges = await prisma.weeklyAvailability.findMany({
+      where: { dayOfWeek: parsed.data.copyDayOfWeek },
+      orderBy: { startMinute: 'asc' },
     })
-  } catch {
-    redirect('/admin/availability?error=invalid-exception')
+    if (!copiedRanges.length)
+      redirect('/admin/availability?error=invalid-exception')
+    rows = copiedRanges.map(range => ({
+      type: 'AVAILABLE' as const,
+      startsAt: localDateMinuteToUtc(parsed.data.date, range.startMinute),
+      endsAt: localDateMinuteToUtc(parsed.data.date, range.endMinute),
+      label: label || 'Horaires copiés',
+    }))
+  } else {
+    const allDay =
+      parsed.data.shortcut === 'ALL_DAY' || parsed.data.shortcut === 'VACATION'
+    if (!allDay && (!parsed.data.startTime || !parsed.data.endTime))
+      redirect('/admin/availability?error=invalid-exception')
+    const dayCount = countDateKeys(
+      parsed.data.date,
+      parsed.data.endDate || parsed.data.date,
+    )
+    if (dayCount < 1) redirect('/admin/availability?error=invalid-exception')
+    if (dayCount > MAX_AVAILABILITY_EXCEPTION_RANGE_DAYS)
+      redirect('/admin/availability?error=range-too-long')
+    const startMinute = allDay
+      ? 0
+      : parseMinute(parsed.data.startTime as string)
+    const endMinute = allDay
+      ? 24 * 60
+      : parseMinute(parsed.data.endTime as string)
+    if (startMinute >= endMinute)
+      redirect('/admin/availability?error=invalid-exception')
+    try {
+      rows = buildAvailabilityExceptionRows({
+        type:
+          parsed.data.shortcut === 'VACATION'
+            ? 'UNAVAILABLE'
+            : parsed.data.type,
+        startDateKey: parsed.data.date,
+        endDateKey: parsed.data.endDate || parsed.data.date,
+        startMinute,
+        endMinute,
+        label,
+      })
+    } catch {
+      redirect('/admin/availability?error=invalid-exception')
+    }
   }
   if (rows.length > MAX_AVAILABILITY_EXCEPTION_RANGE_DAYS)
     redirect('/admin/availability?error=range-too-long')
 
-  await prisma.$transaction(async transaction => {
-    const created = await transaction.availabilityException.createManyAndReturn(
-      {
-        data: rows,
-        select: { id: true },
-      },
-    )
-    const first = created[0]
-    if (!first) return
-    await writeAuditEvent(transaction, {
-      actorType: 'ADMIN',
-      actorId: 'admin',
-      entityType: 'AVAILABILITY_EXCEPTION',
-      entityId: first.id,
-      entityLabel: parsed.data.label || `${rows.length} jour(s)`,
-      action: 'CREATED',
-      after: {
-        type: parsed.data.type,
-        from: rows[0]?.startsAt.toISOString() ?? null,
-        to: rows.at(-1)?.endsAt.toISOString() ?? null,
-        count: rows.length,
-      },
+  try {
+    await createAvailabilityExceptionGroupSerializable(prisma, {
+      groupId,
+      rows,
+      label,
     })
-  })
+  } catch (error) {
+    if (
+      error instanceof AdminAvailabilityExceptionError &&
+      error.code === 'OVERLAP'
+    )
+      redirect('/admin/availability?error=overlap-exception')
+    throw error
+  }
   refreshAvailability()
 }
 
-export const deleteAvailabilityException = async (
-  formData: FormData,
-): Promise<void> => {
-  if (!(await requireAdminMutation())) redirect('/admin/login')
-  const id = z.string().min(1).parse(formData.get('id'))
-  await runAuditedMutation(
-    prisma,
-    transaction => transaction.availabilityException.delete({ where: { id } }),
-    deleted => ({
-      actorType: 'ADMIN',
-      actorId: 'admin',
-      entityType: 'AVAILABILITY_EXCEPTION',
-      entityId: deleted.id,
-      entityLabel: deleted.label,
-      action: 'DELETED',
-      before: {
-        type: deleted.type,
-        startsAt: deleted.startsAt.toISOString(),
-        endsAt: deleted.endsAt.toISOString(),
-      },
-    }),
-  )
-  refreshAvailability()
+export const deleteAvailabilityExceptionGroup = async (
+  groupId: string,
+): Promise<{ ok: boolean; message: string }> => {
+  if (!(await requireAdminMutation()))
+    return { ok: false, message: 'Votre session admin a expiré.' }
+  const parsed = z.string().min(1).safeParse(groupId)
+  if (!parsed.success)
+    return { ok: false, message: 'Cette période est invalide.' }
+  try {
+    const deletedCount = await deleteAvailabilityExceptionGroupAudited(
+      prisma,
+      parsed.data,
+    )
+    refreshAvailability()
+    return {
+      ok: true,
+      message: `${deletedCount} exception${deletedCount > 1 ? 's supprimées' : ' supprimée'}.`,
+    }
+  } catch {
+    return {
+      ok: false,
+      message: 'Cette période ne peut plus être supprimée.',
+    }
+  }
 }

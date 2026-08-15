@@ -114,6 +114,19 @@ describe('multi-day availability exceptions', () => {
     expect(rows).toHaveLength(1)
   })
 
+  it('uses the next local midnight for a full day across DST', () => {
+    const rows = buildAvailabilityExceptionRows({
+      type: 'UNAVAILABLE',
+      startDateKey: '2026-10-25',
+      endDateKey: '2026-10-25',
+      startMinute: 0,
+      endMinute: 24 * 60,
+      label: 'Journée entière',
+    })
+    expect(rows[0]?.startsAt.toISOString()).toBe('2026-10-24T22:00:00.000Z')
+    expect(rows[0]?.endsAt.toISOString()).toBe('2026-10-25T23:00:00.000Z')
+  })
+
   it('rejects an end date before the start date', () => {
     expect(() =>
       buildAvailabilityExceptionRows({

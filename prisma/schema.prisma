@@ -129,6 +129,7 @@ model WeeklyAvailability {
 
 model AvailabilityException {
   id        String                    @id @default(cuid())
+  groupId   String                    @default(cuid())
   type      AvailabilityExceptionType
   startsAt  DateTime
   endsAt    DateTime
@@ -137,6 +138,7 @@ model AvailabilityException {
   updatedAt DateTime                  @updatedAt
 
   @@index([startsAt, endsAt, type])
+  @@index([groupId, startsAt])
   @@map("availability_exception")
 }
 

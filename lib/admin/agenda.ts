@@ -153,7 +153,10 @@ export const buildAvailabilityExceptionRows = ({
   getDateKeysInRange(startDateKey, endDateKey).map(dateKey => ({
     type,
     startsAt: localDateMinuteToUtc(dateKey, startMinute),
-    endsAt: localDateMinuteToUtc(dateKey, endMinute),
+    endsAt:
+      endMinute === 24 * 60
+        ? localDateMinuteToUtc(addLocalDays(dateKey, 1), 0)
+        : localDateMinuteToUtc(dateKey, endMinute),
     label,
   }))
 

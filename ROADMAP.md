@@ -35,14 +35,13 @@ est réévalué après chaque livraison.
 
 | Statut | Éléments |
 | --- | --- |
-| ✅ Terminés | 1 à 16, 19 et 21 à 23 |
+| ✅ Terminés | 1 à 17, 19 et 21 à 23 |
 | 🟡 En cours | 24, enrichi progressivement à chaque livraison |
-| ⏳ Prêt à démarrer | 17, 18 et 20 |
+| ⏳ Prêt à démarrer | 18 et 20 |
 | 🔒 Bloqués | Aucun |
 
-**Prochain élément recommandé : 17.** Ses dépendances d’audit et de système
-visuel sont terminées. Les éléments 18, désormais débloqué par les statuts
-fiables, et 20 peuvent également démarrer.
+**Prochain élément recommandé : 20.** Sa priorité P1 et sa dépendance d’audit
+terminée le placent avant l’élément 18, utile mais classé P2.
 
 - **Priorité P0** : corrige une friction importante ou prépare plusieurs autres
   éléments.
@@ -462,7 +461,7 @@ snapshots de prix, durée ou service.
 
 **Dépendances :** élément 21 pour la traçabilité ; débloque les éléments 10 et 18.
 
-### 17. Remplacer les formulaires d’horaires par un calendrier d’exceptions — ⏳ Prêt à démarrer
+### 17. Remplacer les formulaires d’horaires par un calendrier d’exceptions — ✅ Terminé
 
 **Priorité : P1 · Effort : L · Nature : amélioration**
 
