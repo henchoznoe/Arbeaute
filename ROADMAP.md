@@ -35,14 +35,15 @@ est réévalué après chaque livraison.
 
 | Statut | Éléments |
 | --- | --- |
-| ✅ Terminés | 1 à 12, 19 et 21 à 23 |
+| ✅ Terminés | 1 à 13, 19 et 21 à 23 |
 | 🟡 En cours | 24, enrichi progressivement à chaque livraison |
-| ⏳ Prêt à démarrer | 13 à 17 et 20 |
+| ⏳ Prêt à démarrer | 14 à 17 et 20 |
 | 🔒 Bloqués | 18 |
 
-**Prochain élément recommandé : 13.** Ses dépendances sont toutes terminées et il
-apporte le prochain gain P0 dans l’usage quotidien de l’agenda. Les éléments 14 à
-17 et 20 peuvent aussi démarrer ; l’élément 18 attend encore le 16.
+**Prochain élément recommandé : 14.** Ses dépendances sont terminées et la
+recherche globale apporte le prochain gain P0 dans l’usage quotidien de
+l’administration. Les éléments 15 à 17 et 20 peuvent aussi démarrer ; l’élément
+18 attend encore le 16.
 
 - **Priorité P0** : corrige une friction importante ou prépare plusieurs autres
   éléments.
@@ -365,7 +366,7 @@ la grille hebdomadaire actuelle comme vue secondaire sur grand écran.
 
 **Dépendances :** éléments 11 et 23.
 
-### 13. Accélérer la création, la duplication et les séries de rendez-vous — ⏳ Prêt à démarrer
+### 13. Accélérer la création, la duplication et les séries de rendez-vous — ✅ Terminé
 
 **Priorité : P0 · Effort : L · Nature : nouvelle capacité**
 

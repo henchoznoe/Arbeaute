@@ -5,15 +5,22 @@ import { redirect } from 'next/navigation'
 import { z } from 'zod/v4'
 import {
   AdminAgendaError,
+  AdminAppointmentSeriesError,
+  type AdminAppointmentSeriesPreview,
   buildAvailabilityExceptionRows,
   cancelAdminAppointmentSerializable,
+  createAdminAppointmentSeriesSerializable,
   isAdminAppointmentInsidePublicHours,
+  MAX_APPOINTMENT_SERIES_INTERVAL_WEEKS,
+  MAX_APPOINTMENT_SERIES_OCCURRENCES,
+  previewAdminAppointmentSeries as previewAppointmentSeries,
   saveAdminAppointmentSerializable,
 } from '@/lib/admin/agenda'
 import { runAuditedMutation, writeAuditEvent } from '@/lib/admin/audit'
 import prisma from '@/lib/core/prisma'
 import { getAdminSession } from '@/lib/core/session-cookies'
 import { MAX_AVAILABILITY_EXCEPTION_RANGE_DAYS } from '@/lib/reservation/constants'
+import { normalizeCustomerSearchName } from '@/lib/reservation/customers'
 import { normalizeEmail, normalizePhone } from '@/lib/reservation/identity'
 import { OPENING_HOURS_TAG } from '@/lib/reservation/opening-hours'
 import { isDateKey, localDateMinuteToUtc } from '@/lib/reservation/time'
@@ -33,6 +40,21 @@ const appointmentSchema = z.object({
   comment: z.string().trim().max(1000).optional(),
   acknowledgeOutsideHours: z.boolean().optional(),
 })
+
+const appointmentSeriesSchema = appointmentSchema
+  .omit({ appointmentId: true })
+  .extend({
+    occurrenceCount: z
+      .number()
+      .int()
+      .min(2)
+      .max(MAX_APPOINTMENT_SERIES_OCCURRENCES),
+    intervalWeeks: z
+      .number()
+      .int()
+      .min(1)
+      .max(MAX_APPOINTMENT_SERIES_INTERVAL_WEEKS),
+  })
 
 const requireAdminMutation = async (): Promise<boolean> =>
   Boolean((await getAdminSession()) && (await hasSameOrigin()))
@@ -60,6 +82,188 @@ export interface AdminAppointmentResult {
   message: string
   appointmentId?: string
   needsOutsideHoursConfirmation?: boolean
+}
+
+export interface AdminAppointmentSeriesFormInput
+  extends Omit<AdminAppointmentFormInput, 'appointmentId'> {
+  occurrenceCount: number
+  intervalWeeks: number
+}
+
+export interface AdminAppointmentSeriesResult extends AdminAppointmentResult {
+  preview?: AdminAppointmentSeriesPreview
+}
+
+export interface AdminCustomerOption {
+  id: string
+  firstName: string | null
+  lastName: string
+  email: string
+  phone: string
+}
+
+export interface AdminCustomerSearchResult {
+  ok: boolean
+  message: string
+  customers: AdminCustomerOption[]
+}
+
+const normalizeAppointmentIdentity = (data: {
+  email?: string
+  phone?: string
+}): { email: string | null; phone: string | null } => ({
+  email: data.email ? normalizeEmail(data.email) : null,
+  phone: data.phone ? normalizePhone(data.phone) : null,
+})
+
+const toAppointmentSeriesInput = (
+  data: z.infer<typeof appointmentSeriesSchema>,
+) => {
+  const identity = normalizeAppointmentIdentity(data)
+  return {
+    serviceId: data.serviceId,
+    date: data.date,
+    minute: parseMinute(data.time),
+    occurrenceCount: data.occurrenceCount,
+    intervalWeeks: data.intervalWeeks,
+    firstName: data.firstName || null,
+    lastName: data.lastName,
+    ...identity,
+    comment: data.comment || null,
+    acknowledgeOutsideHours: data.acknowledgeOutsideHours,
+  }
+}
+
+export const searchAdminCustomers = async (
+  input: unknown,
+): Promise<AdminCustomerSearchResult> => {
+  if (!(await requireAdminMutation()))
+    return {
+      ok: false,
+      message: 'Votre session admin a expiré.',
+      customers: [],
+    }
+  const parsed = z.string().trim().min(2).max(100).safeParse(input)
+  if (!parsed.success)
+    return {
+      ok: false,
+      message: 'Saisissez au moins deux caractères.',
+      customers: [],
+    }
+  const query = parsed.data
+  const phoneDigits = query.replace(/\D/g, '')
+  try {
+    const customers = await prisma.customer.findMany({
+      where: {
+        anonymizedAt: null,
+        OR: [
+          {
+            searchName: {
+              contains: normalizeCustomerSearchName(null, query),
+            },
+          },
+          { emailNormalized: { contains: query.toLowerCase() } },
+          ...(phoneDigits.length >= 2
+            ? [{ phoneNormalized: { contains: phoneDigits } }]
+            : []),
+        ],
+      },
+      orderBy: [{ lastSeenAt: 'desc' }, { id: 'asc' }],
+      take: 8,
+      select: {
+        id: true,
+        firstName: true,
+        lastName: true,
+        email: true,
+        phone: true,
+      },
+    })
+    return {
+      ok: true,
+      message: customers.length
+        ? `${customers.length} cliente${customers.length > 1 ? 's' : ''} trouvée${customers.length > 1 ? 's' : ''}.`
+        : 'Aucune cliente trouvée.',
+      customers,
+    }
+  } catch {
+    return {
+      ok: false,
+      message: 'La recherche des clientes est momentanément indisponible.',
+      customers: [],
+    }
+  }
+}
+
+export const previewAdminAppointmentSeries = async (
+  input: AdminAppointmentSeriesFormInput,
+): Promise<AdminAppointmentSeriesResult> => {
+  if (!(await requireAdminMutation()))
+    return { ok: false, message: 'Votre session admin a expiré.' }
+  const parsed = appointmentSeriesSchema.safeParse(input)
+  if (!parsed.success)
+    return { ok: false, message: 'Vérifiez les informations de la série.' }
+  if (parseMinute(parsed.data.time) % 15 !== 0)
+    return {
+      ok: false,
+      message: 'L’heure de début doit être alignée au quart d’heure.',
+    }
+  try {
+    const preview = await previewAppointmentSeries(
+      prisma,
+      toAppointmentSeriesInput(parsed.data),
+    )
+    return {
+      ok: true,
+      message: preview.conflictCount
+        ? `${preview.conflictCount} occurrence${preview.conflictCount > 1 ? 's sont en conflit.' : ' est en conflit.'}`
+        : `${preview.occurrences.length} occurrences vérifiées.`,
+      preview,
+    }
+  } catch {
+    return {
+      ok: false,
+      message: 'La série n’a pas pu être prévisualisée.',
+    }
+  }
+}
+
+export const createAdminAppointmentSeries = async (
+  input: AdminAppointmentSeriesFormInput,
+): Promise<AdminAppointmentSeriesResult> => {
+  if (!(await requireAdminMutation()))
+    return { ok: false, message: 'Votre session admin a expiré.' }
+  const parsed = appointmentSeriesSchema.safeParse(input)
+  if (!parsed.success)
+    return { ok: false, message: 'Vérifiez les informations de la série.' }
+  if (parseMinute(parsed.data.time) % 15 !== 0)
+    return {
+      ok: false,
+      message: 'L’heure de début doit être alignée au quart d’heure.',
+    }
+  try {
+    const appointments = await createAdminAppointmentSeriesSerializable(
+      prisma,
+      toAppointmentSeriesInput(parsed.data),
+    )
+    revalidatePath('/admin')
+    revalidatePath('/mes-rendez-vous')
+    return {
+      ok: true,
+      message: `${appointments.length} rendez-vous ont été créés.`,
+    }
+  } catch (error) {
+    if (error instanceof AdminAppointmentSeriesError)
+      return {
+        ok: false,
+        message:
+          error.code === 'CONFLICT'
+            ? 'La série a changé : au moins une occurrence est maintenant en conflit.'
+            : 'Confirmez la création des occurrences hors horaires.',
+        preview: error.preview,
+        needsOutsideHoursConfirmation: error.code === 'OUTSIDE_HOURS',
+      }
+    return { ok: false, message: 'Aucun rendez-vous de la série n’a été créé.' }
+  }
 }
 
 export const saveAdminAppointment = async (

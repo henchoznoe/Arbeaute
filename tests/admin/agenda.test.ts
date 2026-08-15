@@ -1,8 +1,12 @@
 import { describe, expect, it, vi } from 'vitest'
 import {
+  AdminAppointmentSeriesError,
+  buildAdminAppointmentSeriesStarts,
   buildAvailabilityExceptionRows,
+  createAdminAppointmentSeriesSerializable,
   isInsidePublicOpening,
   mergeIntervals,
+  previewAdminAppointmentSeries,
   saveAdminAppointmentSerializable,
 } from '@/lib/admin/agenda'
 import type { PrismaClient } from '@/prisma/generated/prisma/client'
@@ -178,6 +182,150 @@ describe('manual admin appointments', () => {
         entityId: created.id,
         action: 'CREATED',
       }),
+    })
+  })
+})
+
+describe('admin appointment series', () => {
+  const seriesInput = {
+    serviceId: 'service',
+    date: '2026-08-10',
+    minute: 10 * 60,
+    occurrenceCount: 3,
+    intervalWeeks: 1,
+    firstName: 'Marie',
+    lastName: 'Dupont',
+    email: null,
+    phone: null,
+    comment: null,
+  }
+
+  const service = {
+    id: 'service',
+    name: 'Soin visage',
+    priceCents: 12_000,
+    durationMinutes: 60,
+    preparationMinutes: 15,
+    cleanupMinutes: 15,
+    isArchived: false,
+  }
+
+  const weeklyRanges = [
+    { dayOfWeek: 1, startMinute: 8 * 60, endMinute: 18 * 60 },
+  ]
+
+  it('keeps the local time across the daylight-saving change', () => {
+    const starts = buildAdminAppointmentSeriesStarts({
+      date: '2026-03-22',
+      minute: 9 * 60,
+      occurrenceCount: 2,
+      intervalWeeks: 1,
+    })
+    expect(starts.map(start => start.toISOString())).toEqual([
+      '2026-03-22T08:00:00.000Z',
+      '2026-03-29T07:00:00.000Z',
+    ])
+  })
+
+  it('rejects an unbounded series', () => {
+    expect(() =>
+      buildAdminAppointmentSeriesStarts({
+        date: '2026-08-10',
+        minute: 9 * 60,
+        occurrenceCount: 25,
+        intervalWeeks: 1,
+      }),
+    ).toThrow('INVALID_SERIES')
+  })
+
+  it('identifies the exact conflicting occurrence with buffers included', async () => {
+    const database = {
+      service: { findUnique: vi.fn().mockResolvedValue(service) },
+      appointment: {
+        findMany: vi.fn().mockResolvedValue([
+          {
+            startsAt: new Date('2026-08-17T08:30:00.000Z'),
+            occupiedStartsAt: new Date('2026-08-17T08:15:00.000Z'),
+            occupiedEndsAt: new Date('2026-08-17T09:45:00.000Z'),
+          },
+        ]),
+      },
+      weeklyAvailability: {
+        findMany: vi.fn().mockResolvedValue(weeklyRanges),
+      },
+      availabilityException: { findMany: vi.fn().mockResolvedValue([]) },
+    } as unknown as PrismaClient
+
+    const preview = await previewAdminAppointmentSeries(database, seriesInput)
+
+    expect(preview.conflictCount).toBe(1)
+    expect(preview.occurrences[1]).toMatchObject({
+      index: 2,
+      date: '2026-08-17',
+      conflictTime: '10:30',
+      occupiedStartsAtTime: '09:45',
+      occupiedEndsAtTime: '11:15',
+    })
+    expect(preview.occurrences[0]?.conflictTime).toBeNull()
+  })
+
+  it('creates no row when one occurrence conflicts', async () => {
+    const create = vi.fn()
+    const transaction = {
+      service: { findUnique: vi.fn().mockResolvedValue(service) },
+      appointment: {
+        findMany: vi.fn().mockResolvedValue([
+          {
+            startsAt: new Date('2026-08-17T08:30:00.000Z'),
+            occupiedStartsAt: new Date('2026-08-17T08:15:00.000Z'),
+            occupiedEndsAt: new Date('2026-08-17T09:45:00.000Z'),
+          },
+        ]),
+        create,
+      },
+      weeklyAvailability: {
+        findMany: vi.fn().mockResolvedValue(weeklyRanges),
+      },
+      availabilityException: { findMany: vi.fn().mockResolvedValue([]) },
+    }
+    const database = {
+      $transaction: vi.fn(callback => callback(transaction)),
+    } as unknown as PrismaClient
+
+    await expect(
+      createAdminAppointmentSeriesSerializable(database, seriesInput),
+    ).rejects.toBeInstanceOf(AdminAppointmentSeriesError)
+    expect(create).not.toHaveBeenCalled()
+  })
+
+  it('creates and audits every occurrence in one transaction', async () => {
+    const create = vi.fn().mockImplementation(({ data }) => ({
+      ...data,
+      id: `appointment-${data.startsAt.toISOString()}`,
+    }))
+    const transaction = {
+      service: { findUnique: vi.fn().mockResolvedValue(service) },
+      appointment: { findMany: vi.fn().mockResolvedValue([]), create },
+      weeklyAvailability: {
+        findMany: vi.fn().mockResolvedValue(weeklyRanges),
+      },
+      availabilityException: { findMany: vi.fn().mockResolvedValue([]) },
+      auditEvent: { create: vi.fn().mockResolvedValue({ id: 'audit' }) },
+    }
+    const database = {
+      $transaction: vi.fn(callback => callback(transaction)),
+    } as unknown as PrismaClient
+
+    const created = await createAdminAppointmentSeriesSerializable(
+      database,
+      seriesInput,
+    )
+
+    expect(created).toHaveLength(3)
+    expect(create).toHaveBeenCalledTimes(3)
+    expect(transaction.auditEvent.create).toHaveBeenCalledTimes(3)
+    expect(database.$transaction).toHaveBeenCalledWith(expect.any(Function), {
+      isolationLevel: 'Serializable',
     })
   })
 })

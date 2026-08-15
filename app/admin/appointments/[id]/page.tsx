@@ -1,4 +1,5 @@
 import { formatInTimeZone } from 'date-fns-tz'
+import { Copy } from 'lucide-react'
 import Link from 'next/link'
 import { notFound, redirect } from 'next/navigation'
 import { Suspense } from 'react'
@@ -62,15 +63,24 @@ const EditAppointment = async ({
       >
         ← Agenda
       </Link>
-      <h1 className="mt-2 font-heading text-3xl font-bold">
-        Modifier le rendez-vous
-      </h1>
+      <div className="mt-2 flex flex-wrap items-center justify-between gap-3">
+        <h1 className="font-heading text-3xl font-bold">
+          Modifier le rendez-vous
+        </h1>
+        <Link
+          href={`/admin/appointments/new?duplicate=${appointment.id}`}
+          className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border bg-background px-4 text-sm font-medium transition hover:bg-muted"
+        >
+          <Copy className="size-4" /> Dupliquer
+        </Link>
+      </div>
       <p className="mt-2 text-sm text-muted-foreground">
         Le changement de prestation actualise la durée et le prix conservés sur
         ce rendez-vous.
       </p>
       <div className="mt-7">
         <AppointmentForm
+          key={appointment.id}
           services={services}
           appointment={{
             id: appointment.id,

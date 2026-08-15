@@ -11,7 +11,7 @@ import { RESERVATION_TIME_ZONE } from '@/lib/reservation/constants'
 import { getLocalDateKey, isDateKey } from '@/lib/reservation/time'
 
 interface NewAppointmentPageProps {
-  searchParams: Promise<{ date?: string; time?: string }>
+  searchParams: Promise<{ date?: string; time?: string; duplicate?: string }>
 }
 
 const NewAppointmentPage = ({
@@ -26,7 +26,11 @@ const NewAppointment = async ({
   searchParams,
 }: Readonly<NewAppointmentPageProps>) => {
   if (!(await getAdminSession())) redirect('/admin/login')
-  const { date: requestedDate, time: requestedTime } = await searchParams
+  const {
+    date: requestedDate,
+    time: requestedTime,
+    duplicate: duplicateId,
+  } = await searchParams
   const now = new Date()
   const date =
     requestedDate && isDateKey(requestedDate)
@@ -46,17 +50,31 @@ const NewAppointment = async ({
     requestedTime && isAdminAppointmentTime(requestedTime)
       ? requestedTime
       : fallbackTime
-  const services = await prisma.service.findMany({
-    where: { isArchived: false },
-    orderBy: [{ category: { sortOrder: 'asc' } }, { sortOrder: 'asc' }],
-    select: {
-      id: true,
-      name: true,
-      durationMinutes: true,
-      priceCents: true,
-      category: { select: { name: true } },
-    },
-  })
+  const [services, duplicate] = await Promise.all([
+    prisma.service.findMany({
+      where: { isArchived: false },
+      orderBy: [{ category: { sortOrder: 'asc' } }, { sortOrder: 'asc' }],
+      select: {
+        id: true,
+        name: true,
+        durationMinutes: true,
+        priceCents: true,
+        category: { select: { name: true } },
+      },
+    }),
+    duplicateId
+      ? prisma.appointment.findFirst({
+          where: { id: duplicateId, status: 'CONFIRMED' },
+          select: {
+            serviceId: true,
+            customerFirstName: true,
+            customerLastName: true,
+            customerEmail: true,
+            customerPhone: true,
+          },
+        })
+      : null,
+  ])
 
   return (
     <main className="mx-auto min-h-screen max-w-3xl px-4 py-6 sm:px-8">
@@ -70,11 +88,24 @@ const NewAppointment = async ({
         Nouveau rendez-vous
       </h1>
       <p className="mt-2 text-sm text-muted-foreground">
-        Seul le nom est obligatoire. Les créneaux hors horaires sont possibles
-        après confirmation.
+        {duplicate
+          ? 'Le soin et les coordonnées ont été repris. Choisissez un nouveau créneau avant de créer le rendez-vous.'
+          : 'Seul le nom est obligatoire. Les créneaux hors horaires sont possibles après confirmation.'}
       </p>
       <div className="mt-7">
-        <AppointmentForm services={services} appointment={{ date, time }} />
+        <AppointmentForm
+          key={`new-${duplicateId ?? 'empty'}-${date}-${time}`}
+          services={services}
+          appointment={{
+            serviceId: duplicate?.serviceId,
+            date,
+            time,
+            firstName: duplicate?.customerFirstName,
+            lastName: duplicate?.customerLastName,
+            email: duplicate?.customerEmail,
+            phone: duplicate?.customerPhone,
+          }}
+        />
       </div>
     </main>
   )

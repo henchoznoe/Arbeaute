@@ -1,25 +1,35 @@
 'use client'
 
-import { AlertTriangle, LoaderCircle, Save, Trash2 } from 'lucide-react'
+import {
+  AlertTriangle,
+  CalendarCheck,
+  CheckCircle2,
+  LoaderCircle,
+  Repeat2,
+  Save,
+  Trash2,
+  XCircle,
+} from 'lucide-react'
 import { useRouter } from 'next/navigation'
-import { useState, useTransition } from 'react'
+import { useRef, useState, useTransition } from 'react'
+import { CustomerPicker } from '@/components/admin/customer-picker'
+import {
+  type AdminServiceOption,
+  ServicePicker,
+} from '@/components/admin/service-picker'
 import { AppToast } from '@/components/ui/app-toast'
 import { Button } from '@/components/ui/button'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import { FormField, formControlClass } from '@/components/ui/form-field'
 import {
+  type AdminAppointmentSeriesFormInput,
+  type AdminCustomerOption,
   cancelAdminAppointment,
+  createAdminAppointmentSeries,
+  previewAdminAppointmentSeries,
   saveAdminAppointment,
 } from '@/lib/actions/admin-agenda'
-import { formatServiceLabel } from '@/lib/reservation/service-label'
-
-interface ServiceOption {
-  id: string
-  name: string
-  durationMinutes: number
-  priceCents: number
-  category: { name: string } | null
-}
+import type { AdminAppointmentSeriesPreview } from '@/lib/admin/agenda'
 
 interface AppointmentValues {
   id?: string
@@ -34,25 +44,62 @@ interface AppointmentValues {
 }
 
 interface AppointmentFormProps {
-  services: ServiceOption[]
+  services: AdminServiceOption[]
   appointment: AppointmentValues
 }
+
+const formatSeriesDate = (date: string): string =>
+  new Intl.DateTimeFormat('fr-CH', {
+    weekday: 'short',
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+  }).format(new Date(`${date}T12:00:00`))
 
 export const AppointmentForm = ({
   services,
   appointment,
 }: Readonly<AppointmentFormProps>) => {
   const router = useRouter()
+  const formRef = useRef<HTMLFormElement>(null)
   const [pending, startTransition] = useTransition()
   const [message, setMessage] = useState<string | null>(null)
   const [outsideWarning, setOutsideWarning] = useState(false)
   const [toastOpen, setToastOpen] = useState(false)
+  const [seriesEnabled, setSeriesEnabled] = useState(false)
+  const [seriesPreview, setSeriesPreview] =
+    useState<AdminAppointmentSeriesPreview | null>(null)
+  const [acknowledgeSeriesOutsideHours, setAcknowledgeSeriesOutsideHours] =
+    useState(false)
+  const [firstName, setFirstName] = useState(appointment.firstName ?? '')
+  const [lastName, setLastName] = useState(appointment.lastName ?? '')
+  const [email, setEmail] = useState(appointment.email ?? '')
+  const [phone, setPhone] = useState(appointment.phone ?? '')
+  const [comment, setComment] = useState(appointment.comment ?? '')
 
   const resetWarning = () => {
     setOutsideWarning(false)
     setMessage(null)
     setToastOpen(false)
+    setSeriesPreview(null)
+    setAcknowledgeSeriesOutsideHours(false)
   }
+
+  const getSeriesInput = (
+    formData: FormData,
+  ): AdminAppointmentSeriesFormInput => ({
+    serviceId: String(formData.get('serviceId') ?? ''),
+    date: String(formData.get('date') ?? ''),
+    time: String(formData.get('time') ?? ''),
+    firstName: String(formData.get('firstName') ?? ''),
+    lastName: String(formData.get('lastName') ?? ''),
+    email: String(formData.get('email') ?? ''),
+    phone: String(formData.get('phone') ?? ''),
+    comment: String(formData.get('comment') ?? ''),
+    occurrenceCount: Number(formData.get('occurrenceCount')),
+    intervalWeeks: Number(formData.get('intervalWeeks')),
+    acknowledgeOutsideHours: acknowledgeSeriesOutsideHours,
+  })
 
   const submit = (formData: FormData) => {
     const date = String(formData.get('date') ?? '')
@@ -79,6 +126,40 @@ export const AppointmentForm = ({
     })
   }
 
+  const previewSeries = (formData: FormData) => {
+    startTransition(async () => {
+      const result = await previewAdminAppointmentSeries(
+        getSeriesInput(formData),
+      )
+      setMessage(result.message)
+      setSeriesPreview(result.preview ?? null)
+      if (!result.ok) setToastOpen(true)
+    })
+  }
+
+  const createSeries = () => {
+    if (!formRef.current || !seriesPreview) return
+    const date = String(new FormData(formRef.current).get('date') ?? '')
+    startTransition(async () => {
+      if (!formRef.current) return
+      const result = await createAdminAppointmentSeries(
+        getSeriesInput(new FormData(formRef.current)),
+      )
+      setMessage(result.message)
+      if (result.preview) setSeriesPreview(result.preview)
+      if (result.ok) router.push(`/admin?date=${date}`)
+      else setToastOpen(true)
+    })
+  }
+
+  const selectCustomer = (customer: AdminCustomerOption) => {
+    setFirstName(customer.firstName ?? '')
+    setLastName(customer.lastName)
+    setEmail(customer.email)
+    setPhone(customer.phone)
+    resetWarning()
+  }
+
   const cancel = () => {
     if (!appointment.id) return
     startTransition(async () => {
@@ -91,33 +172,21 @@ export const AppointmentForm = ({
 
   return (
     <form
+      ref={formRef}
       onSubmit={event => {
         event.preventDefault()
-        submit(new FormData(event.currentTarget))
+        const formData = new FormData(event.currentTarget)
+        if (seriesEnabled) previewSeries(formData)
+        else submit(formData)
       }}
       onChange={resetWarning}
       className="space-y-6 rounded-3xl border bg-card p-5 shadow-sm sm:p-7"
     >
-      <FormField controlId="admin-appointment-service" label="Prestation">
-        <select
-          id="admin-appointment-service"
-          name="serviceId"
-          required
-          defaultValue={appointment.serviceId ?? ''}
-          className={formControlClass}
-        >
-          <option value="" disabled>
-            Choisir une prestation
-          </option>
-          {services.map(service => (
-            <option key={service.id} value={service.id}>
-              {formatServiceLabel(service.name, service.category?.name)} ·{' '}
-              {service.durationMinutes} min ·{' '}
-              {(service.priceCents / 100).toLocaleString('fr-CH')} CHF
-            </option>
-          ))}
-        </select>
-      </FormField>
+      <ServicePicker
+        services={services}
+        initialServiceId={appointment.serviceId}
+        onSelectionChange={resetWarning}
+      />
 
       <div className="grid gap-5 sm:grid-cols-2">
         <label className="flex flex-col gap-2 text-sm font-medium">
@@ -143,6 +212,71 @@ export const AppointmentForm = ({
         </label>
       </div>
 
+      {!appointment.id ? (
+        <section className="rounded-2xl border bg-muted/30 p-4">
+          <label className="flex min-h-11 cursor-pointer items-center gap-3">
+            <input
+              type="checkbox"
+              checked={seriesEnabled}
+              onChange={event => {
+                setSeriesEnabled(event.target.checked)
+                resetWarning()
+              }}
+              className="size-5 accent-primary"
+            />
+            <span>
+              <span className="flex items-center gap-2 text-sm font-semibold">
+                <Repeat2 className="size-4 text-primary" /> Créer une série
+                finie
+              </span>
+              <span className="block text-xs text-muted-foreground">
+                Même soin et même heure, sans tâche planifiée.
+              </span>
+            </span>
+          </label>
+          {seriesEnabled ? (
+            <div className="mt-4 grid gap-4 border-t pt-4 sm:grid-cols-2">
+              <FormField
+                controlId="admin-series-count"
+                label="Nombre de rendez-vous"
+              >
+                <input
+                  id="admin-series-count"
+                  name="occurrenceCount"
+                  type="number"
+                  min={2}
+                  max={24}
+                  defaultValue={4}
+                  required
+                  className={formControlClass}
+                />
+              </FormField>
+              <FormField
+                controlId="admin-series-interval"
+                label="Répéter toutes les"
+              >
+                <select
+                  id="admin-series-interval"
+                  name="intervalWeeks"
+                  defaultValue={1}
+                  className={formControlClass}
+                >
+                  <option value={1}>1 semaine</option>
+                  <option value={2}>2 semaines</option>
+                  <option value={3}>3 semaines</option>
+                  <option value={4}>4 semaines</option>
+                  <option value={6}>6 semaines</option>
+                  <option value={8}>8 semaines</option>
+                  <option value={12}>12 semaines</option>
+                </select>
+              </FormField>
+            </div>
+          ) : null}
+        </section>
+      ) : null}
+
+      <CustomerPicker onSelect={selectCustomer} />
+
       <div className="grid gap-5 sm:grid-cols-2">
         <label className="flex flex-col gap-2 text-sm font-medium">
           <span>
@@ -154,7 +288,8 @@ export const AppointmentForm = ({
           <input
             name="firstName"
             maxLength={100}
-            defaultValue={appointment.firstName ?? ''}
+            value={firstName}
+            onChange={event => setFirstName(event.target.value)}
             className={formControlClass}
             autoComplete="given-name"
           />
@@ -165,7 +300,8 @@ export const AppointmentForm = ({
             name="lastName"
             required
             maxLength={100}
-            defaultValue={appointment.lastName ?? ''}
+            value={lastName}
+            onChange={event => setLastName(event.target.value)}
             className={formControlClass}
             autoComplete="family-name"
           />
@@ -184,7 +320,8 @@ export const AppointmentForm = ({
             name="email"
             type="email"
             maxLength={254}
-            defaultValue={appointment.email ?? ''}
+            value={email}
+            onChange={event => setEmail(event.target.value)}
             className={formControlClass}
             autoComplete="email"
           />
@@ -200,7 +337,8 @@ export const AppointmentForm = ({
             name="phone"
             type="tel"
             maxLength={40}
-            defaultValue={appointment.phone ?? ''}
+            value={phone}
+            onChange={event => setPhone(event.target.value)}
             className={formControlClass}
             autoComplete="tel"
           />
@@ -221,10 +359,98 @@ export const AppointmentForm = ({
           name="comment"
           rows={4}
           maxLength={1000}
-          defaultValue={appointment.comment ?? ''}
+          value={comment}
+          onChange={event => setComment(event.target.value)}
           className={`${formControlClass} py-3`}
         />
       </FormField>
+
+      {seriesEnabled && seriesPreview ? (
+        <section
+          className="rounded-2xl border border-primary/20 bg-primary/5 p-4"
+          aria-labelledby="series-preview-title"
+        >
+          <div className="flex items-start gap-3">
+            <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-primary/10 text-primary">
+              <CalendarCheck className="size-5" />
+            </span>
+            <div>
+              <h2 id="series-preview-title" className="font-semibold">
+                Aperçu de la série
+              </h2>
+              <p className="text-xs text-muted-foreground">{message}</p>
+            </div>
+          </div>
+          <ol className="mt-4 max-h-96 space-y-2 overflow-y-auto pr-1">
+            {seriesPreview.occurrences.map(occurrence => {
+              const hasConflict = Boolean(occurrence.conflictTime)
+              return (
+                <li
+                  key={`${occurrence.index}-${occurrence.date}`}
+                  className={`rounded-xl border bg-background p-3 ${
+                    hasConflict
+                      ? 'border-destructive/40'
+                      : occurrence.outsidePublicHours
+                        ? 'border-amber-300'
+                        : 'border-emerald-200'
+                  }`}
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <span>
+                      <span className="block text-sm font-semibold capitalize">
+                        {occurrence.index}. {formatSeriesDate(occurrence.date)}
+                      </span>
+                      <span className="block text-xs text-muted-foreground">
+                        {occurrence.time}–{occurrence.endsAtTime} · occupation{' '}
+                        {occurrence.occupiedStartsAtTime}–
+                        {occurrence.occupiedEndsAtTime}
+                      </span>
+                    </span>
+                    {hasConflict ? (
+                      <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-destructive/10 px-2 py-1 text-[11px] font-semibold text-destructive">
+                        <XCircle className="size-3" /> Conflit
+                      </span>
+                    ) : occurrence.outsidePublicHours ? (
+                      <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-amber-100 px-2 py-1 text-[11px] font-semibold text-amber-900">
+                        <AlertTriangle className="size-3" /> Hors horaires
+                      </span>
+                    ) : (
+                      <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-emerald-50 px-2 py-1 text-[11px] font-semibold text-emerald-800">
+                        <CheckCircle2 className="size-3" /> Libre
+                      </span>
+                    )}
+                  </div>
+                  {hasConflict ? (
+                    <p className="mt-2 text-xs font-medium text-destructive">
+                      Chevauche le rendez-vous existant de{' '}
+                      {occurrence.conflictTime}, préparation et rangement
+                      inclus.
+                    </p>
+                  ) : null}
+                </li>
+              )
+            })}
+          </ol>
+          {seriesPreview.outsidePublicHoursCount > 0 &&
+          seriesPreview.conflictCount === 0 ? (
+            <label className="mt-4 flex cursor-pointer items-start gap-3 rounded-xl border border-amber-300 bg-amber-50 p-3 text-sm text-amber-950">
+              <input
+                type="checkbox"
+                checked={acknowledgeSeriesOutsideHours}
+                onChange={event => {
+                  event.stopPropagation()
+                  setAcknowledgeSeriesOutsideHours(event.target.checked)
+                }}
+                className="mt-0.5 size-5 shrink-0 accent-amber-700"
+              />
+              Je confirme la création des{' '}
+              {seriesPreview.outsidePublicHoursCount} occurrence
+              {seriesPreview.outsidePublicHoursCount > 1 ? 's' : ''} hors des
+              horaires publics.
+            </label>
+          ) : null}
+        </section>
+      ) : null}
 
       {message && outsideWarning ? (
         <div
@@ -259,24 +485,57 @@ export const AppointmentForm = ({
         ) : (
           <span />
         )}
-        <Button
-          type="submit"
-          disabled={pending}
-          className={outsideWarning ? 'bg-amber-700 text-white' : undefined}
-        >
-          {pending ? (
-            <LoaderCircle className="size-4 animate-spin" />
-          ) : outsideWarning ? (
-            <AlertTriangle className="size-4" />
-          ) : (
-            <Save className="size-4" />
-          )}
-          {outsideWarning
-            ? 'Confirmer hors horaires'
-            : appointment.id
-              ? 'Enregistrer les modifications'
-              : 'Créer le rendez-vous'}
-        </Button>
+        {seriesEnabled ? (
+          <div className="flex flex-col gap-2 sm:flex-row">
+            {seriesPreview ? (
+              <Button type="submit" variant="outline" disabled={pending}>
+                <Repeat2 className="size-4" /> Recalculer l’aperçu
+              </Button>
+            ) : null}
+            <Button
+              type={seriesPreview ? 'button' : 'submit'}
+              disabled={
+                pending ||
+                Boolean(seriesPreview?.conflictCount) ||
+                Boolean(
+                  seriesPreview?.outsidePublicHoursCount &&
+                    !acknowledgeSeriesOutsideHours,
+                )
+              }
+              onClick={seriesPreview ? createSeries : undefined}
+            >
+              {pending ? (
+                <LoaderCircle className="size-4 animate-spin" />
+              ) : seriesPreview ? (
+                <Save className="size-4" />
+              ) : (
+                <CalendarCheck className="size-4" />
+              )}
+              {seriesPreview
+                ? `Créer ${seriesPreview.occurrences.length} rendez-vous`
+                : 'Vérifier toutes les occurrences'}
+            </Button>
+          </div>
+        ) : (
+          <Button
+            type="submit"
+            disabled={pending}
+            className={outsideWarning ? 'bg-amber-700 text-white' : undefined}
+          >
+            {pending ? (
+              <LoaderCircle className="size-4 animate-spin" />
+            ) : outsideWarning ? (
+              <AlertTriangle className="size-4" />
+            ) : (
+              <Save className="size-4" />
+            )}
+            {outsideWarning
+              ? 'Confirmer hors horaires'
+              : appointment.id
+                ? 'Enregistrer les modifications'
+                : 'Créer le rendez-vous'}
+          </Button>
+        )}
       </div>
       <AppToast
         open={toastOpen}
