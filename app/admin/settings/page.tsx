@@ -1,4 +1,4 @@
-import { Clock3, Database, Settings2 } from 'lucide-react'
+import { Clock3, Database, Settings2, SlidersHorizontal } from 'lucide-react'
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { Suspense } from 'react'
@@ -26,6 +26,23 @@ const Settings = async () => {
       </header>
 
       <div className="mt-7 grid gap-4 sm:grid-cols-2">
+        <Link
+          href="/admin/settings/booking"
+          className="group rounded-3xl border bg-card p-6 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
+        >
+          <span className="grid size-12 place-items-center rounded-2xl bg-primary/10 text-primary">
+            <SlidersHorizontal className="size-6" />
+          </span>
+          <h2 className="mt-5 text-xl font-semibold">Réservation</h2>
+          <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
+            Régler le préavis, l’horizon, le délai de modification et le pas des
+            créneaux.
+          </p>
+          <span className="mt-5 inline-flex min-h-11 items-center text-sm font-medium text-primary">
+            Gérer les règles →
+          </span>
+        </Link>
+
         <Link
           href="/admin/availability"
           className="group rounded-3xl border bg-card p-6 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"

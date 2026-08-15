@@ -1,5 +1,4 @@
 import { AlertTriangle } from 'lucide-react'
-import { CUSTOMER_CHANGE_CUTOFF_LABEL } from '@/lib/reservation/constants'
 import { cn } from '@/lib/utils/cn'
 
 interface CancellationPolicyProps {
@@ -8,12 +7,14 @@ interface CancellationPolicyProps {
   /** Vrai lorsque le délai est dépassé : la séance est désormais due. */
   expired?: boolean
   className?: string
+  cutoffLabel: string
 }
 
 export const CancellationPolicy = ({
   deadlineLabel,
   expired = false,
   className,
+  cutoffLabel,
 }: Readonly<CancellationPolicyProps>) => (
   <p
     className={cn(
@@ -28,15 +29,14 @@ export const CancellationPolicy = ({
           <strong className="font-semibold">
             Ce rendez-vous n’est plus annulable en ligne.
           </strong>{' '}
-          Le délai de {CUSTOMER_CHANGE_CUTOFF_LABEL} est dépassé : en cas
-          d’absence, la séance est due à 100 %. Contactez l’institut par
-          téléphone en cas d’imprévu.
+          Le délai de {cutoffLabel} est dépassé : en cas d’absence, la séance
+          est due à 100 %. Contactez l’institut par téléphone en cas d’imprévu.
         </>
       ) : (
         <>
           <strong className="font-semibold">Conditions d’annulation :</strong>{' '}
           toute annulation ou modification doit intervenir au moins{' '}
-          {CUSTOMER_CHANGE_CUTOFF_LABEL} avant le rendez-vous
+          {cutoffLabel} avant le rendez-vous
           {deadlineLabel ? (
             <>
               , soit jusqu’au{' '}

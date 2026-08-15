@@ -62,6 +62,12 @@ describe('admin audit journal', () => {
     expect(
       getAuditEntityHref({ entityType: 'CUSTOMER', entityId: 'customer-1' }),
     ).toBe('/admin/customers/customer-1')
+    expect(
+      getAuditEntityHref({
+        entityType: 'BOOKING_SETTINGS',
+        entityId: 'default',
+      }),
+    ).toBe('/admin/settings/booking')
   })
 
   it('formats timestamps in the salon time zone', () => {

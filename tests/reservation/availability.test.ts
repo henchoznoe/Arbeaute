@@ -164,6 +164,49 @@ describe('public availability', () => {
     })
     expect(tooFar).toHaveLength(0)
   })
+
+  it('applies the configured notice, horizon and slot interval', async () => {
+    const slots = await getAvailableSlots({
+      database: makeDatabase({}),
+      serviceId: 'service',
+      dateKey: monday,
+      now: new Date('2026-08-10T05:59:00.000Z'),
+      settings: {
+        minBookingNoticeHours: 0,
+        bookingHorizonMonths: 1,
+        customerChangeCutoffHours: 24,
+        slotIntervalMinutes: 20,
+      },
+    })
+    expect(slots.slice(0, 3).map(slot => slot.label)).toEqual([
+      '08:00',
+      '08:20',
+      '08:40',
+    ])
+  })
+
+  it('keeps preparation and cleanup inside openings with a custom interval', async () => {
+    const slots = await getAvailableSlots({
+      database: makeDatabase({
+        durationMinutes: 40,
+        preparationMinutes: 10,
+        cleanupMinutes: 10,
+        weekly: [{ dayOfWeek: 1, startMinute: 8 * 60, endMinute: 10 * 60 }],
+      }),
+      serviceId: 'service',
+      dateKey: monday,
+      now: earlySunday,
+      settings: {
+        minBookingNoticeHours: 0,
+        bookingHorizonMonths: 1,
+        customerChangeCutoffHours: 24,
+        slotIntervalMinutes: 20,
+      },
+    })
+    expect(slots.some(slot => slot.label === '08:00')).toBe(false)
+    expect(slots.some(slot => slot.label === '08:20')).toBe(true)
+    expect(slots.some(slot => slot.label === '09:20')).toBe(false)
+  })
 })
 
 /**

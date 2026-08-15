@@ -35,13 +35,13 @@ est réévalué après chaque livraison.
 
 | Statut | Éléments |
 | --- | --- |
-| ✅ Terminés | 1 à 17, 19 et 21 à 23 |
+| ✅ Terminés | 1 à 23 |
 | 🟡 En cours | 24, enrichi progressivement à chaque livraison |
-| ⏳ Prêt à démarrer | 18 et 20 |
+| ⏳ Prêt à démarrer | Aucun |
 | 🔒 Bloqués | Aucun |
 
-**Prochain élément recommandé : 20.** Sa priorité P1 et sa dépendance d’audit
-terminée le placent avant l’élément 18, utile mais classé P2.
+**Prochain élément recommandé : 24.** C’est le dernier élément du backlog ; ses
+scénarios peuvent désormais couvrir l’ensemble des fonctionnalités livrées.
 
 - **Priorité P0** : corrige une friction importante ou prépare plusieurs autres
   éléments.
@@ -486,7 +486,7 @@ tout en conservant les lignes journalières nécessaires au moteur actuel.
 
 **Dépendances :** éléments 21 et 23.
 
-### 18. Afficher des indicateurs internes utiles — ⏳ Prêt à démarrer
+### 18. Afficher des indicateurs internes utiles — ✅ Terminé
 
 **Priorité : P2 · Effort : M · Nature : nouvelle capacité**
 
@@ -542,7 +542,7 @@ pas. La session client continue de contenir uniquement un digest, jamais de PII.
 sont définies avec cet élément puis réutilisées par l’élément 22. Débloque les
 éléments 13, 14, 15 et 21.
 
-### 20. Rendre les règles de réservation configurables en base — ⏳ Prêt à démarrer
+### 20. Rendre les règles de réservation configurables en base — ✅ Terminé
 
 **Priorité : P1 · Effort : M · Nature : amélioration**
 

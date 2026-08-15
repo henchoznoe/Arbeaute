@@ -88,7 +88,8 @@ Cached data is centralised and tagged, then invalidated from server actions with
 |---|---|---|---|
 | Service catalogue | `lib/catalog/queries.ts` | `CATALOG_TAG` | `refreshCatalog()` in `lib/actions/catalog.ts` |
 | Opening hours | `lib/reservation/opening-hours.ts` | `OPENING_HOURS_TAG` | `refreshAvailability()` in `lib/actions/admin-agenda.ts` |
-| Booking date bounds | `lib/reservation/booking-window.ts` | — (`cacheLife('hours')`) | time only |
+| Booking rules | `lib/reservation/booking-settings.ts` | `BOOKING_SETTINGS_TAG` | `saveBookingSettings()` in `lib/actions/admin-booking-settings.ts` |
+| Booking date bounds | `lib/reservation/booking-window.ts` | `BOOKING_SETTINGS_TAG` (`cacheLife('hours')`) | settings or time |
 
 Availability **slots are never cached** — stale slots would cause double bookings.
 
@@ -101,7 +102,7 @@ queries:
   (service timings, weekly availability, exceptions, appointments over the range
   with a ±24 h margin for preparation/cleanup spilling across days).
 - `computeSlotsForDay()` — pure; merges openings, subtracts blocked intervals,
-  walks the day in `SLOT_INTERVAL_MINUTES` steps. Unit-testable without a DB.
+  walks the day using the configured slot interval. Unit-testable without a DB.
 - Public entry points: `getAvailableSlots` (one day), `getAvailableSlotsByDate`
   (a range, used by the booking calendar to load a whole week at once) and
   `findNextAvailableSlot` (scans up to 100 days in memory).
@@ -132,6 +133,13 @@ visitor's zone. Dates are passed around as **date keys** (`'YYYY-MM-DD'` strings
 and converted with `localDateMinuteToUtc` / `getLocalDayBounds`. The customer
 change deadline is counted in *business* hours (weekends skipped) by
 `getCustomerChangeDeadline`.
+
+### Booking settings
+
+The singleton `BookingSettings` row is the source of truth for booking notice,
+horizon, customer change cutoff and slot interval. Public reads go through the
+tagged cache in `lib/reservation/booking-settings.ts`; the admin mutation updates
+the row and audit event in one transaction, then invalidates every public view.
 
 ### Auth and access control
 

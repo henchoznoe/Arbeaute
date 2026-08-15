@@ -42,6 +42,7 @@ enum AuditEntityType {
   SERVICE_CATEGORY
   WEEKLY_AVAILABILITY
   AVAILABILITY_EXCEPTION
+  BOOKING_SETTINGS
 }
 
 enum AuditActionType {
@@ -140,6 +141,18 @@ model AvailabilityException {
   @@index([startsAt, endsAt, type])
   @@index([groupId, startsAt])
   @@map("availability_exception")
+}
+
+model BookingSettings {
+  id                        String   @id @default("default")
+  minBookingNoticeHours     Int      @default(12)
+  bookingHorizonMonths      Int      @default(3)
+  customerChangeCutoffHours Int      @default(48)
+  slotIntervalMinutes       Int      @default(15)
+  createdAt                 DateTime @default(now())
+  updatedAt                 DateTime @updatedAt
+
+  @@map("booking_settings")
 }
 
 model Customer {

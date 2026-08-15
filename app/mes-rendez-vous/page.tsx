@@ -8,6 +8,10 @@ import { identifyCustomer, logoutCustomer } from '@/lib/actions/reservation'
 import { createPageMetadata } from '@/lib/config/seo'
 import prisma from '@/lib/core/prisma'
 import { getCustomerSession } from '@/lib/core/session-cookies'
+import {
+  formatCustomerChangeCutoff,
+  getBookingSettings,
+} from '@/lib/reservation/booking-settings'
 import { createAppointmentCalendar } from '@/lib/reservation/calendar'
 import {
   CUSTOMER_HISTORY_LIMIT,
@@ -161,27 +165,32 @@ const CustomerAppointments = async ({
       },
     },
   } as const
-  const [upcomingAppointments, historyAppointments] = await Promise.all([
-    prisma.appointment.findMany({
-      where: {
-        customerId: customer.id,
-        status: 'CONFIRMED',
-        startsAt: { gt: now },
-      },
-      orderBy: { startsAt: 'asc' },
-      include: appointmentInclude,
-    }),
-    prisma.appointment.findMany({
-      where: {
-        customerId: customer.id,
-        OR: [{ status: { not: 'CONFIRMED' } }, { startsAt: { lte: now } }],
-      },
-      orderBy: { startsAt: 'desc' },
-      take: CUSTOMER_HISTORY_LIMIT,
-      include: appointmentInclude,
-    }),
-  ])
-  const limits = getBookingDateLimits(now)
+  const [upcomingAppointments, historyAppointments, settings] =
+    await Promise.all([
+      prisma.appointment.findMany({
+        where: {
+          customerId: customer.id,
+          status: 'CONFIRMED',
+          startsAt: { gt: now },
+        },
+        orderBy: { startsAt: 'asc' },
+        include: appointmentInclude,
+      }),
+      prisma.appointment.findMany({
+        where: {
+          customerId: customer.id,
+          OR: [{ status: { not: 'CONFIRMED' } }, { startsAt: { lte: now } }],
+        },
+        orderBy: { startsAt: 'desc' },
+        take: CUSTOMER_HISTORY_LIMIT,
+        include: appointmentInclude,
+      }),
+      getBookingSettings(),
+    ])
+  const limits = getBookingDateLimits(now, settings.bookingHorizonMonths)
+  const customerChangeCutoffLabel = formatCustomerChangeCutoff(
+    settings.customerChangeCutoffHours,
+  )
 
   return (
     <>
@@ -232,10 +241,15 @@ const CustomerAppointments = async ({
                     canChange={canCustomerChangeAppointment(
                       appointment.startsAt,
                       now,
+                      settings.customerChangeCutoffHours,
                     )}
                     changeDeadlineLabel={formatAppointmentDate(
-                      getCustomerChangeDeadline(appointment.startsAt),
+                      getCustomerChangeDeadline(
+                        appointment.startsAt,
+                        settings.customerChangeCutoffHours,
+                      ),
                     )}
+                    customerChangeCutoffLabel={customerChangeCutoffLabel}
                     calendar={createAppointmentCalendar({
                       id: appointment.id,
                       serviceName: appointment.serviceNameSnapshot,

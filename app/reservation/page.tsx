@@ -53,6 +53,7 @@ const ReservationPage = async () => {
             services={services}
             minDate={window.min}
             maxDate={window.max}
+            customerChangeCutoffLabel={window.customerChangeCutoffLabel}
           />
         </Suspense>
       </main>

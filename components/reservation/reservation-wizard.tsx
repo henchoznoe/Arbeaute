@@ -68,6 +68,7 @@ interface ReservationWizardProps {
   services: ReservationService[]
   minDate: string
   maxDate: string
+  customerChangeCutoffLabel: string
 }
 
 const fieldClass = cn(formControlClass, 'min-h-12 px-4')
@@ -114,6 +115,7 @@ export const ReservationWizard = ({
   services,
   minDate,
   maxDate,
+  customerChangeCutoffLabel,
 }: Readonly<ReservationWizardProps>) => {
   const searchParams = useSearchParams()
   const requestedServiceSlug = searchParams.get('service')
@@ -834,7 +836,10 @@ export const ReservationWizard = ({
             <ConsentFormNotice url={selectedService.consentFormUrl} />
           ) : null}
 
-          <CancellationPolicy className="mt-5" />
+          <CancellationPolicy
+            className="mt-5"
+            cutoffLabel={customerChangeCutoffLabel}
+          />
 
           {result && !result.ok ? (
             <p
@@ -940,7 +945,10 @@ export const ReservationWizard = ({
             </div>
           </div>
 
-          <CancellationPolicy className="mt-5" />
+          <CancellationPolicy
+            className="mt-5"
+            cutoffLabel={customerChangeCutoffLabel}
+          />
 
           {result && !result.ok ? (
             <p

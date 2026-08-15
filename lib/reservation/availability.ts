@@ -1,9 +1,8 @@
 import {
-  MIN_BOOKING_NOTICE_MS,
-  SLOT_INTERVAL_MINUTES,
-} from '@/lib/reservation/constants'
+  type BookingSettingsValues,
+  DEFAULT_BOOKING_SETTINGS,
+} from '@/lib/reservation/booking-settings'
 import {
-  addLocalDays,
   formatSlotTime,
   getBookingDateLimits,
   getDateKeysInRange,
@@ -82,6 +81,7 @@ interface AvailabilityOptions {
   dateKey: string
   now?: Date
   excludeAppointmentId?: string
+  settings?: BookingSettingsValues
 }
 
 interface RangeAvailabilityOptions {
@@ -91,6 +91,7 @@ interface RangeAvailabilityOptions {
   toDateKey: string
   now?: Date
   excludeAppointmentId?: string
+  settings?: BookingSettingsValues
 }
 
 /**
@@ -172,6 +173,7 @@ const computeAvailabilityForDay = (
   window: AvailabilityWindow,
   dateKey: string,
   now: Date,
+  settings: BookingSettingsValues,
 ): DayAvailability => {
   if (!isDateKey(dateKey)) return { state: 'CLOSED', slots: [] }
 
@@ -224,11 +226,17 @@ const computeAvailabilityForDay = (
     })),
   ]
 
-  const earliest = new Date(now.getTime() + MIN_BOOKING_NOTICE_MS)
-  const { latest } = getBookingDateLimits(now)
+  const earliest = new Date(
+    now.getTime() + settings.minBookingNoticeHours * 60 * 60 * 1000,
+  )
+  const { latest } = getBookingDateLimits(now, settings.bookingHorizonMonths)
   const slots: AvailableSlot[] = []
 
-  for (let minute = 0; minute < 24 * 60; minute += SLOT_INTERVAL_MINUTES) {
+  for (
+    let minute = 0;
+    minute < 24 * 60;
+    minute += settings.slotIntervalMinutes
+  ) {
     const startsAt = localDateMinuteToUtc(dateKey, minute)
     const endsAt = new Date(
       startsAt.getTime() + service.durationMinutes * 60_000,
@@ -261,7 +269,9 @@ const computeSlotsForDay = (
   window: AvailabilityWindow,
   dateKey: string,
   now: Date,
-): AvailableSlot[] => computeAvailabilityForDay(window, dateKey, now).slots
+  settings: BookingSettingsValues,
+): AvailableSlot[] =>
+  computeAvailabilityForDay(window, dateKey, now, settings).slots
 
 export const getAvailableSlots = async ({
   database,
@@ -269,6 +279,7 @@ export const getAvailableSlots = async ({
   dateKey,
   now = new Date(),
   excludeAppointmentId,
+  settings = DEFAULT_BOOKING_SETTINGS,
 }: AvailabilityOptions): Promise<AvailableSlot[]> => {
   if (!isDateKey(dateKey)) return []
 
@@ -280,7 +291,7 @@ export const getAvailableSlots = async ({
     excludeAppointmentId,
   })
 
-  return window ? computeSlotsForDay(window, dateKey, now) : []
+  return window ? computeSlotsForDay(window, dateKey, now, settings) : []
 }
 
 /**
@@ -295,6 +306,7 @@ export const getAvailableSlotsByDate = async ({
   toDateKey,
   now = new Date(),
   excludeAppointmentId,
+  settings = DEFAULT_BOOKING_SETTINGS,
 }: RangeAvailabilityOptions): Promise<Record<string, AvailableSlot[]>> => {
   if (!isDateKey(fromDateKey) || !isDateKey(toDateKey)) return {}
   if (toDateKey < fromDateKey) return {}
@@ -311,7 +323,7 @@ export const getAvailableSlotsByDate = async ({
   return Object.fromEntries(
     getDateKeysInRange(fromDateKey, toDateKey).map(dateKey => [
       dateKey,
-      computeSlotsForDay(window, dateKey, now),
+      computeSlotsForDay(window, dateKey, now, settings),
     ]),
   )
 }
@@ -328,6 +340,7 @@ export const getAvailabilityByDate = async ({
   toDateKey,
   now = new Date(),
   excludeAppointmentId,
+  settings = DEFAULT_BOOKING_SETTINGS,
 }: RangeAvailabilityOptions): Promise<Record<string, DayAvailability>> => {
   if (!isDateKey(fromDateKey) || !isDateKey(toDateKey)) return {}
   if (toDateKey < fromDateKey) return {}
@@ -344,7 +357,7 @@ export const getAvailabilityByDate = async ({
   return Object.fromEntries(
     getDateKeysInRange(fromDateKey, toDateKey).map(dateKey => [
       dateKey,
-      computeAvailabilityForDay(window, dateKey, now),
+      computeAvailabilityForDay(window, dateKey, now, settings),
     ]),
   )
 }
@@ -360,9 +373,8 @@ interface NextAvailableOptions {
   fromDateKey: string
   now?: Date
   excludeAppointmentId?: string
+  settings?: BookingSettingsValues
 }
-
-const MAX_NEXT_AVAILABLE_SEARCH_DAYS = 100
 
 export const findNextAvailableSlot = async ({
   database,
@@ -370,28 +382,23 @@ export const findNextAvailableSlot = async ({
   fromDateKey,
   now = new Date(),
   excludeAppointmentId,
+  settings = DEFAULT_BOOKING_SETTINGS,
 }: NextAvailableOptions): Promise<NextAvailableSlot | null> => {
   if (!isDateKey(fromDateKey)) return null
-  const { max } = getBookingDateLimits(now)
+  const { max } = getBookingDateLimits(now, settings.bookingHorizonMonths)
   if (fromDateKey > max) return null
-
-  const searchEnd = addLocalDays(
-    fromDateKey,
-    MAX_NEXT_AVAILABLE_SEARCH_DAYS - 1,
-  )
-  const toDateKey = searchEnd > max ? max : searchEnd
 
   const window = await loadAvailabilityWindow({
     database,
     serviceId,
     fromDateKey,
-    toDateKey,
+    toDateKey: max,
     excludeAppointmentId,
   })
   if (!window) return null
 
-  for (const dateKey of getDateKeysInRange(fromDateKey, toDateKey)) {
-    const slots = computeSlotsForDay(window, dateKey, now)
+  for (const dateKey of getDateKeysInRange(fromDateKey, max)) {
+    const slots = computeSlotsForDay(window, dateKey, now, settings)
     if (slots.length > 0) return { dateKey, slot: slots[0] }
   }
 

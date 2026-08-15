@@ -3,10 +3,14 @@ import type { PrismaClient } from '@/prisma/generated/prisma/client'
 
 const mocks = vi.hoisted(() => ({
   getAvailableSlots: vi.fn(),
+  getBookingSettings: vi.fn(),
 }))
 
 vi.mock('@/lib/reservation/availability', () => ({
   getAvailableSlots: mocks.getAvailableSlots,
+}))
+vi.mock('@/lib/reservation/booking-settings', () => ({
+  getBookingSettings: mocks.getBookingSettings,
 }))
 vi.mock('@/lib/core/session-cookies', () => ({
   createCustomerIdentityDigest: vi.fn(() => 'identity-digest'),
@@ -95,6 +99,12 @@ const makeDatabase = () => {
 describe('customer appointment activity', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    mocks.getBookingSettings.mockResolvedValue({
+      minBookingNoticeHours: 12,
+      bookingHorizonMonths: 3,
+      customerChangeCutoffHours: 48,
+      slotIntervalMinutes: 15,
+    })
     mocks.getAvailableSlots.mockResolvedValue([
       { startsAt: startsAt.toISOString(), label: '14:00' },
     ])

@@ -22,6 +22,7 @@ import {
   getAvailabilityByDate,
   type NextAvailableSlot,
 } from '@/lib/reservation/availability'
+import { getBookingSettings } from '@/lib/reservation/booking-settings'
 import { createAppointmentCalendar } from '@/lib/reservation/calendar'
 import { CUSTOMER_SESSION_MUTATION_LIMIT } from '@/lib/reservation/constants'
 import { findCustomerForSession } from '@/lib/reservation/customers'
@@ -105,11 +106,13 @@ export const getPublicWeekAvailability = async (
 ): Promise<Record<string, DayAvailability>> => {
   try {
     const from = z.string().min(1).parse(fromDateKey)
+    const settings = await getBookingSettings()
     return await getAvailabilityByDate({
       database: prisma,
       serviceId: z.string().min(1).parse(serviceId),
       fromDateKey: from,
       toDateKey: addLocalDays(from, PUBLIC_WEEK_LENGTH - 1),
+      settings,
     })
   } catch {
     return {}
@@ -121,10 +124,12 @@ export const getNextPublicAvailableSlot = async (
   fromDateKey: string,
 ): Promise<NextAvailableSlot | null> => {
   try {
+    const settings = await getBookingSettings()
     return await findNextAvailableSlot({
       database: prisma,
       serviceId: z.string().min(1).parse(serviceId),
       fromDateKey,
+      settings,
     })
   } catch {
     return null
@@ -294,7 +299,15 @@ export const getCustomerMoveWeekAvailability = async (
       },
       select: { id: true, serviceId: true, startsAt: true },
     })
-    if (!appointment || !canCustomerChangeAppointment(appointment.startsAt))
+    const settings = await getBookingSettings()
+    if (
+      !appointment ||
+      !canCustomerChangeAppointment(
+        appointment.startsAt,
+        new Date(),
+        settings.customerChangeCutoffHours,
+      )
+    )
       return {}
     return getAvailabilityByDate({
       database: prisma,
@@ -302,6 +315,7 @@ export const getCustomerMoveWeekAvailability = async (
       fromDateKey,
       toDateKey: addLocalDays(fromDateKey, PUBLIC_WEEK_LENGTH - 1),
       excludeAppointmentId: appointment.id,
+      settings,
     })
   } catch {
     return {}
@@ -323,13 +337,22 @@ export const getNextCustomerMoveAvailableSlot = async (
       },
       select: { id: true, serviceId: true, startsAt: true },
     })
-    if (!appointment || !canCustomerChangeAppointment(appointment.startsAt))
+    const settings = await getBookingSettings()
+    if (
+      !appointment ||
+      !canCustomerChangeAppointment(
+        appointment.startsAt,
+        new Date(),
+        settings.customerChangeCutoffHours,
+      )
+    )
       return null
     return findNextAvailableSlot({
       database: prisma,
       serviceId: appointment.serviceId,
       fromDateKey,
       excludeAppointmentId: appointment.id,
+      settings,
     })
   } catch {
     return null

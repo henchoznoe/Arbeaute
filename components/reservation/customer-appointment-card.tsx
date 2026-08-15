@@ -27,6 +27,7 @@ interface CustomerAppointmentCardProps {
   calendar: string
   canChange: boolean
   changeDeadlineLabel: string
+  customerChangeCutoffLabel: string
   dateLabel: string
   id: string
   maxDate: string
@@ -43,6 +44,7 @@ export const CustomerAppointmentCard = ({
   calendar,
   canChange,
   changeDeadlineLabel,
+  customerChangeCutoffLabel,
   dateLabel,
   id,
   maxDate,
@@ -321,6 +323,7 @@ export const CustomerAppointmentCard = ({
 
       <CancellationPolicy
         className="mt-5"
+        cutoffLabel={customerChangeCutoffLabel}
         expired={!canChange}
         deadlineLabel={canChange ? changeDeadlineLabel : undefined}
       />

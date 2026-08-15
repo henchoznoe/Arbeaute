@@ -7,9 +7,11 @@ import { ActivityOverview } from '@/components/admin/activity-overview'
 import { AdminAgendaView } from '@/components/admin/admin-agenda-view'
 import { AdminSkeleton } from '@/components/admin/admin-skeleton'
 import { AppointmentStatusActions } from '@/components/admin/appointment-status-actions'
+import { DashboardMetrics } from '@/components/admin/dashboard-metrics'
 import { StatusBadge } from '@/components/ui/status-badge'
 import { getActivityOverview } from '@/lib/admin/activity'
 import { buildAdminTimelineDay } from '@/lib/admin/agenda-timeline'
+import { buildDashboardMetrics } from '@/lib/admin/dashboard-metrics'
 import prisma from '@/lib/core/prisma'
 import { getAdminSession } from '@/lib/core/session-cookies'
 import { RESERVATION_TIME_ZONE } from '@/lib/reservation/constants'
@@ -88,6 +90,8 @@ const AdminAgenda = async ({ searchParams }: Readonly<AdminPageProps>) => {
           occupiedEndsAt: true,
           preparationMinutes: true,
           cleanupMinutes: true,
+          serviceDurationMinutes: true,
+          servicePriceCents: true,
           customerFirstName: true,
           customerLastName: true,
           customerPhone: true,
@@ -208,6 +212,14 @@ const AdminAgenda = async ({ searchParams }: Readonly<AdminPageProps>) => {
       })),
     })
   })
+  const dashboardMetrics = buildDashboardMetrics({
+    anchorDateKey: anchor,
+    dateKeys: weekDays,
+    appointments,
+    weekly,
+    exceptions,
+  })
+  const periodLabel = `${dayTitle(weekDays[0])} – ${dayTitle(weekDays.at(-1) as string)}`
 
   return (
     <main className="mx-auto min-h-screen max-w-7xl px-4 py-5 sm:px-8 sm:py-8">
@@ -217,6 +229,12 @@ const AdminAgenda = async ({ searchParams }: Readonly<AdminPageProps>) => {
           <h1 className="font-heading text-3xl font-bold">Agenda</h1>
         </div>
       </header>
+
+      <DashboardMetrics
+        metrics={dashboardMetrics}
+        periodLabel={periodLabel}
+        selectedDayLabel={dayTitle(anchor, true)}
+      />
 
       <div className="hidden md:block">
         <ActivityOverview {...activityOverview} />

@@ -1,7 +1,8 @@
 import { addMonths } from 'date-fns'
 import { formatInTimeZone, fromZonedTime } from 'date-fns-tz'
 import {
-  CUSTOMER_CHANGE_CUTOFF_MS,
+  DEFAULT_BOOKING_HORIZON_MONTHS,
+  DEFAULT_CUSTOMER_CHANGE_CUTOFF_HOURS,
   RESERVATION_TIME_ZONE,
 } from '@/lib/reservation/constants'
 
@@ -79,8 +80,9 @@ export const getLocalWeekDateKeys = (anchorDateKey: string): string[] => {
 
 export const getBookingDateLimits = (
   now = new Date(),
+  bookingHorizonMonths = DEFAULT_BOOKING_HORIZON_MONTHS,
 ): { min: string; max: string; latest: Date } => {
-  const latest = addMonths(now, 3)
+  const latest = addMonths(now, bookingHorizonMonths)
   return {
     min: getLocalDateKey(now),
     max: getLocalDateKey(latest),
@@ -126,13 +128,18 @@ const subtractBusinessTime = (target: Date, ms: number): Date => {
 /**
  * Dernier instant auquel le client peut encore déplacer ou annuler lui-même.
  */
-export const getCustomerChangeDeadline = (startsAt: Date): Date =>
-  subtractBusinessTime(startsAt, CUSTOMER_CHANGE_CUTOFF_MS)
+export const getCustomerChangeDeadline = (
+  startsAt: Date,
+  cutoffBusinessHours = DEFAULT_CUSTOMER_CHANGE_CUTOFF_HOURS,
+): Date => subtractBusinessTime(startsAt, cutoffBusinessHours * 60 * 60 * 1000)
 
 export const canCustomerChangeAppointment = (
   startsAt: Date,
   now = new Date(),
-): boolean => now.getTime() < getCustomerChangeDeadline(startsAt).getTime()
+  cutoffBusinessHours = DEFAULT_CUSTOMER_CHANGE_CUTOFF_HOURS,
+): boolean =>
+  now.getTime() <
+  getCustomerChangeDeadline(startsAt, cutoffBusinessHours).getTime()
 
 export const formatAppointmentDate = (date: Date): string =>
   new Intl.DateTimeFormat('fr-CH', {

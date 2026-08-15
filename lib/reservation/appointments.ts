@@ -1,6 +1,7 @@
 import { writeAuditEvent } from '@/lib/admin/audit'
 import { createCustomerIdentityDigest } from '@/lib/core/session-cookies'
 import { getAvailableSlots } from '@/lib/reservation/availability'
+import { getBookingSettings } from '@/lib/reservation/booking-settings'
 import { MAX_SERIALIZABLE_ATTEMPTS } from '@/lib/reservation/constants'
 import {
   normalizeCustomerSearchName,
@@ -43,6 +44,7 @@ export const createAppointmentSerializable = async (
   prisma: PrismaClient,
   input: PublicAppointmentInput,
 ) => {
+  const settings = await getBookingSettings()
   for (let attempt = 1; attempt <= MAX_SERIALIZABLE_ATTEMPTS; attempt += 1) {
     try {
       return await prisma.$transaction(
@@ -61,6 +63,7 @@ export const createAppointmentSerializable = async (
             database: transaction,
             serviceId: service.id,
             dateKey: getLocalDateKey(input.startsAt),
+            settings,
           })
           if (
             !slots.some(slot => slot.startsAt === input.startsAt.toISOString())
@@ -165,6 +168,7 @@ export const moveAppointmentSerializable = async (
     now = new Date(),
   }: MoveAppointmentInput,
 ) => {
+  const settings = await getBookingSettings()
   for (let attempt = 1; attempt <= MAX_SERIALIZABLE_ATTEMPTS; attempt += 1) {
     try {
       return await prisma.$transaction(
@@ -178,7 +182,11 @@ export const moveAppointmentSerializable = async (
           })
           if (
             !appointment ||
-            !canCustomerChangeAppointment(appointment.startsAt, now)
+            !canCustomerChangeAppointment(
+              appointment.startsAt,
+              now,
+              settings.customerChangeCutoffHours,
+            )
           )
             throw new ReservationError('APPOINTMENT_UNAVAILABLE')
 
@@ -188,6 +196,7 @@ export const moveAppointmentSerializable = async (
             dateKey: getLocalDateKey(startsAt),
             now,
             excludeAppointmentId: appointment.id,
+            settings,
           })
           if (!slots.some(slot => slot.startsAt === startsAt.toISOString()))
             throw new ReservationError('SLOT_UNAVAILABLE')
@@ -252,8 +261,9 @@ export const cancelAppointmentSerializable = async (
   appointmentId: string,
   customerId: string,
   now = new Date(),
-) =>
-  prisma.$transaction(
+) => {
+  const settings = await getBookingSettings()
+  return prisma.$transaction(
     async transaction => {
       const appointment = await transaction.appointment.findFirst({
         where: {
@@ -264,7 +274,11 @@ export const cancelAppointmentSerializable = async (
       })
       if (
         !appointment ||
-        !canCustomerChangeAppointment(appointment.startsAt, now)
+        !canCustomerChangeAppointment(
+          appointment.startsAt,
+          now,
+          settings.customerChangeCutoffHours,
+        )
       )
         throw new ReservationError('APPOINTMENT_UNAVAILABLE')
 
@@ -296,3 +310,4 @@ export const cancelAppointmentSerializable = async (
     },
     { isolationLevel: 'Serializable' },
   )
+}

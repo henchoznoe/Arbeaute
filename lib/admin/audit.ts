@@ -103,6 +103,7 @@ export const auditEntityLabels: Record<AuditEntityType, string> = {
   SERVICE_CATEGORY: 'Catégorie',
   WEEKLY_AVAILABILITY: 'Horaire hebdomadaire',
   AVAILABILITY_EXCEPTION: 'Exception horaire',
+  BOOKING_SETTINGS: 'Règles de réservation',
 }
 
 export const auditActionLabels: Record<AuditActionType, string> = {
@@ -141,6 +142,7 @@ export const getAuditEntityHref = (
     event.entityType === 'AVAILABILITY_EXCEPTION'
   )
     return '/admin/availability'
+  if (event.entityType === 'BOOKING_SETTINGS') return '/admin/settings/booking'
   return null
 }
 
@@ -163,6 +165,10 @@ const changeFieldLabels: Record<string, string> = {
   from: 'Du',
   to: 'Au',
   count: 'Nombre de jours',
+  minBookingNoticeHours: 'Préavis minimum',
+  bookingHorizonMonths: 'Horizon de réservation',
+  customerChangeCutoffHours: 'Délai de modification',
+  slotIntervalMinutes: 'Pas des créneaux',
   type: 'Type',
   hadImage: 'Image présente',
   hasImage: 'Image présente',
@@ -202,6 +208,15 @@ const formatAuditValue = (key: string, value: Prisma.JsonValue): string => {
     return `${value} min`
   if (['startMinute', 'endMinute'].includes(key) && typeof value === 'number')
     return `${String(Math.floor(value / 60)).padStart(2, '0')}:${String(value % 60).padStart(2, '0')}`
+  if (
+    ['minBookingNoticeHours', 'customerChangeCutoffHours'].includes(key) &&
+    typeof value === 'number'
+  )
+    return `${value} h`
+  if (key === 'bookingHorizonMonths' && typeof value === 'number')
+    return `${value} mois`
+  if (key === 'slotIntervalMinutes' && typeof value === 'number')
+    return `${value} min`
   if (
     ['startsAt', 'from', 'to'].includes(key) &&
     typeof value === 'string' &&
