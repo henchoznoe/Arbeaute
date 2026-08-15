@@ -123,7 +123,11 @@ export default async function RootLayout({
       lang="fr"
       data-scroll-behavior="smooth"
       suppressHydrationWarning
-      className={cn('antialiased', inter.variable, playfair.variable)}
+      className={cn(
+        'overflow-x-clip antialiased',
+        inter.variable,
+        playfair.variable,
+      )}
     >
       <body suppressHydrationWarning>
         <script

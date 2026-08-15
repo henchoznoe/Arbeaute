@@ -35,13 +35,13 @@ est réévalué après chaque livraison.
 
 | Statut | Éléments |
 | --- | --- |
-| ✅ Terminés | 1 à 23 |
-| 🟡 En cours | 24, enrichi progressivement à chaque livraison |
+| ✅ Terminés | 1 à 24 |
+| 🟡 En cours | Aucun |
 | ⏳ Prêt à démarrer | Aucun |
 | 🔒 Bloqués | Aucun |
 
-**Prochain élément recommandé : 24.** C’est le dernier élément du backlog ; ses
-scénarios peuvent désormais couvrir l’ensemble des fonctionnalités livrées.
+**Backlog livré.** Les 24 éléments sont terminés ; les prochaines évolutions
+peuvent être priorisées à partir des retours d’usage et des métriques internes.
 
 - **Priorité P0** : corrige une friction importante ou prépare plusieurs autres
   éléments.
@@ -649,7 +649,7 @@ et admin, puis auditer contraste, focus, tailles tactiles, zoom texte et
 
 **Dépendances :** aucune ; socle UI des autres éléments.
 
-### 24. Ajouter une recette automatisée mobile et des budgets de qualité — 🟡 En cours
+### 24. Ajouter une recette automatisée mobile et des budgets de qualité — ✅ Terminé
 
 **Priorité : P0 · Effort : L · Nature : nouvelle capacité**
 

@@ -51,6 +51,7 @@ export const AppointmentStatusActions = ({
         {status === 'CONFIRMED' ? (
           <>
             <ConfirmDialog
+              key={`completed-${status}`}
               title={
                 isFuture
                   ? 'Marquer ce rendez-vous futur comme terminé ?'
@@ -82,6 +83,7 @@ export const AppointmentStatusActions = ({
               }
             />
             <ConfirmDialog
+              key={`no-show-${status}`}
               title={
                 isFuture
                   ? 'Marquer ce rendez-vous futur comme absence ?'
@@ -109,6 +111,7 @@ export const AppointmentStatusActions = ({
           </>
         ) : (
           <ConfirmDialog
+            key={`restore-${status}`}
             title="Rétablir ce rendez-vous ?"
             description="Le créneau sera contrôlé à nouveau, préparation et rangement inclus. Le rétablissement sera refusé si un autre rendez-vous confirmé le chevauche."
             confirmLabel="Rétablir le rendez-vous"

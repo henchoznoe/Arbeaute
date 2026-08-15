@@ -89,7 +89,7 @@ export const ServiceCatalog = ({
       </div>
 
       <div className="sticky top-16 z-30 -mx-6 mb-8 border-y bg-background/95 px-6 py-2 backdrop-blur-md">
-        <fieldset className="mx-auto flex max-w-6xl gap-2 overflow-x-auto py-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+        <fieldset className="mx-auto flex min-w-0 max-w-6xl gap-2 overflow-x-auto py-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
           <legend className="sr-only">Filtrer par catégorie</legend>
           <button
             type="button"

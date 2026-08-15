@@ -34,7 +34,8 @@ peut être enregistré, même en cas de réservations simultanées.
 
 ### Features
 
-- **Réservation en trois étapes** — prestation, créneau, coordonnées. Le
+- **Réservation en quatre étapes** — prestation, créneau, coordonnées et
+  vérification. Le
   calendrier charge la semaine entière d'un coup et grise les jours complets ; un
   bouton « prochain créneau disponible » balaie les trois mois à venir.
 - **Espace client sans mot de passe** — identification par email et téléphone,
@@ -66,8 +67,8 @@ peut être enregistré, même en cas de réservations simultanées.
 | Auth | Sessions signées HMAC (admin et client), sans dépendance externe |
 | Validation | Zod (env + schémas runtime) |
 | Dates | date-fns, date-fns-tz (`Europe/Zurich`) |
-| Quality | Biome, knip, husky, lint-staged |
-| Testing | Vitest |
+| Quality | Biome, knip, budgets de build, husky, lint-staged |
+| Testing | Vitest, Playwright mobile |
 | Release | Semantic Release, Conventional Commits |
 | CI/CD | GitHub Actions |
 | Analytics | Vercel Analytics |
@@ -124,6 +125,8 @@ l'administration sur [/admin](http://localhost:3000/admin).
 | `pnpm check:com` | Validation complète : Biome, knip, TypeScript, tests et build |
 | `pnpm knip` | Détection de code et d'exports morts |
 | `pnpm test` | Tests Vitest |
+| `pnpm test:e2e:local` | Recette mobile complète sur une base PostgreSQL éphémère |
+| `pnpm test:e2e:update` | Régénère les captures de référence mobiles sur la base éphémère |
 | `pnpm test:watch` | Tests en mode watch |
 | `pnpm db:up` / `pnpm db:down` | Démarre / arrête PostgreSQL en local |
 | `pnpm db:migrate` | Crée et applique une migration |
@@ -190,8 +193,16 @@ knip (code mort)
   ↓
 vitest run (tests)
   ↓
-next build (build de production)
+next build + budgets de qualité (rendu, JavaScript, images)
+  ↓
+playwright test (2 largeurs mobiles, parcours et PWA sur base isolée)
 ```
+
+La recette Playwright refuse de démarrer si l’application ou la base ne sont pas
+locales, ou si le nom de la base ne se termine pas par `e2e` ou `ci`. En local,
+`pnpm test:e2e:local` crée un PostgreSQL temporaire sur le port 5435, applique les
+migrations, alimente le catalogue, construit l’application puis supprime le
+conteneur à la fin du contrôle.
 
 ### Additional Workflows
 
