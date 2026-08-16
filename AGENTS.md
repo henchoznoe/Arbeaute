@@ -63,6 +63,30 @@ CI runs exactly the `check:com` steps. `main` is released by semantic-release, s
 **PR titles must follow Conventional Commits** (`feat`, `fix`, `chore`, `ci`,
 `docs`, `refactor`, `test`, `perf`). `develop` is the working branch.
 
+### No end-to-end tests — do not add any
+
+**Vitest unit tests are the only automated suite.** Do not add Playwright,
+Cypress, WebdriverIO, Puppeteer, a headless browser, a driven browser, or
+reference screenshots. Do not add an `e2e` script, an `e2e` workflow step, or a
+throwaway database for testing.
+
+A Playwright recipe existed and was removed. On a single-practitioner salon it
+cost a browser to install in CI, an ephemeral PostgreSQL, reference screenshots
+to regenerate and two CI steps — and its screenshots went stale on the very
+first typography change, before catching a single real regression. The
+maintenance outweighed the benefit.
+
+What replaces it:
+
+- `vitest run` for every piece of domain logic, with Prisma mocked;
+- `scripts/verify-build-quality.ts`, called by `pnpm build`, which reads the
+  `next build` output and fails when a public route stops being prerendered or
+  when a JavaScript or image budget is exceeded;
+- manual checks in the browser during development.
+
+If a regression escapes, add a unit test on the function responsible — not a
+browser.
+
 ## Architecture
 
 ### Cache Components is enabled

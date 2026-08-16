@@ -68,7 +68,7 @@ peut être enregistré, même en cas de réservations simultanées.
 | Validation | Zod (env + schémas runtime) |
 | Dates | date-fns, date-fns-tz (`Europe/Zurich`) |
 | Quality | Biome, knip, budgets de build, husky, lint-staged |
-| Testing | Vitest, Playwright mobile |
+| Testing | Vitest (tests unitaires uniquement) |
 | Release | Semantic Release, Conventional Commits |
 | CI/CD | GitHub Actions |
 | Analytics | Vercel Analytics |
@@ -125,8 +125,6 @@ l'administration sur [/admin](http://localhost:3000/admin).
 | `pnpm check:com` | Validation complète : Biome, knip, TypeScript, tests et build |
 | `pnpm knip` | Détection de code et d'exports morts |
 | `pnpm test` | Tests Vitest |
-| `pnpm test:e2e:local` | Recette mobile complète sur une base PostgreSQL éphémère |
-| `pnpm test:e2e:update` | Régénère les captures de référence mobiles sur la base éphémère |
 | `pnpm test:watch` | Tests en mode watch |
 | `pnpm db:up` / `pnpm db:down` | Démarre / arrête PostgreSQL en local |
 | `pnpm db:migrate` | Crée et applique une migration |
@@ -194,15 +192,26 @@ knip (code mort)
 vitest run (tests)
   ↓
 next build + budgets de qualité (rendu, JavaScript, images)
-  ↓
-playwright test (2 largeurs mobiles, parcours et PWA sur base isolée)
 ```
 
-La recette Playwright refuse de démarrer si l’application ou la base ne sont pas
-locales, ou si le nom de la base ne se termine pas par `e2e` ou `ci`. En local,
-`pnpm test:e2e:local` crée un PostgreSQL temporaire sur le port 5435, applique les
-migrations, alimente le catalogue, construit l’application puis supprime le
-conteneur à la fin du contrôle.
+`pnpm check:com` reproduit exactement cette chaîne en local : c’est la seule
+porte de qualité du projet.
+
+### Stratégie de test
+
+**Uniquement des tests unitaires Vitest.** Le projet n’a aucun test de bout en
+bout et n’en aura pas : voir la règle et sa justification dans
+[AGENTS.md](AGENTS.md).
+
+Ce qui tient lieu de garde-fou à la place :
+
+- `vitest run` couvre le moteur de disponibilité, la concurrence, les sessions,
+  les actions serveur et les fonctions de formatage ;
+- `scripts/verify-build-quality.ts`, appelé par `pnpm build`, analyse la sortie
+  de `next build` : il échoue si une route publique cesse d’être prérendue ou si
+  un budget JavaScript ou image est dépassé ;
+- `tests/quality/service-worker.test.ts` vérifie que le service worker ne met en
+  cache que la coquille et la page hors ligne.
 
 ### Additional Workflows
 

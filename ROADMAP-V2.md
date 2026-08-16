@@ -53,9 +53,9 @@ figure dans le titre et se réévalue après chaque livraison.
 
 | Statut | Éléments |
 | --- | --- |
-| ✅ Terminés | 1 à 6 |
+| ✅ Terminés | 1 à 6, 12 |
 | 🟡 En cours | Aucun |
-| ⏳ Prêt à démarrer | 7 à 13 |
+| ⏳ Prêt à démarrer | 7 à 11, 13 |
 | 🔒 Bloqués | Aucun |
 
 Les fondations visuelles sont posées et l’agenda d’Arzu est traité de bout en
@@ -584,7 +584,7 @@ avec les autres variables, et documentée dans `.env.example`.
 
 ## Fiabilité, cohérence et garde-fous
 
-### 12. Supprimer et bannir les tests de bout en bout — ⏳ Prêt à démarrer
+### 12. Supprimer et bannir les tests de bout en bout — ✅ Terminé
 
 **Priorité : P0 · Effort : S · Nature : retrait**
 
@@ -621,7 +621,26 @@ un test Vitest ordinaire.
 - `README.md` décrit la stratégie de test réelle : Vitest, plus les vérifications
   de build.
 
-**Dépendances :** aucune ; à faire tôt, car l’élément 1 invaliderait les captures.
+**Livré.** `tests/e2e/`, ses quatre captures de référence, `playwright.config.ts`,
+`docker-compose.e2e.yml` et `scripts/run-e2e-local.sh` sont supprimés, avec la
+dépendance `@playwright/test`, les trois scripts `test:e2e*`, l’exclusion
+devenue inutile de `vitest.config.ts`, les trois étapes E2E de la CI et les deux
+entrées de `.gitignore`. `AGENTS.md` porte désormais une section **« No
+end-to-end tests — do not add any »** qui nomme les outils interdits, explique
+pourquoi la recette a été retirée et indique quoi faire à la place. `README.md`
+décrit la stratégie réelle.
+
+**Un piège de gestionnaire de paquets.** `next` déclare `@playwright/test` en
+peer *optionnel* : retirer la dépendance ne suffit pas, pnpm continue de la
+résoudre tant que le lockfile n’est pas re-résolu. `pnpm-workspace.yaml` déclare
+donc `ignoredOptionalDependencies`, et le lockfile a été régénéré — au prix du
+rafraîchissement d’une quarantaine de paquets transitifs, isolé dans son propre
+commit.
+
+**Conservés.** `scripts/verify-build-quality.ts`, qui lit la sortie de
+`next build`, et `tests/quality/service-worker.test.ts`, qui est un test Vitest.
+
+**Dépendances :** aucune.
 
 ### 13. Éliminer les incohérences visibles par une non-technicienne — ⏳ Prêt à démarrer
 
@@ -664,17 +683,11 @@ remplacent la couverture perdue avec l’élément 12.
 Sans calendrier, mais avec un enchaînement qui évite de refaire deux fois le même
 travail :
 
-1. **Retirer les tests E2E (12) sans attendre.** Les éléments 1 et 2 ayant été
-   livrés avant, les quatre captures de référence de
-   `tests/e2e/mobile-shells.spec.ts-snapshots/` montrent encore Inter et
-   Playfair : elles sont **périmées**. `pnpm check:com` n’en dépend pas, mais
-   l’étape « Mobile E2E recipe » de `.github/workflows/ci.yml` échouera au
-   prochain push tant que l’élément 12 n’est pas fait.
-2. **Passer au vocabulaire (7)** : l’agenda est en place, mais il parle encore
+1. **Passer au vocabulaire (7)** : l’agenda est en place, mais il parle encore
    de « statut métier », d’« occupation » et de « journal d’audit ».
-3. **Mettre en place les e-mails (11)**, qui débloquent la réécriture de la
+2. **Mettre en place les e-mails (11)**, qui débloquent la réécriture de la
    confirmation (10) et fixent le vocabulaire (7).
-4. **Finir par la vitrine et le tunnel (8, 9)** et par la chasse aux
+3. **Finir par la vitrine et le tunnel (8, 9)** et par la chasse aux
    incohérences (13), qui bénéficient de toutes les décisions précédentes.
 
 Chaque livraison conserve les invariants de sécurité, de cache, de fuseau horaire

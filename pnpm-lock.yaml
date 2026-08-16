@@ -78,9 +78,6 @@ importers:
       '@biomejs/biome':
         specifier: 2.5.7
         version: 2.5.7
-      '@playwright/test':
-        specifier: ^1.62.1
-        version: 1.62.1
       '@semantic-release/changelog':
         specifier: ^7.0.0
         version: 7.0.0(semantic-release@25.0.9(supports-color@7.2.0)(typescript@7.0.2))
@@ -5294,6 +5291,9 @@ packages:
   zod@4.4.3:
     resolution: {integrity: sha512-ytENFjIJFl2UwYglde2jchW2Hwm4GJFLDiSXWdTrJQBIN9Fcyp7n4DhxJEiWNAJMV1/BqWfW/kkg71UDcHJyTQ==}
 
+ignoredOptionalDependencies:
+  - '@playwright/test'
+
 snapshots:
 
   '@actions/core@3.0.1':
@@ -6086,6 +6086,7 @@ snapshots:
   '@playwright/test@1.62.1':
     dependencies:
       playwright: 1.62.1
+    optional: true
 
   '@pnpm/config.env-replace@1.1.0': {}
 
@@ -9160,13 +9161,15 @@ snapshots:
     dependencies:
       find-up: 3.0.0
 
-  playwright-core@1.62.1: {}
+  playwright-core@1.62.1:
+    optional: true
 
   playwright@1.62.1:
     dependencies:
       playwright-core: 1.62.1
     optionalDependencies:
       fsevents: 2.3.2
+    optional: true
 
   postcss-selector-parser@7.1.5:
     dependencies:
