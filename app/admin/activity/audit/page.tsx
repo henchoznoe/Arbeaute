@@ -88,8 +88,8 @@ const AuditHistory = async ({ searchParams }: Readonly<AuditPageProps>) => {
         <p className="text-sm font-medium text-brand">Arbeauté</p>
         <h1 className="font-heading text-title font-bold">Activité</h1>
         <p className="mt-1 text-sm text-muted-foreground">
-          {totalCount} événement{totalCount > 1 ? 's' : ''} dans le journal non
-          modifiable
+          {totalCount} modification{totalCount > 1 ? 's' : ''} enregistrée
+          {totalCount > 1 ? 's' : ''}. Cet historique ne peut pas être effacé.
         </p>
       </header>
 
@@ -97,11 +97,11 @@ const AuditHistory = async ({ searchParams }: Readonly<AuditPageProps>) => {
 
       <form className="mt-5 rounded-2xl border bg-card p-4 shadow-sm">
         <p className="flex items-center gap-2 text-sm font-semibold">
-          <Filter className="size-4" /> Filtrer le journal
+          <Filter className="size-4" /> Filtrer l’historique
         </p>
         <div className="mt-3 grid gap-3 sm:grid-cols-3">
           <label className="text-xs font-medium text-muted-foreground">
-            Acteur
+            Qui
             <select
               name="actor"
               defaultValue={filters.actor ?? ''}
@@ -116,7 +116,7 @@ const AuditHistory = async ({ searchParams }: Readonly<AuditPageProps>) => {
             </select>
           </label>
           <label className="text-xs font-medium text-muted-foreground">
-            Entité
+            Quoi
             <select
               name="entity"
               defaultValue={filters.entity ?? ''}
@@ -158,13 +158,13 @@ const AuditHistory = async ({ searchParams }: Readonly<AuditPageProps>) => {
         </div>
       </form>
 
-      <section className="mt-5" aria-label="Journal d’audit">
+      <section className="mt-5" aria-label="Historique des modifications">
         <AuditList events={events} />
       </section>
 
       {totalPages > 1 ? (
         <nav
-          aria-label="Pagination du journal"
+          aria-label="Pagination de l’historique"
           className="mt-5 grid grid-cols-2 gap-3"
         >
           {page > 1 ? (

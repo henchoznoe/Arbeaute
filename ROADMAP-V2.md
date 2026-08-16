@@ -53,9 +53,9 @@ figure dans le titre et se réévalue après chaque livraison.
 
 | Statut | Éléments |
 | --- | --- |
-| ✅ Terminés | 1 à 6, 12 |
+| ✅ Terminés | 1 à 7, 12 |
 | 🟡 En cours | Aucun |
-| ⏳ Prêt à démarrer | 7 à 11, 13 |
+| ⏳ Prêt à démarrer | 8 à 11, 13 |
 | 🔒 Bloqués | Aucun |
 
 Les fondations visuelles sont posées et l’agenda d’Arzu est traité de bout en
@@ -411,7 +411,7 @@ Activité.
 
 **Dépendances :** élément 4.
 
-### 7. Écrire l’administration en français simple — ⏳ Prêt à démarrer
+### 7. Écrire l’administration en français simple — ✅ Terminé
 
 **Priorité : P1 · Effort : M · Nature : amélioration**
 
@@ -444,7 +444,33 @@ toute ambiguïté (« Supprimer ce rendez-vous » face à « Revenir en arrière
 - les termes retenus sont cohérents entre l’admin, le site public et les
   e-mails.
 
-**Dépendances :** élément 11 pour la cohérence des libellés avec les e-mails.
+**Livré.** [docs/vocabulaire.md](docs/vocabulaire.md) fixe les termes retenus et
+liste les vingt-six formulations bannies avec leur remplaçant : « occupation »
+devient « temps rempli », « chiffre prévu » devient « recette attendue »,
+« journal d’audit » devient « historique des modifications », « anonymiser une
+cliente » devient « effacer les coordonnées d’une cliente », « prépa / rangement »
+devient « installation et rangement ». `AGENTS.md` renvoie à ce document avant
+d’écrire le moindre libellé.
+
+Les quatre règles de réservation portent désormais une phrase construite à
+partir de la valeur enregistrée — « Avec 12 heures, une cliente qui regarde le
+site à 8 h du matin ne peut rien prendre avant 20 h le jour même. » Ces phrases
+vivent dans `lib/admin/booking-settings-wording.ts` et sont couvertes par dix
+tests unitaires, dont un qui vérifie qu’au-delà de vingt-quatre heures la phrase
+ne cite plus d’heure trompeuse. Au passage, les quatre `<label>` de cet écran,
+qui avaient échappé à la migration de l’élément 2, passent à `FormField`.
+
+L’ambiguïté du mot « annuler » est levée partout : le dialogue oppose
+maintenant « Non, le garder » à « Oui, annuler ce rendez-vous ». Vingt et un
+messages d’erreur sont réécrits pour dire quoi faire ensuite : « Cette heure est
+déjà prise, temps d’installation et de rangement compris. Choisissez une autre
+heure. »
+
+**Réserve.** La cohérence avec les e-mails ne peut pas encore être constatée :
+l’élément 11 n’est pas livré. Le vocabulaire est posé en amont, c’est à lui de
+s’y conformer.
+
+**Dépendances :** aucune ; fixe le vocabulaire que l’élément 11 devra suivre.
 
 ---
 
@@ -683,11 +709,9 @@ remplacent la couverture perdue avec l’élément 12.
 Sans calendrier, mais avec un enchaînement qui évite de refaire deux fois le même
 travail :
 
-1. **Passer au vocabulaire (7)** : l’agenda est en place, mais il parle encore
-   de « statut métier », d’« occupation » et de « journal d’audit ».
-2. **Mettre en place les e-mails (11)**, qui débloquent la réécriture de la
+1. **Mettre en place les e-mails (11)**, qui débloquent la réécriture de la
    confirmation (10) et fixent le vocabulaire (7).
-3. **Finir par la vitrine et le tunnel (8, 9)** et par la chasse aux
+2. **Finir par la vitrine et le tunnel (8, 9)** et par la chasse aux
    incohérences (13), qui bénéficient de toutes les décisions précédentes.
 
 Chaque livraison conserve les invariants de sécurité, de cache, de fuseau horaire

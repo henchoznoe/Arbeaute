@@ -35,10 +35,17 @@ export const previewCustomerAnonymization = async (
   input: unknown,
 ): Promise<AnonymizationResult> => {
   if (!(await requireAdminMutation()))
-    return { ok: false, message: 'Votre session admin a expiré.' }
+    return {
+      ok: false,
+      message: 'Votre session a expiré. Reconnectez-vous, puis recommencez.',
+    }
   const parsed = identitySchema.safeParse(input)
   if (!parsed.success)
-    return { ok: false, message: 'Vérifiez les coordonnées saisies.' }
+    return {
+      ok: false,
+      message:
+        'L’email ou le téléphone n’est pas au bon format. Corrigez-les, puis réessayez.',
+    }
 
   try {
     const email = normalizeEmail(parsed.data.email)
@@ -50,11 +57,16 @@ export const previewCustomerAnonymization = async (
     if (!preview)
       return {
         ok: false,
-        message: 'Aucune cliente active ne correspond à ces coordonnées.',
+        message:
+          'Aucune cliente ne correspond à cet email et à ce téléphone. Vérifiez les deux, en les recopiant depuis un de ses rendez-vous.',
       }
     return { ok: true, message: 'Cliente trouvée.', preview }
   } catch {
-    return { ok: false, message: 'Vérifiez les coordonnées saisies.' }
+    return {
+      ok: false,
+      message:
+        'L’email ou le téléphone n’est pas au bon format. Corrigez-les, puis réessayez.',
+    }
   }
 }
 
@@ -62,10 +74,17 @@ export const confirmCustomerAnonymization = async (
   input: unknown,
 ): Promise<AnonymizationResult> => {
   if (!(await requireAdminMutation()))
-    return { ok: false, message: 'Votre session admin a expiré.' }
+    return {
+      ok: false,
+      message: 'Votre session a expiré. Reconnectez-vous, puis recommencez.',
+    }
   const parsed = anonymizationSchema.safeParse(input)
   if (!parsed.success)
-    return { ok: false, message: 'La confirmation est invalide.' }
+    return {
+      ok: false,
+      message:
+        'La phrase recopiée ne correspond pas. Recopiez-la exactement, accents compris.',
+    }
 
   try {
     const result = await anonymizeCustomer(

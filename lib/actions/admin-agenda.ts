@@ -153,14 +153,14 @@ export const searchAdminCustomers = async (
   if (!(await requireAdminMutation()))
     return {
       ok: false,
-      message: 'Votre session admin a expiré.',
+      message: 'Votre session a expiré. Reconnectez-vous, puis recommencez.',
       customers: [],
     }
   const parsed = z.string().trim().min(2).max(100).safeParse(input)
   if (!parsed.success)
     return {
       ok: false,
-      message: 'Saisissez au moins deux caractères.',
+      message: 'Saisissez au moins deux lettres pour lancer la recherche.',
       customers: [],
     }
   const query = parsed.data
@@ -201,7 +201,8 @@ export const searchAdminCustomers = async (
   } catch {
     return {
       ok: false,
-      message: 'La recherche des clientes est momentanément indisponible.',
+      message:
+        'La recherche ne répond pas pour le moment. Réessayez dans un instant.',
       customers: [],
     }
   }
@@ -211,14 +212,22 @@ export const previewAdminAppointmentSeries = async (
   input: AdminAppointmentSeriesFormInput,
 ): Promise<AdminAppointmentSeriesResult> => {
   if (!(await requireAdminMutation()))
-    return { ok: false, message: 'Votre session admin a expiré.' }
+    return {
+      ok: false,
+      message: 'Votre session a expiré. Reconnectez-vous, puis recommencez.',
+    }
   const parsed = appointmentSeriesSchema.safeParse(input)
   if (!parsed.success)
-    return { ok: false, message: 'Vérifiez les informations de la série.' }
+    return {
+      ok: false,
+      message:
+        'Les informations de la répétition sont incomplètes. Vérifiez le nombre de rendez-vous et le rythme choisi.',
+    }
   if (parseMinute(parsed.data.time) % 15 !== 0)
     return {
       ok: false,
-      message: 'L’heure de début doit être alignée au quart d’heure.',
+      message:
+        'L’heure doit tomber sur un quart d’heure : 9:00, 9:15, 9:30 ou 9:45.',
     }
   try {
     const preview = await previewAppointmentSeries(
@@ -235,7 +244,8 @@ export const previewAdminAppointmentSeries = async (
   } catch {
     return {
       ok: false,
-      message: 'La série n’a pas pu être prévisualisée.',
+      message:
+        'Les dates n’ont pas pu être calculées. Vérifiez la date de départ, puis réessayez.',
     }
   }
 }
@@ -244,14 +254,22 @@ export const createAdminAppointmentSeries = async (
   input: AdminAppointmentSeriesFormInput,
 ): Promise<AdminAppointmentSeriesResult> => {
   if (!(await requireAdminMutation()))
-    return { ok: false, message: 'Votre session admin a expiré.' }
+    return {
+      ok: false,
+      message: 'Votre session a expiré. Reconnectez-vous, puis recommencez.',
+    }
   const parsed = appointmentSeriesSchema.safeParse(input)
   if (!parsed.success)
-    return { ok: false, message: 'Vérifiez les informations de la série.' }
+    return {
+      ok: false,
+      message:
+        'Les informations de la répétition sont incomplètes. Vérifiez le nombre de rendez-vous et le rythme choisi.',
+    }
   if (parseMinute(parsed.data.time) % 15 !== 0)
     return {
       ok: false,
-      message: 'L’heure de début doit être alignée au quart d’heure.',
+      message:
+        'L’heure doit tomber sur un quart d’heure : 9:00, 9:15, 9:30 ou 9:45.',
     }
   try {
     const appointments = await createAdminAppointmentSeriesSerializable(
@@ -275,7 +293,11 @@ export const createAdminAppointmentSeries = async (
         preview: error.preview,
         needsOutsideHoursConfirmation: error.code === 'OUTSIDE_HOURS',
       }
-    return { ok: false, message: 'Aucun rendez-vous de la série n’a été créé.' }
+    return {
+      ok: false,
+      message:
+        'Aucun rendez-vous n’a été créé. Corrigez les dates signalées, puis relancez la vérification.',
+    }
   }
 }
 
@@ -283,16 +305,24 @@ export const saveAdminAppointment = async (
   input: AdminAppointmentFormInput,
 ): Promise<AdminAppointmentResult> => {
   if (!(await requireAdminMutation()))
-    return { ok: false, message: 'Votre session admin a expiré.' }
+    return {
+      ok: false,
+      message: 'Votre session a expiré. Reconnectez-vous, puis recommencez.',
+    }
   const parsed = appointmentSchema.safeParse(input)
   if (!parsed.success)
-    return { ok: false, message: 'Vérifiez les informations saisies.' }
+    return {
+      ok: false,
+      message:
+        'Certaines informations sont incomplètes ou mal formées. Corrigez les champs signalés, puis réessayez.',
+    }
 
   const minute = parseMinute(parsed.data.time)
   if (minute % 15 !== 0)
     return {
       ok: false,
-      message: 'L’heure de début doit être alignée au quart d’heure.',
+      message:
+        'L’heure doit tomber sur un quart d’heure : 9:00, 9:15, 9:30 ou 9:45.',
     }
 
   let email: string | null = null
@@ -345,9 +375,14 @@ export const saveAdminAppointment = async (
     if (error instanceof AdminAgendaError && error.code === 'OVERLAP')
       return {
         ok: false,
-        message: 'Ce créneau chevauche déjà un rendez-vous confirmé.',
+        message:
+          'Cette heure est déjà prise, temps d’installation et de rangement compris. Choisissez une autre heure.',
       }
-    return { ok: false, message: 'Le rendez-vous n’a pas pu être enregistré.' }
+    return {
+      ok: false,
+      message:
+        'Le rendez-vous n’a pas pu être enregistré. Réessayez ; si cela recommence, notez l’heure et prévenez Noé.',
+    }
   }
 }
 
@@ -355,7 +390,10 @@ export const cancelAdminAppointment = async (
   appointmentId: string,
 ): Promise<AdminAppointmentResult> => {
   if (!(await requireAdminMutation()))
-    return { ok: false, message: 'Votre session admin a expiré.' }
+    return {
+      ok: false,
+      message: 'Votre session a expiré. Reconnectez-vous, puis recommencez.',
+    }
   const parsedId = z.string().min(1).safeParse(appointmentId)
   if (!parsedId.success)
     return { ok: false, message: 'Ce rendez-vous est invalide.' }
@@ -365,7 +403,11 @@ export const cancelAdminAppointment = async (
     revalidatePath('/mes-rendez-vous')
     return { ok: true, message: 'Le rendez-vous a été annulé.' }
   } catch {
-    return { ok: false, message: 'Ce rendez-vous ne peut plus être annulé.' }
+    return {
+      ok: false,
+      message:
+        'Ce rendez-vous n’est plus actif : il a déjà été annulé ou terminé.',
+    }
   }
 }
 
@@ -557,7 +599,10 @@ export const deleteAvailabilityExceptionGroup = async (
   groupId: string,
 ): Promise<{ ok: boolean; message: string }> => {
   if (!(await requireAdminMutation()))
-    return { ok: false, message: 'Votre session admin a expiré.' }
+    return {
+      ok: false,
+      message: 'Votre session a expiré. Reconnectez-vous, puis recommencez.',
+    }
   const parsed = z.string().min(1).safeParse(groupId)
   if (!parsed.success)
     return { ok: false, message: 'Cette période est invalide.' }

@@ -56,10 +56,15 @@ export const CustomerAnonymization = () => {
           <ShieldAlert className="size-5" />
         </span>
         <div>
-          <h2 className="text-xl font-semibold">Anonymiser une cliente</h2>
+          <h2 className="text-xl font-semibold">
+            Effacer les coordonnées d’une cliente
+          </h2>
           <p className="mt-1 text-sm leading-relaxed text-muted-foreground">
-            Cette action est irréversible. Elle conserve uniquement les données
-            nécessaires aux rendez-vous et statistiques comptables.
+            À utiliser quand une cliente demande la suppression de ses données.
+            Son nom, son email et son téléphone disparaissent définitivement.
+            Les rendez-vous restent, sans nom, pour que vos chiffres restent
+            justes. <strong className="font-semibold">C’est définitif :</strong>{' '}
+            on ne peut pas revenir en arrière.
           </p>
         </div>
       </div>
@@ -112,15 +117,22 @@ export const CustomerAnonymization = () => {
         <div className="mt-5 rounded-2xl border border-destructive/20 bg-destructive/5 p-4">
           <p className="font-semibold">{preview.displayName}</p>
           <ul className="mt-2 space-y-1 text-sm text-muted-foreground">
-            <li>{preview.appointmentCount} rendez-vous seront nettoyés</li>
             <li>
-              {preview.activityCount} activités clientes seront anonymisées
+              {preview.appointmentCount} rendez-vous perdront le nom et les
+              coordonnées
             </li>
-            <li>Les sessions clientes actives seront invalidées</li>
+            <li>
+              {preview.activityCount} ligne
+              {preview.activityCount > 1 ? 's' : ''} d’activité perdront le nom
+            </li>
+            <li>
+              Si elle est connectée à « Mes rendez-vous », elle en sera
+              déconnectée
+            </li>
           </ul>
           <FormField
             controlId="anonymization-confirmation"
-            label="Recopiez exactement la phrase suivante"
+            label="Pour confirmer, recopiez exactement cette phrase"
             help={
               <code className="select-all font-semibold text-foreground">
                 {preview.confirmation}
@@ -144,7 +156,9 @@ export const CustomerAnonymization = () => {
             onClick={handleConfirmation}
             className="mt-4 w-full"
           >
-            {isPending ? 'Anonymisation…' : 'Anonymiser définitivement'}
+            {isPending
+              ? 'Effacement en cours…'
+              : 'Effacer définitivement ces coordonnées'}
           </Button>
         </div>
       ) : null}

@@ -253,7 +253,7 @@ export const AvailabilityExceptionCalendar = ({
           </Button>
           <div className="text-center">
             <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-              Calendrier des exceptions
+              Jours particuliers
             </p>
             <h2 className="font-heading text-2xl font-bold capitalize">
               {monthLabel}
@@ -329,7 +329,7 @@ export const AvailabilityExceptionCalendar = ({
           }
           className="mt-4 w-full sm:w-auto"
         >
-          <Plus className="size-4" /> Ajouter une exception
+          <Plus className="size-4" /> Ajouter un jour particulier
         </Button>
       </section>
 
@@ -367,8 +367,8 @@ export const AvailabilityExceptionCalendar = ({
                     <p className="font-semibold">
                       {group.label ||
                         (group.type === 'AVAILABLE'
-                          ? 'Ouverture exceptionnelle'
-                          : 'Fermeture exceptionnelle')}
+                          ? 'Ouverture en plus'
+                          : 'Institut fermé')}
                     </p>
                     <p className="mt-1 text-xs text-muted-foreground">
                       {formatShortDate(group.from)}
@@ -383,9 +383,10 @@ export const AvailabilityExceptionCalendar = ({
                   </div>
                 </div>
                 <ConfirmDialog
-                  title={`Supprimer ${group.dayCount} jour${group.dayCount > 1 ? 's' : ''} d’exception ?`}
-                  description={`Toute la période du ${formatShortDate(group.from)}${group.to !== group.from ? ` au ${formatShortDate(group.to)}` : ''} sera supprimée en une seule opération.`}
-                  confirmLabel="Supprimer la période"
+                  title={`Supprimer ${group.dayCount} jour${group.dayCount > 1 ? 's' : ''} particulier${group.dayCount > 1 ? 's' : ''} ?`}
+                  description={`Toute la période du ${formatShortDate(group.from)}${group.to !== group.from ? ` au ${formatShortDate(group.to)}` : ''} sera supprimée d’un coup, et vos horaires habituels reprendront sur ces jours.`}
+                  confirmLabel="Oui, supprimer cette période"
+                  cancelLabel="Non, la garder"
                   onConfirm={() => removeGroup(group.groupId)}
                   pending={pending}
                   trigger={
@@ -404,7 +405,8 @@ export const AvailabilityExceptionCalendar = ({
           </ul>
         ) : (
           <p className="mt-4 rounded-xl bg-muted p-4 text-sm text-muted-foreground">
-            Aucune exception sur ce mois.
+            Aucun jour particulier ce mois-ci : vos horaires habituels
+            s’appliquent partout.
           </p>
         )}
       </section>
@@ -416,13 +418,14 @@ export const AvailabilityExceptionCalendar = ({
             <div className="flex items-start justify-between gap-3">
               <div>
                 <p className="text-xs font-semibold uppercase tracking-wide text-brand">
-                  Nouvelle exception
+                  Jour particulier
                 </p>
                 <Dialog.Title className="mt-1 font-heading text-2xl font-bold capitalize">
                   {formatDate(selectedDate)}
                 </Dialog.Title>
                 <Dialog.Description className="mt-1 text-sm text-muted-foreground">
-                  Ajoutez une ouverture ou une fermeture exceptionnelle.
+                  Fermez l’institut sur ce jour, ou ouvrez des heures en plus de
+                  vos horaires habituels.
                 </Dialog.Description>
               </div>
               <Dialog.Close asChild>

@@ -37,10 +37,17 @@ export const searchAdminAppointments = async (
   input: AdminSearchInput,
 ): Promise<AdminSearchActionResult> => {
   if (!(await getAdminSession()) || !(await hasSameOrigin()))
-    return { ok: false, message: 'Votre session admin a expiré.' }
+    return {
+      ok: false,
+      message: 'Votre session a expiré. Reconnectez-vous, puis recommencez.',
+    }
   const parsed = searchSchema.safeParse(input)
   if (!parsed.success)
-    return { ok: false, message: 'Vérifiez les filtres de recherche.' }
+    return {
+      ok: false,
+      message:
+        'Un des filtres n’est pas valable. Réinitialisez-les, puis relancez la recherche.',
+    }
   try {
     const result = await getAdminSearchPage(prisma, parsed.data)
     return {
@@ -51,7 +58,8 @@ export const searchAdminAppointments = async (
   } catch {
     return {
       ok: false,
-      message: 'La recherche est momentanément indisponible.',
+      message:
+        'La recherche ne répond pas pour le moment. Réessayez dans un instant.',
     }
   }
 }

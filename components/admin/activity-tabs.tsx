@@ -28,7 +28,7 @@ export const ActivityTabs = ({
           : 'text-muted-foreground'
       }`}
     >
-      <ClipboardList className="size-4" /> Journal admin
+      <ClipboardList className="size-4" /> Mes modifications
     </Link>
   </nav>
 )

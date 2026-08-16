@@ -45,12 +45,16 @@ const minuteLabel = (minute: number) =>
 const fieldClass = `${formControlClass} min-w-0`
 
 const errorMessages: Record<string, string> = {
-  'invalid-range': 'La plage horaire est invalide.',
-  'overlap-range': 'Cette plage chevauche un horaire existant.',
-  'invalid-exception': 'L’exception saisie est invalide.',
+  'invalid-range':
+    'L’heure de fin doit être après l’heure de début. Corrigez les deux heures et réessayez.',
+  'overlap-range':
+    'Cet horaire se superpose à un autre du même jour. Modifiez-le ou supprimez d’abord celui qui existe.',
+  'invalid-exception':
+    'La date ou les heures saisies ne sont pas valables. Vérifiez le jour, l’heure de début et l’heure de fin.',
   'overlap-exception':
-    'Cette plage chevauche une ouverture ou une fermeture existante.',
-  'range-too-long': 'Cette période est trop longue (180 jours maximum).',
+    'Cette période se superpose à une ouverture ou une fermeture déjà enregistrée. Supprimez-la d’abord, ou choisissez d’autres heures.',
+  'range-too-long':
+    'La période dépasse 180 jours. Découpez-la en plusieurs périodes plus courtes.',
 }
 
 interface AvailabilityPageProps {
@@ -131,11 +135,13 @@ const Availability = async ({
           </Link>
         </Button>
         <h1 className="mt-2 font-heading text-title font-bold">
-          Horaires et exceptions
+          Vos horaires d’ouverture
         </h1>
         <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
-          Les horaires définissent les créneaux publics. Une ouverture
-          exceptionnelle ajoute une plage ; une fermeture la bloque.
+          Les horaires de la semaine décident des heures que vos clientes voient
+          en ligne. Pour un jour particulier — vacances, ouverture spéciale —
+          ajoutez une exception au calendrier : une fermeture retire des heures,
+          une ouverture en ajoute.
         </p>
       </header>
 

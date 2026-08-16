@@ -204,3 +204,7 @@ startup if anything is missing — add new variables there and to `.env.example`
   `@/prisma/generated/prisma/client`), not from `@prisma/client`.
 - Comments explain *why*, in French, and are used sparingly on non-obvious
   decisions (caching choices, concurrency, timezone rules). Follow that density.
+- **User-facing wording follows [docs/vocabulaire.md](docs/vocabulaire.md).**
+  Neither the owner nor her clients have ever administered a website, so no
+  screen may expose the data model's vocabulary. Check the banned-terms table
+  before writing a label, a setting description or an error message.

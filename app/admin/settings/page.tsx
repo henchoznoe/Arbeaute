@@ -35,8 +35,8 @@ const Settings = async () => {
           </span>
           <h2 className="mt-5 text-xl font-semibold">Réservation</h2>
           <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
-            Régler le préavis, l’horizon, le délai de modification et le pas des
-            créneaux.
+            Combien de temps à l’avance réserver, jusqu’à quand, et jusqu’à
+            quand une cliente peut changer son rendez-vous.
           </p>
           <span className="mt-5 inline-flex min-h-11 items-center text-sm font-medium text-primary">
             Gérer les règles →
@@ -52,7 +52,7 @@ const Settings = async () => {
           </span>
           <h2 className="mt-5 text-xl font-semibold">Horaires</h2>
           <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
-            Définir les horaires hebdomadaires, les fermetures et les ouvertures
+            Vos heures d’ouverture de la semaine, vos vacances et vos ouvertures
             exceptionnelles.
           </p>
           <span className="mt-5 inline-flex min-h-11 items-center text-sm font-medium text-primary">
@@ -69,8 +69,8 @@ const Settings = async () => {
           </span>
           <h2 className="mt-5 text-xl font-semibold">Données</h2>
           <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
-            Exporter les données, anonymiser une cliente et vérifier les
-            procédures de sauvegarde et restauration.
+            Télécharger vos données, effacer les coordonnées d’une cliente qui
+            le demande, et vérifier vos sauvegardes.
           </p>
           <span className="mt-5 inline-flex min-h-11 items-center text-sm font-medium text-primary">
             Gérer les données →
@@ -86,8 +86,8 @@ const Settings = async () => {
           </span>
           <h2 className="mt-5 text-xl font-semibold">Prestations</h2>
           <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
-            Modifier le catalogue, les prix, les durées et l’ordre d’affichage
-            des soins.
+            Vos soins, leurs prix, leurs durées et l’ordre dans lequel ils
+            apparaissent sur le site.
           </p>
           <span className="mt-5 inline-flex min-h-11 items-center text-sm font-medium text-primary">
             Gérer les prestations →

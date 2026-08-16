@@ -119,16 +119,19 @@ const EditAppointment = async ({
       </div>
       <p className="mt-2 text-sm text-muted-foreground">
         {appointment.status === 'CONFIRMED'
-          ? 'Le changement de prestation actualise la durée et le prix conservés sur ce rendez-vous.'
-          : 'Les informations sont conservées en lecture seule tant que le rendez-vous n’est pas rétabli.'}
+          ? 'Si vous changez de soin, la durée et le prix de ce rendez-vous sont mis à jour automatiquement.'
+          : 'Ce rendez-vous n’est plus actif. Vous pouvez le consulter, mais pas le modifier tant que vous ne l’avez pas rétabli.'}
       </p>
 
       {/* Même trio d'actions que dans la liste du jour — appeler, puis changer
           le statut — pour qu'Arzu n'ait qu'un seul geste à mémoriser. */}
       <section className="mt-6 rounded-3xl border bg-card p-5 shadow-sm sm:p-6">
-        <h2 className="text-lg font-semibold">Statut métier</h2>
+        <h2 className="text-lg font-semibold">
+          Appeler ou noter ce qui s’est passé
+        </h2>
         <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
-          Chaque changement est daté et enregistré dans le journal d’audit.
+          Chaque changement est daté et conservé dans l’historique des
+          modifications.
         </p>
         <CustomerCallButton
           phone={appointment.customerPhone}

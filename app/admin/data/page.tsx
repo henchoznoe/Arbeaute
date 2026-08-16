@@ -57,9 +57,9 @@ const DataManagement = async () => {
           Données et confidentialité
         </h1>
         <p className="mt-2 max-w-3xl text-sm leading-relaxed text-muted-foreground">
-          Exportez les données directement sur votre appareil, anonymisez une
-          cliente ou consultez la procédure de sauvegarde locale. Aucun fichier
-          n’est conservé dans Blob.
+          Téléchargez vos données sur votre appareil, effacez les coordonnées
+          d’une cliente qui le demande, ou consultez la marche à suivre pour
+          sauvegarder. Rien n’est stocké en ligne au passage.
         </p>
       </header>
 
@@ -70,10 +70,11 @@ const DataManagement = async () => {
           </span>
           <div>
             <h2 id="exports-title" className="text-xl font-semibold">
-              Exports CSV
+              Télécharger vos données
             </h2>
             <p className="text-sm text-muted-foreground">
-              UTF-8, séparateur point-virgule, maximum 10 000 lignes.
+              Des fichiers qui s’ouvrent dans Excel ou Numbers, 10 000 lignes au
+              maximum par fichier.
             </p>
           </div>
         </div>

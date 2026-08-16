@@ -226,7 +226,7 @@ export const AdminSearch = ({
             </select>
           </label>
           <label className="min-w-0 text-xs font-medium text-muted-foreground">
-            Origine
+            Prise par
             <select
               value={filters.source}
               onChange={event =>

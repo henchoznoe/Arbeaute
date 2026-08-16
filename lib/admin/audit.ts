@@ -101,8 +101,8 @@ export const auditEntityLabels: Record<AuditEntityType, string> = {
   CUSTOMER: 'Cliente',
   SERVICE: 'Prestation',
   SERVICE_CATEGORY: 'Catégorie',
-  WEEKLY_AVAILABILITY: 'Horaire hebdomadaire',
-  AVAILABILITY_EXCEPTION: 'Exception horaire',
+  WEEKLY_AVAILABILITY: 'Horaire de la semaine',
+  AVAILABILITY_EXCEPTION: 'Jour particulier',
   BOOKING_SETTINGS: 'Règles de réservation',
 }
 
@@ -112,12 +112,12 @@ export const auditActionLabels: Record<AuditActionType, string> = {
   DELETED: 'Suppression',
   CANCELLED: 'Annulation',
   RESCHEDULED: 'Déplacement',
-  REORDERED: 'Réorganisation',
-  ARCHIVED: 'Archivage',
+  REORDERED: 'Ordre changé',
+  ARCHIVED: 'Mise de côté',
   RESTORED: 'Rétablissement',
   FILE_ASSIGNED: 'Fichier ajouté',
   FILE_REMOVED: 'Fichier retiré',
-  ANONYMIZED: 'Anonymisation',
+  ANONYMIZED: 'Coordonnées effacées',
   MERGED: 'Fusion',
 }
 

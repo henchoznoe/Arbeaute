@@ -21,13 +21,15 @@ export const bookingSettingsSchema = z
       context.addIssue({
         code: 'custom',
         path: ['minBookingNoticeHours'],
-        message: 'Le préavis doit rester inférieur à l’horizon.',
+        message:
+          'Ce délai doit rester plus court que la période pendant laquelle on peut réserver.',
       })
     if (settings.customerChangeCutoffHours >= minimumHorizonHours)
       context.addIssue({
         code: 'custom',
         path: ['customerChangeCutoffHours'],
-        message: 'Le délai de modification doit rester inférieur à l’horizon.',
+        message:
+          'Ce délai doit rester plus court que la période pendant laquelle on peut réserver.',
       })
   })
 

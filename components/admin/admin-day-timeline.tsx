@@ -82,7 +82,8 @@ export const AdminDayTimeline = ({
           className="mt-3 flex items-start gap-2 rounded-xl border border-destructive/30 bg-destructive/10 px-3 py-2 text-xs text-destructive"
         >
           <AlertTriangle className="mt-0.5 size-4 shrink-0" />
-          Deux rendez-vous se chevauchent visuellement. Vérifiez leurs horaires.
+          Deux rendez-vous se superposent. Ouvrez l’un des deux pour corriger
+          son heure.
         </p>
       ) : null}
 
@@ -143,21 +144,23 @@ export const AdminDayTimeline = ({
           la chronologie au pixel sert à caler un créneau, pas à consulter. */}
       <details className="group mt-4 rounded-2xl border bg-card">
         <summary className="flex min-h-11 cursor-pointer items-center justify-between gap-2 px-4 text-sm font-medium">
-          Vue détaillée et créneaux libres
+          Voir l’horaire détaillé et les heures libres
           <ChevronDown className="size-4 shrink-0 transition group-open:rotate-180" />
         </summary>
 
         <div className="border-t px-3 pt-3 pb-3">
           <div className="flex flex-wrap gap-x-4 gap-y-2 text-2xs text-muted-foreground">
             <span className="inline-flex items-center gap-1.5">
-              <span className="size-2.5 rounded-full bg-success-accent" /> Libre
+              <span className="size-2.5 rounded-full bg-success-accent" /> Heure
+              libre
             </span>
             <span className="inline-flex items-center gap-1.5">
               <span className="size-2.5 rounded-sm border border-dashed border-muted-foreground" />
-              Prépa / rangement
+              Installation et rangement
             </span>
             <span className="inline-flex items-center gap-1.5">
-              <span className="size-2.5 rounded-sm bg-warning-line" /> Fermeture
+              <span className="size-2.5 rounded-sm bg-warning-line" /> Institut
+              fermé
             </span>
           </div>
 
@@ -267,7 +270,7 @@ export const AdminDayTimeline = ({
                   >
                     {appointment.preparationMinutes > 0 ? (
                       <span className="absolute inset-x-2 top-0 truncate text-2xs leading-4 text-muted-foreground">
-                        Prépa {appointment.preparationMinutes} min
+                        Installation {appointment.preparationMinutes} min
                       </span>
                     ) : null}
                     <span

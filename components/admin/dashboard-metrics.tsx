@@ -30,24 +30,25 @@ export const DashboardMetrics = ({
       icon: CalendarCheck2,
     },
     {
-      label: 'Chiffre prévu',
+      label: 'Recette attendue',
       value: `${(metrics.plannedRevenueCents / 100).toLocaleString('fr-CH')} CHF`,
-      scope: 'Confirmés et terminés, prix figés',
+      scope:
+        'Rendez-vous confirmés et terminés, au prix du jour de la réservation',
       icon: Banknote,
     },
     {
-      label: 'Occupation',
+      label: 'Temps rempli',
       value:
         metrics.occupancyRate === null
-          ? 'Non calculable'
+          ? 'Institut fermé'
           : `${metrics.occupancyRate} %`,
-      scope: `${formatDuration(metrics.bookedMinutes)} de soins sur les plages ouvertes`,
+      scope: `${formatDuration(metrics.bookedMinutes)} de soins sur vos heures d’ouverture`,
       icon: Gauge,
     },
     {
-      label: 'Absences',
+      label: 'Clientes non venues',
       value: metrics.noShowCount.toLocaleString('fr-CH'),
-      scope: 'Identifiées séparément du chiffre prévu',
+      scope: 'Comptées à part, elles n’entrent pas dans la recette attendue',
       icon: UserX,
     },
   ]
@@ -56,7 +57,7 @@ export const DashboardMetrics = ({
     <section className="mt-5" aria-labelledby="dashboard-metrics-title">
       <div className="flex flex-wrap items-end justify-between gap-2">
         <h2 id="dashboard-metrics-title" className="font-semibold">
-          Indicateurs de la semaine
+          Votre semaine en chiffres
         </h2>
         <p className="text-xs text-muted-foreground">{periodLabel}</p>
       </div>

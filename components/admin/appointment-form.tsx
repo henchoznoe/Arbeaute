@@ -226,11 +226,12 @@ export const AppointmentForm = ({
             />
             <span>
               <span className="flex items-center gap-2 text-sm font-semibold">
-                <Repeat2 className="size-4 text-primary" /> Créer une série
-                finie
+                <Repeat2 className="size-4 text-primary" /> Répéter ce
+                rendez-vous
               </span>
               <span className="block text-xs text-muted-foreground">
-                Même soin et même heure, sans tâche planifiée.
+                Même soin, même heure, plusieurs fois de suite. Vous choisissez
+                combien de fois et à quel rythme.
               </span>
             </span>
           </label>
@@ -238,7 +239,7 @@ export const AppointmentForm = ({
             <div className="mt-4 grid gap-4 border-t pt-4 sm:grid-cols-2">
               <FormField
                 controlId="admin-series-count"
-                label="Nombre de rendez-vous"
+                label="Combien de fois au total"
               >
                 <input
                   id="admin-series-count"
@@ -253,7 +254,7 @@ export const AppointmentForm = ({
               </FormField>
               <FormField
                 controlId="admin-series-interval"
-                label="Répéter toutes les"
+                label="À quel rythme"
               >
                 <select
                   id="admin-series-interval"
@@ -394,8 +395,8 @@ export const AppointmentForm = ({
                         {occurrence.index}. {formatSeriesDate(occurrence.date)}
                       </span>
                       <span className="block text-xs text-muted-foreground">
-                        {occurrence.time}–{occurrence.endsAtTime} · occupation{' '}
-                        {occurrence.occupiedStartsAtTime}–
+                        Soin de {occurrence.time} à {occurrence.endsAtTime},
+                        institut occupé de {occurrence.occupiedStartsAtTime} à{' '}
                         {occurrence.occupiedEndsAtTime}
                       </span>
                     </span>
@@ -405,7 +406,7 @@ export const AppointmentForm = ({
                       </span>
                     ) : occurrence.outsidePublicHours ? (
                       <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-warning-soft px-2 py-1 text-[11px] font-semibold text-warning-strong">
-                        <AlertTriangle className="size-3" /> Hors horaires
+                        <AlertTriangle className="size-3" /> Hors ouverture
                       </span>
                     ) : (
                       <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-success-subtle px-2 py-1 text-[11px] font-semibold text-success-strong">
@@ -415,9 +416,9 @@ export const AppointmentForm = ({
                   </div>
                   {hasConflict ? (
                     <p className="mt-2 text-xs font-medium text-destructive">
-                      Chevauche le rendez-vous existant de{' '}
-                      {occurrence.conflictTime}, préparation et rangement
-                      inclus.
+                      Se superpose au rendez-vous de {occurrence.conflictTime},
+                      temps d’installation et de rangement compris. Changez
+                      l’heure ou la date de départ.
                     </p>
                   ) : null}
                 </li>
@@ -436,10 +437,10 @@ export const AppointmentForm = ({
                 }}
                 className="mt-0.5 size-5 shrink-0 accent-warning"
               />
-              Je confirme la création des{' '}
-              {seriesPreview.outsidePublicHoursCount} occurrence
-              {seriesPreview.outsidePublicHoursCount > 1 ? 's' : ''} hors des
-              horaires publics.
+              Je confirme : {seriesPreview.outsidePublicHoursCount} de ces
+              rendez-vous{' '}
+              {seriesPreview.outsidePublicHoursCount > 1 ? 'tombent' : 'tombe'}{' '}
+              en dehors de vos heures d’ouverture.
             </label>
           ) : null}
         </section>
@@ -464,8 +465,9 @@ export const AppointmentForm = ({
         {appointment.id ? (
           <ConfirmDialog
             title="Annuler ce rendez-vous ?"
-            description="Le créneau sera libéré immédiatement. Cette action restera visible dans l’historique de la cliente."
-            confirmLabel="Annuler le rendez-vous"
+            description="L’heure redevient libre tout de suite et la cliente verra son rendez-vous annulé. Vous pourrez le rétablir ensuite si l’heure est encore disponible."
+            confirmLabel="Oui, annuler ce rendez-vous"
+            cancelLabel="Non, le garder"
             onConfirm={cancel}
             pending={pending}
             trigger={
@@ -506,7 +508,7 @@ export const AppointmentForm = ({
               )}
               {seriesPreview
                 ? `Créer ${seriesPreview.occurrences.length} rendez-vous`
-                : 'Vérifier toutes les occurrences'}
+                : 'Vérifier toutes les dates'}
             </Button>
           </div>
         ) : (
@@ -523,7 +525,7 @@ export const AppointmentForm = ({
               <Save className="size-4" />
             )}
             {outsideWarning
-              ? 'Confirmer hors horaires'
+              ? 'Confirmer malgré l’horaire'
               : appointment.id
                 ? 'Enregistrer les modifications'
                 : 'Créer le rendez-vous'}

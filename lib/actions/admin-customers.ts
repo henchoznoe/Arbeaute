@@ -47,10 +47,17 @@ export const saveAdminCustomerProfile = async (
   input: unknown,
 ): Promise<AdminCustomerActionResult> => {
   if (!(await requireAdminMutation()))
-    return { ok: false, message: 'Votre session admin a expiré.' }
+    return {
+      ok: false,
+      message: 'Votre session a expiré. Reconnectez-vous, puis recommencez.',
+    }
   const parsed = updateSchema.safeParse(input)
   if (!parsed.success)
-    return { ok: false, message: 'Vérifiez les informations saisies.' }
+    return {
+      ok: false,
+      message:
+        'Certaines informations sont incomplètes ou mal formées. Corrigez les champs signalés, puis réessayez.',
+    }
   try {
     const email = normalizeEmail(parsed.data.email)
     const phone = normalizePhone(parsed.data.phone)
@@ -83,7 +90,8 @@ export const saveAdminCustomerProfile = async (
       }
     return {
       ok: false,
-      message: 'La fiche cliente n’a pas pu être enregistrée.',
+      message:
+        'La fiche n’a pas pu être enregistrée. Réessayez ; si cela recommence, notez l’heure et prévenez Noé.',
     }
   }
 }
@@ -92,7 +100,10 @@ export const mergeAdminCustomerProfiles = async (
   input: unknown,
 ): Promise<AdminCustomerActionResult> => {
   if (!(await requireAdminMutation()))
-    return { ok: false, message: 'Votre session admin a expiré.' }
+    return {
+      ok: false,
+      message: 'Votre session a expiré. Reconnectez-vous, puis recommencez.',
+    }
   const parsed = mergeSchema.safeParse(input)
   if (!parsed.success)
     return { ok: false, message: 'Cette fusion est invalide.' }

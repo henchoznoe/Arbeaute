@@ -26,10 +26,17 @@ export const changeAdminAppointmentStatus = async (input: {
   targetStatus: AdminAppointmentStatusTarget
 }): Promise<AdminAppointmentStatusActionResult> => {
   if (!(await getAdminSession()) || !(await hasSameOrigin()))
-    return { ok: false, message: 'Votre session admin a expiré.' }
+    return {
+      ok: false,
+      message: 'Votre session a expiré. Reconnectez-vous, puis recommencez.',
+    }
   const parsed = appointmentStatusSchema.safeParse(input)
   if (!parsed.success)
-    return { ok: false, message: 'Ce changement de statut est invalide.' }
+    return {
+      ok: false,
+      message:
+        'Ce changement n’est pas possible pour ce rendez-vous. Revenez à l’agenda et rouvrez-le.',
+    }
   try {
     const appointment = await changeAdminAppointmentStatusSerializable(
       prisma,
@@ -63,7 +70,8 @@ export const changeAdminAppointmentStatus = async (input: {
       }
     return {
       ok: false,
-      message: 'Ce changement de statut n’est plus possible.',
+      message:
+        'Ce rendez-vous a changé entre-temps. Revenez à l’agenda et rouvrez-le pour voir son état actuel.',
     }
   }
 }

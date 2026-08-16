@@ -422,6 +422,10 @@ export const cancelCustomerAppointment = async (
     refreshAdminActivity()
     return { ok: true, message: 'Votre rendez-vous a bien été annulé.' }
   } catch {
-    return { ok: false, message: 'Ce rendez-vous ne peut plus être annulé.' }
+    return {
+      ok: false,
+      message:
+        'Ce rendez-vous n’est plus actif : il a déjà été annulé ou terminé.',
+    }
   }
 }
