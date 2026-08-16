@@ -95,6 +95,7 @@ Les rayons proviennent tous des jetons `--radius-*`. Aucune valeur arbitraire
 | `ConfirmDialog` | Mutation destructive ou difficile à annuler | titre, conséquence, annuler, confirmer |
 | `AppToast` | Retour bref après une action asynchrone | success, danger |
 | `EmptyState` | Collection ou journée sans contenu | icône, explication, action facultative |
+| `CustomerCallButton` | Appeler une cliente, ou dire qu'aucun numéro n'est enregistré | outline, secondary |
 
 Un lien qui se comporte comme un bouton passe par `<Button asChild>` autour du
 `<Link>` ou du `<a>`. Il ne faut pas réécrire à la main
@@ -118,7 +119,7 @@ rendez-vous côté cliente passe elle aussi par `ConfirmDialog`.
 
 ## État de la migration
 
-Les points 1 à 4 de [ROADMAP-V2.md](../ROADMAP-V2.md) ont aligné l’ensemble des
+Les points 1 à 6 de [ROADMAP-V2.md](../ROADMAP-V2.md) ont aligné l’ensemble des
 écrans sur ce document :
 
 - typographie unifiée sur Geist et Plus Jakarta Sans, avec une échelle fluide ;
@@ -127,4 +128,6 @@ Les points 1 à 4 de [ROADMAP-V2.md](../ROADMAP-V2.md) ont aligné l’ensemble 
 - plus aucune couleur littérale ni teinte Tailwind brute ;
 - rayons ramenés aux jetons `--radius-*` selon la convention ci-dessus ;
 - plancher de 11 px appliqué partout, `--brand` porté à 4,54:1 sur fond clair ;
-- aucune cible tactile sous 44 px, `Button` compris en taille `sm`.
+- aucune cible tactile sous 44 px, `Button` compris en taille `sm` ;
+- toute action asynchrone confirme son résultat par un `AppToast`, au lieu de
+  laisser la page se rafraîchir en silence.

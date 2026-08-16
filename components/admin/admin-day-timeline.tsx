@@ -3,6 +3,7 @@
 import { AlertTriangle, ChevronDown, Plus } from 'lucide-react'
 import Link from 'next/link'
 import { AppointmentStatusActions } from '@/components/admin/appointment-status-actions'
+import { CustomerCallButton } from '@/components/admin/customer-call-button'
 import { Button } from '@/components/ui/button'
 import { EmptyState } from '@/components/ui/empty-state'
 import { StatusBadge } from '@/components/ui/status-badge'
@@ -116,6 +117,11 @@ export const AdminDayTimeline = ({
                     {statusLabels[appointment.status]}
                   </StatusBadge>
                 </Link>
+                <CustomerCallButton
+                  phone={appointment.customerPhone}
+                  customerName={appointment.customerName}
+                  className="mt-2 w-full"
+                />
                 <AppointmentStatusActions
                   appointmentId={appointment.id}
                   status={appointment.status}

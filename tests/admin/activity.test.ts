@@ -88,8 +88,16 @@ describe('admin activity queries', () => {
       activities: ['activity'],
       unreadCount: 12,
     })
+    // Le non-lu passe devant : l'aperçu d'agenda doit montrer ce qu'Arzu n'a
+    // pas encore vu, pas seulement ce qui est le plus récent.
     expect(mocks.findMany).toHaveBeenCalledWith(
-      expect.objectContaining({ take: 3, orderBy: { createdAt: 'desc' } }),
+      expect.objectContaining({
+        take: 3,
+        orderBy: [
+          { readAt: { sort: 'asc', nulls: 'first' } },
+          { createdAt: 'desc' },
+        ],
+      }),
     )
     expect(mocks.count).toHaveBeenCalledWith({ where: { readAt: null } })
   })

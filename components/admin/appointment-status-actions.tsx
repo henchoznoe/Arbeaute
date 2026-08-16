@@ -3,11 +3,18 @@
 import { CheckCheck, LoaderCircle, RotateCcw, UserX } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { useState, useTransition } from 'react'
+import { AppToast } from '@/components/ui/app-toast'
 import { Button } from '@/components/ui/button'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import { changeAdminAppointmentStatus } from '@/lib/actions/admin-appointment-status'
 import type { AdminAppointmentStatusTarget } from '@/lib/admin/appointment-status'
 import type { AppointmentStatus } from '@/prisma/generated/prisma/enums'
+
+const statusConfirmations: Record<AdminAppointmentStatusTarget, string> = {
+  COMPLETED: 'Le rendez-vous est marqué comme terminé.',
+  NO_SHOW: 'Le rendez-vous est marqué comme absence, le créneau est libéré.',
+  CONFIRMED: 'Le rendez-vous est rétabli.',
+}
 
 interface AppointmentStatusActionsProps {
   appointmentId: string
@@ -27,6 +34,7 @@ export const AppointmentStatusActions = ({
   const router = useRouter()
   const [pending, startTransition] = useTransition()
   const [message, setMessage] = useState<string | null>(null)
+  const [confirmation, setConfirmation] = useState<string | null>(null)
   const isFuture = new Date(startsAt).getTime() > Date.now()
 
   const changeStatus = (targetStatus: AdminAppointmentStatusTarget) => {
@@ -36,8 +44,12 @@ export const AppointmentStatusActions = ({
         appointmentId,
         targetStatus,
       })
-      if (result.ok) router.refresh()
-      else setMessage(result.message)
+      if (result.ok) {
+        // Sans ce retour, la page se rafraîchit sans rien annoncer : Arzu ne
+        // sait pas si son appui a été pris en compte ou si l'écran a bougé.
+        setConfirmation(statusConfirmations[targetStatus])
+        router.refresh()
+      } else setMessage(result.message)
     })
   }
 
@@ -144,6 +156,14 @@ export const AppointmentStatusActions = ({
           {message}
         </p>
       ) : null}
+      <AppToast
+        open={confirmation !== null}
+        onOpenChange={open => {
+          if (!open) setConfirmation(null)
+        }}
+        title="C’est enregistré"
+        description={confirmation ?? undefined}
+      />
     </>
   )
 }

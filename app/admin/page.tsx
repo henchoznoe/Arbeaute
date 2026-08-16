@@ -3,6 +3,7 @@ import { Plus } from 'lucide-react'
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { Suspense } from 'react'
+import { ActivityAlert } from '@/components/admin/activity-alert'
 import { ActivityOverview } from '@/components/admin/activity-overview'
 import { AdminAgendaView } from '@/components/admin/admin-agenda-view'
 import { AdminSkeleton } from '@/components/admin/admin-skeleton'
@@ -142,14 +143,16 @@ const AdminAgenda = async ({ searchParams }: Readonly<AdminPageProps>) => {
         exception.startsAt < bounds.end && exception.endsAt > bounds.start,
     )
   }
+  // Seule la grille hebdomadaire de bureau utilise cette carte, en version
+  // compacte : sept colonnes n'ont pas la place d'un bouton d'appel, qui vit
+  // dans la liste de la journée.
   const appointmentCard = (
     appointment: (typeof appointments)[number],
     dateKey: string,
-    compact = false,
   ) => (
     <article
       key={appointment.id}
-      className={`block rounded-xl border bg-background p-3 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md ${compact ? 'text-xs' : ''}`}
+      className="block rounded-xl border bg-background p-3 text-xs shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
       style={{ borderLeftColor: appointment.service.color, borderLeftWidth: 4 }}
     >
       <Link href={`/admin/appointments/${appointment.id}?date=${dateKey}`}>
@@ -181,11 +184,6 @@ const AdminAgenda = async ({ searchParams }: Readonly<AdminPageProps>) => {
       >
         {statusLabels[appointment.status]}
       </StatusBadge>
-      {!compact && appointment.customerPhone ? (
-        <p className="mt-1 text-xs text-muted-foreground">
-          {appointment.customerPhone}
-        </p>
-      ) : null}
       <AppointmentStatusActions
         appointmentId={appointment.id}
         status={appointment.status}
@@ -278,6 +276,8 @@ const AdminAgenda = async ({ searchParams }: Readonly<AdminPageProps>) => {
         />
       )}
 
+      <ActivityAlert unreadCount={activityOverview.unreadCount} />
+
       <AdminAgendaView
         anchor={anchor}
         today={today}
@@ -316,7 +316,7 @@ const AdminAgenda = async ({ searchParams }: Readonly<AdminPageProps>) => {
                   </div>
                 ))}
                 {dailyAppointments.map(appointment =>
-                  appointmentCard(appointment, dateKey, true),
+                  appointmentCard(appointment, dateKey),
                 )}
               </div>
             </section>
@@ -332,9 +332,9 @@ const AdminAgenda = async ({ searchParams }: Readonly<AdminPageProps>) => {
         selectedDayLabel={dayTitle(anchor, true)}
       />
 
-      <div className="hidden md:block">
-        <ActivityOverview {...activityOverview} />
-      </div>
+      {/* Plus de `hidden md:block` : sur téléphone, Arzu ne voyait jamais les
+          réservations et annulations depuis son agenda. */}
+      <ActivityOverview {...activityOverview} />
     </main>
   )
 }

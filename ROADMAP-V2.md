@@ -53,13 +53,14 @@ figure dans le titre et se réévalue après chaque livraison.
 
 | Statut | Éléments |
 | --- | --- |
-| ✅ Terminés | 1, 2, 3, 4 |
+| ✅ Terminés | 1 à 6 |
 | 🟡 En cours | Aucun |
-| ⏳ Prêt à démarrer | 5 à 13 |
+| ⏳ Prêt à démarrer | 7 à 13 |
 | 🔒 Bloqués | Aucun |
 
-Les fondations visuelles sont posées et l’agenda d’Arzu s’ouvre désormais sur sa
-journée. Les éléments 5 et 6 prolongent directement ce travail.
+Les fondations visuelles sont posées et l’agenda d’Arzu est traité de bout en
+bout : il s’ouvre sur sa journée, chaque rendez-vous s’actionne d’un geste et
+les changements des clientes lui parviennent sur téléphone.
 
 - **Priorité P0** : corrige une friction quotidienne ou prépare plusieurs autres
   éléments.
@@ -319,7 +320,7 @@ par jour n'est introduite et `/admin` reste en `◐ Partial Prerender`.
 
 **Dépendances :** aucune.
 
-### 5. Rendre chaque rendez-vous actionnable en un geste — ⏳ Prêt à démarrer
+### 5. Rendre chaque rendez-vous actionnable en un geste — ✅ Terminé
 
 **Priorité : P0 · Effort : M · Nature : amélioration**
 
@@ -346,9 +347,27 @@ la même intention.
   s’être rechargée sans raison ;
 - toutes les cibles atteignent 44 px et restent atteignables au pouce.
 
+**Livré.** `CustomerCallButton` remplace le numéro affiché en texte brut :
+un appui compose l'appel, et le lecteur d'écran annonce « Appeler Noé Henchoz
+au +41 … ». Quand aucun numéro n'est enregistré, la ligne le dit — « Pas de
+numéro enregistré », icône de téléphone barré — au lieu de laisser une action
+inerte. Le même trio appeler / terminé / absence apparaît désormais dans la
+liste de la journée et dans la fiche, où il était jusqu'ici absent pour les
+rendez-vous confirmés.
+
+Chaque changement de statut ouvre son `ConfirmDialog` comme avant, mais
+confirme maintenant son résultat par un `AppToast` — « C'est enregistré. Le
+rendez-vous est marqué comme terminé. » Sans lui, la page se rafraîchissait
+sans rien annoncer.
+
+**Nettoyage au passage.** La carte de la grille hebdomadaire de bureau portait
+un paramètre `compact` jamais appelé avec `false` : la ligne de téléphone
+qu'elle contenait n'a donc jamais été rendue. Le paramètre et sa branche morte
+sont supprimés.
+
 **Dépendances :** éléments 2 et 4.
 
-### 6. Afficher l’activité récente sur mobile — ⏳ Prêt à démarrer
+### 6. Afficher l’activité récente sur mobile — ✅ Terminé
 
 **Priorité : P0 · Effort : S · Nature : amélioration**
 
@@ -374,6 +393,21 @@ concerné et la possibilité de tout marquer comme lu.
 - marquer comme lu met à jour les deux affichages sans rechargement complet ;
 - lorsqu’il n’y a rien de nouveau, le bloc reste discret et n’occupe pas
   l’espace réservé à la journée en cours.
+
+**Livré.** Le `hidden md:block` disparaît : l'aperçu complet est visible sur
+téléphone, sous l'agenda. Au-dessus, une bande d'une seule ligne — « 2
+nouveautés depuis votre dernier passage » — signale le non-lu dès l'ouverture
+et s'efface entièrement quand il n'y a rien. `getActivityOverview` trie
+désormais les non-lus en premier plutôt que par date seule. Vérifié : marquer
+comme lu fait disparaître la bande **et** la pastille de la barre de
+navigation dans le même rendu, sans rechargement complet.
+
+**Arbitrage.** Une première version affichait aussi la phrase du dernier
+changement et deux boutons. Mesurée à 360 × 780, elle repoussait le premier
+rendez-vous du jour hors de l'écran — soit exactement ce que l'élément 4 vient
+de corriger. La bande a donc été réduite à un signal : elle alerte, le détail
+et le « tout marquer comme lu » restent dans l'aperçu et dans l'onglet
+Activité.
 
 **Dépendances :** élément 4.
 
@@ -636,9 +670,8 @@ travail :
    Playfair : elles sont **périmées**. `pnpm check:com` n’en dépend pas, mais
    l’étape « Mobile E2E recipe » de `.github/workflows/ci.yml` échouera au
    prochain push tant que l’élément 12 n’est pas fait.
-2. **Poursuivre l’agenda d’Arzu avec les éléments 5 et 6** : appeler une cliente
-   en un geste, et rendre l’activité visible sur téléphone. L’élément 4 a posé
-   la structure sur laquelle les deux se greffent.
+2. **Passer au vocabulaire (7)** : l’agenda est en place, mais il parle encore
+   de « statut métier », d’« occupation » et de « journal d’audit ».
 3. **Mettre en place les e-mails (11)**, qui débloquent la réécriture de la
    confirmation (10) et fixent le vocabulaire (7).
 4. **Finir par la vitrine et le tunnel (8, 9)** et par la chasse aux

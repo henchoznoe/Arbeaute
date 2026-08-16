@@ -6,6 +6,7 @@ import { Suspense } from 'react'
 import { AdminSkeleton } from '@/components/admin/admin-skeleton'
 import { AppointmentForm } from '@/components/admin/appointment-form'
 import { AppointmentStatusActions } from '@/components/admin/appointment-status-actions'
+import { CustomerCallButton } from '@/components/admin/customer-call-button'
 import { Button } from '@/components/ui/button'
 import { StatusBadge } from '@/components/ui/status-badge'
 import prisma from '@/lib/core/prisma'
@@ -79,6 +80,10 @@ const EditAppointment = async ({
     RESERVATION_TIME_ZONE,
     'HH:mm',
   )
+  const customerName =
+    [appointment.customerFirstName, appointment.customerLastName]
+      .filter(Boolean)
+      .join(' ') || 'cette cliente'
 
   return (
     <main className="mx-auto min-h-screen max-w-3xl px-4 py-6 sm:px-8">
@@ -118,16 +123,23 @@ const EditAppointment = async ({
           : 'Les informations sont conservées en lecture seule tant que le rendez-vous n’est pas rétabli.'}
       </p>
 
+      {/* Même trio d'actions que dans la liste du jour — appeler, puis changer
+          le statut — pour qu'Arzu n'ait qu'un seul geste à mémoriser. */}
       <section className="mt-6 rounded-3xl border bg-card p-5 shadow-sm sm:p-6">
         <h2 className="text-lg font-semibold">Statut métier</h2>
         <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
           Chaque changement est daté et enregistré dans le journal d’audit.
         </p>
+        <CustomerCallButton
+          phone={appointment.customerPhone}
+          customerName={customerName}
+          className="mt-4 w-full sm:w-auto"
+        />
         <AppointmentStatusActions
           appointmentId={appointment.id}
           status={appointment.status}
           startsAt={appointment.startsAt}
-          className="mt-4"
+          className="mt-3"
         />
       </section>
 
@@ -175,19 +187,10 @@ const EditAppointment = async ({
           <div className="mt-5 flex items-start gap-3 border-t pt-5">
             <UserRound className="mt-0.5 size-5 shrink-0 text-primary" />
             <div className="min-w-0 text-sm">
-              <p className="font-semibold">
-                {[appointment.customerFirstName, appointment.customerLastName]
-                  .filter(Boolean)
-                  .join(' ')}
-              </p>
+              <p className="font-semibold">{customerName}</p>
               {appointment.customerEmail ? (
                 <p className="mt-1 break-all text-muted-foreground">
                   {appointment.customerEmail}
-                </p>
-              ) : null}
-              {appointment.customerPhone ? (
-                <p className="text-muted-foreground">
-                  {appointment.customerPhone}
                 </p>
               ) : null}
             </div>
