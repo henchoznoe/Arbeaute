@@ -36,9 +36,15 @@ faut plus écrire de suite `text-3xl sm:text-4xl` pour un titre de page :
 | `text-display` | Titre du hero, une seule occurrence par page | 29,6 px → 72 px |
 | `text-title` | Titre de page et de section (`h1`, `h2`) | 25,6 px → 40 px |
 | `text-2xl` et en dessous | Sous-titres et titres de carte | échelle Tailwind |
+| `text-2xs` | Plancher de lisibilité : légendes, pastilles, chronologie | 11 px |
 
 Le réglage vise un téléphone de 360 px : à cette largeur, le titre du hero tient
 sur deux lignes au maximum.
+
+**Aucun texte d’interface ne descend sous 11 px.** `text-2xs` est le plus petit
+palier autorisé ; les tailles arbitraires du type `text-[9px]` ne doivent pas
+réapparaître, y compris dans la chronologie admin où la place est comptée. Si un
+libellé ne tient plus, c’est le libellé qu’il faut raccourcir, pas la police.
 
 ## Couleur
 
@@ -112,11 +118,13 @@ rendez-vous côté cliente passe elle aussi par `ConfirmDialog`.
 
 ## État de la migration
 
-Les points 1 et 2 de [ROADMAP-V2.md](../ROADMAP-V2.md) ont aligné l’ensemble des
+Les points 1 à 4 de [ROADMAP-V2.md](../ROADMAP-V2.md) ont aligné l’ensemble des
 écrans sur ce document :
 
 - typographie unifiée sur Geist et Plus Jakarta Sans, avec une échelle fluide ;
 - toutes les actions passent par `Button`, `SubmitButton` ou `ConfirmDialog` ;
 - tous les champs passent par `FormField` et `formControlClass` ;
 - plus aucune couleur littérale ni teinte Tailwind brute ;
-- rayons ramenés aux jetons `--radius-*` selon la convention ci-dessus.
+- rayons ramenés aux jetons `--radius-*` selon la convention ci-dessus ;
+- plancher de 11 px appliqué partout, `--brand` porté à 4,54:1 sur fond clair ;
+- aucune cible tactile sous 44 px, `Button` compris en taille `sm`.

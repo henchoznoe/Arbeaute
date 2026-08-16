@@ -145,9 +145,7 @@ export const AdminAgendaView = ({
                         : 'text-muted-foreground hover:bg-muted'
                   }`}
                 >
-                  <span className="text-[10px] uppercase">
-                    {day.shortLabel}
-                  </span>
+                  <span className="text-2xs uppercase">{day.shortLabel}</span>
                   <span className="mt-0.5 text-sm">{day.dayNumber}</span>
                   {day.appointments.length > 0 ? (
                     <span
@@ -274,7 +272,7 @@ export const AdminAgendaView = ({
                 {day.shortLabel}
                 {day.appointments.length > 0 ? (
                   <span
-                    className={`absolute right-1 top-1 grid size-4 place-items-center rounded-full text-[9px] ${isVisible ? 'bg-primary-foreground text-primary' : 'bg-primary text-primary-foreground'}`}
+                    className={`absolute right-1 top-1 grid size-4 place-items-center rounded-full text-2xs ${isVisible ? 'bg-primary-foreground text-primary' : 'bg-primary text-primary-foreground'}`}
                     aria-hidden="true"
                   >
                     {day.appointments.length}

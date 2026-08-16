@@ -15,6 +15,9 @@
   --text-title: clamp(1.6rem, 1.1rem + 2.2vw, 2.5rem);
   --text-title--line-height: 1.15;
   --text-title--letter-spacing: -0.015em;
+  /* Plancher de lisibilité : rien ne descend sous 11 px dans l'interface. */
+  --text-2xs: 0.6875rem;
+  --text-2xs--line-height: 1.25;
   --color-success: var(--success);
   --color-success-strong: var(--success-strong);
   --color-success-subtle: var(--success-subtle);
@@ -125,7 +128,9 @@
   --warning-soft: oklch(0.962 0.059 95.617);
   --warning-line: oklch(0.924 0.12 95.746);
   --warning-accent: oklch(0.879 0.169 91.605);
-  --brand: oklch(0.645 0.246 16.439);
+  /* Assombri par rapport au rose d'origine pour atteindre 4,54:1 sur le fond
+     clair : les sur-titres passaient sous le seuil AA à 3,60:1. */
+  --brand: oklch(0.575 0.246 16.439);
   --brand-strong: oklch(0.514 0.222 16.935);
   --brand-subtle: oklch(0.969 0.015 12.422);
   --brand-soft: oklch(0.941 0.03 12.58);

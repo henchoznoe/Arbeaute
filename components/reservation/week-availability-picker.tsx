@@ -136,13 +136,13 @@ export const WeekAvailabilityPicker = ({
                     'border-dashed bg-muted text-muted-foreground',
                 )}
               >
-                <span className="text-[10px] leading-none font-semibold uppercase sm:text-xs">
+                <span className="text-2xs leading-none font-semibold uppercase sm:text-xs">
                   {formatCalendarWeekday(dateKey)}
                 </span>
                 <span className="mt-1 text-lg leading-none font-bold sm:text-xl">
                   {formatCalendarDayNumber(dateKey)}
                 </span>
-                <span className="mt-1.5 flex min-w-0 items-center justify-center gap-0.5 text-[8px] leading-none font-semibold sm:text-[10px]">
+                <span className="mt-1.5 flex min-w-0 items-center justify-center gap-0.5 text-2xs leading-none font-semibold">
                   {StateIcon ? <StateIcon className="size-3 shrink-0" /> : null}
                   {state === 'AVAILABLE'
                     ? 'Libre'

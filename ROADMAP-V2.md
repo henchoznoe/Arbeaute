@@ -53,13 +53,13 @@ figure dans le titre et se réévalue après chaque livraison.
 
 | Statut | Éléments |
 | --- | --- |
-| ✅ Terminés | 1, 2 |
+| ✅ Terminés | 1, 2, 3, 4 |
 | 🟡 En cours | Aucun |
-| ⏳ Prêt à démarrer | 3 à 13 |
+| ⏳ Prêt à démarrer | 5 à 13 |
 | 🔒 Bloqués | Aucun |
 
-Les fondations visuelles sont posées : l’élément 3 peut démarrer, et tous les
-écrans suivants s’appuient désormais sur les primitives et les jetons.
+Les fondations visuelles sont posées et l’agenda d’Arzu s’ouvre désormais sur sa
+journée. Les éléments 5 et 6 prolongent directement ce travail.
 
 - **Priorité P0** : corrige une friction quotidienne ou prépare plusieurs autres
   éléments.
@@ -193,7 +193,7 @@ l’identique — mais c’est désormais **une seule ligne** à changer pour le
 
 **Dépendances :** aucune ; socle des éléments 3, 5, 7 et 9.
 
-### 3. Réparer les alignements et les tailles sur mobile — ⏳ Prêt à démarrer
+### 3. Réparer les alignements et les tailles sur mobile — ✅ Terminé
 
 **Priorité : P0 · Effort : M · Nature : amélioration**
 
@@ -201,8 +201,11 @@ l’identique — mais c’est désormais **une seule ligne** à changer pour le
 sur un téléphone :
 
 - les deux boutons du hero, censés se partager la largeur à parts égales
-  (`flex-1`), n’ont toujours **pas la même largeur** à 430 px — mesuré à 206 px
-  contre 172 px — parce que la classe de base de `Button` impose `shrink-0` ;
+  (`flex-1`), n’ont **pas la même largeur** à 430 px : 206 px contre 172 px.
+  La cause supposée — le `shrink-0` de `Button` — s’est révélée fausse à la
+  mesure : `flex-1` s’applique intégralement (`grow:1 shrink:1 basis:0%`). Le
+  coupable est `min-width: auto`, valeur par défaut d’un élément flex, qui
+  interdit à chaque bouton de descendre sous la largeur de son libellé ;
 - les libellés des étapes du tunnel de réservation sont rendus en `text-[9px]`
   sur mobile, soit sous le seuil de lisibilité confortable ;
 - la grille des indicateurs admin affiche cinq cartes sur deux colonnes avec une
@@ -231,13 +234,28 @@ valeur de `--brand`.
 - les cibles tactiles principales restent à 44 px minimum, conformément à
   `docs/systeme-visuel.md`.
 
+**Livré.** Les deux boutons du hero s'empilent pleine largeur au doigt et
+passent côte à côte à partir de `sm` : mesurés à 390 px chacun à 430 px de
+large. Un jeton `text-2xs` (11 px) remplace les dix-neuf tailles `text-[8px]`
+à `text-[10px]` du projet — plancher de lisibilité désormais explicite dans
+`app/globals.css`. La grille d'indicateurs passe de cinq à quatre cartes : les
+heures réservées deviennent la légende de l'occupation, dont elles sont le
+numérateur, ce qui donne un 2×2 régulier sans perdre d'information. `--brand`
+est assombri à `oklch(0.575 0.246 16.439)`, soit 4,54:1 sur le fond clair.
+Vérifié écran par écran : aucun texte sous 11 px, aucun débordement horizontal.
+
+**Correction d'un constat erroné.** La roadmap attribuait l'inégalité des
+boutons au `shrink-0` de `Button`. La mesure a montré l'inverse : `flex-1`
+s'applique intégralement et le blocage vient de `min-width: auto`. `Button` n'a
+donc pas été touché.
+
 **Dépendances :** éléments 1 et 2.
 
 ---
 
 ## L’agenda d’Arzu, d’un coup d’œil
 
-### 4. Mettre la journée en cours en tête de l’agenda — ⏳ Prêt à démarrer
+### 4. Mettre la journée en cours en tête de l’agenda — ✅ Terminé
 
 **Priorité : P0 · Effort : M · Nature : amélioration**
 
@@ -278,6 +296,26 @@ du nom de la journée.
 - l’agenda continue de charger la semaine entière en une seule série de
   requêtes : aucune requête supplémentaire par jour n’est introduite ;
 - la route reste en rendu partiel, sans basculer en dynamique complet.
+
+**Livré.** L'ordre mobile de `/admin` devient : titre compact, **prochain
+rendez-vous**, sélecteur de semaine, journée sélectionnée, liste des
+rendez-vous. Les indicateurs et l'activité passent sous l'agenda, et la
+chronologie au pixel se replie derrière « Vue détaillée et créneaux libres ».
+Le libellé « Actions rapides », qui ne décrivait pas son contenu, disparaît au
+profit du nom de la journée. Vérifié à 360 × 780 : le premier rendez-vous du
+jour est visible **sans défiler**, et une journée sans rendez-vous l'annonce
+explicitement.
+
+La carte du prochain rendez-vous affiche le délai restant en français courant
+(« Dans 22 h 58 »), calculé côté client pour rester juste sans provoquer
+d'écart d'hydratation, et rafraîchi toutes les trente secondes.
+`formatAppointmentCountdown` vit dans `lib/admin/next-appointment.ts` et est
+couvert par sept tests unitaires.
+
+**Coût en requêtes.** Une seule requête bornée s'ajoute au `Promise.all`
+existant — un `findFirst` sur le prochain rendez-vous confirmé — pour que la
+carte reste juste même quand Arzu consulte une autre semaine. Aucune requête
+par jour n'est introduite et `/admin` reste en `◐ Partial Prerender`.
 
 **Dépendances :** aucune.
 
@@ -598,13 +636,12 @@ travail :
    Playfair : elles sont **périmées**. `pnpm check:com` n’en dépend pas, mais
    l’étape « Mobile E2E recipe » de `.github/workflows/ci.yml` échouera au
    prochain push tant que l’élément 12 n’est pas fait.
-2. **Terminer les fondations visuelles avec l’élément 3** (1 et 2 sont livrés) :
-   la passe d’alignement et l’arbitrage de `--brand`.
-3. **Traiter l’agenda d’Arzu (4, 5, 6)** : c’est le gain quotidien le plus
-   important, et il ne dépend d’aucune infrastructure nouvelle.
-4. **Mettre en place les e-mails (11)**, qui débloquent la réécriture de la
+2. **Poursuivre l’agenda d’Arzu avec les éléments 5 et 6** : appeler une cliente
+   en un geste, et rendre l’activité visible sur téléphone. L’élément 4 a posé
+   la structure sur laquelle les deux se greffent.
+3. **Mettre en place les e-mails (11)**, qui débloquent la réécriture de la
    confirmation (10) et fixent le vocabulaire (7).
-5. **Finir par la vitrine et le tunnel (8, 9)** et par la chasse aux
+4. **Finir par la vitrine et le tunnel (8, 9)** et par la chasse aux
    incohérences (13), qui bénéficient de toutes les décisions précédentes.
 
 Chaque livraison conserve les invariants de sécurité, de cache, de fuseau horaire

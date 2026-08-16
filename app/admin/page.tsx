@@ -8,6 +8,8 @@ import { AdminAgendaView } from '@/components/admin/admin-agenda-view'
 import { AdminSkeleton } from '@/components/admin/admin-skeleton'
 import { AppointmentStatusActions } from '@/components/admin/appointment-status-actions'
 import { DashboardMetrics } from '@/components/admin/dashboard-metrics'
+import { NextAppointmentCard } from '@/components/admin/next-appointment-card'
+import { EmptyState } from '@/components/ui/empty-state'
 import { StatusBadge } from '@/components/ui/status-badge'
 import { getActivityOverview } from '@/lib/admin/activity'
 import { buildAdminTimelineDay } from '@/lib/admin/agenda-timeline'
@@ -73,7 +75,10 @@ const AdminAgenda = async ({ searchParams }: Readonly<AdminPageProps>) => {
   const queryStart = getLocalDayBounds(weekDays[0]).start
   const queryEnd = getLocalDayBounds(weekDays.at(-1) as string).end
 
-  const [appointments, exceptions, weekly, activityOverview] =
+  // Une requête bornée de plus, jamais une par jour : le prochain rendez-vous
+  // doit rester juste même quand Arzu consulte une autre semaine.
+  const now = new Date()
+  const [appointments, exceptions, weekly, activityOverview, nextAppointment] =
     await Promise.all([
       prisma.appointment.findMany({
         where: {
@@ -112,6 +117,18 @@ const AdminAgenda = async ({ searchParams }: Readonly<AdminPageProps>) => {
         select: { dayOfWeek: true, startMinute: true, endMinute: true },
       }),
       getActivityOverview(),
+      prisma.appointment.findFirst({
+        where: { status: 'CONFIRMED', startsAt: { gte: now } },
+        orderBy: { startsAt: 'asc' },
+        select: {
+          id: true,
+          startsAt: true,
+          customerFirstName: true,
+          customerLastName: true,
+          serviceNameSnapshot: true,
+          service: { select: { category: { select: { name: true } } } },
+        },
+      }),
     ])
 
   const appointmentsFor = (dateKey: string) =>
@@ -141,7 +158,7 @@ const AdminAgenda = async ({ searchParams }: Readonly<AdminPageProps>) => {
             {formatTime(appointment.startsAt)}–{formatTime(appointment.endsAt)}
           </span>
           {appointment.source === 'ADMIN' ? (
-            <span className="rounded-full bg-muted px-2 py-0.5 text-[10px] uppercase tracking-wide text-muted-foreground">
+            <span className="rounded-full bg-muted px-2 py-0.5 text-2xs uppercase tracking-wide text-muted-foreground">
               manuel
             </span>
           ) : null}
@@ -221,24 +238,45 @@ const AdminAgenda = async ({ searchParams }: Readonly<AdminPageProps>) => {
   })
   const periodLabel = `${dayTitle(weekDays[0])} – ${dayTitle(weekDays.at(-1) as string)}`
 
+  const nextAppointmentDateKey = nextAppointment
+    ? getLocalDateKey(nextAppointment.startsAt)
+    : null
+
   return (
     <main className="mx-auto min-h-screen max-w-7xl px-4 py-5 sm:px-8 sm:py-8">
-      <header>
-        <div>
-          <p className="text-sm font-medium text-brand">Arbeauté</p>
-          <h1 className="font-heading text-title font-bold">Agenda</h1>
-        </div>
+      <header className="flex items-baseline gap-2">
+        <h1 className="font-heading text-title font-bold">Agenda</h1>
+        <p className="text-sm font-medium text-brand">Arbeauté</p>
       </header>
 
-      <DashboardMetrics
-        metrics={dashboardMetrics}
-        periodLabel={periodLabel}
-        selectedDayLabel={dayTitle(anchor, true)}
-      />
-
-      <div className="hidden md:block">
-        <ActivityOverview {...activityOverview} />
-      </div>
+      {nextAppointment && nextAppointmentDateKey ? (
+        <NextAppointmentCard
+          id={nextAppointment.id}
+          startsAt={nextAppointment.startsAt.toISOString()}
+          dateKey={nextAppointmentDateKey}
+          timeLabel={formatTime(nextAppointment.startsAt)}
+          dayLabel={dayTitle(nextAppointmentDateKey, true)}
+          isToday={nextAppointmentDateKey === today}
+          customerName={
+            [
+              nextAppointment.customerFirstName,
+              nextAppointment.customerLastName,
+            ]
+              .filter(Boolean)
+              .join(' ') || 'Cliente sans nom'
+          }
+          serviceLabel={formatServiceLabel(
+            nextAppointment.serviceNameSnapshot,
+            nextAppointment.service.category?.name,
+          )}
+        />
+      ) : (
+        <EmptyState
+          className="mt-4"
+          title="Aucun rendez-vous à venir"
+          description="Le prochain rendez-vous confirmé s’affichera ici dès qu’une cliente aura réservé."
+        />
+      )}
 
       <AdminAgendaView
         anchor={anchor}
@@ -285,6 +323,18 @@ const AdminAgenda = async ({ searchParams }: Readonly<AdminPageProps>) => {
           )
         })}
       />
+
+      {/* Les indicateurs et l'activité passent après la journée : ils se
+          consultent au mieux une fois par semaine, l'agenda tous les jours. */}
+      <DashboardMetrics
+        metrics={dashboardMetrics}
+        periodLabel={periodLabel}
+        selectedDayLabel={dayTitle(anchor, true)}
+      />
+
+      <div className="hidden md:block">
+        <ActivityOverview {...activityOverview} />
+      </div>
     </main>
   )
 }

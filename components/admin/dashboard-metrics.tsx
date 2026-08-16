@@ -1,4 +1,4 @@
-import { Banknote, CalendarCheck2, Clock3, Gauge, UserX } from 'lucide-react'
+import { Banknote, CalendarCheck2, Gauge, UserX } from 'lucide-react'
 import type { DashboardMetrics as DashboardMetricsValues } from '@/lib/admin/dashboard-metrics'
 
 const formatDuration = (minutes: number): string => {
@@ -18,18 +18,16 @@ export const DashboardMetrics = ({
   periodLabel: string
   selectedDayLabel: string
 }>) => {
+  // Quatre cartes exactement : la grille mobile tient sur deux colonnes sans
+  // qu'une dernière carte double de largeur ne casse le rythme. Les heures
+  // réservées, cinquième carte auparavant, sont devenues la légende de
+  // l'occupation, dont elles sont le numérateur.
   const cards = [
     {
       label: 'Rendez-vous',
       value: metrics.selectedDayCount.toLocaleString('fr-CH'),
       scope: selectedDayLabel,
       icon: CalendarCheck2,
-    },
-    {
-      label: 'Heures réservées',
-      value: formatDuration(metrics.bookedMinutes),
-      scope: 'Durée des prestations, absences incluses',
-      icon: Clock3,
     },
     {
       label: 'Chiffre prévu',
@@ -43,7 +41,7 @@ export const DashboardMetrics = ({
         metrics.occupancyRate === null
           ? 'Non calculable'
           : `${metrics.occupancyRate} %`,
-      scope: 'Temps occupé / plages ouvertes',
+      scope: `${formatDuration(metrics.bookedMinutes)} de soins sur les plages ouvertes`,
       icon: Gauge,
     },
     {
@@ -62,13 +60,13 @@ export const DashboardMetrics = ({
         </h2>
         <p className="text-xs text-muted-foreground">{periodLabel}</p>
       </div>
-      <div className="mt-3 grid grid-cols-2 gap-2 lg:grid-cols-5">
+      <div className="mt-3 grid grid-cols-2 gap-2 lg:grid-cols-4">
         {cards.map(card => {
           const Icon = card.icon
           return (
             <article
               key={card.label}
-              className="min-w-0 rounded-2xl border bg-card p-3 shadow-sm last:col-span-2 sm:p-4 lg:last:col-span-1"
+              className="min-w-0 rounded-2xl border bg-card p-3 shadow-sm sm:p-4"
             >
               <div className="flex items-center gap-2 text-muted-foreground">
                 <Icon className="size-4 shrink-0" aria-hidden="true" />

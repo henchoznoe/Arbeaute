@@ -306,12 +306,12 @@ export const AvailabilityExceptionCalendar = ({
                 </span>
                 <span className="mt-auto flex w-full flex-col gap-1">
                   {openings ? (
-                    <span className="truncate rounded bg-success-soft px-1 py-0.5 text-[9px] font-semibold text-success-strong">
+                    <span className="truncate rounded bg-success-soft px-1 py-0.5 text-2xs font-semibold text-success-strong">
                       {openings} ouv.
                     </span>
                   ) : null}
                   {closures ? (
-                    <span className="truncate rounded bg-warning-soft px-1 py-0.5 text-[9px] font-semibold text-warning-strong">
+                    <span className="truncate rounded bg-warning-soft px-1 py-0.5 text-2xs font-semibold text-warning-strong">
                       {closures} ferm.
                     </span>
                   ) : null}

@@ -49,7 +49,7 @@ const activityBadge = (count: number) => {
   if (count <= 0) return null
   const label = count > 99 ? '99+' : count.toString()
   return (
-    <span className="absolute -right-1 -top-1 grid min-h-4 min-w-4 place-items-center rounded-full bg-brand-strong px-1 text-[10px] font-bold leading-none text-white ring-2 ring-background">
+    <span className="absolute -right-1 -top-1 grid min-h-4 min-w-4 place-items-center rounded-full bg-brand-strong px-1 text-2xs font-bold leading-none text-white ring-2 ring-background">
       <span aria-hidden="true">{label}</span>
       <span className="sr-only">
         {count} activité{count > 1 ? 's' : ''} non lue

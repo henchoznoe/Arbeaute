@@ -44,11 +44,17 @@ export function Hero() {
           </Animate>
 
           <Animate animation="fade-up" delay={500}>
-            <div data-primary-booking-cta className="mt-6 flex flex-wrap gap-3">
+            {/* Empilés au doigt : côte à côte, `min-width: auto` interdit aux
+                deux boutons de descendre sous la largeur de leur libellé, et
+                ils finissaient de largeurs différentes. */}
+            <div
+              data-primary-booking-cta
+              className="mt-6 flex flex-col gap-3 sm:flex-row sm:flex-wrap"
+            >
               <Button
                 asChild
                 size="lg"
-                className="h-12 flex-1 rounded-full px-6 text-base sm:flex-none"
+                className="h-12 rounded-full px-6 text-base"
               >
                 <Link href={contact.bookingUrl}>Prendre rendez-vous</Link>
               </Button>
@@ -56,7 +62,7 @@ export function Hero() {
                 asChild
                 variant="outline"
                 size="lg"
-                className="h-12 flex-1 rounded-full bg-background/60 px-6 text-base sm:flex-none"
+                className="h-12 rounded-full bg-background/60 px-6 text-base"
               >
                 <Link href="#services">Voir les soins</Link>
               </Button>

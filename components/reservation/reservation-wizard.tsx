@@ -480,7 +480,7 @@ export const ReservationWizard = ({
                   >
                     {number}
                   </span>
-                  <span className="text-[9px] leading-tight font-medium text-balance min-[370px]:text-[10px] sm:text-sm">
+                  <span className="text-2xs leading-tight font-medium text-balance sm:text-sm">
                     {label}
                   </span>
                 </button>
