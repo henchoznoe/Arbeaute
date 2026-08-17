@@ -1,3 +1,16 @@
+# [1.10.0](https://github.com/henchoznoe/Arbeaute/compare/v1.9.0...v1.10.0) (2026-08-17)
+
+
+### Bug Fixes
+
+* some bugs UI ([73e8f27](https://github.com/henchoznoe/Arbeaute/commit/73e8f2702f446c4d5fc0c68113ac85fd9deb55b4))
+* some bugs UI ([e7d3624](https://github.com/henchoznoe/Arbeaute/commit/e7d362464a1668c03578a72638ca0b34350e6606))
+
+
+### Features
+
+* identify customers by e-mail and share the agenda display settings ([fb4fe77](https://github.com/henchoznoe/Arbeaute/commit/fb4fe77ef0ac661551e7c5bcc2349fd15e9db89b))
+
 # [1.9.0](https://github.com/henchoznoe/Arbeaute/compare/v1.8.2...v1.9.0) (2026-08-17)
 
 
