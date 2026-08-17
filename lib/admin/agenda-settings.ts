@@ -1,11 +1,9 @@
-import { cacheLife, cacheTag } from 'next/cache'
 import { z } from 'zod/v4'
 import { writeAuditEvent } from '@/lib/admin/audit'
 import prisma from '@/lib/core/prisma'
 import type { PrismaClient } from '@/prisma/generated/prisma/client'
 
 export const AGENDA_SETTINGS_ID = 'default'
-export const AGENDA_SETTINGS_TAG = 'agenda-settings'
 
 /** Lundi d'abord, dimanche en dernier : l'ordre dans lequel l'agenda se lit. */
 export const AGENDA_DAY_ORDER = [1, 2, 3, 4, 5, 6, 0] as const
@@ -38,19 +36,32 @@ export const agendaSettingsSchema = z.object({
 
 export type AgendaSettingsInput = z.infer<typeof agendaSettingsSchema>
 
-/** Source unique mise en cache : l'agenda la lit à chaque ouverture. */
+/**
+ * Jours affichés par la grille de semaine.
+ *
+ * Volontairement sans `'use cache'` : la requête est minuscule, l'agenda est de
+ * toute façon dynamique, et une valeur de repli mise en cache pour toujours
+ * serait pire que la requête évitée.
+ *
+ * L'échec est absorbé parce que les previews Vercel lisent la base de
+ * production, qui ne migre qu'aux déploiements de production : la table peut
+ * donc manquer alors que le code, lui, est déjà déployé. Un agenda qui montre
+ * les sept jours vaut mieux qu'un agenda qui ne s'ouvre pas.
+ */
 export const getAgendaSettings = async (): Promise<AgendaSettingsValues> => {
-  'use cache'
-  cacheLife('max')
-  cacheTag(AGENDA_SETTINGS_TAG)
-
-  const settings = await prisma.agendaSettings.findUnique({
-    where: { id: AGENDA_SETTINGS_ID },
-    select: { visibleDays: true },
-  })
-  const visibleDays = sortByAgendaOrder(settings?.visibleDays ?? [])
-  return {
-    visibleDays: visibleDays.length ? visibleDays : DEFAULT_AGENDA_VISIBLE_DAYS,
+  try {
+    const settings = await prisma.agendaSettings.findUnique({
+      where: { id: AGENDA_SETTINGS_ID },
+      select: { visibleDays: true },
+    })
+    const visibleDays = sortByAgendaOrder(settings?.visibleDays ?? [])
+    return {
+      visibleDays: visibleDays.length
+        ? visibleDays
+        : DEFAULT_AGENDA_VISIBLE_DAYS,
+    }
+  } catch {
+    return { visibleDays: DEFAULT_AGENDA_VISIBLE_DAYS }
   }
 }
 

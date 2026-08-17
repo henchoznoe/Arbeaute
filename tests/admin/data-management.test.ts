@@ -102,7 +102,7 @@ describe('customer anonymization', () => {
   it('previews the exact number of affected records', async () => {
     const database = {
       customer: {
-        findUnique: vi.fn().mockResolvedValue({
+        findFirst: vi.fn().mockResolvedValue({
           id: 'customer-1',
           firstName: 'Marie',
           lastName: 'Dupont',

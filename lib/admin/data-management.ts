@@ -198,8 +198,9 @@ export const getCustomerAnonymizationPreview = async (
   database: PrismaClient,
   emailNormalized: string,
 ): Promise<AnonymizationPreview | null> => {
-  const customer = await database.customer.findUnique({
+  const customer = await database.customer.findFirst({
     where: { emailNormalized },
+    orderBy: [{ firstSeenAt: 'asc' }, { id: 'asc' }],
     select: {
       id: true,
       firstName: true,

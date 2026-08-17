@@ -1,3 +1,4 @@
+import { createHmac } from 'node:crypto'
 import { cookies } from 'next/headers'
 import { env, isProd } from '@/lib/core/env'
 import {
@@ -44,6 +45,20 @@ export const clearAdminSession = async (): Promise<void> => {
   const cookieStore = await cookies()
   cookieStore.delete(ADMIN_COOKIE_NAME)
 }
+
+/**
+ * Condensé d'identité de la version précédente, encore écrit à la création d'une
+ * fiche : le code servi en production cherche les siennes par cette valeur, et
+ * la colonne reste `NOT NULL` jusqu'à la migration de retrait décrite dans
+ * `docs/data-operations.md`. Plus rien ne le lit ici.
+ */
+export const createCustomerIdentityDigest = (
+  email: string,
+  phone: string,
+): string =>
+  createHmac('sha256', env.CUSTOMER_SESSION_SECRET)
+    .update(`${email.trim().toLowerCase()}\0${phone.trim()}`)
+    .digest('base64url')
 
 /**
  * Le cookie porte l'identifiant de la fiche, jamais de coordonnée.

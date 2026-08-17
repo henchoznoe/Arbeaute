@@ -1,9 +1,8 @@
 'use server'
 
-import { revalidatePath, updateTag } from 'next/cache'
+import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import {
-  AGENDA_SETTINGS_TAG,
   agendaSettingsSchema,
   saveAgendaSettingsAudited,
 } from '@/lib/admin/agenda-settings'
@@ -21,7 +20,6 @@ export const saveAgendaSettings = async (formData: FormData): Promise<void> => {
   if (!parsed.success) redirect('/admin/settings/agenda?error=invalid')
 
   await saveAgendaSettingsAudited(prisma, parsed.data)
-  updateTag(AGENDA_SETTINGS_TAG)
   revalidatePath('/admin')
   revalidatePath('/admin/settings/agenda')
   redirect('/admin/settings/agenda?saved=1')

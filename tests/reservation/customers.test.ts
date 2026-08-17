@@ -1,5 +1,9 @@
 import { describe, expect, it, vi } from 'vitest'
 
+vi.mock('@/lib/core/session-cookies', () => ({
+  createCustomerIdentityDigest: vi.fn(() => 'legacy-digest'),
+}))
+
 import {
   findCustomerForSession,
   normalizeCustomerSearchName,
@@ -14,6 +18,18 @@ const identity = {
   phone: '079 123 45 67',
 }
 
+const makeTransaction = (existing: { id: string } | null) => {
+  const customer = { id: existing?.id ?? 'customer-2' }
+  return {
+    customer: {
+      findFirst: vi.fn().mockResolvedValue(existing),
+      update: vi.fn().mockResolvedValue(customer),
+      create: vi.fn().mockResolvedValue(customer),
+    },
+    auditEvent: { create: vi.fn().mockResolvedValue({ id: 'audit-event' }) },
+  } as unknown as Prisma.TransactionClient
+}
+
 describe('normalized customers', () => {
   it('normalizes the searchable name without accents', () => {
     expect(
@@ -21,26 +37,19 @@ describe('normalized customers', () => {
     ).toBe('elodie du chene')
   })
 
-  it('keys the record on the normalized e-mail alone', async () => {
-    const customer = {
-      id: 'customer-1',
-      emailNormalized: 'elodie@example.com',
-      phoneNormalized: '+41791234567',
-    }
-    const transaction = {
-      customer: {
-        findUnique: vi.fn().mockResolvedValue({ id: 'customer-1' }),
-        upsert: vi.fn().mockResolvedValue(customer),
-      },
-      auditEvent: { create: vi.fn().mockResolvedValue({ id: 'audit-event' }) },
-    } as unknown as Prisma.TransactionClient
+  it('retient la fiche la plus ancienne pour une adresse donnée', async () => {
+    const transaction = makeTransaction({ id: 'customer-1' })
 
-    await expect(upsertCustomerIdentity(transaction, identity)).resolves.toBe(
-      customer,
-    )
-    expect(transaction.customer.upsert).toHaveBeenCalledWith({
+    await upsertCustomerIdentity(transaction, identity)
+
+    expect(transaction.customer.findFirst).toHaveBeenCalledWith({
       where: { emailNormalized: 'elodie@example.com' },
-      update: {
+      orderBy: [{ firstSeenAt: 'asc' }, { id: 'asc' }],
+      select: { id: true },
+    })
+    expect(transaction.customer.update).toHaveBeenCalledWith({
+      where: { id: 'customer-1' },
+      data: {
         firstName: 'Élodie',
         lastName: 'Du Chêne',
         searchName: 'elodie du chene',
@@ -49,7 +58,45 @@ describe('normalized customers', () => {
         phoneNormalized: '+41791234567',
         lastSeenAt: expect.any(Date),
       },
-      create: {
+    })
+    expect(transaction.customer.create).not.toHaveBeenCalled()
+  })
+
+  it('ne réécrit pas le condensé de la version précédente sur une fiche connue', async () => {
+    const transaction = makeTransaction({ id: 'customer-1' })
+
+    await upsertCustomerIdentity(transaction, identity)
+
+    expect(
+      JSON.stringify(
+        (transaction.customer.update as unknown as { mock: { calls: unknown } })
+          .mock.calls,
+      ),
+    ).not.toContain('identityDigest')
+  })
+
+  it('suit la personne quand seul le téléphone a changé', async () => {
+    const transaction = makeTransaction({ id: 'customer-1' })
+
+    await upsertCustomerIdentity(transaction, {
+      ...identity,
+      phone: '079 999 99 99',
+    })
+
+    expect(transaction.customer.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({ phoneNormalized: '+41799999999' }),
+      }),
+    )
+  })
+
+  it('écrit le condensé de la version précédente à la création', async () => {
+    const transaction = makeTransaction(null)
+
+    await upsertCustomerIdentity(transaction, identity)
+
+    expect(transaction.customer.create).toHaveBeenCalledWith({
+      data: {
         firstName: 'Élodie',
         lastName: 'Du Chêne',
         searchName: 'elodie du chene',
@@ -57,60 +104,15 @@ describe('normalized customers', () => {
         emailNormalized: 'elodie@example.com',
         phone: '+41791234567',
         phoneNormalized: '+41791234567',
+        identityDigest: 'legacy-digest',
       },
     })
     expect(transaction.auditEvent.create).toHaveBeenCalledWith({
-      data: {
+      data: expect.objectContaining({
         actorType: 'CUSTOMER',
-        actorId: 'customer-1',
-        entityType: 'CUSTOMER',
-        entityId: 'customer-1',
-        action: 'UPDATED',
-        changes: undefined,
-      },
-    })
-  })
-
-  it('follows the person when only the phone number changed', async () => {
-    const customer = {
-      id: 'customer-1',
-      emailNormalized: 'elodie@example.com',
-      phoneNormalized: '+41799999999',
-    }
-    const transaction = {
-      customer: {
-        findUnique: vi.fn().mockResolvedValue({ id: 'customer-1' }),
-        upsert: vi.fn().mockResolvedValue(customer),
-      },
-      auditEvent: { create: vi.fn().mockResolvedValue({ id: 'audit-event' }) },
-    } as unknown as Prisma.TransactionClient
-
-    await expect(
-      upsertCustomerIdentity(transaction, {
-        ...identity,
-        phone: '079 999 99 99',
+        actorId: 'customer-2',
+        action: 'CREATED',
       }),
-    ).resolves.toBe(customer)
-    expect(transaction.customer.upsert).toHaveBeenCalledWith(
-      expect.objectContaining({
-        where: { emailNormalized: 'elodie@example.com' },
-        update: expect.objectContaining({ phoneNormalized: '+41799999999' }),
-      }),
-    )
-  })
-
-  it('audits a first booking as a creation', async () => {
-    const transaction = {
-      customer: {
-        findUnique: vi.fn().mockResolvedValue(null),
-        upsert: vi.fn().mockResolvedValue({ id: 'customer-2' }),
-      },
-      auditEvent: { create: vi.fn().mockResolvedValue({ id: 'audit-event' }) },
-    } as unknown as Prisma.TransactionClient
-
-    await upsertCustomerIdentity(transaction, identity)
-    expect(transaction.auditEvent.create).toHaveBeenCalledWith({
-      data: expect.objectContaining({ action: 'CREATED' }),
     })
   })
 

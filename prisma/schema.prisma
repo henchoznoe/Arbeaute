@@ -185,15 +185,21 @@ model AgendaSettings {
 
 model Customer {
   id String @id @default(cuid())
-  /// Incrémenté dès qu'une adresse change ou que les coordonnées sont
-  /// effacées : les sessions ouvertes cessent alors d'être valides.
+  /// Reste écrit à la création, le temps que la version précédente du site
+  /// quitte la production : elle cherche encore ses fiches par ce condensé.
+  /// La migration de retrait est décrite dans docs/data-operations.md.
+  identityDigest String @unique
+  /// Incrémenté par le trigger `customer_identity_version_trigger` dès qu'une
+  /// adresse change ou que les coordonnées sont effacées : les sessions
+  /// ouvertes cessent alors d'être valides.
   identityVersion Int     @default(1)
   firstName       String?
   lastName        String
   email           String
-  /// Clé d'identité : une adresse, une personne. C'est cette unicité qui rend
-  /// l'`upsert` de réservation sûr quand deux demandes arrivent ensemble.
-  emailNormalized String  @unique
+  /// Clé d'identité depuis la v2 : une adresse, une personne. L'index unique
+  /// qui le garantit arrive avec la migration de retrait des condensés, une
+  /// fois cette version en production.
+  emailNormalized String
   phone           String
   phoneNormalized String
   searchName      String
@@ -206,6 +212,7 @@ model Customer {
   preferences     String?
   appointments    Appointment[]
 
+  @@index([emailNormalized])
   @@index([phoneNormalized])
   @@index([searchName])
   @@index([anonymizedAt])
@@ -232,6 +239,10 @@ model Appointment {
   customerSearchName      String
   customerEmail           String?
   customerPhone           String?
+  /// Plus jamais écrites : conservées le temps d'une version, puis retirées
+  /// (voir docs/data-operations.md). Aucune requête ne les lit.
+  customerIdentityDigest  String?
+  customerIdentityVersion Int                   @default(1)
   comment                 String?
   source                  AppointmentSource
   status                  AppointmentStatus     @default(CONFIRMED)
@@ -249,6 +260,7 @@ model Appointment {
   @@index([customerPhone, startsAt])
   @@index([customerSearchName, startsAt])
   @@index([customerSearchName(ops: raw("gin_trgm_ops"))], map: "appointment_customerSearchName_trgm_idx", type: Gin)
+  @@index([customerIdentityDigest, startsAt, status])
   @@index([customerId, startsAt, status])
   @@index([serviceId, startsAt])
   @@index([status, source, startsAt])
