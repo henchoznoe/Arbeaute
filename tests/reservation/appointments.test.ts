@@ -59,8 +59,8 @@ const makeDatabase = () => {
   const transaction = {
     service: { findFirst: vi.fn().mockResolvedValue(service) },
     customer: {
-      findFirst: vi.fn().mockResolvedValue({ id: 'customer-1' }),
-      create: vi.fn().mockResolvedValue({
+      findUnique: vi.fn().mockResolvedValue({ id: 'customer-1' }),
+      upsert: vi.fn().mockResolvedValue({
         id: 'customer-1',
         emailNormalized: 'marie@example.com',
         phoneNormalized: '+41791234567',

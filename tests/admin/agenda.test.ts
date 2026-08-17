@@ -170,8 +170,8 @@ describe('manual admin appointments', () => {
       },
       appointmentActivity: { create: createActivity },
       customer: {
-        findFirst: vi.fn().mockResolvedValue(null),
-        create: vi.fn().mockResolvedValue({ id: 'customer-manual' }),
+        findUnique: vi.fn().mockResolvedValue(null),
+        upsert: vi.fn().mockResolvedValue({ id: 'customer-manual' }),
       },
       auditEvent: { create: vi.fn().mockResolvedValue({ id: 'audit-event' }) },
     }
@@ -328,8 +328,8 @@ describe('admin appointment series', () => {
       },
       availabilityException: { findMany: vi.fn().mockResolvedValue([]) },
       customer: {
-        findFirst: vi.fn().mockResolvedValue(null),
-        create: vi.fn().mockResolvedValue({ id: 'customer-series' }),
+        findUnique: vi.fn().mockResolvedValue(null),
+        upsert: vi.fn().mockResolvedValue({ id: 'customer-series' }),
       },
       auditEvent: { create: vi.fn().mockResolvedValue({ id: 'audit' }) },
     }
@@ -345,7 +345,7 @@ describe('admin appointment series', () => {
     expect(created).toHaveLength(3)
     expect(create).toHaveBeenCalledTimes(3)
     // Une seule fiche pour toute la série, rattachée à chaque occurrence.
-    expect(transaction.customer.create).toHaveBeenCalledOnce()
+    expect(transaction.customer.upsert).toHaveBeenCalledOnce()
     expect(create).toHaveBeenCalledWith(
       expect.objectContaining({
         data: expect.objectContaining({ customerId: 'customer-series' }),

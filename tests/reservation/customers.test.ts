@@ -1,9 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
 
-vi.mock('@/lib/core/session-cookies', () => ({
-  createCustomerIdentityDigest: vi.fn(() => 'legacy-digest'),
-}))
-
 import {
   findCustomerForSession,
   normalizeCustomerSearchName,
@@ -18,17 +14,14 @@ const identity = {
   phone: '079 123 45 67',
 }
 
-const makeTransaction = (existing: { id: string } | null) => {
-  const customer = { id: existing?.id ?? 'customer-2' }
-  return {
+const makeTransaction = (existing: { id: string } | null) =>
+  ({
     customer: {
-      findFirst: vi.fn().mockResolvedValue(existing),
-      update: vi.fn().mockResolvedValue(customer),
-      create: vi.fn().mockResolvedValue(customer),
+      findUnique: vi.fn().mockResolvedValue(existing),
+      upsert: vi.fn().mockResolvedValue({ id: existing?.id ?? 'customer-2' }),
     },
     auditEvent: { create: vi.fn().mockResolvedValue({ id: 'audit-event' }) },
-  } as unknown as Prisma.TransactionClient
-}
+  }) as unknown as Prisma.TransactionClient
 
 describe('normalized customers', () => {
   it('normalizes the searchable name without accents', () => {
@@ -37,19 +30,14 @@ describe('normalized customers', () => {
     ).toBe('elodie du chene')
   })
 
-  it('retient la fiche la plus ancienne pour une adresse donnée', async () => {
+  it('keys the record on the normalized e-mail alone', async () => {
     const transaction = makeTransaction({ id: 'customer-1' })
 
     await upsertCustomerIdentity(transaction, identity)
 
-    expect(transaction.customer.findFirst).toHaveBeenCalledWith({
+    expect(transaction.customer.upsert).toHaveBeenCalledWith({
       where: { emailNormalized: 'elodie@example.com' },
-      orderBy: [{ firstSeenAt: 'asc' }, { id: 'asc' }],
-      select: { id: true },
-    })
-    expect(transaction.customer.update).toHaveBeenCalledWith({
-      where: { id: 'customer-1' },
-      data: {
+      update: {
         firstName: 'Élodie',
         lastName: 'Du Chêne',
         searchName: 'elodie du chene',
@@ -58,18 +46,26 @@ describe('normalized customers', () => {
         phoneNormalized: '+41791234567',
         lastSeenAt: expect.any(Date),
       },
+      create: {
+        firstName: 'Élodie',
+        lastName: 'Du Chêne',
+        searchName: 'elodie du chene',
+        email: 'elodie@example.com',
+        emailNormalized: 'elodie@example.com',
+        phone: '+41791234567',
+        phoneNormalized: '+41791234567',
+      },
     })
-    expect(transaction.customer.create).not.toHaveBeenCalled()
   })
 
-  it('ne réécrit pas le condensé de la version précédente sur une fiche connue', async () => {
-    const transaction = makeTransaction({ id: 'customer-1' })
+  it('n’écrit plus aucun condensé d’identité', async () => {
+    const transaction = makeTransaction(null)
 
     await upsertCustomerIdentity(transaction, identity)
 
     expect(
       JSON.stringify(
-        (transaction.customer.update as unknown as { mock: { calls: unknown } })
+        (transaction.customer.upsert as unknown as { mock: { calls: unknown } })
           .mock.calls,
       ),
     ).not.toContain('identityDigest')
@@ -83,30 +79,19 @@ describe('normalized customers', () => {
       phone: '079 999 99 99',
     })
 
-    expect(transaction.customer.update).toHaveBeenCalledWith(
+    expect(transaction.customer.upsert).toHaveBeenCalledWith(
       expect.objectContaining({
-        data: expect.objectContaining({ phoneNormalized: '+41799999999' }),
+        where: { emailNormalized: 'elodie@example.com' },
+        update: expect.objectContaining({ phoneNormalized: '+41799999999' }),
       }),
     )
   })
 
-  it('écrit le condensé de la version précédente à la création', async () => {
+  it('audits a first booking as a creation', async () => {
     const transaction = makeTransaction(null)
 
     await upsertCustomerIdentity(transaction, identity)
 
-    expect(transaction.customer.create).toHaveBeenCalledWith({
-      data: {
-        firstName: 'Élodie',
-        lastName: 'Du Chêne',
-        searchName: 'elodie du chene',
-        email: 'elodie@example.com',
-        emailNormalized: 'elodie@example.com',
-        phone: '+41791234567',
-        phoneNormalized: '+41791234567',
-        identityDigest: 'legacy-digest',
-      },
-    })
     expect(transaction.auditEvent.create).toHaveBeenCalledWith({
       data: expect.objectContaining({
         actorType: 'CUSTOMER',
