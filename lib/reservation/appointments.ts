@@ -241,7 +241,9 @@ export const moveAppointmentSerializable = async (
             before: { startsAt: appointment.startsAt.toISOString() },
             after: { startsAt: updated.startsAt.toISOString() },
           })
-          return updated
+          // L'ancien horaire remonte pour que l'e-mail de déplacement puisse
+          // le rappeler à la cliente.
+          return { ...updated, previousStartsAt: appointment.startsAt }
         },
         { isolationLevel: 'Serializable' },
       )

@@ -179,6 +179,33 @@ the row and audit event in one transaction, then invalidates every public view.
 - Sensitive actions go through `checkRateLimit` (`lib/services/rate-limit.ts`),
   a DB-backed fixed-window counter keyed by an HMAC of the IP or identity.
 
+### Transactional emails
+
+`lib/email/` sends through Resend over plain `fetch` — no SDK, the project
+counts its kilobytes. The layering matters:
+
+- `templates.ts` is pure (subject, text, HTML) and unit-tested;
+- `client.ts` only knows the envelope, with a ten-second timeout;
+- `send.ts` writes one `EmailDelivery` row per attempt and **never throws**;
+- `notifications.ts` queues the send with `after()`, so a booking never waits
+  on Resend and a Resend outage cannot fail a reservation.
+
+`RESEND_API_KEY`, `RESEND_FROM`, `ADMIN_NOTIFICATION_EMAIL` and `CRON_SECRET`
+are **optional** in `lib/core/env.ts`: without them the app behaves exactly as
+before, silently sending nothing. Free-tier limits (100/day, 3000/month) are
+counted from successful sends and surfaced at `/admin/emails`, where a failed
+message can be resent — its body is rebuilt from the appointment rather than
+stored.
+
+Reminders and Arzu's evening digest share the single daily cron declared in
+`vercel.json`, which is all the Vercel Hobby plan allows.
+
+**Cron schedules are UTC and ignore daylight saving.** `0 18 * * *` fires at
+20:00 in Bulle in summer and 19:00 in winter. Hobby triggers within the hour,
+not to the minute, so nothing in the job may depend on an exact time. Vercel
+sends `Authorization: Bearer $CRON_SECRET`; without that variable the route
+answers 503 rather than running unauthenticated.
+
 ### PWA
 
 Two separately installable apps, defined in `lib/config/pwa.ts` and served by

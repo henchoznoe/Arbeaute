@@ -45,6 +45,19 @@ enum AuditEntityType {
   BOOKING_SETTINGS
 }
 
+enum EmailKind {
+  BOOKING_CONFIRMATION
+  BOOKING_RESCHEDULED
+  BOOKING_CANCELLED
+  APPOINTMENT_REMINDER
+  DAILY_DIGEST
+}
+
+enum EmailStatus {
+  SENT
+  FAILED
+}
+
 enum AuditActionType {
   CREATED
   UPDATED
@@ -213,6 +226,7 @@ model Appointment {
   service                 Service               @relation(fields: [serviceId], references: [id], onDelete: Restrict)
   customer                Customer?             @relation(fields: [customerId], references: [id], onDelete: SetNull)
   activities              AppointmentActivity[]
+  emailDeliveries         EmailDelivery[]
 
   @@index([startsAt, endsAt, status])
   @@index([occupiedStartsAt, occupiedEndsAt, status])
@@ -262,6 +276,33 @@ model AuditEvent {
   @@index([action, createdAt])
   @@index([actorType, createdAt])
   @@map("audit_event")
+}
+
+/// Trace de chaque e-mail transactionnel.
+///
+/// L'envoi est volontairement secondaire : le rendez-vous est déjà enregistré
+/// quand la ligne est écrite. Seul le strict nécessaire au renvoi est conservé
+/// — destinataire, objet, et le rendez-vous d'origine — le corps du message
+/// étant reconstruit à la demande plutôt que dupliqué ici.
+model EmailDelivery {
+  id            String       @id @default(cuid())
+  kind          EmailKind
+  status        EmailStatus
+  recipient     String
+  subject       String
+  appointmentId String?
+  providerId    String?
+  error         String?
+  attempts      Int          @default(1)
+  sentAt        DateTime?
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+  appointment   Appointment? @relation(fields: [appointmentId], references: [id], onDelete: SetNull)
+
+  @@index([status, createdAt])
+  @@index([createdAt])
+  @@index([appointmentId, createdAt])
+  @@map("email_delivery")
 }
 
 model RateLimitBucket {

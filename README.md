@@ -73,6 +73,7 @@ peut être enregistré, même en cas de réservations simultanées.
 | CI/CD | GitHub Actions |
 | Analytics | Vercel Analytics |
 | Hosting | Vercel |
+| E-mails | Resend (offre gratuite, optionnelle) |
 
 ## Quick Start
 

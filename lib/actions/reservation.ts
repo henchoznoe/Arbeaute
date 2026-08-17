@@ -11,6 +11,11 @@ import {
   setCustomerSession,
 } from '@/lib/core/session-cookies'
 import {
+  notifyAppointmentCancelled,
+  notifyAppointmentConfirmed,
+  notifyAppointmentRescheduled,
+} from '@/lib/email/notifications'
+import {
   cancelAppointmentSerializable,
   createAppointmentSerializable,
   moveAppointmentSerializable,
@@ -194,6 +199,7 @@ export const createPublicAppointment = async (
       comment: parsed.data.comment || null,
     })
     refreshAdminActivity()
+    notifyAppointmentConfirmed(appointment)
 
     return {
       ok: true,
@@ -379,6 +385,7 @@ export const moveCustomerAppointment = async (
     })
     revalidatePath('/mes-rendez-vous')
     refreshAdminActivity()
+    notifyAppointmentRescheduled(appointment, appointment.previousStartsAt)
     return {
       ok: true,
       message: 'Votre rendez-vous a bien été déplacé.',
@@ -413,13 +420,14 @@ export const cancelCustomerAppointment = async (
     const customer = await requireCustomerMutation()
     if (!customer)
       return { ok: false, message: 'Votre session a expiré. Reconnectez-vous.' }
-    await cancelAppointmentSerializable(
+    const cancelled = await cancelAppointmentSerializable(
       prisma,
       parsed.data.appointmentId,
       customer.id,
     )
     revalidatePath('/mes-rendez-vous')
     refreshAdminActivity()
+    notifyAppointmentCancelled(cancelled)
     return { ok: true, message: 'Votre rendez-vous a bien été annulé.' }
   } catch {
     return {

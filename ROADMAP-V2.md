@@ -53,9 +53,9 @@ figure dans le titre et se réévalue après chaque livraison.
 
 | Statut | Éléments |
 | --- | --- |
-| ✅ Terminés | 1 à 7, 12 |
+| ✅ Terminés | 1 à 7, 11, 12 |
 | 🟡 En cours | Aucun |
-| ⏳ Prêt à démarrer | 8 à 11, 13 |
+| ⏳ Prêt à démarrer | 8, 9, 10, 13 |
 | 🔒 Bloqués | Aucun |
 
 Les fondations visuelles sont posées et l’agenda d’Arzu est traité de bout en
@@ -570,7 +570,7 @@ consentement s’il y en a un). Les avertissements disparaissent.
 
 ## Confirmations et rappels par e-mail
 
-### 11. Envoyer confirmations et rappels via Resend — ⏳ Prêt à démarrer
+### 11. Envoyer confirmations et rappels via Resend — ✅ Terminé
 
 **Priorité : P1 · Effort : L · Nature : nouvelle capacité**
 
@@ -604,7 +604,40 @@ avec les autres variables, et documentée dans `.env.example`.
   avant qu’il ne bloque les envois ;
 - les envois automatiques ne dépendent d’aucune tâche planifiée payante.
 
-**Dépendances :** aucune ; conditionne les éléments 7 et 10.
+**Livré.** `lib/email/` envoie par Resend en `fetch` direct, sans SDK. Le
+découpage suit la contrainte : `templates.ts` est pur et couvert par des tests,
+`client.ts` ne connaît que l’enveloppe et abandonne après dix secondes,
+`send.ts` écrit une ligne `EmailDelivery` par tentative et **ne lève jamais**,
+`notifications.ts` met l’envoi en file avec `after()` — la cliente voit sa
+confirmation sans attendre Resend.
+
+Quatre messages à la cliente : confirmation, déplacement, annulation, rappel de
+la veille. Un récapitulatif du soir part à Arzu. Les deux derniers partagent
+l’unique tâche planifiée déclarée dans `vercel.json`, la seule que le plan
+Hobby autorise. `/admin/emails` montre chaque envoi, traduit l’échec en une
+phrase actionnable — le JSON du fournisseur reste replié dessous — et propose
+de renvoyer, le corps étant reconstruit depuis le rendez-vous plutôt que
+stocké.
+
+**Vérifié en conditions réelles.** Réservation sans clé Resend : confirmée,
+aucune trace parasite. Réservation avec clé : confirmée, appel réel à Resend,
+refus 422 tracé, bouton « Renvoyer » fonctionnel. Le quota est compté sur les
+envois réussis et affiché avant d’être atteint.
+
+**Une panne trouvée par la vérification.** `RESEND_FROM` était validé par
+`z.email()`, qui refuse la forme « Nom <adresse> » — celle qu’attend Resend, et
+celle que documentait `.env.example`. L’erreur remontait à l’import de
+`env.ts` : **toutes les pages du site renvoyaient 500**. La validation est
+devenue tolérante, une adresse mal formée désactive les e-mails au lieu de
+casser le site, et `tests/core/email-config.test.ts` verrouille le cas.
+
+**Reste à faire côté exploitation.** Le domaine `arbeaute-bulle.ch` doit finir
+sa propagation DNS chez Resend ; tant qu’elle n’est pas terminée, Resend
+n’accepte que vos propres adresses. Les quatre variables doivent être ajoutées
+dans Vercel, `CRON_SECRET` étant injecté automatiquement dès que le cron est
+déclaré.
+
+**Dépendances :** aucune ; débloque l’élément 10.
 
 ---
 
@@ -709,8 +742,8 @@ remplacent la couverture perdue avec l’élément 12.
 Sans calendrier, mais avec un enchaînement qui évite de refaire deux fois le même
 travail :
 
-1. **Mettre en place les e-mails (11)**, qui débloquent la réécriture de la
-   confirmation (10) et fixent le vocabulaire (7).
+1. **Réécrire la confirmation (10)**, désormais débloquée : l’écran peut cesser
+   d’avertir qu’aucun e-mail ne sera envoyé.
 2. **Finir par la vitrine et le tunnel (8, 9)** et par la chasse aux
    incohérences (13), qui bénéficient de toutes les décisions précédentes.
 

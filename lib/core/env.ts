@@ -15,6 +15,14 @@ const serverSchema = z.object({
   CUSTOMER_SESSION_SECRET: z.string().min(32),
   BLOB_STORE_ID: z.string().min(1),
   BLOB_WEBHOOK_PUBLIC_KEY: z.string().min(1),
+  // Optionnelles à dessein, et volontairement permissives : une adresse
+  // d'expéditeur mal formée doit désactiver les e-mails, jamais empêcher le
+  // site de démarrer. `RESEND_FROM` accepte la forme « Nom <adresse> », qui
+  // est celle qu'attend Resend.
+  RESEND_API_KEY: z.string().min(1).optional(),
+  RESEND_FROM: z.string().min(3).optional(),
+  ADMIN_NOTIFICATION_EMAIL: z.string().min(3).optional(),
+  CRON_SECRET: z.string().min(16).optional(),
   VERCEL_ENV: z.enum(['development', 'preview', 'production']).optional(),
   VERCEL_PROJECT_PRODUCTION_URL: z.string().optional(),
   VERCEL_GIT_COMMIT_SHA: z.string().optional(),
@@ -54,6 +62,23 @@ export const env = {
   ...parsedClient.data,
   ...(parsedServer.data as z.infer<typeof serverSchema>),
 } as Env
+
+/**
+ * Une adresse exploitable, sous la forme `adresse@domaine` ou
+ * `Nom <adresse@domaine>`. Volontairement tolérant : la validation fine
+ * appartient à Resend, pas au démarrage de l'application.
+ */
+export const looksLikeEmailAddress = (value: string | undefined): boolean => {
+  if (!value) return false
+  const address = value.includes('<')
+    ? (value.match(/<([^>]+)>/)?.[1] ?? '')
+    : value
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(address.trim())
+}
+
+/** L'envoi d'e-mails n'est actif que si la clé et l'expéditeur sont utilisables. */
+export const isEmailConfigured =
+  Boolean(env.RESEND_API_KEY) && looksLikeEmailAddress(env.RESEND_FROM)
 
 export const isProd = env.NODE_ENV === 'production'
 export const isDev = env.NODE_ENV === 'development'

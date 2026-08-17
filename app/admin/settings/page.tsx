@@ -1,4 +1,10 @@
-import { Clock3, Database, Settings2, SlidersHorizontal } from 'lucide-react'
+import {
+  Clock3,
+  Database,
+  Mail,
+  Settings2,
+  SlidersHorizontal,
+} from 'lucide-react'
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { Suspense } from 'react'
@@ -57,6 +63,23 @@ const Settings = async () => {
           </p>
           <span className="mt-5 inline-flex min-h-11 items-center text-sm font-medium text-primary">
             Gérer les horaires →
+          </span>
+        </Link>
+
+        <Link
+          href="/admin/emails"
+          className="group rounded-3xl border bg-card p-6 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
+        >
+          <span className="grid size-12 place-items-center rounded-2xl bg-primary/10 text-primary">
+            <Mail className="size-6" />
+          </span>
+          <h2 className="mt-5 text-xl font-semibold">E-mails</h2>
+          <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
+            Les messages envoyés à vos clientes, ceux qui ne sont pas partis, et
+            ce qu’il vous reste sur l’offre gratuite.
+          </p>
+          <span className="mt-5 inline-flex min-h-11 items-center text-sm font-medium text-primary">
+            Voir les e-mails →
           </span>
         </Link>
 
