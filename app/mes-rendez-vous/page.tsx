@@ -1,4 +1,3 @@
-import { LoaderCircle } from 'lucide-react'
 import Link from 'next/link'
 import { Suspense } from 'react'
 import { SiteHeader } from '@/components/layout/site-header'
@@ -6,6 +5,7 @@ import { CustomerAppointmentCard } from '@/components/reservation/customer-appoi
 import { CustomerAppointmentHistoryCard } from '@/components/reservation/customer-appointment-history-card'
 import { Button } from '@/components/ui/button'
 import { FormField, formControlClass } from '@/components/ui/form-field'
+import { Skeleton } from '@/components/ui/skeleton'
 import { identifyCustomer, logoutCustomer } from '@/lib/actions/reservation'
 import { createPageMetadata } from '@/lib/config/seo'
 import prisma from '@/lib/core/prisma'
@@ -49,15 +49,35 @@ const fieldClass = cn(formControlClass, 'min-h-12 px-4')
  * Coquille prérendue : elle part sur le CDN sans invocation, y compris quand
  * un `<Link>` de la page d'accueil précharge la route. Le contenu, qui dépend
  * de la session, est diffusé juste après.
+ *
+ * Elle reprend la forme de la page connectée — titre, compteur, deux cartes de
+ * rendez-vous — parce que c'est le cas le plus fréquent et que la coquille ne
+ * doit pas déplacer la mise en page à l'arrivée du contenu.
  */
 const CustomerAppointmentsSkeleton = () => (
   <>
     <SiteHeader />
-    <main className="flex min-h-screen items-center justify-center px-5 pt-16 pb-12">
-      <div className="flex flex-col items-center gap-3 text-muted-foreground">
-        <LoaderCircle className="size-6 animate-spin" />
-        <p className="text-sm font-medium">Chargement de vos rendez-vous…</p>
-      </div>
+    <main className="min-h-screen px-5 pt-24 pb-8 sm:px-8 sm:pt-28 sm:pb-12">
+      <p role="status" className="sr-only">
+        Chargement de vos rendez-vous…
+      </p>
+      <section className="mx-auto max-w-3xl">
+        <Skeleton className="h-4 w-36 rounded-full" />
+        <Skeleton className="mt-3 h-9 w-64" />
+        <div className="mt-8 flex items-center gap-3">
+          <Skeleton className="h-8 w-28" />
+          <Skeleton className="size-7 rounded-full" />
+        </div>
+        <div className="mt-4 space-y-5">
+          <Skeleton className="h-52 rounded-3xl" />
+          <Skeleton className="h-52 rounded-3xl" />
+        </div>
+        <Skeleton className="mt-10 h-8 w-52" />
+        <div className="mt-4 space-y-3">
+          <Skeleton className="h-20 rounded-2xl" />
+          <Skeleton className="h-20 rounded-2xl" />
+        </div>
+      </section>
     </main>
   </>
 )
@@ -104,11 +124,10 @@ const CustomerAppointments = async ({
               Mes rendez-vous
             </h1>
             <p className="mt-3 text-sm text-muted-foreground">
-              Saisissez exactement l’e-mail et le numéro de téléphone utilisés
-              lors de votre réservation.
+              Saisissez l’adresse e-mail utilisée lors de votre réservation.
             </p>
             <form action={identifyCustomer} className="mt-7 space-y-4">
-              <FormField controlId="customer-email" label="E-mail">
+              <FormField controlId="customer-email" label="Adresse e-mail">
                 <input
                   id="customer-email"
                   name="email"
@@ -116,20 +135,6 @@ const CustomerAppointments = async ({
                   required
                   placeholder="votre@email.ch"
                   autoComplete="email"
-                  className={fieldClass}
-                />
-              </FormField>
-              <FormField
-                controlId="customer-phone"
-                label="Numéro de téléphone complet"
-              >
-                <input
-                  id="customer-phone"
-                  name="phone"
-                  type="tel"
-                  required
-                  placeholder="0791234567"
-                  autoComplete="tel"
                   className={fieldClass}
                 />
               </FormField>
@@ -142,10 +147,9 @@ const CustomerAppointments = async ({
                   className="rounded-xl bg-destructive/10 p-4 text-sm text-destructive"
                   role="alert"
                 >
-                  Aucun rendez-vous ne correspond à cet e-mail et ce numéro de
-                  téléphone. Vérifiez les informations saisies lors de la
-                  réservation, ou prenez un nouveau rendez-vous si vous n’en
-                  avez pas encore.
+                  Aucun rendez-vous ne correspond à cette adresse. Vérifiez-la
+                  telle qu’elle a été saisie lors de la réservation, ou prenez
+                  un nouveau rendez-vous si vous n’en avez pas encore.
                 </p>
               ) : null}
               <Button type="submit" size="lg" className="w-full">

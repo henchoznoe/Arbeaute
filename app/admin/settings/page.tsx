@@ -1,4 +1,5 @@
 import {
+  CalendarDays,
   Clock3,
   Database,
   Mail,
@@ -12,7 +13,7 @@ import { AdminSkeleton } from '@/components/admin/admin-skeleton'
 import { getAdminSession } from '@/lib/core/session-cookies'
 
 const SettingsPage = () => (
-  <Suspense fallback={<AdminSkeleton maxWidth="max-w-4xl" />}>
+  <Suspense fallback={<AdminSkeleton variant="cards" maxWidth="max-w-4xl" />}>
     <Settings />
   </Suspense>
 )
@@ -27,7 +28,7 @@ const Settings = async () => {
         <h1 className="font-heading text-title font-bold">Réglages</h1>
         <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
           Gérez les disponibilités de l’institut et les prestations proposées
-          aux clientes.
+          sur le site.
         </p>
       </header>
 
@@ -42,10 +43,27 @@ const Settings = async () => {
           <h2 className="mt-5 text-xl font-semibold">Réservation</h2>
           <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
             Combien de temps à l’avance réserver, jusqu’à quand, et jusqu’à
-            quand une cliente peut changer son rendez-vous.
+            quand un rendez-vous peut être changé sans vous.
           </p>
           <span className="mt-5 inline-flex min-h-11 items-center text-sm font-medium text-primary">
             Gérer les règles →
+          </span>
+        </Link>
+
+        <Link
+          href="/admin/settings/agenda"
+          className="group rounded-3xl border bg-card p-6 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
+        >
+          <span className="grid size-12 place-items-center rounded-2xl bg-primary/10 text-primary">
+            <CalendarDays className="size-6" />
+          </span>
+          <h2 className="mt-5 text-xl font-semibold">Agenda</h2>
+          <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
+            Les jours que la vue semaine affiche sur ordinateur. Le choix est
+            enregistré ici, pas dans votre navigateur.
+          </p>
+          <span className="mt-5 inline-flex min-h-11 items-center text-sm font-medium text-primary">
+            Choisir les jours →
           </span>
         </Link>
 
@@ -75,7 +93,7 @@ const Settings = async () => {
           </span>
           <h2 className="mt-5 text-xl font-semibold">E-mails</h2>
           <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
-            Les messages envoyés à vos clientes, ceux qui ne sont pas partis, et
+            Les messages envoyés depuis le site, ceux qui ne sont pas partis, et
             ce qu’il vous reste sur l’offre gratuite.
           </p>
           <span className="mt-5 inline-flex min-h-11 items-center text-sm font-medium text-primary">
@@ -92,7 +110,7 @@ const Settings = async () => {
           </span>
           <h2 className="mt-5 text-xl font-semibold">Données</h2>
           <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
-            Télécharger vos données, effacer les coordonnées d’une cliente qui
+            Télécharger vos données, effacer les coordonnées d’une personne qui
             le demande, et vérifier vos sauvegardes.
           </p>
           <span className="mt-5 inline-flex min-h-11 items-center text-sm font-medium text-primary">

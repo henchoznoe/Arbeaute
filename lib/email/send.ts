@@ -9,8 +9,8 @@ import type { EmailKind } from '@/prisma/generated/prisma/enums'
  * Envoi d'un e-mail transactionnel, toujours secondaire.
  *
  * Cette fonction ne rejette jamais : elle est appelée après qu'un rendez-vous
- * est déjà enregistré, et aucune panne de Resend ne doit remonter jusqu'à la
- * cliente. Chaque tentative laisse une ligne dans `email_delivery`, qu'elle
+ * est déjà enregistré, et aucune panne de Resend ne doit remonter jusqu'à
+ * l'écran. Chaque tentative laisse une ligne dans `email_delivery`, qu'elle
  * réussisse ou non, pour être visible et renvoyable depuis l'administration.
  */
 

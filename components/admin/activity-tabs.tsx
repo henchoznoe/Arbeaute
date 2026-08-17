@@ -17,7 +17,7 @@ export const ActivityTabs = ({
           : 'text-muted-foreground'
       }`}
     >
-      <UsersRound className="size-4" /> Clientes
+      <UsersRound className="size-4" /> Fiches
     </Link>
     <Link
       href="/admin/activity/audit"

@@ -64,7 +64,7 @@ interface AvailabilityPageProps {
 const AvailabilityPage = ({
   searchParams,
 }: Readonly<AvailabilityPageProps>) => (
-  <Suspense fallback={<AdminSkeleton maxWidth="max-w-5xl" />}>
+  <Suspense fallback={<AdminSkeleton variant="form" maxWidth="max-w-5xl" />}>
     <Availability searchParams={searchParams} />
   </Suspense>
 )
@@ -138,8 +138,8 @@ const Availability = async ({
           Vos horaires d’ouverture
         </h1>
         <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
-          Les horaires de la semaine décident des heures que vos clientes voient
-          en ligne. Pour un jour particulier — vacances, ouverture spéciale —
+          Les horaires de la semaine décident des heures que le site propose en
+          ligne. Pour un jour particulier — vacances, ouverture spéciale —
           marquez-le dans le calendrier : une fermeture retire des heures, une
           ouverture en ajoute.
         </p>

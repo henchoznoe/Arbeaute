@@ -3,9 +3,15 @@ import { MAX_SERIALIZABLE_ATTEMPTS } from '@/lib/reservation/constants'
 import { Prisma, type PrismaClient } from '@/prisma/generated/prisma/client'
 import type { AppointmentStatus } from '@/prisma/generated/prisma/enums'
 
+/**
+ * `COMPLETED` n'est plus jamais écrit : un rendez-vous confirmé dont l'heure est
+ * passée compte comme réalisé, personne n'a à le marquer à la main. Le statut
+ * reste lu partout — badges, exports, historique — pour les rendez-vous que
+ * l'ancienne interface avait déjà marqués.
+ */
 export type AdminAppointmentStatusTarget = Extract<
   AppointmentStatus,
-  'CONFIRMED' | 'COMPLETED' | 'NO_SHOW'
+  'CONFIRMED' | 'NO_SHOW'
 >
 
 export class AdminAppointmentStatusError extends Error {

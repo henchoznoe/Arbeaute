@@ -29,9 +29,16 @@ export const normalizeCustomerSearchName = (
     .toLowerCase()
 
 /**
- * Rattache une identité uniquement si ses deux coordonnées normalisées
- * concordent. Un digest déjà associé à d'autres valeurs reste volontairement
- * sans fusion automatique.
+ * Rattache une identité à partir de son e-mail seul.
+ *
+ * L'adresse désigne la personne : le téléphone la suit — quelqu'un qui change de
+ * numéro reste la même personne — et le nom aussi.
+ *
+ * Volontairement en deux temps plutôt qu'un `upsert` : l'index unique sur
+ * `emailNormalized` n'arrive qu'avec la migration de retrait des condensés, et
+ * `upsert` produirait un `ON CONFLICT` que la base refuse tant que cet index
+ * n'existe pas. Le tri par `firstSeenAt` retient la fiche la plus ancienne,
+ * exactement celle que cette migration conservera en fusionnant les doublons.
  */
 export const upsertCustomerIdentity = async (
   transaction: Prisma.TransactionClient,
@@ -39,47 +46,45 @@ export const upsertCustomerIdentity = async (
 ) => {
   const emailNormalized = normalizeEmail(input.email)
   const phoneNormalized = normalizePhone(input.phone)
-  const identityDigest = createCustomerIdentityDigest(
-    emailNormalized,
-    phoneNormalized,
-  )
   const names = {
     firstName: input.firstName?.trim() || null,
     lastName: input.lastName.trim(),
     searchName: normalizeCustomerSearchName(input.firstName, input.lastName),
   }
-  const existing = await transaction.customer.findUnique({
-    where: { identityDigest },
+  const existing = await transaction.customer.findFirst({
+    where: { emailNormalized },
+    orderBy: [{ firstSeenAt: 'asc' }, { id: 'asc' }],
     select: { id: true },
   })
-  const customer = await transaction.customer.upsert({
-    where: { identityDigest },
-    update: {},
-    create: {
-      identityDigest,
-      ...names,
-      email: emailNormalized,
-      emailNormalized,
-      phone: phoneNormalized,
-      phoneNormalized,
-    },
-  })
 
-  if (
-    customer.emailNormalized !== emailNormalized ||
-    customer.phoneNormalized !== phoneNormalized
-  )
-    return null
+  const updated = existing
+    ? await transaction.customer.update({
+        where: { id: existing.id },
+        data: {
+          ...names,
+          email: emailNormalized,
+          phone: phoneNormalized,
+          phoneNormalized,
+          lastSeenAt: new Date(),
+        },
+      })
+    : await transaction.customer.create({
+        data: {
+          ...names,
+          email: emailNormalized,
+          emailNormalized,
+          phone: phoneNormalized,
+          phoneNormalized,
+          // Transitoire : la version précédente du site cherche encore ses
+          // fiches par ce condensé. Retiré par la release suivante, voir
+          // docs/data-operations.md.
+          identityDigest: createCustomerIdentityDigest(
+            emailNormalized,
+            phoneNormalized,
+          ),
+        },
+      })
 
-  const updated = await transaction.customer.update({
-    where: { id: customer.id },
-    data: {
-      ...names,
-      email: emailNormalized,
-      phone: phoneNormalized,
-      lastSeenAt: new Date(),
-    },
-  })
   await writeAuditEvent(transaction, {
     actorType: 'CUSTOMER',
     actorId: updated.id,
@@ -90,14 +95,20 @@ export const upsertCustomerIdentity = async (
   return updated
 }
 
+/**
+ * `anonymizedAt` fait partie de la condition : une fiche dont les coordonnées
+ * viennent d'être effacées ne doit plus ouvrir aucun espace personnel, même si
+ * un cookie valide traîne encore.
+ */
 export const findCustomerForSession = (
   transaction: Pick<Prisma.TransactionClient, 'customer'>,
   session: CustomerSessionIdentity,
 ) =>
   transaction.customer.findFirst({
     where: {
-      identityDigest: session.subject,
+      id: session.subject,
       identityVersion: session.version,
+      anonymizedAt: null,
     },
-    select: { id: true, identityDigest: true, identityVersion: true },
+    select: { id: true, identityVersion: true },
   })

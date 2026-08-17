@@ -31,8 +31,10 @@ try {
       startsAt,
       firstName: null,
       lastName: `${marker}${suffix}`,
-      email: null,
-      phone: null,
+      // Deux adresses distinctes : deux fiches, pour que seule la contrainte
+      // d'exclusion sur les créneaux départage les deux créations.
+      email: `concurrence-${suffix.toLowerCase()}@invalid.local`,
+      phone: `+4179000000${suffix === 'A' ? '1' : '2'}`,
       comment: null,
     })
 
@@ -55,23 +57,29 @@ try {
   if (
     appointments.length !== 1 ||
     appointments[0].customerFirstName !== null ||
-    appointments[0].customerEmail !== null ||
-    appointments[0].customerPhone !== null ||
+    appointments[0].customerEmail === null ||
+    appointments[0].customerPhone === null ||
+    appointments[0].customerId === null ||
     appointments[0].source !== 'ADMIN'
   )
-    throw new Error('Le rendez-vous manuel avec nom seul est invalide')
+    throw new Error('Le rendez-vous manuel n’a pas les coordonnées attendues')
 
   console.log(
     JSON.stringify({
       created: 1,
       rejectedAsOverlap: 1,
-      nameOnlyAppointment: true,
+      linkedToCustomer: true,
       status: 'ok',
     }),
   )
 } finally {
   await prisma.appointment.deleteMany({
     where: { customerLastName: { startsWith: marker } },
+  })
+  // Uniquement les fiches de ce script : les coordonnées effacées portent aussi
+  // une adresse en `@invalid.local`, et elles ne doivent jamais être touchées.
+  await prisma.customer.deleteMany({
+    where: { emailNormalized: { startsWith: 'concurrence-' } },
   })
   await prisma.$disconnect()
 }

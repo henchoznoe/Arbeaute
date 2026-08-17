@@ -20,7 +20,7 @@ const EditServicePage = ({
   params,
   searchParams,
 }: Readonly<EditServicePageProps>) => (
-  <Suspense fallback={<AdminSkeleton maxWidth="max-w-5xl" />}>
+  <Suspense fallback={<AdminSkeleton variant="form" maxWidth="max-w-5xl" />}>
     <EditService params={params} searchParams={searchParams} />
   </Suspense>
 )

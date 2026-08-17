@@ -6,7 +6,6 @@ import { z } from 'zod/v4'
 import prisma from '@/lib/core/prisma'
 import {
   clearCustomerSession,
-  createCustomerIdentityDigest,
   getCustomerSession,
   setCustomerSession,
 } from '@/lib/core/session-cookies'
@@ -234,13 +233,20 @@ export const createPublicAppointment = async (
   }
 }
 
+/**
+ * L'e-mail seul ouvre l'espace personnel.
+ *
+ * Le téléphone était exigé en plus, à la virgule près : une personne qui avait
+ * donné « 079 123 45 67 » puis tapait « +41791234567 » restait dehors. Le
+ * compromis assumé est documenté dans `SECURITY.md` ; il repose sur la limite de
+ * tentatives ci-dessous, sur une session de quinze minutes, et sur le fait
+ * qu'aucun paiement ni donnée de santé n'est stocké.
+ */
 export const identifyCustomer = async (formData: FormData): Promise<void> => {
   const emailValue = formData.get('email')
-  const phoneValue = formData.get('phone')
   const honeypot = formData.get('website')
   const ip = await getRequestIp()
-  let customer: { identityDigest: string; identityVersion: number } | null =
-    null
+  let customer: { id: string; identityVersion: number } | null = null
 
   try {
     if (!(await hasSameOrigin())) throw new Error('Invalid origin')
@@ -250,24 +256,18 @@ export const identifyCustomer = async (formData: FormData): Promise<void> => {
       limit: 10,
       windowMs: 15 * 60 * 1000,
     })
-    if (
-      limit.allowed &&
-      honeypot === '' &&
-      typeof emailValue === 'string' &&
-      typeof phoneValue === 'string'
-    ) {
+    if (limit.allowed && honeypot === '' && typeof emailValue === 'string') {
       const email = normalizeEmail(emailValue)
-      const phone = normalizePhone(phoneValue)
-      const candidateDigest = createCustomerIdentityDigest(email, phone)
-      customer = await prisma.customer.findUnique({
-        where: { identityDigest: candidateDigest },
-        select: { identityDigest: true, identityVersion: true },
+      customer = await prisma.customer.findFirst({
+        where: { emailNormalized: email, anonymizedAt: null },
+        orderBy: [{ firstSeenAt: 'asc' }, { id: 'asc' }],
+        select: { id: true, identityVersion: true },
       })
     }
   } catch {}
 
   if (!customer) redirect('/mes-rendez-vous?error=invalid')
-  await setCustomerSession(customer.identityDigest, customer.identityVersion)
+  await setCustomerSession(customer.id, customer.identityVersion)
   redirect('/mes-rendez-vous')
 }
 
@@ -287,7 +287,7 @@ const requireCustomerMutation = async () => {
   if (!customer) return null
   const rateLimit = await checkRateLimit({
     action: 'customer-mutation',
-    key: customer.identityDigest,
+    key: customer.id,
     limit: CUSTOMER_SESSION_MUTATION_LIMIT,
     windowMs: 60 * 60 * 1000,
   })

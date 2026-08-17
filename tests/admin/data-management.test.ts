@@ -102,7 +102,7 @@ describe('customer anonymization', () => {
   it('previews the exact number of affected records', async () => {
     const database = {
       customer: {
-        findUnique: vi.fn().mockResolvedValue({
+        findFirst: vi.fn().mockResolvedValue({
           id: 'customer-1',
           firstName: 'Marie',
           lastName: 'Dupont',
@@ -114,7 +114,7 @@ describe('customer anonymization', () => {
     } as unknown as PrismaClient
 
     await expect(
-      getCustomerAnonymizationPreview(database, 'identity-digest'),
+      getCustomerAnonymizationPreview(database, 'marie@example.com'),
     ).resolves.toEqual({
       customerId: 'customer-1',
       displayName: 'Marie Dupont',
@@ -155,11 +155,10 @@ describe('customer anonymization', () => {
       where: { customerId: 'customer-1' },
       data: {
         customerFirstName: null,
-        customerLastName: 'Cliente anonymisée',
-        customerSearchName: 'cliente anonymisee',
+        customerLastName: 'Coordonnées effacées',
+        customerSearchName: 'coordonnees effacees',
         customerEmail: null,
         customerPhone: null,
-        customerIdentityDigest: null,
         comment: null,
       },
     })

@@ -46,6 +46,12 @@ export const clearAdminSession = async (): Promise<void> => {
   cookieStore.delete(ADMIN_COOKIE_NAME)
 }
 
+/**
+ * Condensé d'identité de la version précédente, encore écrit à la création d'une
+ * fiche : le code servi en production cherche les siennes par cette valeur, et
+ * la colonne reste `NOT NULL` jusqu'à la migration de retrait décrite dans
+ * `docs/data-operations.md`. Plus rien ne le lit ici.
+ */
 export const createCustomerIdentityDigest = (
   email: string,
   phone: string,
@@ -54,13 +60,22 @@ export const createCustomerIdentityDigest = (
     .update(`${email.trim().toLowerCase()}\0${phone.trim()}`)
     .digest('base64url')
 
+/**
+ * Le cookie porte l'identifiant de la fiche, jamais de coordonnée.
+ *
+ * Il portait auparavant un condensé HMAC de l'e-mail et du téléphone, parce que
+ * l'identification exigeait les deux. Depuis qu'un e-mail suffit, un `cuid`
+ * opaque remplit le même rôle sans rien dériver d'une donnée personnelle, et
+ * `identityVersion` continue d'invalider les sessions ouvertes dès qu'une
+ * adresse change ou que des coordonnées sont effacées.
+ */
 export const setCustomerSession = async (
-  identityDigest: string,
+  customerId: string,
   identityVersion: number,
 ): Promise<void> => {
   const token = await createSessionToken({
     kind: 'customer',
-    subject: identityDigest,
+    subject: customerId,
     version: identityVersion,
     ttlSeconds: CUSTOMER_TTL_SECONDS,
     secret: env.CUSTOMER_SESSION_SECRET,

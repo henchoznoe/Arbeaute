@@ -13,7 +13,7 @@ import { hasSameOrigin } from '@/lib/utils/request'
 
 const appointmentStatusSchema = z.object({
   appointmentId: z.string().min(1),
-  targetStatus: z.enum(['CONFIRMED', 'COMPLETED', 'NO_SHOW']),
+  targetStatus: z.enum(['CONFIRMED', 'NO_SHOW']),
 })
 
 export interface AdminAppointmentStatusActionResult {
@@ -52,11 +52,9 @@ export const changeAdminAppointmentStatus = async (input: {
     return {
       ok: true,
       message:
-        appointment.status === 'COMPLETED'
-          ? 'Le rendez-vous est marqué comme terminé.'
-          : appointment.status === 'NO_SHOW'
-            ? 'Le rendez-vous est marqué comme absence.'
-            : 'Le rendez-vous est de nouveau confirmé.',
+        appointment.status === 'NO_SHOW'
+          ? 'Le rendez-vous est marqué comme absence.'
+          : 'Le rendez-vous est de nouveau confirmé.',
     }
   } catch (error) {
     if (

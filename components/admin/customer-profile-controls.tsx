@@ -177,7 +177,7 @@ export const CustomerProfileForm = ({
         controlId="customer-internal-note"
         label="Note interne"
         optional
-        help="Visible uniquement dans l’administration, jamais dans l’espace cliente."
+        help="Visible uniquement dans l’administration, jamais dans l’espace personnel."
         className="mt-5"
       >
         <textarea

@@ -55,7 +55,7 @@ const TermsPage = async () => {
           Passé ce délai, ou en cas d’absence sans nouvelles (« no-show »), la
           prestation réservée est considérée comme due et pourra être facturée à
           100 % de son prix. Ce délai permet à {contact.owner} de proposer le
-          créneau libéré à une autre cliente.
+          créneau libéré à quelqu’un d’autre.
         </p>
         <p>
           Toute modification ou annulation en dehors de ce délai doit être

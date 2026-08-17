@@ -10,7 +10,6 @@ const now = new Date('2026-08-15T10:00:00.000Z')
 
 const customer = {
   id: 'customer-1',
-  identityDigest: 'old-digest',
   identityVersion: 2,
   firstName: 'Marie',
   lastName: 'Dupont',
@@ -44,6 +43,8 @@ describe('admin customer profile', () => {
           { status: 'CANCELLED', _count: { _all: 2 } },
           { status: 'NO_SHOW', _count: { _all: 1 } },
         ]),
+        // Deux des trois rendez-vous confirmés sont déjà passés.
+        count: vi.fn().mockResolvedValue(2),
       },
     } as unknown as PrismaClient
 
@@ -51,7 +52,9 @@ describe('admin customer profile', () => {
 
     expect(profile).toMatchObject({
       totalAppointments: 10,
-      totalVisits: 4,
+      // Quatre marqués « terminé » par l'ancienne interface, deux déduits de la
+      // date : le bouton n'existe plus, le compte reste juste.
+      totalVisits: 6,
       statusCounts: {
         CONFIRMED: 3,
         COMPLETED: 4,
@@ -67,16 +70,23 @@ describe('admin customer profile', () => {
       2,
       expect.objectContaining({ take: 30 }),
     )
+    expect(database.appointment.count).toHaveBeenCalledWith({
+      where: {
+        customerId: customer.id,
+        status: 'CONFIRMED',
+        endsAt: { lt: now },
+      },
+    })
   })
 
-  it('propagates corrected identity only to future confirmed snapshots', async () => {
+  it('propagates corrected details only to future confirmed snapshots', async () => {
     const transaction = {
       customer: {
         findFirst: vi
           .fn()
           .mockResolvedValueOnce(customer)
           .mockResolvedValueOnce(null),
-        update: vi.fn().mockResolvedValue({ identityVersion: 3 }),
+        update: vi.fn().mockResolvedValue({ id: 'customer-1' }),
       },
       appointment: { updateMany: vi.fn().mockResolvedValue({ count: 2 }) },
       auditEvent: { create: vi.fn().mockResolvedValue({ id: 'audit-1' }) },
@@ -104,11 +114,13 @@ describe('admin customer profile', () => {
         status: 'CONFIRMED',
         startsAt: { gte: now },
       },
-      data: expect.objectContaining({
+      data: {
         customerFirstName: 'Maria',
+        customerLastName: 'Dupont',
+        customerSearchName: 'maria dupont',
         customerEmail: 'maria@example.com',
-        customerIdentityVersion: 3,
-      }),
+        customerPhone: '+41791234567',
+      },
     })
     expect(
       JSON.stringify(transaction.auditEvent.create.mock.calls),
@@ -122,7 +134,7 @@ describe('admin customer profile', () => {
           .fn()
           .mockResolvedValueOnce(customer)
           .mockResolvedValueOnce(null),
-        update: vi.fn().mockResolvedValue({ identityVersion: 2 }),
+        update: vi.fn().mockResolvedValue({ id: 'customer-1' }),
       },
       appointment: { updateMany: vi.fn() },
       auditEvent: { create: vi.fn().mockResolvedValue({ id: 'audit-1' }) },
@@ -146,7 +158,7 @@ describe('admin customer profile', () => {
     expect(transaction.appointment.updateMany).not.toHaveBeenCalled()
   })
 
-  it('rejects coordinates already owned by another active customer', async () => {
+  it('rejects an e-mail already used by another record', async () => {
     const transaction = {
       customer: {
         findFirst: vi

@@ -38,7 +38,7 @@ const makeDatabase = (status: 'CONFIRMED' | 'CANCELLED' | 'NO_SHOW') => {
 }
 
 describe('admin appointment status transitions', () => {
-  it.each(['COMPLETED', 'NO_SHOW'] as const)(
+  it.each(['NO_SHOW'] as const)(
     'changes a confirmed appointment to %s without touching its snapshots',
     async targetStatus => {
       const { database, transaction } = makeDatabase('CONFIRMED')
@@ -148,7 +148,7 @@ describe('admin appointment status transitions', () => {
       changeAdminAppointmentStatusSerializable(
         database,
         'appointment-1',
-        'COMPLETED',
+        'NO_SHOW',
       ),
     ).rejects.toEqual(new AdminAppointmentStatusError('INVALID_TRANSITION'))
     expect(transaction.appointment.update).not.toHaveBeenCalled()

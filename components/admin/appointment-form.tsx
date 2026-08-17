@@ -310,11 +310,12 @@ export const AppointmentForm = ({
       </div>
 
       <div className="grid gap-5 sm:grid-cols-2">
-        <FormField controlId="admin-appointment-email" label="E-mail" optional>
+        <FormField controlId="admin-appointment-email" label="E-mail">
           <input
             id="admin-appointment-email"
             name="email"
             type="email"
+            required
             maxLength={254}
             value={email}
             onChange={event => setEmail(event.target.value)}
@@ -322,15 +323,12 @@ export const AppointmentForm = ({
             autoComplete="email"
           />
         </FormField>
-        <FormField
-          controlId="admin-appointment-phone"
-          label="Téléphone"
-          optional
-        >
+        <FormField controlId="admin-appointment-phone" label="Téléphone">
           <input
             id="admin-appointment-phone"
             name="phone"
             type="tel"
+            required
             maxLength={40}
             value={phone}
             onChange={event => setPhone(event.target.value)}
@@ -340,8 +338,9 @@ export const AppointmentForm = ({
         </FormField>
       </div>
       <p className="-mt-3 text-xs leading-relaxed text-muted-foreground">
-        Le rendez-vous sera accessible dans « Mes rendez-vous » uniquement si
-        l’e-mail et le téléphone sont tous les deux renseignés.
+        Les deux sont nécessaires : l’e-mail sert à envoyer la confirmation et
+        le rappel de la veille, et permet de retrouver le rendez-vous dans « Mes
+        rendez-vous ».
       </p>
 
       <FormField
@@ -467,7 +466,7 @@ export const AppointmentForm = ({
         {appointment.id ? (
           <ConfirmDialog
             title="Annuler ce rendez-vous ?"
-            description="L’heure redevient libre tout de suite et la cliente verra son rendez-vous annulé. Vous pourrez le rétablir ensuite si l’heure est encore disponible."
+            description="L’heure redevient libre tout de suite et le rendez-vous s’affichera comme annulé sur le site. Vous pourrez le rétablir ensuite si l’heure est encore disponible."
             confirmLabel="Oui, annuler ce rendez-vous"
             cancelLabel="Non, le garder"
             onConfirm={cancel}

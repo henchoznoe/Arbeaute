@@ -1,7 +1,7 @@
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { Suspense } from 'react'
-import { AdminCardSkeleton } from '@/components/admin/admin-skeleton'
+import { AdminSkeleton } from '@/components/admin/admin-skeleton'
 import { SubmitButton } from '@/components/ui/submit-button'
 import { loginAdmin } from '@/lib/actions/admin-auth'
 import { getAdminSession } from '@/lib/core/session-cookies'
@@ -11,7 +11,7 @@ interface AdminLoginPageProps {
 }
 
 const AdminLoginPage = ({ searchParams }: Readonly<AdminLoginPageProps>) => (
-  <Suspense fallback={<AdminCardSkeleton />}>
+  <Suspense fallback={<AdminSkeleton variant="card" />}>
     <AdminLogin searchParams={searchParams} />
   </Suspense>
 )

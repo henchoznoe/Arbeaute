@@ -94,17 +94,18 @@ export const getAuditPage = async (
 
 export const auditActorLabels: Record<AuditActorType, string> = {
   ADMIN: 'Arzu',
-  CUSTOMER: 'Cliente',
+  CUSTOMER: 'Depuis le site',
 }
 
 export const auditEntityLabels: Record<AuditEntityType, string> = {
   APPOINTMENT: 'Rendez-vous',
-  CUSTOMER: 'Cliente',
+  CUSTOMER: 'Fiche',
   SERVICE: 'Prestation',
   SERVICE_CATEGORY: 'Catégorie',
   WEEKLY_AVAILABILITY: 'Horaire de la semaine',
   AVAILABILITY_EXCEPTION: 'Jour particulier',
   BOOKING_SETTINGS: 'Règles de réservation',
+  AGENDA_SETTINGS: 'Jours affichés dans l’agenda',
 }
 
 export const auditActionLabels: Record<AuditActionType, string> = {
@@ -144,6 +145,7 @@ export const getAuditEntityHref = (
   )
     return '/admin/availability'
   if (event.entityType === 'BOOKING_SETTINGS') return '/admin/settings/booking'
+  if (event.entityType === 'AGENDA_SETTINGS') return '/admin/settings/agenda'
   return null
 }
 
@@ -170,6 +172,7 @@ const changeFieldLabels: Record<string, string> = {
   bookingHorizonMonths: 'Horizon de réservation',
   customerChangeCutoffHours: 'Délai de modification',
   slotIntervalMinutes: 'Pas des créneaux',
+  visibleDays: 'Jours affichés',
   type: 'Type',
   hadImage: 'Image présente',
   hasImage: 'Image présente',

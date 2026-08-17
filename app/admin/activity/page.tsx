@@ -21,7 +21,7 @@ const parsePage = (value: string | undefined): number => {
 }
 
 const ActivityPage = ({ searchParams }: Readonly<ActivityPageProps>) => (
-  <Suspense fallback={<AdminSkeleton maxWidth="max-w-3xl" />}>
+  <Suspense fallback={<AdminSkeleton variant="list" maxWidth="max-w-3xl" />}>
     <ActivityHistory searchParams={searchParams} />
   </Suspense>
 )
@@ -52,8 +52,8 @@ const ActivityHistory = async ({
           <p className="text-sm font-medium text-brand">Arbeauté</p>
           <h1 className="font-heading text-title font-bold">Activité</h1>
           <p className="mt-1 text-sm text-muted-foreground">
-            {totalCount} action{totalCount > 1 ? 's' : ''} cliente
-            {totalCount > 1 ? 's' : ''}
+            {totalCount} action{totalCount > 1 ? 's' : ''} venue
+            {totalCount > 1 ? 's' : ''} du site
           </p>
         </div>
         {unreadCount > 0 ? (
@@ -74,7 +74,7 @@ const ActivityHistory = async ({
         </form>
       ) : null}
 
-      <section className="mt-5" aria-label="Historique des activités clientes">
+      <section className="mt-5" aria-label="Historique de l’activité">
         <ActivityList activities={activities} showAppointmentLinks />
       </section>
 

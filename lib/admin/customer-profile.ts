@@ -1,12 +1,10 @@
 import { writeAuditEvent } from '@/lib/admin/audit'
-import { createCustomerIdentityDigest } from '@/lib/core/session-cookies'
 import { normalizeCustomerSearchName } from '@/lib/reservation/customers'
 import type { Prisma, PrismaClient } from '@/prisma/generated/prisma/client'
 import { AppointmentStatus } from '@/prisma/generated/prisma/enums'
 
 const customerSelect = {
   id: true,
-  identityDigest: true,
   identityVersion: true,
   firstName: true,
   lastName: true,
@@ -84,46 +82,52 @@ export const getAdminCustomerProfile = async (
   })
   if (!customer) return null
 
-  const [upcoming, history, groupedCounts, duplicates] = await Promise.all([
-    database.appointment.findMany({
-      where: {
-        customerId,
-        status: 'CONFIRMED',
-        startsAt: { gte: now },
-      },
-      orderBy: [{ startsAt: 'asc' }, { id: 'asc' }],
-      take: 10,
-      select: appointmentSelect,
-    }),
-    database.appointment.findMany({
-      where: {
-        customerId,
-        OR: [{ startsAt: { lt: now } }, { status: { not: 'CONFIRMED' } }],
-      },
-      orderBy: [{ startsAt: 'desc' }, { id: 'desc' }],
-      take: 30,
-      select: appointmentSelect,
-    }),
-    database.appointment.groupBy({
-      by: ['status'],
-      where: { customerId },
-      _count: { _all: true },
-    }),
-    database.customer.findMany({
-      where: {
-        id: { not: customerId },
-        anonymizedAt: null,
-        OR: [
-          { emailNormalized: customer.emailNormalized },
-          { phoneNormalized: customer.phoneNormalized },
-          { searchName: customer.searchName },
-        ],
-      },
-      orderBy: [{ lastSeenAt: 'desc' }, { id: 'asc' }],
-      take: 8,
-      select: duplicateSelect,
-    }),
-  ])
+  const [upcoming, history, groupedCounts, pastConfirmedCount, duplicates] =
+    await Promise.all([
+      database.appointment.findMany({
+        where: {
+          customerId,
+          status: 'CONFIRMED',
+          startsAt: { gte: now },
+        },
+        orderBy: [{ startsAt: 'asc' }, { id: 'asc' }],
+        take: 10,
+        select: appointmentSelect,
+      }),
+      database.appointment.findMany({
+        where: {
+          customerId,
+          OR: [{ startsAt: { lt: now } }, { status: { not: 'CONFIRMED' } }],
+        },
+        orderBy: [{ startsAt: 'desc' }, { id: 'desc' }],
+        take: 30,
+        select: appointmentSelect,
+      }),
+      database.appointment.groupBy({
+        by: ['status'],
+        where: { customerId },
+        _count: { _all: true },
+      }),
+      // Une visite réalisée n'est plus marquée à la main : un rendez-vous
+      // confirmé dont l'heure est passée en est une.
+      database.appointment.count({
+        where: { customerId, status: 'CONFIRMED', endsAt: { lt: now } },
+      }),
+      database.customer.findMany({
+        where: {
+          id: { not: customerId },
+          anonymizedAt: null,
+          OR: [
+            { emailNormalized: customer.emailNormalized },
+            { phoneNormalized: customer.phoneNormalized },
+            { searchName: customer.searchName },
+          ],
+        },
+        orderBy: [{ lastSeenAt: 'desc' }, { id: 'asc' }],
+        take: 8,
+        select: duplicateSelect,
+      }),
+    ])
   const statusCounts = Object.fromEntries(
     Object.values(AppointmentStatus).map(status => [status, 0]),
   ) as Record<AppointmentStatus, number>
@@ -139,7 +143,9 @@ export const getAdminCustomerProfile = async (
     duplicates,
     statusCounts,
     totalAppointments,
-    totalVisits: statusCounts.COMPLETED,
+    // `COMPLETED` ne compte plus que les rendez-vous marqués par l'ancienne
+    // interface, quand le statut se posait encore à la main.
+    totalVisits: statusCounts.COMPLETED + pastConfirmedCount,
   }
 }
 
@@ -166,15 +172,12 @@ export const updateAdminCustomer = async (
     })
     if (!current) throw new AdminCustomerProfileError('CUSTOMER_NOT_FOUND')
 
-    const identityDigest = createCustomerIdentityDigest(
-      input.email,
-      input.phone,
-    )
+    // Une adresse ne peut désigner qu'une personne : la corriger vers celle
+    // d'une autre fiche demande une fusion, pas une modification.
     const conflict = await transaction.customer.findFirst({
       where: {
-        identityDigest,
+        emailNormalized: input.email,
         id: { not: current.id },
-        anonymizedAt: null,
       },
       select: { id: true },
     })
@@ -185,13 +188,16 @@ export const updateAdminCustomer = async (
       input.lastName,
     )
     const identityChanged =
-      current.identityDigest !== identityDigest ||
+      current.emailNormalized !== input.email ||
+      current.phoneNormalized !== input.phone ||
       current.firstName !== input.firstName ||
       current.lastName !== input.lastName
-    const updated = await transaction.customer.update({
+    // `identityVersion` est incrémenté par le trigger PostgreSQL
+    // `customer_identity_version_trigger` dès que l'adresse ou le téléphone
+    // change : les sessions ouvertes cessent alors d'être valides.
+    await transaction.customer.update({
       where: { id: current.id },
       data: {
-        identityDigest,
         firstName: input.firstName,
         lastName: input.lastName,
         email: input.email,
@@ -202,7 +208,6 @@ export const updateAdminCustomer = async (
         internalNote: input.internalNote,
         preferences: input.preferences,
       },
-      select: { identityVersion: true },
     })
     const propagated = input.propagateFuture
       ? await transaction.appointment.updateMany({
@@ -217,8 +222,6 @@ export const updateAdminCustomer = async (
             customerSearchName: searchName,
             customerEmail: input.email,
             customerPhone: input.phone,
-            customerIdentityDigest: identityDigest,
-            customerIdentityVersion: updated.identityVersion,
           },
         })
       : { count: 0 }

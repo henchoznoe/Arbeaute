@@ -1,6 +1,5 @@
 import { formatInTimeZone } from 'date-fns-tz'
 import { writeAuditEvent } from '@/lib/admin/audit'
-import { createCustomerIdentityDigest } from '@/lib/core/session-cookies'
 import { RESERVATION_TIME_ZONE } from '@/lib/reservation/constants'
 import { getLocalDayBounds } from '@/lib/reservation/time'
 import type { PrismaClient } from '@/prisma/generated/prisma/client'
@@ -197,10 +196,11 @@ export const getAnonymizationConfirmation = (
 
 export const getCustomerAnonymizationPreview = async (
   database: PrismaClient,
-  identityDigest: string,
+  emailNormalized: string,
 ): Promise<AnonymizationPreview | null> => {
-  const customer = await database.customer.findUnique({
-    where: { identityDigest },
+  const customer = await database.customer.findFirst({
+    where: { emailNormalized },
+    orderBy: [{ firstSeenAt: 'asc' }, { id: 'asc' }],
     select: {
       id: true,
       firstName: true,
@@ -249,32 +249,33 @@ export const anonymizeCustomer = async (
       where: { appointment: { customerId: customer.id } },
       data: {
         customerFirstNameSnapshot: null,
-        customerLastNameSnapshot: 'Cliente anonymisée',
+        customerLastNameSnapshot: 'Coordonnées effacées',
       },
     })
     const appointments = await transaction.appointment.updateMany({
       where: { customerId: customer.id },
       data: {
         customerFirstName: null,
-        customerLastName: 'Cliente anonymisée',
-        customerSearchName: 'cliente anonymisee',
+        customerLastName: 'Coordonnées effacées',
+        customerSearchName: 'coordonnees effacees',
         customerEmail: null,
         customerPhone: null,
-        customerIdentityDigest: null,
         comment: null,
       },
     })
+    // L'adresse de remplacement reste unique, et son changement fait incrémenter
+    // `identityVersion` par le trigger PostgreSQL : la session ouverte de la
+    // personne cesse aussitôt d'être valide.
     await transaction.customer.update({
       where: { id: customer.id },
       data: {
-        identityDigest: placeholder,
         firstName: null,
-        lastName: 'Cliente anonymisée',
+        lastName: 'Coordonnées effacées',
         email: `${placeholder}@invalid.local`,
         emailNormalized: `${placeholder}@invalid.local`,
         phone: placeholder,
         phoneNormalized: placeholder,
-        searchName: 'cliente anonymisee',
+        searchName: 'coordonnees effacees',
         internalNote: null,
         preferences: null,
         anonymizedAt,
@@ -297,6 +298,3 @@ export const anonymizeCustomer = async (
       activityCount: activities.count,
     }
   })
-
-export const customerIdentityDigest = (email: string, phone: string): string =>
-  createCustomerIdentityDigest(email, phone)

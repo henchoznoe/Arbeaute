@@ -4,17 +4,15 @@ import { z } from 'zod/v4'
 import {
   type AnonymizationPreview,
   anonymizeCustomer,
-  customerIdentityDigest,
   getCustomerAnonymizationPreview,
 } from '@/lib/admin/data-management'
 import prisma from '@/lib/core/prisma'
 import { getAdminSession } from '@/lib/core/session-cookies'
-import { normalizeEmail, normalizePhone } from '@/lib/reservation/identity'
+import { normalizeEmail } from '@/lib/reservation/identity'
 import { hasSameOrigin } from '@/lib/utils/request'
 
 const identitySchema = z.object({
   email: z.string().trim().min(1).max(254),
-  phone: z.string().trim().min(1).max(40),
 })
 
 const anonymizationSchema = z.object({
@@ -44,28 +42,26 @@ export const previewCustomerAnonymization = async (
     return {
       ok: false,
       message:
-        'L’e-mail ou le téléphone n’est pas au bon format. Corrigez-les, puis réessayez.',
+        'Cette adresse e-mail n’est pas au bon format. Corrigez-la, puis réessayez.',
     }
 
   try {
-    const email = normalizeEmail(parsed.data.email)
-    const phone = normalizePhone(parsed.data.phone)
     const preview = await getCustomerAnonymizationPreview(
       prisma,
-      customerIdentityDigest(email, phone),
+      normalizeEmail(parsed.data.email),
     )
     if (!preview)
       return {
         ok: false,
         message:
-          'Aucune cliente ne correspond à cet e-mail et à ce téléphone. Vérifiez les deux, en les recopiant depuis un de ses rendez-vous.',
+          'Aucune fiche ne correspond à cette adresse. Recopiez-la depuis un de ses rendez-vous.',
       }
-    return { ok: true, message: 'Cliente trouvée.', preview }
+    return { ok: true, message: 'Fiche trouvée.', preview }
   } catch {
     return {
       ok: false,
       message:
-        'L’e-mail ou le téléphone n’est pas au bon format. Corrigez-les, puis réessayez.',
+        'Cette adresse e-mail n’est pas au bon format. Corrigez-la, puis réessayez.',
     }
   }
 }
@@ -94,7 +90,7 @@ export const confirmCustomerAnonymization = async (
     )
     return {
       ok: true,
-      message: `Cliente anonymisée. ${result.appointmentCount} rendez-vous et ${result.activityCount} activités ont été nettoyés.`,
+      message: `Coordonnées effacées. ${result.appointmentCount} rendez-vous et ${result.activityCount} activités ont été nettoyés.`,
     }
   } catch (error) {
     return {
@@ -102,7 +98,7 @@ export const confirmCustomerAnonymization = async (
       message:
         error instanceof Error && error.message === 'INVALID_CONFIRMATION'
           ? 'La phrase ne correspond plus au nombre de rendez-vous. Relancez l’aperçu.'
-          : 'Cette cliente ne peut plus être anonymisée.',
+          : 'Les coordonnées de cette fiche ne peuvent plus être effacées.',
     }
   }
 }

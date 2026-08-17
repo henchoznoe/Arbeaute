@@ -14,7 +14,7 @@ describe('describeBookingNotice', () => {
 
   it('donne une heure concrète en dessous de vingt-quatre heures', () => {
     expect(describeBookingNotice(12)).toBe(
-      'Avec 12 heures, une cliente qui regarde le site à 8 h du matin ne peut rien prendre avant 20 h le jour même.',
+      'Avec 12 heures, quelqu’un qui regarde le site à 8 h du matin ne peut rien prendre avant 20 h le jour même.',
     )
   })
 
@@ -51,7 +51,7 @@ describe('describeChangeCutoff', () => {
 describe('describeSlotInterval', () => {
   it('déroule les trois premières heures proposées', () => {
     expect(describeSlotInterval(15)).toBe(
-      'Les heures proposées aux clientes seront 9 h 00, 9 h 15, 9 h 30, et ainsi de suite.',
+      'Les heures proposées seront 9 h 00, 9 h 15, 9 h 30, et ainsi de suite.',
     )
     expect(describeSlotInterval(30)).toContain('9 h 00, 9 h 30, 10 h 00')
   })

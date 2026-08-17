@@ -26,7 +26,7 @@ describe('signed sessions', () => {
   it('rejects a modified token', async () => {
     const token = await createSessionToken({
       kind: 'customer',
-      subject: 'identity-digest',
+      subject: 'customer-1',
       version: 4,
       ttlSeconds: 60,
       secret,
@@ -42,7 +42,7 @@ describe('signed sessions', () => {
   it('rejects an expired or wrong-kind session', async () => {
     const token = await createSessionToken({
       kind: 'customer',
-      subject: 'identity-digest',
+      subject: 'customer-1',
       ttlSeconds: 60,
       secret,
       now,

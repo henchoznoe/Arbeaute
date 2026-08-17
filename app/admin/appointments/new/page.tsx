@@ -24,7 +24,7 @@ interface NewAppointmentPageProps {
 const NewAppointmentPage = ({
   searchParams,
 }: Readonly<NewAppointmentPageProps>) => (
-  <Suspense fallback={<AdminSkeleton maxWidth="max-w-3xl" />}>
+  <Suspense fallback={<AdminSkeleton variant="form" maxWidth="max-w-3xl" />}>
     <NewAppointment searchParams={searchParams} />
   </Suspense>
 )
@@ -122,8 +122,8 @@ const NewAppointment = async ({
         {duplicate
           ? 'Le soin et les coordonnées ont été repris. Choisissez un nouveau créneau avant de créer le rendez-vous.'
           : customer
-            ? 'Les coordonnées de la cliente ont été reprises. Choisissez le soin et le créneau.'
-            : 'Seul le nom est obligatoire. Les heures hors ouverture sont possibles après confirmation.'}
+            ? 'Les coordonnées ont été reprises. Choisissez le soin et le créneau.'
+            : 'Nom, e-mail et téléphone sont nécessaires. Les heures hors ouverture sont possibles après confirmation.'}
       </p>
       <div className="mt-7">
         <AppointmentForm

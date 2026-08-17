@@ -97,7 +97,7 @@ export const ServiceForm = ({
       </legend>
       <p className="mb-4 text-sm text-muted-foreground">
         Ces rubriques sont facultatives. Seules celles qui sont remplies seront
-        visibles par les clientes.
+        visibles sur le site.
       </p>
       <div className="grid gap-5 md:grid-cols-2">
         <FormField
@@ -303,9 +303,9 @@ export const ServiceForm = ({
         <span>
           Réservable
           <span className="mt-1 block text-xs font-normal text-muted-foreground">
-            Les clientes peuvent la choisir dans l’assistant de réservation en
-            ligne. À décocher pour un tarif variable (ex. « au temps passé »)
-            que vous réservez vous-même.
+            Elle peut être choisie dans l’assistant de réservation en ligne. À
+            décocher pour un tarif variable (ex. « au temps passé ») que vous
+            réservez vous-même.
           </span>
         </span>
       </label>

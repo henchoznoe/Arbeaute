@@ -1,8 +1,9 @@
 # Vocabulaire de l’interface
 
-Arzu n’a jamais administré de site, et ses clientes non plus. Aucun écran ne doit
-donc employer le vocabulaire du modèle de données. Ce document fixe les termes
-retenus : l’administration, le site public et les e-mails emploient les mêmes.
+Arzu n’a jamais administré de site, et les personnes qui réservent non plus.
+Aucun écran ne doit donc employer le vocabulaire du modèle de données. Ce
+document fixe les termes retenus : l’administration, le site public et les
+e-mails emploient les mêmes.
 
 ## Règle générale
 
@@ -16,18 +17,18 @@ explication l’emporte, même si elle est plus longue.
 | --- | --- |
 | Préavis minimum | Combien de temps à l’avance réserver |
 | Horizon de réservation | Jusqu’à quand on peut réserver |
-| Délai de modification | Jusqu’à quand une cliente peut changer son rendez-vous |
+| Délai de modification | Jusqu’à quand un rendez-vous peut être changé |
 | Pas des créneaux | Espacement des heures proposées |
 | Occupation | Temps rempli |
 | Chiffre prévu | Recette attendue |
-| Absences | Clientes non venues |
+| Absences | Rendez-vous non honorés |
 | Indicateurs de la semaine | Votre semaine en chiffres |
 | Prépa / rangement | Installation et rangement |
 | Statut métier | Appeler ou noter ce qui s’est passé |
 | Journal d’audit | Historique des modifications |
 | Journal admin | Mes modifications |
 | Acteur · Entité | Qui · Quoi |
-| Anonymiser une cliente | Effacer les coordonnées d’une cliente |
+| Anonymiser une cliente | Effacer les coordonnées d’une personne |
 | Anonymisation | Coordonnées effacées |
 | Archivage | Mise de côté |
 | Réorganisation | Ordre changé |
@@ -46,7 +47,37 @@ explication l’emporte, même si elle est plus longue.
 
 Restent tels quels parce qu’ils appartiennent au français courant et que
 l’interface les enseigne d’elle-même : rendez-vous, prestation, créneau, soin,
-cliente, confirmé, terminé, annulé.
+confirmé, terminé, annulé.
+
+## Ne genrez personne
+
+L’institut reçoit aussi des hommes. Or toute l’interface disait « cliente », et
+les commentaires du code avec elle. La règle : **on reformule, on ne remplace
+pas**. Ni masculin générique (« le client »), ni point médian (« client·e »), que
+les lecteurs d’écran ânonnent. La phrase tourne autour du rendez-vous, de la
+fiche ou de la personne — et se lit à voix haute sans buter.
+
+| Ne plus écrire | Écrire |
+| --- | --- |
+| la cliente ne pourra plus le déplacer | le rendez-vous ne pourra plus être déplacé |
+| une cliente qui regarde le site | quelqu’un qui regarde le site |
+| les clientes, vos clientes | les personnes qui réservent, votre clientèle |
+| Fiche cliente | Fiche |
+| Cliente trouvée · Aucune cliente trouvée | Fiche trouvée · Aucune fiche trouvée |
+| Clientes non venues | Rendez-vous non honorés |
+| Cliente sans nom | Sans nom |
+| Marquer cette cliente comme absente | Noter une absence |
+| Cliente anonymisée | Coordonnées effacées |
+| Reprendre une cliente existante | Reprendre une fiche existante |
+| Effacer les coordonnées d’une cliente | Effacer les coordonnées d’une personne |
+| Historique des activités clientes | Historique de l’activité |
+
+Deux exceptions : Arzu, qui est une personne réelle — « une seule praticienne »
+reste juste —, et le mot « clientèle », collectif et sans genre porté sur les
+personnes.
+
+`tests/quality/wording.test.ts` échoue si le mot réapparaît dans `app/`,
+`components/` ou `lib/`.
 
 ## Réglages : toujours un exemple concret
 
@@ -55,8 +86,8 @@ réservation est accompagné d’une phrase construite à partir de la valeur
 enregistrée — voir `lib/admin/booking-settings-wording.ts`, couvert par
 `tests/admin/booking-settings-wording.test.ts`.
 
-> 12 heures → « Avec 12 heures, une cliente qui regarde le site à 8 h du matin
-> ne peut rien prendre avant 20 h le jour même. »
+> 12 heures → « Avec 12 heures, quelqu’un qui regarde le site à 8 h du matin ne
+> peut rien prendre avant 20 h le jour même. »
 
 Ces phrases ne prétendent jamais calculer un jour de la semaine : seul le moteur
 de disponibilité sait le faire, et une phrase fausse est pire qu’une phrase
@@ -74,7 +105,7 @@ qu’il renonce.
 | Déclencheur | Confirmer | Renoncer |
 | --- | --- | --- |
 | Annuler le rendez-vous | Oui, annuler ce rendez-vous | Non, le garder |
-| Annuler (côté cliente) | Annuler le rendez-vous | Garder mon rendez-vous |
+| Annuler (depuis le site) | Annuler le rendez-vous | Garder mon rendez-vous |
 | Effacer les coordonnées | Effacer définitivement ces coordonnées | Annuler |
 
 ## Messages d’erreur
@@ -83,7 +114,7 @@ Un message dit **ce qui s’est passé puis quoi faire ensuite**. « Vérifiez l
 informations saisies » ne suffit pas ; « Corrigez les champs signalés, puis
 réessayez » indique le geste.
 
-Quand rien ne dépend de l’utilisatrice — une panne — le message le dit et
+Quand rien ne dépend de la personne qui lit — une panne — le message le dit et
 propose l’action réaliste : réessayer, ou prévenir le développeur.
 
 ## Une donnée, une seule écriture

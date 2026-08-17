@@ -220,7 +220,7 @@ export const CustomerAppointmentCard = ({
               </Button>
               <ConfirmDialog
                 title="Annuler ce rendez-vous ?"
-                description="Le créneau sera libéré et rendu disponible pour une autre cliente. Pour revenir, il faudra en réserver un nouveau."
+                description="Le créneau sera libéré et rendu disponible pour quelqu’un d’autre. Pour revenir, il faudra en réserver un nouveau."
                 confirmLabel="Annuler le rendez-vous"
                 cancelLabel="Garder mon rendez-vous"
                 onConfirm={cancel}

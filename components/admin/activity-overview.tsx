@@ -25,7 +25,7 @@ export const ActivityOverview = ({
         <div className="min-w-0">
           <h2 className="font-semibold">Activité récente</h2>
           <p className="text-xs text-muted-foreground">
-            Réservations et changements des clientes
+            Réservations et changements venus du site
           </p>
         </div>
       </div>

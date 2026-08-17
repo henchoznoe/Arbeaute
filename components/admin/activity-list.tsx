@@ -32,7 +32,7 @@ export const ActivityList = ({
   if (!activities.length)
     return (
       <EmptyState
-        title="Aucune activité cliente"
+        title="Aucune activité"
         description="Les nouvelles réservations et modifications apparaîtront ici."
         className="border-0 bg-muted/60 py-6"
       />

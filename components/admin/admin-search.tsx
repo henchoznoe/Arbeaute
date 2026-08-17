@@ -133,7 +133,7 @@ export const AdminSearch = ({
     <>
       <section className="mt-6 rounded-3xl border bg-card p-4 shadow-sm sm:p-6">
         <label htmlFor="admin-global-search" className="text-sm font-semibold">
-          Cliente
+          Fiche
         </label>
         <div className="relative mt-2">
           <Search className="pointer-events-none absolute top-3.5 left-3 size-4 text-muted-foreground" />
@@ -318,7 +318,7 @@ export const AdminSearch = ({
                         {appointment.source === 'PUBLIC'
                           ? 'Réservation en ligne'
                           : 'Ajout manuel'}
-                        {appointment.customerId ? ' · cliente liée' : ''}
+                        {appointment.customerId ? ' · fiche liée' : ''}
                       </p>
                     </div>
                     <div className="mt-3 grid gap-2 sm:flex sm:justify-end">
@@ -327,7 +327,7 @@ export const AdminSearch = ({
                           <Link
                             href={`/admin/customers/${appointment.customerId}`}
                           >
-                            <UserRound className="size-4" /> Fiche cliente
+                            <UserRound className="size-4" /> Voir la fiche
                           </Link>
                         </Button>
                       ) : null}

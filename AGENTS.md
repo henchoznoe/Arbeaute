@@ -169,8 +169,25 @@ the row and audit event in one transaction, then invalidates every public view.
 
 - Two independent HMAC-signed cookie sessions (`lib/core/session.ts`,
   `lib/core/session-cookies.ts`): `admin` (30 days, single shared password) and
-  `customer` (15 min, subject = an HMAC digest of email + phone, so no PII in the
-  cookie).
+  `customer` (15 min, subject = the customer record id, so no PII in the cookie).
+- **Customers are identified by e-mail alone.** `Customer.emailNormalized`
+  designates the person; lookups go through `findFirst` ordered by `firstSeenAt`,
+  never `upsert`, because the unique index only lands with the follow-up
+  migration described in `docs/data-operations.md`. Until then
+  `Customer.identityDigest` is still written on creation so the previously
+  deployed code keeps finding its rows. `identityVersion` is bumped by the
+  `customer_identity_version_trigger` database trigger whenever the address or
+  phone changes, which expires open sessions even for edits made in SQL. The
+  security trade-off is documented in `SECURITY.md`; before the change,
+  identification required the exact phone number too and locked real customers
+  out.
+- **Schema changes ship in two steps when they remove something.** The Vercel
+  build runs `prisma migrate deploy` *before* the new code serves traffic, so a
+  migration that drops a column the live code still writes breaks bookings for
+  the length of the deployment. Add and backfill in one release, remove in the
+  next. Previews never migrate (`scripts/migrate-production.ts`) yet read the
+  production database, so a release that adds a table must tolerate its absence
+  — see `getAgendaSettings()`.
 - `proxy.ts` (Next middleware) gates every `/admin/*` path except those listed in
   `PUBLIC_ADMIN_PATHS` — currently the login page and the admin PWA manifest,
   which browsers fetch without cookies.

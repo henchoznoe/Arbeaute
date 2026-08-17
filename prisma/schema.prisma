@@ -43,6 +43,7 @@ enum AuditEntityType {
   WEEKLY_AVAILABILITY
   AVAILABILITY_EXCEPTION
   BOOKING_SETTINGS
+  AGENDA_SETTINGS
 }
 
 enum EmailKind {
@@ -168,13 +169,36 @@ model BookingSettings {
   @@map("booking_settings")
 }
 
+/// Affichage de l'agenda, partagé par toutes les personnes qui l'ouvrent.
+///
+/// Le choix vivait dans le `localStorage` du navigateur : Arzu et Noé ne
+/// voyaient donc pas la même semaine. Une ligne unique en base suffit — il n'y a
+/// qu'un institut, et qu'un agenda.
+model AgendaSettings {
+  id          String   @id @default("default")
+  visibleDays Int[]    @default([1, 2, 3, 4, 5, 6, 0])
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("agenda_settings")
+}
+
 model Customer {
-  id              String        @id @default(cuid())
-  identityDigest  String        @unique
-  identityVersion Int           @default(1)
+  id String @id @default(cuid())
+  /// Reste écrit à la création, le temps que la version précédente du site
+  /// quitte la production : elle cherche encore ses fiches par ce condensé.
+  /// La migration de retrait est décrite dans docs/data-operations.md.
+  identityDigest String @unique
+  /// Incrémenté par le trigger `customer_identity_version_trigger` dès qu'une
+  /// adresse change ou que les coordonnées sont effacées : les sessions
+  /// ouvertes cessent alors d'être valides.
+  identityVersion Int     @default(1)
   firstName       String?
   lastName        String
   email           String
+  /// Clé d'identité depuis la v2 : une adresse, une personne. L'index unique
+  /// qui le garantit arrive avec la migration de retrait des condensés, une
+  /// fois cette version en production.
   emailNormalized String
   phone           String
   phoneNormalized String
@@ -215,6 +239,8 @@ model Appointment {
   customerSearchName      String
   customerEmail           String?
   customerPhone           String?
+  /// Plus jamais écrites : conservées le temps d'une version, puis retirées
+  /// (voir docs/data-operations.md). Aucune requête ne les lit.
   customerIdentityDigest  String?
   customerIdentityVersion Int                   @default(1)
   comment                 String?

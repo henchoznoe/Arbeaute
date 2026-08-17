@@ -6,7 +6,7 @@ type Manifest = MetadataRoute.Manifest
 /**
  * Le site expose deux applications installables distinctes :
  *
- * - la vitrine (`/`) pour les clientes ;
+ * - la vitrine (`/`) pour la clientèle ;
  * - la console d'administration (`/admin`) pour Arzu.
  *
  * Un navigateur identifie une application installée par le champ `id` de
@@ -216,7 +216,7 @@ export const installTargets = {
     description:
       'Vos prestations et vos rendez-vous en un geste, directement depuis votre écran d’accueil.',
     dismissKey: 'arbeaute:install-dismissed:public',
-    /** Une cliente qui refuse n'est plus sollicitée pendant 60 jours. */
+    /** Un refus n'est plus sollicité pendant 60 jours. */
     dismissDays: 60,
     /** Laisser le temps de découvrir la page avant de proposer l'app. */
     delayMs: 5000,

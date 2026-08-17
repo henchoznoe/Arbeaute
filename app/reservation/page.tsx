@@ -2,6 +2,7 @@ import Link from 'next/link'
 import { Suspense } from 'react'
 import { SiteHeader } from '@/components/layout/site-header'
 import { ReservationWizard } from '@/components/reservation/reservation-wizard'
+import { Skeleton, skeletonKeys } from '@/components/ui/skeleton'
 import { getBookableServices } from '@/lib/catalog/queries'
 import { createPageMetadata } from '@/lib/config/seo'
 import { isEmailConfigured } from '@/lib/core/env'
@@ -13,6 +14,30 @@ export const metadata = createPageMetadata({
     'Réservez votre soin esthétique à Bulle en quelques clics : choisissez votre prestation, un créneau disponible et confirmez immédiatement.',
   path: '/reservation',
 })
+
+/** Barre d'étapes puis cartes de prestation : la première vue du tunnel. */
+const WizardSkeleton = () => (
+  <section className="mx-auto max-w-3xl">
+    <p role="status" className="sr-only">
+      Chargement des prestations…
+    </p>
+    <div className="mb-5 grid grid-cols-4 gap-1 sm:mb-8 sm:gap-2">
+      {skeletonKeys(4).map(key => (
+        <Skeleton key={key} className="h-14" />
+      ))}
+    </div>
+    {skeletonKeys(2).map(key => (
+      <div key={key} className="mt-8 first:mt-0">
+        <Skeleton className="h-7 w-40" />
+        <div className="mt-3 grid gap-3 sm:grid-cols-2">
+          {skeletonKeys(4).map(cardKey => (
+            <Skeleton key={cardKey} className="h-36 rounded-2xl" />
+          ))}
+        </div>
+      </div>
+    ))}
+  </section>
+)
 
 const ReservationPage = async () => {
   const [services, window] = await Promise.all([
@@ -46,11 +71,7 @@ const ReservationPage = async () => {
             {isEmailConfigured ? ', puis par e-mail' : null}.
           </p>
         </div>
-        <Suspense
-          fallback={
-            <div className="mx-auto h-72 max-w-3xl animate-pulse rounded-3xl border bg-muted/50" />
-          }
-        >
+        <Suspense fallback={<WizardSkeleton />}>
           <ReservationWizard
             services={services}
             minDate={window.min}
