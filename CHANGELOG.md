@@ -1,3 +1,45 @@
+# [1.9.0](https://github.com/henchoznoe/Arbeaute/compare/v1.8.2...v1.9.0) (2026-08-17)
+
+
+### Bug Fixes
+
+* migrate the database from production deployments only ([0fcc445](https://github.com/henchoznoe/Arbeaute/commit/0fcc44507aaf27d30328b9153077526fa16cf51f))
+* preserve booking confirmation step ([aade366](https://github.com/henchoznoe/Arbeaute/commit/aade366a6f75e3644f2d2c7755837d02d0aab3b3))
+* render booking receipt when printing ([91020ab](https://github.com/henchoznoe/Arbeaute/commit/91020ab88da22156227151f0f3732e81b6da13d7))
+* scroll booking steps into view ([b0a1b28](https://github.com/henchoznoe/Arbeaute/commit/b0a1b285585b008dec6aa0cd6420ddeac5ce65cb))
+* synchronize booking deep links ([a9deb91](https://github.com/henchoznoe/Arbeaute/commit/a9deb915188f62dd8c14004d2969b06cfd4d7fd8))
+* write every date, price and message the same way ([ff20b23](https://github.com/henchoznoe/Arbeaute/commit/ff20b233bfbbf914f46c2e4dc73a9174fb7d1d34))
+
+
+### Features
+
+* add admin customer profiles ([73494a7](https://github.com/henchoznoe/Arbeaute/commit/73494a7a2ef8c91e1917859da53ad207c18d75d2))
+* add automated mobile quality gate ([95ac509](https://github.com/henchoznoe/Arbeaute/commit/95ac509dfb9bf7dc5d59404f7b6a55470bf47e5a))
+* add availability exception calendar ([2cd1ab7](https://github.com/henchoznoe/Arbeaute/commit/2cd1ab718df9cb6ee8ddf06875ff8498c21d0a2b))
+* add booking review and inline validation ([af285b8](https://github.com/henchoznoe/Arbeaute/commit/af285b8c30e621e4727cb029f35f5a26ebf9f607))
+* add booking settings and dashboard metrics ([017643c](https://github.com/henchoznoe/Arbeaute/commit/017643c36645935f40dae97d260057878f4aa016))
+* add daily admin timeline ([a6beac3](https://github.com/henchoznoe/Arbeaute/commit/a6beac3d1fb78d65409c7bdbefccc2ea107df2a9))
+* add data exports and anonymization ([fb84c83](https://github.com/henchoznoe/Arbeaute/commit/fb84c83a3997e92201a14922f637bf8e6fe0bb67))
+* add global admin search ([dba7251](https://github.com/henchoznoe/Arbeaute/commit/dba72515b78f4f08735262a910f5e3ee149dcd8e))
+* add immutable audit journal ([6403906](https://github.com/henchoznoe/Arbeaute/commit/6403906d4fa22eedde8d6d32cf93fdc463cf48d6))
+* add persistent admin navigation ([a772902](https://github.com/henchoznoe/Arbeaute/commit/a772902d57fb6ea13989945da809786a958121cd))
+* enrich customer appointments ([2cb61cc](https://github.com/henchoznoe/Arbeaute/commit/2cb61cc4787ee32500bd06a81725fa582aaad4c7))
+* enrich service guidance and visual identity ([0a4e2c2](https://github.com/henchoznoe/Arbeaute/commit/0a4e2c2e6eb55d70f2af77512b0ad51adb790970))
+* fit the first screen and open the tunnel on a free time ([3f2db9d](https://github.com/henchoznoe/Arbeaute/commit/3f2db9d573254f6a90b968b9941961ffaf1f0368))
+* improve booking calendar and deep links ([c80e2dd](https://github.com/henchoznoe/Arbeaute/commit/c80e2ddf3b7ea6194e097572ee7f2221cc8da713))
+* improve service discovery and mobile booking ([9821164](https://github.com/henchoznoe/Arbeaute/commit/98211646801dfcb33c7c1206c0e918b5dececce6))
+* make appointments actionable and surface activity on mobile ([56b0afd](https://github.com/henchoznoe/Arbeaute/commit/56b0afdf32c0410027f5c9f840b98ff9b5c1e020))
+* make booking confirmation durable ([2a036bf](https://github.com/henchoznoe/Arbeaute/commit/2a036bf7ae538d4a464cb3cd85afd68882e5409d))
+* manage appointment outcomes ([19c661e](https://github.com/henchoznoe/Arbeaute/commit/19c661ed183f9b7fe481d695023afb01b36639dc))
+* normalize customer identities ([6450f2d](https://github.com/henchoznoe/Arbeaute/commit/6450f2dbec856af61669833053ba213b34109788))
+* reassure on the booking confirmation screen ([719da93](https://github.com/henchoznoe/Arbeaute/commit/719da936109a8d5aa64ad9efcc80e3879a73eaca))
+* send confirmations and reminders through Resend ([b4bea29](https://github.com/henchoznoe/Arbeaute/commit/b4bea2949f8f26b4b715ce6e8999054e74474b79))
+* streamline admin appointment creation ([ff45d00](https://github.com/henchoznoe/Arbeaute/commit/ff45d00355a48ac4ac3193984d1fd1831ad10681))
+* surface today's agenda and fix mobile sizing ([1257c11](https://github.com/henchoznoe/Arbeaute/commit/1257c11be32641e94e1de3c787d789e0cb55e558))
+* unify public and admin interface ([9e6588f](https://github.com/henchoznoe/Arbeaute/commit/9e6588f422e633daa86b338ff75dac13d1eecdd2))
+* update UI ([e3c86df](https://github.com/henchoznoe/Arbeaute/commit/e3c86dffb705a332a531b50cdb00b4b0ed4bb642))
+* write the admin console in plain French ([334276a](https://github.com/henchoznoe/Arbeaute/commit/334276aaf38d111ec0100f5a7a878cc6fd6d9c72))
+
 ## [1.8.2](https://github.com/henchoznoe/Arbeaute/compare/v1.8.1...v1.8.2) (2026-08-12)
 
 
