@@ -47,9 +47,9 @@ export const DashboardMetrics = ({
       icon: Gauge,
     },
     {
-      label: 'Clientes non venues',
+      label: 'Rendez-vous non honorés',
       value: metrics.noShowCount.toLocaleString('fr-CH'),
-      scope: 'Comptées à part, elles n’entrent pas dans la recette attendue',
+      scope: 'Comptés à part, ils n’entrent pas dans la recette attendue',
       icon: UserX,
     },
   ]

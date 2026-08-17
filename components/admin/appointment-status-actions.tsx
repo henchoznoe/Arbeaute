@@ -1,6 +1,6 @@
 'use client'
 
-import { CheckCheck, LoaderCircle, RotateCcw, UserX } from 'lucide-react'
+import { LoaderCircle, RotateCcw, UserX } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { useState, useTransition } from 'react'
 import { AppToast } from '@/components/ui/app-toast'
@@ -11,8 +11,7 @@ import type { AdminAppointmentStatusTarget } from '@/lib/admin/appointment-statu
 import type { AppointmentStatus } from '@/prisma/generated/prisma/enums'
 
 const statusConfirmations: Record<AdminAppointmentStatusTarget, string> = {
-  COMPLETED: 'Le rendez-vous est marqué comme terminé.',
-  NO_SHOW: 'Le rendez-vous est marqué comme absence, le créneau est libéré.',
+  NO_SHOW: 'Le rendez-vous est noté comme absence, le créneau est libéré.',
   CONFIRMED: 'Le rendez-vous est rétabli.',
 }
 
@@ -53,74 +52,49 @@ export const AppointmentStatusActions = ({
     })
   }
 
-  const buttonClassName = compact ? 'w-full px-2 text-xs' : undefined
+  // En version compacte, une seule colonne : les colonnes de la semaine
+  // descendent à 150 px et `Button` refuse de rétrécir son libellé.
+  const buttonClassName = compact
+    ? 'w-full min-w-0 whitespace-normal px-2 text-xs'
+    : undefined
 
   return (
     <>
       <div
-        className={`${compact ? `grid gap-2 ${status === 'CONFIRMED' ? 'grid-cols-2' : ''}` : 'grid gap-3 sm:grid-cols-2'} ${className ?? ''}`}
+        className={`${compact ? 'grid gap-2' : 'grid gap-3 sm:flex sm:flex-wrap'} ${className ?? ''}`}
       >
         {status === 'CONFIRMED' ? (
-          <>
-            <ConfirmDialog
-              key={`completed-${status}`}
-              title={
-                isFuture
-                  ? 'Marquer ce rendez-vous futur comme terminé ?'
-                  : 'Marquer ce rendez-vous comme terminé ?'
-              }
-              description={
-                isFuture
-                  ? 'La date du rendez-vous n’est pas encore passée. Il quittera les créneaux confirmés et la cliente ne pourra plus le déplacer.'
-                  : 'La visite comptera comme réalisée et la cliente ne pourra plus déplacer ce rendez-vous.'
-              }
-              confirmLabel="Marquer comme terminé"
-              confirmVariant="default"
-              onConfirm={() => changeStatus('COMPLETED')}
-              pending={pending}
-              trigger={
-                <Button
-                  type="button"
-                  variant="outline"
-                  disabled={pending}
-                  className={buttonClassName}
-                >
-                  {pending ? (
-                    <LoaderCircle className="size-4 animate-spin" />
-                  ) : (
-                    <CheckCheck className="size-4" />
-                  )}
-                  Terminé
-                </Button>
-              }
-            />
-            <ConfirmDialog
-              key={`no-show-${status}`}
-              title={
-                isFuture
-                  ? 'Marquer ce rendez-vous futur comme absence ?'
-                  : 'Marquer cette cliente comme absente ?'
-              }
-              description={
-                isFuture
-                  ? 'La date du rendez-vous n’est pas encore passée. Le créneau sera libéré et la cliente ne pourra plus déplacer ce rendez-vous.'
-                  : 'Le rendez-vous sera conservé comme absence et ne comptera pas comme une visite réalisée.'
-              }
-              confirmLabel="Marquer comme absence"
-              onConfirm={() => changeStatus('NO_SHOW')}
-              pending={pending}
-              trigger={
-                <Button
-                  type="button"
-                  variant="destructive"
-                  disabled={pending}
-                  className={buttonClassName}
-                >
-                  <UserX className="size-4" /> Absence
-                </Button>
-              }
-            />
-          </>
+          <ConfirmDialog
+            key={`no-show-${status}`}
+            title={
+              isFuture
+                ? 'Noter une absence sur ce rendez-vous à venir ?'
+                : 'Noter une absence sur ce rendez-vous ?'
+            }
+            description={
+              isFuture
+                ? 'La date du rendez-vous n’est pas encore passée. Le créneau sera libéré et le rendez-vous ne pourra plus être déplacé depuis le site.'
+                : 'Le rendez-vous sera conservé comme absence et ne comptera pas comme une visite réalisée.'
+            }
+            confirmLabel="Noter l’absence"
+            onConfirm={() => changeStatus('NO_SHOW')}
+            pending={pending}
+            trigger={
+              <Button
+                type="button"
+                variant="destructive"
+                disabled={pending}
+                className={buttonClassName}
+              >
+                {pending ? (
+                  <LoaderCircle className="size-4 animate-spin" />
+                ) : (
+                  <UserX className="size-4" />
+                )}
+                Absence
+              </Button>
+            }
+          />
         ) : (
           <ConfirmDialog
             key={`restore-${status}`}

@@ -10,7 +10,7 @@ import prisma from '@/lib/core/prisma'
 import { getAdminSession } from '@/lib/core/session-cookies'
 
 const AdminSearchPage = () => (
-  <Suspense fallback={<AdminSkeleton maxWidth="max-w-4xl" />}>
+  <Suspense fallback={<AdminSkeleton variant="list" maxWidth="max-w-4xl" />}>
     <SearchAppointments />
   </Suspense>
 )
@@ -43,7 +43,7 @@ const SearchAppointments = async () => {
           <h1 className="font-heading text-title font-bold">Rechercher</h1>
           <p className="mt-1 text-sm leading-relaxed text-muted-foreground">
             Retrouvez un rendez-vous avec des filtres combinables, sans exposer
-            les coordonnées clientes dans l’adresse de la page.
+            les coordonnées dans l’adresse de la page.
           </p>
         </div>
       </header>

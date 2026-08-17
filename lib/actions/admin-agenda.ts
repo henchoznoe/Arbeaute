@@ -41,8 +41,10 @@ const appointmentSchema = z.object({
   time: z.string().regex(timePattern),
   firstName: z.string().trim().max(100).optional(),
   lastName: z.string().trim().min(1).max(100),
-  email: z.string().trim().max(254).optional(),
-  phone: z.string().trim().max(40).optional(),
+  // Obligatoires depuis la v2 : un rendez-vous sans coordonnées ne peut ni être
+  // confirmé par e-mail, ni être retrouvé par la personne concernée.
+  email: z.string().trim().min(1).max(254),
+  phone: z.string().trim().min(1).max(40),
   comment: z.string().trim().max(1000).optional(),
   acknowledgeOutsideHours: z.boolean().optional(),
 })
@@ -84,8 +86,8 @@ export interface AdminAppointmentFormInput {
   time: string
   firstName?: string
   lastName: string
-  email?: string
-  phone?: string
+  email: string
+  phone: string
   comment?: string
   acknowledgeOutsideHours?: boolean
 }
@@ -121,12 +123,19 @@ export interface AdminCustomerSearchResult {
   customers: AdminCustomerOption[]
 }
 
+/** Le cas de loin le plus fréquent : les deux coordonnées sont vides. */
+const isMissingContactDetails = (error: z.ZodError): boolean =>
+  error.issues.some(issue => {
+    const field = String(issue.path[0])
+    return field === 'email' || field === 'phone'
+  })
+
 const normalizeAppointmentIdentity = (data: {
-  email?: string
-  phone?: string
-}): { email: string | null; phone: string | null } => ({
-  email: data.email ? normalizeEmail(data.email) : null,
-  phone: data.phone ? normalizePhone(data.phone) : null,
+  email: string
+  phone: string
+}): { email: string; phone: string } => ({
+  email: normalizeEmail(data.email),
+  phone: normalizePhone(data.phone),
 })
 
 const toAppointmentSeriesInput = (
@@ -194,8 +203,8 @@ export const searchAdminCustomers = async (
     return {
       ok: true,
       message: customers.length
-        ? `${customers.length} cliente${customers.length > 1 ? 's' : ''} trouvée${customers.length > 1 ? 's' : ''}.`
-        : 'Aucune cliente trouvée.',
+        ? `${customers.length} fiche${customers.length > 1 ? 's' : ''} trouvée${customers.length > 1 ? 's' : ''}.`
+        : 'Aucune fiche trouvée.',
       customers,
     }
   } catch {
@@ -313,8 +322,9 @@ export const saveAdminAppointment = async (
   if (!parsed.success)
     return {
       ok: false,
-      message:
-        'Certaines informations sont incomplètes ou mal formées. Corrigez les champs signalés, puis réessayez.',
+      message: isMissingContactDetails(parsed.error)
+        ? 'Indiquez l’e-mail et le téléphone : ils servent à envoyer la confirmation et à retrouver le rendez-vous.'
+        : 'Certaines informations sont incomplètes ou mal formées. Corrigez les champs signalés, puis réessayez.',
     }
 
   const minute = parseMinute(parsed.data.time)
@@ -325,11 +335,11 @@ export const saveAdminAppointment = async (
         'L’heure doit tomber sur un quart d’heure : 9:00, 9:15, 9:30 ou 9:45.',
     }
 
-  let email: string | null = null
-  let phone: string | null = null
+  let email: string
+  let phone: string
   try {
-    email = parsed.data.email ? normalizeEmail(parsed.data.email) : null
-    phone = parsed.data.phone ? normalizePhone(parsed.data.phone) : null
+    email = normalizeEmail(parsed.data.email)
+    phone = normalizePhone(parsed.data.phone)
   } catch {
     return {
       ok: false,

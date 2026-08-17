@@ -10,7 +10,7 @@ import { formatPrice } from '@/lib/utils/format'
  * produisent l'objet, la version texte et la version HTML, et sont donc
  * entièrement vérifiables par des tests unitaires.
  *
- * Le vocabulaire suit `docs/vocabulaire.md` : ce que la cliente lit ici est
+ * Le vocabulaire suit `docs/vocabulaire.md` : ce qui se lit ici est
  * écrit comme ce qu'elle lit à l'écran.
  */
 
@@ -42,7 +42,7 @@ export const formatMailTime = (date: Date): string => timeFormatter.format(date)
 const greetingName = (data: AppointmentMailData): string =>
   data.customerFirstName?.trim() || data.customerLastName.trim()
 
-/** Échappe le texte inséré dans le HTML : les noms sont saisis par les clientes. */
+/** Échappe le texte inséré dans le HTML : les noms viennent d'un formulaire. */
 const escapeHtml = (value: string): string =>
   value
     .replace(/&/g, '&amp;')

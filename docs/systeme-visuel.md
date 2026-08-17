@@ -95,7 +95,7 @@ Les rayons proviennent tous des jetons `--radius-*`. Aucune valeur arbitraire
 | `ConfirmDialog` | Mutation destructive ou difficile à annuler | titre, conséquence, annuler, confirmer |
 | `AppToast` | Retour bref après une action asynchrone | success, danger |
 | `EmptyState` | Collection ou journée sans contenu | icône, explication, action facultative |
-| `CustomerCallButton` | Appeler une cliente, ou dire qu'aucun numéro n'est enregistré | outline, secondary |
+| `CustomerCallButton` | Appeler, ou dire qu'aucun numéro n'est enregistré | outline, secondary |
 
 Un lien qui se comporte comme un bouton passe par `<Button asChild>` autour du
 `<Link>` ou du `<a>`. Il ne faut pas réécrire à la main
@@ -136,7 +136,7 @@ Le déclencheur conserve un libellé explicite. Le dialogue reçoit le focus,
 annonce son titre et sa description, bloque l’arrière-plan et rend « Annuler »
 accessible avant l’action destructive. Une confirmation intégrée sous forme de
 deux petits boutons ne doit plus être créée localement : l’annulation d’un
-rendez-vous côté cliente passe elle aussi par `ConfirmDialog`.
+rendez-vous depuis le site passe elle aussi par `ConfirmDialog`.
 
 ## État de la migration
 

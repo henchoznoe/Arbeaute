@@ -38,14 +38,15 @@ peut être enregistré, même en cas de réservations simultanées.
   vérification. Le
   calendrier charge la semaine entière d'un coup et grise les jours complets ; un
   bouton « prochain créneau disponible » balaie les trois mois à venir.
-- **Espace client sans mot de passe** — identification par email et téléphone,
-  session courte, déplacement et annulation libres jusqu'à 48 heures ouvrables
-  avant la séance.
+- **Espace personnel sans mot de passe** — identification par adresse e-mail
+  seule, session de quinze minutes, déplacement et annulation libres jusqu'à
+  48 heures ouvrables avant la séance. Le compromis de sécurité est expliqué dans
+  [SECURITY.md](SECURITY.md).
 - **Administration** — agenda semaine et jour, création de rendez-vous hors
   horaires publics avec confirmation explicite, exceptions d'ouverture et de
   fermeture sur plusieurs jours, catalogue complet (catégories, prix, durées,
   images, formulaires de consentement).
-- **Deux applications installables (PWA)** — les clientes installent la vitrine,
+- **Deux applications installables (PWA)** — la clientèle installe la vitrine,
   l'institut installe la console admin ; les deux cohabitent sur le même écran
   d'accueil grâce à deux manifestes distincts.
 - **Export calendrier** — fichier `.ics` téléchargeable à la confirmation et
@@ -168,7 +169,8 @@ suffit à casser toute réservation.
 
 Ce filtre ne dispense pas de cloisonner les données : tant que les previews
 partagent `DATABASE_URL` avec la production, elles lisent et écrivent les vraies
-données clientes. Donner aux previews leur propre base (branche Neon) reste la
+données de la clientèle. Donner aux previews leur propre base (branche Neon)
+reste la
 protection de fond.
 
 **Variables à définir dans le projet Vercel :**

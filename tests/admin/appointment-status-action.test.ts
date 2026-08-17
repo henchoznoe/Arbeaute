@@ -31,7 +31,7 @@ describe('admin appointment status action authorization', () => {
     mocks.hasSameOrigin.mockResolvedValue(true)
     mocks.changeStatus.mockResolvedValue({
       id: 'appointment-1',
-      status: 'COMPLETED',
+      status: 'NO_SHOW',
       customerId: 'customer-1',
     })
   })
@@ -40,11 +40,11 @@ describe('admin appointment status action authorization', () => {
     await expect(
       changeAdminAppointmentStatus({
         appointmentId: 'appointment-1',
-        targetStatus: 'COMPLETED',
+        targetStatus: 'NO_SHOW',
       }),
     ).resolves.toEqual({
       ok: true,
-      message: 'Le rendez-vous est marqué comme terminé.',
+      message: 'Le rendez-vous est marqué comme absence.',
     })
     expect(mocks.changeStatus).toHaveBeenCalledOnce()
     expect(mocks.revalidatePath).toHaveBeenCalledWith(
@@ -62,6 +62,18 @@ describe('admin appointment status action authorization', () => {
       }),
     ).resolves.toMatchObject({ ok: false })
     expect(mocks.hasSameOrigin).not.toHaveBeenCalled()
+    expect(mocks.changeStatus).not.toHaveBeenCalled()
+  })
+
+  it('refuses « terminé » : le statut n’est plus posé à la main', async () => {
+    await expect(
+      changeAdminAppointmentStatus({
+        appointmentId: 'appointment-1',
+        // @ts-expect-error : la cible a disparu du type, on vérifie le refus
+        // côté serveur pour un ancien onglet resté ouvert.
+        targetStatus: 'COMPLETED',
+      }),
+    ).resolves.toMatchObject({ ok: false })
     expect(mocks.changeStatus).not.toHaveBeenCalled()
   })
 

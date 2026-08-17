@@ -12,9 +12,6 @@ vi.mock('@/lib/reservation/availability', () => ({
 vi.mock('@/lib/reservation/booking-settings', () => ({
   getBookingSettings: mocks.getBookingSettings,
 }))
-vi.mock('@/lib/core/session-cookies', () => ({
-  createCustomerIdentityDigest: vi.fn(() => 'identity-digest'),
-}))
 
 import {
   cancelAppointmentSerializable,
@@ -50,8 +47,6 @@ const appointment = {
   customerLastName: 'Dupont',
   customerEmail: 'marie@example.com',
   customerPhone: '+41791234567',
-  customerIdentityDigest: 'identity-digest',
-  customerIdentityVersion: 1,
   comment: null,
   source: 'PUBLIC' as const,
   status: 'CONFIRMED' as const,
@@ -67,7 +62,6 @@ const makeDatabase = () => {
       findUnique: vi.fn().mockResolvedValue({ id: 'customer-1' }),
       upsert: vi.fn().mockResolvedValue({
         id: 'customer-1',
-        identityDigest: 'identity-digest',
         emailNormalized: 'marie@example.com',
         phoneNormalized: '+41791234567',
         createdAt: new Date('2099-08-01T10:00:00.000Z'),
@@ -75,7 +69,6 @@ const makeDatabase = () => {
       }),
       update: vi.fn().mockResolvedValue({
         id: 'customer-1',
-        identityDigest: 'identity-digest',
         emailNormalized: 'marie@example.com',
         phoneNormalized: '+41791234567',
         createdAt: new Date('2099-08-01T10:00:00.000Z'),
@@ -140,7 +133,6 @@ describe('customer appointment activity', () => {
         customerLastName: 'Dupont',
         customerEmail: 'marie@example.com',
         customerPhone: '+41791234567',
-        customerIdentityDigest: 'identity-digest',
       }),
     })
     expect(transaction.auditEvent.create).toHaveBeenCalledWith({

@@ -169,6 +169,10 @@ describe('manual admin appointments', () => {
         }),
       },
       appointmentActivity: { create: createActivity },
+      customer: {
+        findUnique: vi.fn().mockResolvedValue(null),
+        upsert: vi.fn().mockResolvedValue({ id: 'customer-manual' }),
+      },
       auditEvent: { create: vi.fn().mockResolvedValue({ id: 'audit-event' }) },
     }
     const database = {
@@ -181,8 +185,8 @@ describe('manual admin appointments', () => {
         startsAt: new Date('2099-08-10T12:00:00.000Z'),
         firstName: 'Arzu',
         lastName: 'Test',
-        email: null,
-        phone: null,
+        email: 'arzu@example.com',
+        phone: '+41791234567',
         comment: null,
       }),
     ).resolves.toBe(created)
@@ -208,8 +212,8 @@ describe('admin appointment series', () => {
     intervalWeeks: 1,
     firstName: 'Marie',
     lastName: 'Dupont',
-    email: null,
-    phone: null,
+    email: 'marie@example.com',
+    phone: '+41791234567',
     comment: null,
   }
 
@@ -323,6 +327,10 @@ describe('admin appointment series', () => {
         findMany: vi.fn().mockResolvedValue(weeklyRanges),
       },
       availabilityException: { findMany: vi.fn().mockResolvedValue([]) },
+      customer: {
+        findUnique: vi.fn().mockResolvedValue(null),
+        upsert: vi.fn().mockResolvedValue({ id: 'customer-series' }),
+      },
       auditEvent: { create: vi.fn().mockResolvedValue({ id: 'audit' }) },
     }
     const database = {
@@ -336,7 +344,15 @@ describe('admin appointment series', () => {
 
     expect(created).toHaveLength(3)
     expect(create).toHaveBeenCalledTimes(3)
-    expect(transaction.auditEvent.create).toHaveBeenCalledTimes(3)
+    // Une seule fiche pour toute la série, rattachée à chaque occurrence.
+    expect(transaction.customer.upsert).toHaveBeenCalledOnce()
+    expect(create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({ customerId: 'customer-series' }),
+      }),
+    )
+    // Trois rendez-vous, plus la fiche créée au passage.
+    expect(transaction.auditEvent.create).toHaveBeenCalledTimes(4)
     expect(database.$transaction).toHaveBeenCalledWith(expect.any(Function), {
       isolationLevel: 'Serializable',
     })

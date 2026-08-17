@@ -100,7 +100,7 @@ export const ConfirmationActions = ({
         return
       }
     } catch {
-      // Le message ci-dessous guide la cliente vers le menu du navigateur.
+      // Le message ci-dessous guide vers le menu du navigateur.
     }
     setPrintFeedback({
       kind: 'info',

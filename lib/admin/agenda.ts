@@ -1,5 +1,4 @@
 import { writeAuditEvent } from '@/lib/admin/audit'
-import { createCustomerIdentityDigest } from '@/lib/core/session-cookies'
 import {
   MAX_SERIALIZABLE_ATTEMPTS,
   RESERVATION_TIME_ZONE,
@@ -33,8 +32,10 @@ interface AdminAppointmentInput {
   startsAt: Date
   firstName: string | null
   lastName: string
-  email: string | null
-  phone: string | null
+  /** Obligatoires : sans eux, aucune confirmation ne part et le rendez-vous
+   *  n'apparaît jamais dans « Mes rendez-vous ». */
+  email: string
+  phone: string
   comment: string | null
 }
 
@@ -46,8 +47,8 @@ export interface AdminAppointmentSeriesInput {
   intervalWeeks: number
   firstName: string | null
   lastName: string
-  email: string | null
-  phone: string | null
+  email: string
+  phone: string
   comment: string | null
   acknowledgeOutsideHours?: boolean
 }
@@ -425,19 +426,16 @@ export const saveAdminAppointmentSerializable = async (
           })
           if (conflict) throw new AdminAgendaError('OVERLAP')
 
-          const customer =
-            input.email && input.phone
-              ? await upsertCustomerIdentity(transaction, {
-                  firstName: input.firstName,
-                  lastName: input.lastName,
-                  email: input.email,
-                  phone: input.phone,
-                })
-              : null
+          const customer = await upsertCustomerIdentity(transaction, {
+            firstName: input.firstName,
+            lastName: input.lastName,
+            email: input.email,
+            phone: input.phone,
+          })
 
           const data = {
             serviceId: service.id,
-            customerId: customer?.id ?? null,
+            customerId: customer.id,
             serviceNameSnapshot: service.name,
             servicePriceCents: service.priceCents,
             serviceDurationMinutes: service.durationMinutes,
@@ -455,10 +453,6 @@ export const saveAdminAppointmentSerializable = async (
             ),
             customerEmail: input.email,
             customerPhone: input.phone,
-            customerIdentityDigest:
-              input.email && input.phone
-                ? createCustomerIdentityDigest(input.email, input.phone)
-                : null,
             comment: input.comment,
           }
 
@@ -542,15 +536,12 @@ export const createAdminAppointmentSeriesSerializable = async (
               validation.preview,
             )
 
-          const customer =
-            input.email && input.phone
-              ? await upsertCustomerIdentity(transaction, {
-                  firstName: input.firstName,
-                  lastName: input.lastName,
-                  email: input.email,
-                  phone: input.phone,
-                })
-              : null
+          const customer = await upsertCustomerIdentity(transaction, {
+            firstName: input.firstName,
+            lastName: input.lastName,
+            email: input.email,
+            phone: input.phone,
+          })
           const created = []
           for (const startsAt of validation.startsAt) {
             const endsAt = new Date(
@@ -559,7 +550,7 @@ export const createAdminAppointmentSeriesSerializable = async (
             const appointment = await transaction.appointment.create({
               data: {
                 serviceId: validation.service.id,
-                customerId: customer?.id ?? null,
+                customerId: customer.id,
                 serviceNameSnapshot: validation.service.name,
                 servicePriceCents: validation.service.priceCents,
                 serviceDurationMinutes: validation.service.durationMinutes,
@@ -582,10 +573,6 @@ export const createAdminAppointmentSeriesSerializable = async (
                 ),
                 customerEmail: input.email,
                 customerPhone: input.phone,
-                customerIdentityDigest:
-                  input.email && input.phone
-                    ? createCustomerIdentityDigest(input.email, input.phone)
-                    : null,
                 comment: input.comment,
                 source: 'ADMIN',
                 status: 'CONFIRMED',

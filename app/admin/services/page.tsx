@@ -33,7 +33,7 @@ import { formatPrice } from '@/lib/utils/format'
 const fieldClass = formControlClass
 
 const AdminServicesPage = () => (
-  <Suspense fallback={<AdminSkeleton maxWidth="max-w-6xl" />}>
+  <Suspense fallback={<AdminSkeleton variant="cards" maxWidth="max-w-6xl" />}>
     <AdminServices />
   </Suspense>
 )

@@ -169,8 +169,15 @@ the row and audit event in one transaction, then invalidates every public view.
 
 - Two independent HMAC-signed cookie sessions (`lib/core/session.ts`,
   `lib/core/session-cookies.ts`): `admin` (30 days, single shared password) and
-  `customer` (15 min, subject = an HMAC digest of email + phone, so no PII in the
-  cookie).
+  `customer` (15 min, subject = the customer record id, so no PII in the cookie).
+- **Customers are identified by e-mail alone.** `Customer.emailNormalized` is
+  unique — one address, one person — which is what makes the booking `upsert`
+  safe under concurrency. `identityVersion` is bumped by the
+  `customer_identity_version_trigger` database trigger whenever the address or
+  phone changes, which expires open sessions even for edits made in SQL. The
+  security trade-off is documented in `SECURITY.md`; before the change,
+  identification required the exact phone number too and locked real customers
+  out.
 - `proxy.ts` (Next middleware) gates every `/admin/*` path except those listed in
   `PUBLIC_ADMIN_PATHS` — currently the login page and the admin PWA manifest,
   which browsers fetch without cookies.

@@ -1,9 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
 
-vi.mock('@/lib/core/session-cookies', () => ({
-  createCustomerIdentityDigest: vi.fn(() => 'identity-digest'),
-}))
-
 import {
   findCustomerForSession,
   normalizeCustomerSearchName,
@@ -25,20 +21,16 @@ describe('normalized customers', () => {
     ).toBe('elodie du chene')
   })
 
-  it('updates current details only for an exact normalized identity', async () => {
+  it('keys the record on the normalized e-mail alone', async () => {
     const customer = {
       id: 'customer-1',
-      identityDigest: 'identity-digest',
       emailNormalized: 'elodie@example.com',
       phoneNormalized: '+41791234567',
-      createdAt: new Date('2026-08-13T10:00:00.000Z'),
-      updatedAt: new Date('2026-08-13T11:00:00.000Z'),
     }
     const transaction = {
       customer: {
         findUnique: vi.fn().mockResolvedValue({ id: 'customer-1' }),
         upsert: vi.fn().mockResolvedValue(customer),
-        update: vi.fn().mockResolvedValue(customer),
       },
       auditEvent: { create: vi.fn().mockResolvedValue({ id: 'audit-event' }) },
     } as unknown as Prisma.TransactionClient
@@ -46,15 +38,25 @@ describe('normalized customers', () => {
     await expect(upsertCustomerIdentity(transaction, identity)).resolves.toBe(
       customer,
     )
-    expect(transaction.customer.update).toHaveBeenCalledWith({
-      where: { id: 'customer-1' },
-      data: {
+    expect(transaction.customer.upsert).toHaveBeenCalledWith({
+      where: { emailNormalized: 'elodie@example.com' },
+      update: {
         firstName: 'Élodie',
         lastName: 'Du Chêne',
         searchName: 'elodie du chene',
         email: 'elodie@example.com',
         phone: '+41791234567',
+        phoneNormalized: '+41791234567',
         lastSeenAt: expect.any(Date),
+      },
+      create: {
+        firstName: 'Élodie',
+        lastName: 'Du Chêne',
+        searchName: 'elodie du chene',
+        email: 'elodie@example.com',
+        emailNormalized: 'elodie@example.com',
+        phone: '+41791234567',
+        phoneNormalized: '+41791234567',
       },
     })
     expect(transaction.auditEvent.create).toHaveBeenCalledWith({
@@ -69,27 +71,47 @@ describe('normalized customers', () => {
     })
   })
 
-  it('refuses an automatic merge when the normalized values differ', async () => {
-    const update = vi.fn()
+  it('follows the person when only the phone number changed', async () => {
+    const customer = {
+      id: 'customer-1',
+      emailNormalized: 'elodie@example.com',
+      phoneNormalized: '+41799999999',
+    }
     const transaction = {
       customer: {
         findUnique: vi.fn().mockResolvedValue({ id: 'customer-1' }),
-        upsert: vi.fn().mockResolvedValue({
-          id: 'customer-1',
-          identityDigest: 'identity-digest',
-          emailNormalized: 'another@example.com',
-          phoneNormalized: '+41791234567',
-        }),
-        update,
+        upsert: vi.fn().mockResolvedValue(customer),
       },
-      auditEvent: { create: vi.fn() },
+      auditEvent: { create: vi.fn().mockResolvedValue({ id: 'audit-event' }) },
     } as unknown as Prisma.TransactionClient
 
     await expect(
-      upsertCustomerIdentity(transaction, identity),
-    ).resolves.toBeNull()
-    expect(update).not.toHaveBeenCalled()
-    expect(transaction.auditEvent.create).not.toHaveBeenCalled()
+      upsertCustomerIdentity(transaction, {
+        ...identity,
+        phone: '079 999 99 99',
+      }),
+    ).resolves.toBe(customer)
+    expect(transaction.customer.upsert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { emailNormalized: 'elodie@example.com' },
+        update: expect.objectContaining({ phoneNormalized: '+41799999999' }),
+      }),
+    )
+  })
+
+  it('audits a first booking as a creation', async () => {
+    const transaction = {
+      customer: {
+        findUnique: vi.fn().mockResolvedValue(null),
+        upsert: vi.fn().mockResolvedValue({ id: 'customer-2' }),
+      },
+      auditEvent: { create: vi.fn().mockResolvedValue({ id: 'audit-event' }) },
+    } as unknown as Prisma.TransactionClient
+
+    await upsertCustomerIdentity(transaction, identity)
+    expect(transaction.auditEvent.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({ action: 'CREATED' }),
+    })
   })
 
   it('rejects a session whose identity version is obsolete', async () => {
@@ -101,13 +123,13 @@ describe('normalized customers', () => {
 
     await expect(
       findCustomerForSession(transaction, {
-        subject: 'identity-digest',
+        subject: 'customer-1',
         version: 2,
       }),
     ).resolves.toBeNull()
     expect(findFirst).toHaveBeenCalledWith({
-      where: { identityDigest: 'identity-digest', identityVersion: 2 },
-      select: { id: true, identityDigest: true, identityVersion: true },
+      where: { id: 'customer-1', identityVersion: 2, anonymizedAt: null },
+      select: { id: true, identityVersion: true },
     })
   })
 })

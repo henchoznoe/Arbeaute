@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils/cn'
 
 /**
- * Appeler une cliente en un seul appui.
+ * Appeler en un seul appui.
  *
  * Le numéro était auparavant affiché en texte brut : il fallait le
  * sélectionner, le copier, ouvrir le téléphone et le coller. Quand aucun

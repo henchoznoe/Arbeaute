@@ -18,7 +18,7 @@ const statusLabels = {
 } as const
 
 const DataPage = () => (
-  <Suspense fallback={<AdminSkeleton maxWidth="max-w-5xl" />}>
+  <Suspense fallback={<AdminSkeleton variant="list" maxWidth="max-w-5xl" />}>
     <DataManagement />
   </Suspense>
 )
@@ -58,7 +58,7 @@ const DataManagement = async () => {
         </h1>
         <p className="mt-2 max-w-3xl text-sm leading-relaxed text-muted-foreground">
           Téléchargez vos données sur votre appareil, effacez les coordonnées
-          d’une cliente qui le demande, ou consultez la marche à suivre pour
+          d’une personne qui le demande, ou consultez la marche à suivre pour
           sauvegarder. Rien n’est stocké en ligne au passage.
         </p>
       </header>
@@ -122,12 +122,10 @@ const DataManagement = async () => {
           </form>
 
           <article className="flex min-w-0 flex-col rounded-3xl border bg-card p-5 shadow-sm">
-            <h3 className="font-semibold">Clientes</h3>
+            <h3 className="font-semibold">Fiches</h3>
             <ExportColumns columns={exportColumnDocumentation.customers} />
             <Button asChild className="mt-auto w-full">
-              <a href="/admin/data/export/customers">
-                Télécharger les clientes
-              </a>
+              <a href="/admin/data/export/customers">Télécharger les fiches</a>
             </Button>
           </article>
 

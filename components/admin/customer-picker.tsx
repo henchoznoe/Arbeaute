@@ -29,9 +29,7 @@ export const CustomerPicker = ({
     <section className="rounded-2xl border bg-muted/30 p-4">
       <div className="flex items-center gap-2">
         <UserRoundCheck className="size-4 text-primary" />
-        <h2 className="text-sm font-semibold">
-          Reprendre une cliente existante
-        </h2>
+        <h2 className="text-sm font-semibold">Reprendre une fiche existante</h2>
       </div>
       <p className="mt-1 text-xs text-muted-foreground">
         Recherchez par nom, e-mail ou téléphone pour remplir ses coordonnées.
@@ -49,7 +47,7 @@ export const CustomerPicker = ({
               }
             }}
             placeholder="Marie, 079…, e-mail…"
-            aria-label="Rechercher une cliente existante"
+            aria-label="Rechercher une fiche existante"
             className={`${formControlClass} pl-10`}
           />
         </div>

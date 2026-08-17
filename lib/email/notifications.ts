@@ -13,7 +13,7 @@ import { formatServiceLabel } from '@/lib/reservation/service-label'
  * Point d'entrée des notifications liées à un rendez-vous.
  *
  * L'envoi passe par `after()` : il s'exécute une fois la réponse rendue, donc
- * la cliente voit sa confirmation à l'écran sans attendre Resend, et une panne
+ * la confirmation s'affiche à l'écran sans attendre Resend, et une panne
  * du service ne rallonge ni ne casse la réservation.
  */
 

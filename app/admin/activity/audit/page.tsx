@@ -53,7 +53,7 @@ const auditHref = (page: number, filters: AuditFilters): string => {
 }
 
 const AuditPage = ({ searchParams }: Readonly<AuditPageProps>) => (
-  <Suspense fallback={<AdminSkeleton maxWidth="max-w-4xl" />}>
+  <Suspense fallback={<AdminSkeleton variant="list" maxWidth="max-w-4xl" />}>
     <AuditHistory searchParams={searchParams} />
   </Suspense>
 )

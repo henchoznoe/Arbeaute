@@ -1,4 +1,3 @@
-import { createHmac } from 'node:crypto'
 import { cookies } from 'next/headers'
 import { env, isProd } from '@/lib/core/env'
 import {
@@ -46,21 +45,22 @@ export const clearAdminSession = async (): Promise<void> => {
   cookieStore.delete(ADMIN_COOKIE_NAME)
 }
 
-export const createCustomerIdentityDigest = (
-  email: string,
-  phone: string,
-): string =>
-  createHmac('sha256', env.CUSTOMER_SESSION_SECRET)
-    .update(`${email.trim().toLowerCase()}\0${phone.trim()}`)
-    .digest('base64url')
-
+/**
+ * Le cookie porte l'identifiant de la fiche, jamais de coordonnée.
+ *
+ * Il portait auparavant un condensé HMAC de l'e-mail et du téléphone, parce que
+ * l'identification exigeait les deux. Depuis qu'un e-mail suffit, un `cuid`
+ * opaque remplit le même rôle sans rien dériver d'une donnée personnelle, et
+ * `identityVersion` continue d'invalider les sessions ouvertes dès qu'une
+ * adresse change ou que des coordonnées sont effacées.
+ */
 export const setCustomerSession = async (
-  identityDigest: string,
+  customerId: string,
   identityVersion: number,
 ): Promise<void> => {
   const token = await createSessionToken({
     kind: 'customer',
-    subject: identityDigest,
+    subject: customerId,
     version: identityVersion,
     ttlSeconds: CUSTOMER_TTL_SECONDS,
     secret: env.CUSTOMER_SESSION_SECRET,

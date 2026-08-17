@@ -18,7 +18,7 @@ import { isEmailConfigured } from '@/lib/core/env'
 import { getAdminSession } from '@/lib/core/session-cookies'
 
 const EmailsPage = () => (
-  <Suspense fallback={<AdminSkeleton maxWidth="max-w-4xl" />}>
+  <Suspense fallback={<AdminSkeleton variant="list" maxWidth="max-w-4xl" />}>
     <Emails />
   </Suspense>
 )
@@ -41,9 +41,7 @@ const Emails = async () => {
       </Button>
 
       <header className="mt-2">
-        <h1 className="font-heading text-title font-bold">
-          E-mails envoyés aux clientes
-        </h1>
+        <h1 className="font-heading text-title font-bold">E-mails envoyés</h1>
         <p className="mt-2 max-w-2xl text-sm leading-relaxed text-muted-foreground">
           Confirmations, déplacements, annulations et rappels de la veille. Un
           e-mail qui ne part pas n’empêche jamais un rendez-vous : il apparaît
@@ -57,7 +55,7 @@ const Emails = async () => {
           className="mt-5 rounded-2xl border border-warning-accent bg-warning-subtle p-4 text-sm text-warning-strong"
         >
           L’envoi d’e-mails n’est pas encore activé sur ce site. Les rendez-vous
-          fonctionnent normalement, mais aucune cliente ne reçoit de message.
+          fonctionnent normalement, mais personne ne reçoit de message.
         </p>
       )}
 
@@ -157,7 +155,7 @@ const Emails = async () => {
         ) : (
           <EmptyState
             title="Aucun e-mail pour le moment"
-            description="Les messages envoyés aux clientes apparaîtront ici, avec leur résultat."
+            description="Les messages envoyés apparaîtront ici, avec leur résultat."
           />
         )}
       </section>

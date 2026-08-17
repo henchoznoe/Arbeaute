@@ -25,7 +25,6 @@ export const CustomerAnonymization = () => {
     startTransition(async () => {
       const result = await previewCustomerAnonymization({
         email: form.get('email'),
-        phone: form.get('phone'),
       })
       setIsError(!result.ok)
       setMessage(result.message)
@@ -57,10 +56,10 @@ export const CustomerAnonymization = () => {
         </span>
         <div>
           <h2 className="text-xl font-semibold">
-            Effacer les coordonnées d’une cliente
+            Effacer les coordonnées d’une personne
           </h2>
           <p className="mt-1 text-sm leading-relaxed text-muted-foreground">
-            À utiliser quand une cliente demande la suppression de ses données.
+            À utiliser quand quelqu’un demande la suppression de ses données.
             Son nom, son e-mail et son téléphone disparaissent définitivement.
             Les rendez-vous restent, sans nom, pour que vos chiffres restent
             justes. <strong className="font-semibold">C’est définitif :</strong>{' '}
@@ -69,8 +68,12 @@ export const CustomerAnonymization = () => {
         </div>
       </div>
 
-      <form onSubmit={handlePreview} className="mt-5 grid gap-4 sm:grid-cols-2">
-        <FormField controlId="anonymization-email" label="Email exact">
+      <form onSubmit={handlePreview} className="mt-5 grid gap-4">
+        <FormField
+          controlId="anonymization-email"
+          label="Adresse e-mail exacte"
+          help="C’est elle qui identifie la fiche. Recopiez-la depuis un de ses rendez-vous."
+        >
           <input
             id="anonymization-email"
             name="email"
@@ -80,22 +83,7 @@ export const CustomerAnonymization = () => {
             className={formControlClass}
           />
         </FormField>
-        <FormField controlId="anonymization-phone" label="Téléphone exact">
-          <input
-            id="anonymization-phone"
-            name="phone"
-            type="tel"
-            required
-            autoComplete="off"
-            className={formControlClass}
-          />
-        </FormField>
-        <Button
-          type="submit"
-          variant="outline"
-          disabled={isPending}
-          className="sm:col-span-2"
-        >
+        <Button type="submit" variant="outline" disabled={isPending}>
           {isPending ? 'Recherche…' : 'Afficher l’aperçu'}
         </Button>
       </form>
@@ -126,8 +114,7 @@ export const CustomerAnonymization = () => {
               {preview.activityCount > 1 ? 's' : ''} d’activité perdront le nom
             </li>
             <li>
-              Si elle est connectée à « Mes rendez-vous », elle en sera
-              déconnectée
+              Toute session « Mes rendez-vous » encore ouverte sera fermée
             </li>
           </ul>
           <FormField

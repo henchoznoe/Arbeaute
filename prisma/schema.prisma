@@ -43,6 +43,7 @@ enum AuditEntityType {
   WEEKLY_AVAILABILITY
   AVAILABILITY_EXCEPTION
   BOOKING_SETTINGS
+  AGENDA_SETTINGS
 }
 
 enum EmailKind {
@@ -168,14 +169,31 @@ model BookingSettings {
   @@map("booking_settings")
 }
 
+/// Affichage de l'agenda, partagé par toutes les personnes qui l'ouvrent.
+///
+/// Le choix vivait dans le `localStorage` du navigateur : Arzu et Noé ne
+/// voyaient donc pas la même semaine. Une ligne unique en base suffit — il n'y a
+/// qu'un institut, et qu'un agenda.
+model AgendaSettings {
+  id          String   @id @default("default")
+  visibleDays Int[]    @default([1, 2, 3, 4, 5, 6, 0])
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("agenda_settings")
+}
+
 model Customer {
-  id              String        @id @default(cuid())
-  identityDigest  String        @unique
-  identityVersion Int           @default(1)
+  id String @id @default(cuid())
+  /// Incrémenté dès qu'une adresse change ou que les coordonnées sont
+  /// effacées : les sessions ouvertes cessent alors d'être valides.
+  identityVersion Int     @default(1)
   firstName       String?
   lastName        String
   email           String
-  emailNormalized String
+  /// Clé d'identité : une adresse, une personne. C'est cette unicité qui rend
+  /// l'`upsert` de réservation sûr quand deux demandes arrivent ensemble.
+  emailNormalized String  @unique
   phone           String
   phoneNormalized String
   searchName      String
@@ -188,7 +206,6 @@ model Customer {
   preferences     String?
   appointments    Appointment[]
 
-  @@index([emailNormalized])
   @@index([phoneNormalized])
   @@index([searchName])
   @@index([anonymizedAt])
@@ -215,8 +232,6 @@ model Appointment {
   customerSearchName      String
   customerEmail           String?
   customerPhone           String?
-  customerIdentityDigest  String?
-  customerIdentityVersion Int                   @default(1)
   comment                 String?
   source                  AppointmentSource
   status                  AppointmentStatus     @default(CONFIRMED)
@@ -234,7 +249,6 @@ model Appointment {
   @@index([customerPhone, startsAt])
   @@index([customerSearchName, startsAt])
   @@index([customerSearchName(ops: raw("gin_trgm_ops"))], map: "appointment_customerSearchName_trgm_idx", type: Gin)
-  @@index([customerIdentityDigest, startsAt, status])
   @@index([customerId, startsAt, status])
   @@index([serviceId, startsAt])
   @@index([status, source, startsAt])

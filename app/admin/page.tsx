@@ -13,6 +13,7 @@ import { NextAppointmentCard } from '@/components/admin/next-appointment-card'
 import { EmptyState } from '@/components/ui/empty-state'
 import { StatusBadge } from '@/components/ui/status-badge'
 import { getActivityOverview } from '@/lib/admin/activity'
+import { getAgendaSettings } from '@/lib/admin/agenda-settings'
 import { buildAdminTimelineDay } from '@/lib/admin/agenda-timeline'
 import { buildDashboardMetrics } from '@/lib/admin/dashboard-metrics'
 import prisma from '@/lib/core/prisma'
@@ -62,7 +63,7 @@ const statusVariants = {
 } as const
 
 const AdminPage = ({ searchParams }: Readonly<AdminPageProps>) => (
-  <Suspense fallback={<AdminSkeleton />}>
+  <Suspense fallback={<AdminSkeleton variant="agenda" />}>
     <AdminAgenda searchParams={searchParams} />
   </Suspense>
 )
@@ -80,58 +81,65 @@ const AdminAgenda = async ({ searchParams }: Readonly<AdminPageProps>) => {
   // Une requête bornée de plus, jamais une par jour : le prochain rendez-vous
   // doit rester juste même quand Arzu consulte une autre semaine.
   const now = new Date()
-  const [appointments, exceptions, weekly, activityOverview, nextAppointment] =
-    await Promise.all([
-      prisma.appointment.findMany({
-        where: {
-          status: { in: ['CONFIRMED', 'COMPLETED', 'NO_SHOW'] },
-          occupiedStartsAt: { lt: queryEnd },
-          occupiedEndsAt: { gt: queryStart },
+  const [
+    appointments,
+    exceptions,
+    weekly,
+    activityOverview,
+    nextAppointment,
+    agendaSettings,
+  ] = await Promise.all([
+    prisma.appointment.findMany({
+      where: {
+        status: { in: ['CONFIRMED', 'COMPLETED', 'NO_SHOW'] },
+        occupiedStartsAt: { lt: queryEnd },
+        occupiedEndsAt: { gt: queryStart },
+      },
+      orderBy: { startsAt: 'asc' },
+      select: {
+        id: true,
+        startsAt: true,
+        endsAt: true,
+        occupiedStartsAt: true,
+        occupiedEndsAt: true,
+        preparationMinutes: true,
+        cleanupMinutes: true,
+        serviceDurationMinutes: true,
+        servicePriceCents: true,
+        customerFirstName: true,
+        customerLastName: true,
+        customerPhone: true,
+        serviceNameSnapshot: true,
+        service: {
+          select: { color: true, category: { select: { name: true } } },
         },
-        orderBy: { startsAt: 'asc' },
-        select: {
-          id: true,
-          startsAt: true,
-          endsAt: true,
-          occupiedStartsAt: true,
-          occupiedEndsAt: true,
-          preparationMinutes: true,
-          cleanupMinutes: true,
-          serviceDurationMinutes: true,
-          servicePriceCents: true,
-          customerFirstName: true,
-          customerLastName: true,
-          customerPhone: true,
-          serviceNameSnapshot: true,
-          service: {
-            select: { color: true, category: { select: { name: true } } },
-          },
-          source: true,
-          status: true,
-        },
-      }),
-      prisma.availabilityException.findMany({
-        where: { startsAt: { lt: queryEnd }, endsAt: { gt: queryStart } },
-        orderBy: { startsAt: 'asc' },
-      }),
-      prisma.weeklyAvailability.findMany({
-        orderBy: [{ dayOfWeek: 'asc' }, { startMinute: 'asc' }],
-        select: { dayOfWeek: true, startMinute: true, endMinute: true },
-      }),
-      getActivityOverview(),
-      prisma.appointment.findFirst({
-        where: { status: 'CONFIRMED', startsAt: { gte: now } },
-        orderBy: { startsAt: 'asc' },
-        select: {
-          id: true,
-          startsAt: true,
-          customerFirstName: true,
-          customerLastName: true,
-          serviceNameSnapshot: true,
-          service: { select: { category: { select: { name: true } } } },
-        },
-      }),
-    ])
+        source: true,
+        status: true,
+      },
+    }),
+    prisma.availabilityException.findMany({
+      where: { startsAt: { lt: queryEnd }, endsAt: { gt: queryStart } },
+      orderBy: { startsAt: 'asc' },
+    }),
+    prisma.weeklyAvailability.findMany({
+      orderBy: [{ dayOfWeek: 'asc' }, { startMinute: 'asc' }],
+      select: { dayOfWeek: true, startMinute: true, endMinute: true },
+    }),
+    getActivityOverview(),
+    prisma.appointment.findFirst({
+      where: { status: 'CONFIRMED', startsAt: { gte: now } },
+      orderBy: { startsAt: 'asc' },
+      select: {
+        id: true,
+        startsAt: true,
+        customerFirstName: true,
+        customerLastName: true,
+        serviceNameSnapshot: true,
+        service: { select: { category: { select: { name: true } } } },
+      },
+    }),
+    getAgendaSettings(),
+  ])
 
   const appointmentsFor = (dateKey: string) =>
     appointments.filter(
@@ -146,14 +154,15 @@ const AdminAgenda = async ({ searchParams }: Readonly<AdminPageProps>) => {
   }
   // Seule la grille hebdomadaire de bureau utilise cette carte, en version
   // compacte : sept colonnes n'ont pas la place d'un bouton d'appel, qui vit
-  // dans la liste de la journée.
+  // dans la liste de la journée. `min-w-0` est indispensable, sans quoi le
+  // contenu impose sa largeur et déborde de la colonne.
   const appointmentCard = (
     appointment: (typeof appointments)[number],
     dateKey: string,
   ) => (
     <article
       key={appointment.id}
-      className="block rounded-xl border bg-background p-3 text-xs shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
+      className="block min-w-0 rounded-xl border bg-background p-3 text-xs shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
       style={{ borderLeftColor: appointment.service.color, borderLeftWidth: 4 }}
     >
       <Link href={`/admin/appointments/${appointment.id}?date=${dateKey}`}>
@@ -167,7 +176,7 @@ const AdminAgenda = async ({ searchParams }: Readonly<AdminPageProps>) => {
             </span>
           ) : null}
         </div>
-        <p className="mt-1 font-medium leading-snug">
+        <p className="mt-1 font-medium leading-snug break-words">
           {[appointment.customerFirstName, appointment.customerLastName]
             .filter(Boolean)
             .join(' ')}
@@ -262,7 +271,7 @@ const AdminAgenda = async ({ searchParams }: Readonly<AdminPageProps>) => {
               nextAppointment.customerLastName,
             ]
               .filter(Boolean)
-              .join(' ') || 'Cliente sans nom'
+              .join(' ') || 'Sans nom'
           }
           serviceLabel={formatServiceLabel(
             nextAppointment.serviceNameSnapshot,
@@ -273,7 +282,7 @@ const AdminAgenda = async ({ searchParams }: Readonly<AdminPageProps>) => {
         <EmptyState
           className="mt-4"
           title="Aucun rendez-vous à venir"
-          description="Le prochain rendez-vous confirmé s’affichera ici dès qu’une cliente aura réservé."
+          description="Le prochain rendez-vous confirmé s’affichera ici dès la première réservation."
         />
       )}
 
@@ -285,6 +294,7 @@ const AdminAgenda = async ({ searchParams }: Readonly<AdminPageProps>) => {
         previousWeek={addLocalDays(anchor, -7)}
         nextWeek={addLocalDays(anchor, 7)}
         days={timelineDays}
+        visibleDays={agendaSettings.visibleDays}
         desktopDays={weekDays.map(dateKey => {
           const dailyAppointments = appointmentsFor(dateKey)
           const dailyExceptions = exceptionsFor(dateKey)

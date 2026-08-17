@@ -1,5 +1,4 @@
 import { writeAuditEvent } from '@/lib/admin/audit'
-import { createCustomerIdentityDigest } from '@/lib/core/session-cookies'
 import { getAvailableSlots } from '@/lib/reservation/availability'
 import { getBookingSettings } from '@/lib/reservation/booking-settings'
 import { MAX_SERIALIZABLE_ATTEMPTS } from '@/lib/reservation/constants'
@@ -80,7 +79,7 @@ export const createAppointmentSerializable = async (
           const appointment = await transaction.appointment.create({
             data: {
               serviceId: service.id,
-              customerId: customer?.id,
+              customerId: customer.id,
               serviceNameSnapshot: service.name,
               servicePriceCents: service.priceCents,
               serviceDurationMinutes: service.durationMinutes,
@@ -105,10 +104,6 @@ export const createAppointmentSerializable = async (
               ),
               customerEmail: input.email,
               customerPhone: input.phone,
-              customerIdentityDigest: createCustomerIdentityDigest(
-                input.email,
-                input.phone,
-              ),
               comment: input.comment,
               source: 'PUBLIC',
               status: 'CONFIRMED',
@@ -126,7 +121,7 @@ export const createAppointmentSerializable = async (
           })
           await writeAuditEvent(transaction, {
             actorType: 'CUSTOMER',
-            actorId: customer?.id ?? 'unlinked-customer',
+            actorId: customer.id,
             entityType: 'APPOINTMENT',
             entityId: appointment.id,
             entityLabel: appointment.serviceNameSnapshot,
@@ -242,7 +237,7 @@ export const moveAppointmentSerializable = async (
             after: { startsAt: updated.startsAt.toISOString() },
           })
           // L'ancien horaire remonte pour que l'e-mail de déplacement puisse
-          // le rappeler à la cliente.
+          // le rappeler dans le message.
           return { ...updated, previousStartsAt: appointment.startsAt }
         },
         { isolationLevel: 'Serializable' },

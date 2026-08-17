@@ -36,7 +36,7 @@ const statusVariants = {
 const EditAppointmentPage = ({
   params,
 }: Readonly<EditAppointmentPageProps>) => (
-  <Suspense fallback={<AdminSkeleton maxWidth="max-w-3xl" />}>
+  <Suspense fallback={<AdminSkeleton variant="form" maxWidth="max-w-3xl" />}>
     <EditAppointment params={params} />
   </Suspense>
 )
@@ -83,7 +83,7 @@ const EditAppointment = async ({
   const customerName =
     [appointment.customerFirstName, appointment.customerLastName]
       .filter(Boolean)
-      .join(' ') || 'cette cliente'
+      .join(' ') || 'cette personne'
 
   return (
     <main className="mx-auto min-h-screen max-w-3xl px-4 py-6 sm:px-8">

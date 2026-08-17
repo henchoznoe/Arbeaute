@@ -25,7 +25,7 @@ interface BookingSettingsPageProps {
 const BookingSettingsPage = ({
   searchParams,
 }: Readonly<BookingSettingsPageProps>) => (
-  <Suspense fallback={<AdminSkeleton maxWidth="max-w-3xl" />}>
+  <Suspense fallback={<AdminSkeleton variant="form" maxWidth="max-w-3xl" />}>
     <BookingSettingsForm searchParams={searchParams} />
   </Suspense>
 )
@@ -56,8 +56,8 @@ const BookingSettingsForm = async ({
           Règles de réservation
         </h1>
         <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
-          Ces quatre réglages décident de ce que vos clientes peuvent réserver
-          en ligne, et jusqu’à quand elles peuvent le modifier elles-mêmes.
+          Ces quatre réglages décident de ce qui peut être réservé en ligne, et
+          jusqu’à quand un rendez-vous peut être modifié sans vous.
         </p>
       </header>
 
@@ -135,7 +135,7 @@ const BookingSettingsForm = async ({
 
           <FormField
             controlId="change-cutoff"
-            label="Jusqu’à quand une cliente peut changer son rendez-vous"
+            label="Jusqu’à quand un rendez-vous peut être changé"
             help={describeChangeCutoff(settings.customerChangeCutoffHours)}
             helpId="change-cutoff-help"
           >

@@ -10,7 +10,7 @@ import prisma from '@/lib/core/prisma'
 import { getAdminSession } from '@/lib/core/session-cookies'
 
 const NewServicePage = () => (
-  <Suspense fallback={<AdminSkeleton maxWidth="max-w-5xl" />}>
+  <Suspense fallback={<AdminSkeleton variant="form" maxWidth="max-w-5xl" />}>
     <NewService />
   </Suspense>
 )

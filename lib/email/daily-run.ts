@@ -16,7 +16,7 @@ import {
 } from '@/lib/reservation/time'
 
 /**
- * Passage quotidien : rappels aux clientes et récapitulatif à Arzu.
+ * Passage quotidien : rappels aux personnes attendues et récapitulatif à Arzu.
  *
  * Les deux tiennent dans une seule tâche planifiée, la seule que l'offre
  * Vercel Hobby autorise sans surcoût. Une seule lecture couvre la journée du
@@ -88,7 +88,7 @@ export const runDailyEmails = async (
     customerName:
       [appointment.customerFirstName, appointment.customerLastName]
         .filter(Boolean)
-        .join(' ') || 'Cliente sans nom',
+        .join(' ') || 'Sans nom',
     serviceLabel: formatServiceLabel(
       appointment.serviceNameSnapshot,
       appointment.service.category?.name,

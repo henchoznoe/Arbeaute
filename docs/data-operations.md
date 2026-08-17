@@ -9,7 +9,7 @@ production.
 L’écran `/admin/data` diffuse directement trois fichiers CSV UTF-8 au navigateur :
 
 - rendez-vous : filtres facultatifs de début, fin et statut ;
-- clientes : coordonnées normalisées courantes et nombre de rendez-vous ;
+- fiches : coordonnées normalisées courantes et nombre de rendez-vous ;
 - catalogue : catégories, prestations, prix, durées et états de publication.
 
 Les fichiers utilisent le point-virgule comme séparateur, contiennent au maximum

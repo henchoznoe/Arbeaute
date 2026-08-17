@@ -2,7 +2,7 @@ import { Bell, ChevronRight } from 'lucide-react'
 import Link from 'next/link'
 
 /**
- * Signal des changements clientes non lus, en tête d'agenda.
+ * Signal des changements venus du site non lus, en tête d'agenda.
  *
  * Volontairement réduit à une ligne : son rôle est d'alerter, pas de résoudre.
  * Le détail et le « tout marquer comme lu » vivent dans l'aperçu sous l'agenda

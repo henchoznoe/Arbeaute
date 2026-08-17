@@ -150,7 +150,7 @@ export const ReservationWizard = ({
     null,
   )
   const synchronizedDeepLinkRef = useRef(deepLinkSelectionKey)
-  // Le tunnel ne se place tout seul sur un jour ouvert que tant que la cliente
+  // Le tunnel ne se place tout seul sur un jour ouvert que tant que personne
   // n'a rien choisi elle-même : dès qu'elle touche au calendrier, elle décide.
   const customerChoseDayRef = useRef(false)
   const autoSearchedServiceRef = useRef<string | null>(null)
@@ -231,7 +231,7 @@ export const ReservationWizard = ({
     goToStep(2)
   }
 
-  // L'état React peut survivre à une navigation cliente vers la même route.
+  // L'état React peut survivre à une navigation vers la même route.
   // On resynchronise donc le tunnel avec l'URL au lieu de ne lire le slug
   // qu'une seule fois lors de l'initialisation des useState.
   useEffect(() => {
@@ -282,7 +282,7 @@ export const ReservationWizard = ({
         return stillAvailable ? candidate : ''
       })
 
-      // Une cliente sans préférence de date ne doit pas avoir à chercher : le
+      // Sans préférence de date, il ne faut pas avoir à chercher : le
       // tunnel s'ouvre sur le premier jour qui a des heures libres, au lieu de
       // lui annoncer « L'institut est fermé ce jour-là ».
       if (customerChoseDayRef.current || pending) return
@@ -486,8 +486,7 @@ export const ReservationWizard = ({
           </p>
           <p className="mt-2 pl-8 text-sm leading-relaxed text-muted-foreground">
             Retrouvez-le maintenant dans « Mes rendez-vous ». Lors d’une
-            prochaine visite, utilisez exactement l’adresse e-mail et le numéro
-            de téléphone saisis lors de la réservation.
+            prochaine visite, votre adresse e-mail suffira pour y accéder.
           </p>
           <Button asChild variant="outline" className="mt-4 w-full">
             <a href="/mes-rendez-vous">Accéder à mes rendez-vous</a>

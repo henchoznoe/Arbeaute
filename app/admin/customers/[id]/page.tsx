@@ -121,7 +121,7 @@ const CustomerAppointmentList = ({
 }
 
 const CustomerPage = ({ params }: Readonly<CustomerPageProps>) => (
-  <Suspense fallback={<AdminSkeleton maxWidth="max-w-5xl" />}>
+  <Suspense fallback={<AdminSkeleton variant="form" maxWidth="max-w-5xl" />}>
     <CustomerProfile params={params} />
   </Suspense>
 )
@@ -154,12 +154,12 @@ const CustomerProfile = async ({ params }: Readonly<CustomerPageProps>) => {
             <UserRound className="size-6" />
           </span>
           <div className="min-w-0">
-            <p className="text-sm font-medium text-brand">Fiche cliente</p>
+            <p className="text-sm font-medium text-brand">Fiche</p>
             <h1 className="break-words font-heading text-title font-bold">
               {customerName}
             </h1>
             <p className="mt-1 text-xs text-muted-foreground">
-              Cliente depuis le {formatDate(customer.firstSeenAt)} · dernière
+              Connue depuis le {formatDate(customer.firstSeenAt)} · dernière
               activité le {formatDate(customer.lastSeenAt)}
             </p>
           </div>
@@ -169,7 +169,7 @@ const CustomerProfile = async ({ params }: Readonly<CustomerPageProps>) => {
 
       <section
         className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-5"
-        aria-label="Indicateurs cliente"
+        aria-label="Indicateurs de la fiche"
       >
         {Object.entries(statusLabels).map(([status, label]) => (
           <article key={status} className="rounded-2xl border bg-card p-4">

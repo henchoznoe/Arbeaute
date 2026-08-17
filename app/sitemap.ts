@@ -6,8 +6,7 @@ import { siteConfig } from '@/lib/config/site'
  * Les pages légales (politique de confidentialité, mentions légales,
  * conditions générales) restent accessibles et indexables, mais sont
  * volontairement absentes du sitemap : elles n'ont pas leur place dans
- * le budget de crawl, au profit des pages qui font vraiment venir des
- * clientes.
+ * le budget de crawl, au profit des pages qui font vraiment venir du monde.
  *
  * Mis en cache pour rester prérendu : sans cela, le `new Date()` de
  * `lastModified` rendrait la route dynamique et chaque passage de robot
