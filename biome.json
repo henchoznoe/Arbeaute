@@ -20,6 +20,7 @@
       "components/**",
       "lib/**",
       "prisma/**/*.ts",
+      "scripts/**/*.ts",
       "tests/**",
       "proxy.ts",
       "prisma.config.ts",

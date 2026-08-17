@@ -1,5 +1,5 @@
 import { statSync } from 'node:fs'
-import { readFile, readdir } from 'node:fs/promises'
+import { readdir, readFile } from 'node:fs/promises'
 import path from 'node:path'
 
 const nextDirectory = path.resolve('.next')
@@ -21,7 +21,14 @@ const routeJavascriptBudgets = {
   '/reservation': 650 * 1024,
 } as const
 
-const imageExtensions = new Set(['.avif', '.gif', '.jpeg', '.jpg', '.png', '.webp'])
+const imageExtensions = new Set([
+  '.avif',
+  '.gif',
+  '.jpeg',
+  '.jpg',
+  '.png',
+  '.webp',
+])
 const maximumImageBytes = 256 * 1024
 const maximumPublicImagesBytes = 450 * 1024
 
@@ -77,9 +84,7 @@ const getRouteJavascriptBytes = async (route: string): Promise<number> => {
   return [...chunks].reduce(
     (total, chunk) =>
       total +
-      statSync(
-        path.join(nextDirectory, chunk.replace(/^\/_next\//, '')),
-      ).size,
+      statSync(path.join(nextDirectory, chunk.replace(/^\/_next\//, ''))).size,
     0,
   )
 }
@@ -103,7 +108,9 @@ const verifyJavascriptBudgets = async (): Promise<void> => {
       throw new Error(
         `${route} charge ${formatKiB(bytes)} de JavaScript pour un budget de ${formatKiB(budget)}.`,
       )
-    console.info(`✓ JavaScript ${route} : ${formatKiB(bytes)} / ${formatKiB(budget)}`)
+    console.info(
+      `✓ JavaScript ${route} : ${formatKiB(bytes)} / ${formatKiB(budget)}`,
+    )
   }
 }
 
@@ -111,7 +118,9 @@ const verifyImageBudgets = async (): Promise<void> => {
   const images = (await listFiles(publicDirectory)).filter(file =>
     imageExtensions.has(path.extname(file).toLowerCase()),
   )
-  const oversized = images.filter(file => statSync(file).size > maximumImageBytes)
+  const oversized = images.filter(
+    file => statSync(file).size > maximumImageBytes,
+  )
   if (oversized.length)
     throw new Error(
       `Images au-dessus de ${formatKiB(maximumImageBytes)} : ${oversized

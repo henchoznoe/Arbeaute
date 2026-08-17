@@ -12,7 +12,7 @@
   },
   "scripts": {
     "dev": "next dev",
-    "build": "prisma generate && prisma migrate deploy && next build && node scripts/verify-build-quality.ts",
+    "build": "prisma generate && node scripts/migrate-production.ts && next build && node scripts/verify-build-quality.ts",
     "start": "next start",
     "prepare": "husky",
     "lint": "biome lint .",

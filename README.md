@@ -119,7 +119,7 @@ l'administration sur [/admin](http://localhost:3000/admin).
 | Command | Description |
 | --- | --- |
 | `pnpm dev` | Serveur de développement |
-| `pnpm build` | Build de production (Prisma generate + migrate deploy) |
+| `pnpm build` | Build de production (Prisma generate + migrate deploy en production uniquement) |
 | `pnpm start` | Serveur de production |
 | `pnpm check` | Biome : formatage, lint et tri des imports |
 | `pnpm check:all` | Biome + knip |
@@ -158,6 +158,18 @@ Le détail est documenté dans [`AGENTS.md`](AGENTS.md). Les points structurants
 ## Deployment
 
 Déploiement sur Vercel depuis `main`. `develop` est la branche de travail.
+
+**Seule la production migre la base.** Le build est partagé par tous les
+déploiements ; `scripts/migrate-production.ts` n'exécute `prisma migrate deploy`
+que lorsque `VERCEL_ENV` vaut `production`. Sans ce filtre, chaque preview de
+`develop` appliquerait ses migrations à la base de production, qui prendrait de
+l'avance sur le code servi depuis `main` — une colonne `NOT NULL` non publiée
+suffit à casser toute réservation.
+
+Ce filtre ne dispense pas de cloisonner les données : tant que les previews
+partagent `DATABASE_URL` avec la production, elles lisent et écrivent les vraies
+données clientes. Donner aux previews leur propre base (branche Neon) reste la
+protection de fond.
 
 **Variables à définir dans le projet Vercel :**
 
