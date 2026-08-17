@@ -4,6 +4,7 @@ import { Menu, X } from 'lucide-react'
 import Link from 'next/link'
 import type { ReactNode } from 'react'
 import { useState } from 'react'
+import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils/cn'
 
 interface SiteHeaderProps {
@@ -41,7 +42,7 @@ export const SiteHeader = ({
                 <Link
                   key={link.href}
                   href={link.href}
-                  className="transition-colors hover:text-rose-500"
+                  className="transition-colors hover:text-brand"
                 >
                   {link.label}
                 </Link>
@@ -53,15 +54,17 @@ export const SiteHeader = ({
         <div className="flex items-center justify-self-end gap-3">
           {actions}
           {links.length > 0 ? (
-            <button
+            <Button
               type="button"
+              variant="ghost"
+              size="icon"
               onClick={() => setOpen(value => !value)}
               aria-label={open ? 'Fermer le menu' : 'Ouvrir le menu'}
               aria-expanded={open}
-              className="grid size-10 place-items-center rounded-full hover:bg-foreground/5 sm:hidden"
+              className="rounded-full sm:hidden"
             >
               {open ? <X className="size-5" /> : <Menu className="size-5" />}
-            </button>
+            </Button>
           ) : null}
         </div>
       </div>

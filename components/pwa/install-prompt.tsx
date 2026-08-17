@@ -90,6 +90,7 @@ export const InstallPrompt = () => {
 
   return (
     <section
+      data-install-prompt
       aria-label="Installer l’application"
       className="fixed inset-x-0 bottom-0 z-50 px-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]"
     >
@@ -114,14 +115,14 @@ export const InstallPrompt = () => {
           {mode === 'ios' ? (
             <ol className="mt-3 space-y-2 text-xs text-muted-foreground">
               <li className="flex items-center gap-2">
-                <Share className="size-4 shrink-0 text-rose-500" />
+                <Share className="size-4 shrink-0 text-brand" />
                 <span>
                   Appuyez sur <strong className="font-medium">Partager</strong>{' '}
                   dans la barre du navigateur
                 </span>
               </li>
               <li className="flex items-center gap-2">
-                <SquarePlus className="size-4 shrink-0 text-rose-500" />
+                <SquarePlus className="size-4 shrink-0 text-brand" />
                 <span>
                   Choisissez{' '}
                   <strong className="font-medium">Sur l’écran d’accueil</strong>
@@ -133,7 +134,7 @@ export const InstallPrompt = () => {
               type="button"
               onClick={install}
               size="lg"
-              className="mt-3 h-9 rounded-full px-4"
+              className="mt-3 min-h-11 rounded-full px-4"
             >
               <Download className="size-4" />
               Installer
@@ -141,14 +142,16 @@ export const InstallPrompt = () => {
           )}
         </div>
 
-        <button
+        <Button
           type="button"
+          variant="ghost"
+          size="icon"
           onClick={dismiss}
           aria-label="Masquer cette proposition"
-          className="-mt-1 -mr-1 grid size-8 shrink-0 place-items-center self-start rounded-full text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+          className="-mt-1 -mr-1 shrink-0 self-start rounded-full text-muted-foreground"
         >
           <X className="size-4" />
-        </button>
+        </Button>
       </div>
     </section>
   )

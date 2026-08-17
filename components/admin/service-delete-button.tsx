@@ -3,6 +3,8 @@
 import { Trash2 } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { useState, useTransition } from 'react'
+import { Button } from '@/components/ui/button'
+import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import { deleteService } from '@/lib/actions/catalog'
 
 interface ServiceDeleteButtonProps {
@@ -15,54 +17,37 @@ export const ServiceDeleteButton = ({
   name,
 }: Readonly<ServiceDeleteButtonProps>) => {
   const router = useRouter()
-  const [confirming, setConfirming] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [pending, startTransition] = useTransition()
 
   const handleDelete = () => {
     startTransition(async () => {
       const result = await deleteService(id)
-      setConfirming(false)
       if (result.ok) router.refresh()
       else setError(result.message)
     })
   }
 
-  if (confirming)
-    return (
-      <div className="flex items-center gap-1">
-        <button
-          type="button"
-          disabled={pending}
-          onClick={() => setConfirming(false)}
-          className="rounded-lg border px-3 py-2 text-xs font-medium"
-        >
-          Non
-        </button>
-        <button
-          type="button"
-          disabled={pending}
-          onClick={handleDelete}
-          className="rounded-lg bg-destructive px-3 py-2 text-xs font-medium text-destructive-foreground"
-        >
-          Confirmer la suppression
-        </button>
-      </div>
-    )
-
   return (
     <>
-      <button
-        type="button"
-        onClick={() => {
-          setError(null)
-          setConfirming(true)
-        }}
-        aria-label={`Supprimer ${name}`}
-        className="rounded-lg border p-2 text-destructive"
-      >
-        <Trash2 className="size-4" />
-      </button>
+      <ConfirmDialog
+        title={`Supprimer « ${name} » ?`}
+        description="La prestation sera supprimée uniquement si aucun rendez-vous ne l’utilise. Cette action est irréversible."
+        confirmLabel="Supprimer la prestation"
+        onConfirm={handleDelete}
+        pending={pending}
+        trigger={
+          <Button
+            type="button"
+            size="icon"
+            variant="destructive"
+            onClick={() => setError(null)}
+            aria-label={`Supprimer ${name}`}
+          >
+            <Trash2 className="size-4" />
+          </Button>
+        }
+      />
       {error ? (
         <p className="basis-full text-xs text-destructive">{error}</p>
       ) : null}

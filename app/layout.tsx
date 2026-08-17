@@ -1,7 +1,7 @@
 import { Analytics } from '@vercel/analytics/next'
 import { SpeedInsights } from '@vercel/speed-insights/next'
 import type { Metadata, Viewport } from 'next'
-import { Inter, Playfair_Display } from 'next/font/google'
+import { Geist, Plus_Jakarta_Sans } from 'next/font/google'
 import { Suspense } from 'react'
 
 import './globals.css'
@@ -15,12 +15,12 @@ import { contact } from '@/lib/constants/contact'
 import { getOpeningHours } from '@/lib/reservation/opening-hours'
 import { cn } from '@/lib/utils/cn'
 
-const inter = Inter({
+const geist = Geist({
   subsets: ['latin'],
   variable: '--font-sans',
 })
 
-const playfair = Playfair_Display({
+const plusJakarta = Plus_Jakarta_Sans({
   subsets: ['latin'],
   variable: '--font-heading',
 })
@@ -123,7 +123,11 @@ export default async function RootLayout({
       lang="fr"
       data-scroll-behavior="smooth"
       suppressHydrationWarning
-      className={cn('antialiased', inter.variable, playfair.variable)}
+      className={cn(
+        'overflow-x-clip antialiased',
+        geist.variable,
+        plusJakarta.variable,
+      )}
     >
       <body suppressHydrationWarning>
         <script

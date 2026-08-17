@@ -1,6 +1,12 @@
+import { writeAuditEvent } from '@/lib/admin/audit'
 import { createCustomerIdentityDigest } from '@/lib/core/session-cookies'
 import { getAvailableSlots } from '@/lib/reservation/availability'
+import { getBookingSettings } from '@/lib/reservation/booking-settings'
 import { MAX_SERIALIZABLE_ATTEMPTS } from '@/lib/reservation/constants'
+import {
+  normalizeCustomerSearchName,
+  upsertCustomerIdentity,
+} from '@/lib/reservation/customers'
 import {
   canCustomerChangeAppointment,
   getLocalDateKey,
@@ -38,6 +44,7 @@ export const createAppointmentSerializable = async (
   prisma: PrismaClient,
   input: PublicAppointmentInput,
 ) => {
+  const settings = await getBookingSettings()
   for (let attempt = 1; attempt <= MAX_SERIALIZABLE_ATTEMPTS; attempt += 1) {
     try {
       return await prisma.$transaction(
@@ -56,15 +63,24 @@ export const createAppointmentSerializable = async (
             database: transaction,
             serviceId: service.id,
             dateKey: getLocalDateKey(input.startsAt),
+            settings,
           })
           if (
             !slots.some(slot => slot.startsAt === input.startsAt.toISOString())
           )
             throw new ReservationError('SLOT_UNAVAILABLE')
 
+          const customer = await upsertCustomerIdentity(transaction, {
+            firstName: input.firstName,
+            lastName: input.lastName,
+            email: input.email,
+            phone: input.phone,
+          })
+
           const appointment = await transaction.appointment.create({
             data: {
               serviceId: service.id,
+              customerId: customer?.id,
               serviceNameSnapshot: service.name,
               servicePriceCents: service.priceCents,
               serviceDurationMinutes: service.durationMinutes,
@@ -83,6 +99,10 @@ export const createAppointmentSerializable = async (
               ),
               customerFirstName: input.firstName,
               customerLastName: input.lastName,
+              customerSearchName: normalizeCustomerSearchName(
+                input.firstName,
+                input.lastName,
+              ),
               customerEmail: input.email,
               customerPhone: input.phone,
               customerIdentityDigest: createCustomerIdentityDigest(
@@ -104,6 +124,19 @@ export const createAppointmentSerializable = async (
               appointmentStartsAt: appointment.startsAt,
             },
           })
+          await writeAuditEvent(transaction, {
+            actorType: 'CUSTOMER',
+            actorId: customer?.id ?? 'unlinked-customer',
+            entityType: 'APPOINTMENT',
+            entityId: appointment.id,
+            entityLabel: appointment.serviceNameSnapshot,
+            action: 'CREATED',
+            after: {
+              serviceId: appointment.serviceId,
+              startsAt: appointment.startsAt.toISOString(),
+              status: appointment.status,
+            },
+          })
           return appointment
         },
         { isolationLevel: 'Serializable' },
@@ -122,7 +155,7 @@ export const createAppointmentSerializable = async (
 interface MoveAppointmentInput {
   appointmentId: string
   startsAt: Date
-  identityDigest: string
+  customerId: string
   now?: Date
 }
 
@@ -131,10 +164,11 @@ export const moveAppointmentSerializable = async (
   {
     appointmentId,
     startsAt,
-    identityDigest,
+    customerId,
     now = new Date(),
   }: MoveAppointmentInput,
 ) => {
+  const settings = await getBookingSettings()
   for (let attempt = 1; attempt <= MAX_SERIALIZABLE_ATTEMPTS; attempt += 1) {
     try {
       return await prisma.$transaction(
@@ -142,13 +176,17 @@ export const moveAppointmentSerializable = async (
           const appointment = await transaction.appointment.findFirst({
             where: {
               id: appointmentId,
-              customerIdentityDigest: identityDigest,
+              customerId,
               status: 'CONFIRMED',
             },
           })
           if (
             !appointment ||
-            !canCustomerChangeAppointment(appointment.startsAt, now)
+            !canCustomerChangeAppointment(
+              appointment.startsAt,
+              now,
+              settings.customerChangeCutoffHours,
+            )
           )
             throw new ReservationError('APPOINTMENT_UNAVAILABLE')
 
@@ -158,6 +196,7 @@ export const moveAppointmentSerializable = async (
             dateKey: getLocalDateKey(startsAt),
             now,
             excludeAppointmentId: appointment.id,
+            settings,
           })
           if (!slots.some(slot => slot.startsAt === startsAt.toISOString()))
             throw new ReservationError('SLOT_UNAVAILABLE')
@@ -192,7 +231,19 @@ export const moveAppointmentSerializable = async (
               previousAppointmentStartsAt: appointment.startsAt,
             },
           })
-          return updated
+          await writeAuditEvent(transaction, {
+            actorType: 'CUSTOMER',
+            actorId: customerId,
+            entityType: 'APPOINTMENT',
+            entityId: updated.id,
+            entityLabel: updated.serviceNameSnapshot,
+            action: 'RESCHEDULED',
+            before: { startsAt: appointment.startsAt.toISOString() },
+            after: { startsAt: updated.startsAt.toISOString() },
+          })
+          // L'ancien horaire remonte pour que l'e-mail de déplacement puisse
+          // le rappeler à la cliente.
+          return { ...updated, previousStartsAt: appointment.startsAt }
         },
         { isolationLevel: 'Serializable' },
       )
@@ -210,21 +261,26 @@ export const moveAppointmentSerializable = async (
 export const cancelAppointmentSerializable = async (
   prisma: PrismaClient,
   appointmentId: string,
-  identityDigest: string,
+  customerId: string,
   now = new Date(),
-) =>
-  prisma.$transaction(
+) => {
+  const settings = await getBookingSettings()
+  return prisma.$transaction(
     async transaction => {
       const appointment = await transaction.appointment.findFirst({
         where: {
           id: appointmentId,
-          customerIdentityDigest: identityDigest,
+          customerId,
           status: 'CONFIRMED',
         },
       })
       if (
         !appointment ||
-        !canCustomerChangeAppointment(appointment.startsAt, now)
+        !canCustomerChangeAppointment(
+          appointment.startsAt,
+          now,
+          settings.customerChangeCutoffHours,
+        )
       )
         throw new ReservationError('APPOINTMENT_UNAVAILABLE')
 
@@ -242,7 +298,18 @@ export const cancelAppointmentSerializable = async (
           appointmentStartsAt: cancelled.startsAt,
         },
       })
+      await writeAuditEvent(transaction, {
+        actorType: 'CUSTOMER',
+        actorId: customerId,
+        entityType: 'APPOINTMENT',
+        entityId: cancelled.id,
+        entityLabel: cancelled.serviceNameSnapshot,
+        action: 'CANCELLED',
+        before: { status: appointment.status },
+        after: { status: cancelled.status },
+      })
       return cancelled
     },
     { isolationLevel: 'Serializable' },
   )
+}

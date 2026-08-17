@@ -1,8 +1,10 @@
 import Link from 'next/link'
+import { Suspense } from 'react'
 import { SiteHeader } from '@/components/layout/site-header'
 import { ReservationWizard } from '@/components/reservation/reservation-wizard'
 import { getBookableServices } from '@/lib/catalog/queries'
 import { createPageMetadata } from '@/lib/config/seo'
+import { isEmailConfigured } from '@/lib/core/env'
 import { getPublicBookingWindow } from '@/lib/reservation/booking-window'
 
 export const metadata = createPageMetadata({
@@ -32,22 +34,30 @@ const ReservationPage = async () => {
       />
       <main className="min-h-screen px-5 pt-24 pb-8 sm:px-8 sm:pt-28 sm:pb-12">
         <div className="mx-auto mb-9 max-w-3xl">
-          <p className="text-sm font-semibold tracking-widest text-rose-500 uppercase">
+          <p className="text-sm font-semibold tracking-widest text-brand uppercase">
             Réservation en ligne
           </p>
-          <h1 className="mt-2 font-heading text-3xl font-bold sm:text-4xl">
+          <h1 className="mt-2 font-heading text-title font-bold">
             Prendre rendez-vous
           </h1>
           <p className="mt-3 text-muted-foreground">
             Choisissez votre soin et un créneau disponible. La réservation est
-            confirmée immédiatement à l’écran, sans envoi d’e-mail.
+            confirmée immédiatement à l’écran
+            {isEmailConfigured ? ', puis par e-mail' : null}.
           </p>
         </div>
-        <ReservationWizard
-          services={services}
-          minDate={window.min}
-          maxDate={window.max}
-        />
+        <Suspense
+          fallback={
+            <div className="mx-auto h-72 max-w-3xl animate-pulse rounded-3xl border bg-muted/50" />
+          }
+        >
+          <ReservationWizard
+            services={services}
+            minDate={window.min}
+            maxDate={window.max}
+            customerChangeCutoffLabel={window.customerChangeCutoffLabel}
+          />
+        </Suspense>
       </main>
     </>
   )

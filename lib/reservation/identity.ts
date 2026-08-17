@@ -10,6 +10,12 @@ export const normalizePhone = (value: string): string => {
   return phone.number
 }
 
+/** Présentation lisible sans changer la normalisation E.164 enregistrée. */
+export const formatPhoneForDisplay = (value: string): string => {
+  const phone = parsePhoneNumberFromString(value.trim(), 'CH')
+  return phone?.isValid() ? phone.formatInternational() : value
+}
+
 export const tryNormalizeIdentity = (
   email: string,
   phone: string,

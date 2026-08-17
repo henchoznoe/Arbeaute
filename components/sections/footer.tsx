@@ -36,7 +36,7 @@ export function Footer() {
                   target="_blank"
                   rel="noopener noreferrer"
                   aria-label={social.label}
-                  className="flex size-10 items-center justify-center rounded-full bg-background text-muted-foreground shadow-sm transition-colors hover:bg-rose-50 hover:text-rose-500"
+                  className="flex size-11 items-center justify-center rounded-full bg-background text-muted-foreground shadow-sm transition-colors hover:bg-brand-subtle hover:text-brand"
                 >
                   <social.Icon className="size-4" />
                 </Link>

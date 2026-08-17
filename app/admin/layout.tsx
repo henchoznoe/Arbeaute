@@ -1,13 +1,20 @@
 import type { Metadata, Viewport } from 'next'
+import { Suspense } from 'react'
+import {
+  AdminContent,
+  AdminNavigation,
+} from '@/components/admin/admin-navigation'
+import { getUnreadActivityCount } from '@/lib/admin/activity'
 import { installTargets } from '@/lib/config/pwa'
+import { getAdminSession } from '@/lib/core/session-cookies'
 
 const admin = installTargets.admin
 
 /**
- * Ce layout ne fait que basculer les métadonnées PWA : sous `/admin`, le
- * `<link rel="manifest">` du layout racine est remplacé par le manifeste
- * admin, si bien que « Ajouter à l'écran d'accueil » installe la console
- * et non la vitrine.
+ * Sous `/admin`, le `<link rel="manifest">` du layout racine est remplacé par
+ * le manifeste admin, si bien que « Ajouter à l'écran d'accueil » installe la
+ * console et non la vitrine. La navigation reste commune à tous les écrans
+ * authentifiés, tandis que la connexion conserve sa présentation isolée.
  */
 export const metadata: Metadata = {
   title: {
@@ -40,7 +47,19 @@ export const viewport: Viewport = {
   themeColor: admin.manifest.theme_color,
 }
 
-const AdminLayout = ({ children }: Readonly<{ children: React.ReactNode }>) =>
-  children
+const AuthenticatedAdminNavigation = async () => {
+  if (!(await getAdminSession())) return null
+  const unreadActivityCount = await getUnreadActivityCount()
+  return <AdminNavigation unreadActivityCount={unreadActivityCount} />
+}
+
+const AdminLayout = ({ children }: Readonly<{ children: React.ReactNode }>) => (
+  <div className="min-h-screen bg-background">
+    <Suspense>
+      <AuthenticatedAdminNavigation />
+    </Suspense>
+    <AdminContent>{children}</AdminContent>
+  </div>
+)
 
 export default AdminLayout

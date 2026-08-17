@@ -11,20 +11,26 @@ import {
   setCustomerSession,
 } from '@/lib/core/session-cookies'
 import {
+  notifyAppointmentCancelled,
+  notifyAppointmentConfirmed,
+  notifyAppointmentRescheduled,
+} from '@/lib/email/notifications'
+import {
   cancelAppointmentSerializable,
   createAppointmentSerializable,
   moveAppointmentSerializable,
   ReservationError,
 } from '@/lib/reservation/appointments'
 import {
-  type AvailableSlot,
+  type DayAvailability,
   findNextAvailableSlot,
-  getAvailableSlots,
-  getAvailableSlotsByDate,
+  getAvailabilityByDate,
   type NextAvailableSlot,
 } from '@/lib/reservation/availability'
+import { getBookingSettings } from '@/lib/reservation/booking-settings'
 import { createAppointmentCalendar } from '@/lib/reservation/calendar'
 import { CUSTOMER_SESSION_MUTATION_LIMIT } from '@/lib/reservation/constants'
+import { findCustomerForSession } from '@/lib/reservation/customers'
 import { normalizeEmail, normalizePhone } from '@/lib/reservation/identity'
 import {
   addLocalDays,
@@ -32,6 +38,7 @@ import {
   formatAppointmentDate,
 } from '@/lib/reservation/time'
 import { checkRateLimit } from '@/lib/services/rate-limit'
+import { formatPrice } from '@/lib/utils/format'
 import { getRequestIp, hasSameOrigin } from '@/lib/utils/request'
 
 const bookingSchema = z.object({
@@ -54,11 +61,16 @@ const appointmentMutationSchema = z.object({
 export interface BookingResult {
   ok: boolean
   message: string
+  reason?: 'INVALID_CUSTOMER' | 'SLOT_CONFLICT' | 'UNKNOWN'
   appointment?: {
     serviceName: string
     dateLabel: string
     priceLabel: string
+    startsAt: string
+    endsAt: string
     calendar: string
+    /** Adresse à laquelle la confirmation part, `null` si aucun envoi n'a lieu. */
+    confirmationEmailTo: string | null
   }
 }
 
@@ -70,8 +82,16 @@ export interface MutationResult {
 
 const genericBookingError = (): BookingResult => ({
   ok: false,
+  reason: 'UNKNOWN',
   message:
     'La réservation n’a pas pu être confirmée. Vérifiez vos informations et le créneau choisi.',
+})
+
+const invalidCustomerError = (): BookingResult => ({
+  ok: false,
+  reason: 'INVALID_CUSTOMER',
+  message:
+    'Certaines coordonnées ne sont pas valides. Vérifiez votre adresse e-mail et votre numéro de téléphone.',
 })
 
 const refreshAdminActivity = () => {
@@ -91,14 +111,16 @@ const PUBLIC_WEEK_LENGTH = 7
 export const getPublicWeekAvailability = async (
   serviceId: string,
   fromDateKey: string,
-): Promise<Record<string, AvailableSlot[]>> => {
+): Promise<Record<string, DayAvailability>> => {
   try {
     const from = z.string().min(1).parse(fromDateKey)
-    return await getAvailableSlotsByDate({
+    const settings = await getBookingSettings()
+    return await getAvailabilityByDate({
       database: prisma,
       serviceId: z.string().min(1).parse(serviceId),
       fromDateKey: from,
       toDateKey: addLocalDays(from, PUBLIC_WEEK_LENGTH - 1),
+      settings,
     })
   } catch {
     return {}
@@ -110,10 +132,12 @@ export const getNextPublicAvailableSlot = async (
   fromDateKey: string,
 ): Promise<NextAvailableSlot | null> => {
   try {
+    const settings = await getBookingSettings()
     return await findNextAvailableSlot({
       database: prisma,
       serviceId: z.string().min(1).parse(serviceId),
       fromDateKey,
+      settings,
     })
   } catch {
     return null
@@ -125,7 +149,21 @@ export const createPublicAppointment = async (
 ): Promise<BookingResult> => {
   if (!(await hasSameOrigin())) return genericBookingError()
   const parsed = bookingSchema.safeParse(input)
-  if (!parsed.success) return genericBookingError()
+  if (!parsed.success) {
+    const customerFields = new Set([
+      'firstName',
+      'lastName',
+      'email',
+      'phone',
+      'comment',
+      'consent',
+    ])
+    return parsed.error.issues.some(issue =>
+      customerFields.has(String(issue.path[0])),
+    )
+      ? invalidCustomerError()
+      : genericBookingError()
+  }
 
   let email: string
   let phone: string
@@ -133,7 +171,7 @@ export const createPublicAppointment = async (
     email = normalizeEmail(parsed.data.email)
     phone = normalizePhone(parsed.data.phone)
   } catch {
-    return genericBookingError()
+    return invalidCustomerError()
   }
 
   try {
@@ -164,6 +202,7 @@ export const createPublicAppointment = async (
       comment: parsed.data.comment || null,
     })
     refreshAdminActivity()
+    const confirmationEmailTo = notifyAppointmentConfirmed(appointment)
 
     return {
       ok: true,
@@ -171,19 +210,23 @@ export const createPublicAppointment = async (
       appointment: {
         serviceName: appointment.serviceNameSnapshot,
         dateLabel: formatAppointmentDate(appointment.startsAt),
-        priceLabel: `${(appointment.servicePriceCents / 100).toLocaleString('fr-CH')} CHF`,
+        priceLabel: formatPrice(appointment.servicePriceCents),
+        startsAt: appointment.startsAt.toISOString(),
+        endsAt: appointment.endsAt.toISOString(),
         calendar: createAppointmentCalendar({
           id: appointment.id,
           serviceName: appointment.serviceNameSnapshot,
           startsAt: appointment.startsAt,
           endsAt: appointment.endsAt,
         }),
+        confirmationEmailTo,
       },
     }
   } catch (error) {
     if (error instanceof ReservationError)
       return {
         ok: false,
+        reason: 'SLOT_CONFLICT',
         message:
           'Ce créneau vient d’être réservé. Choisissez-en un autre, s’il vous plaît.',
       }
@@ -196,7 +239,8 @@ export const identifyCustomer = async (formData: FormData): Promise<void> => {
   const phoneValue = formData.get('phone')
   const honeypot = formData.get('website')
   const ip = await getRequestIp()
-  let identityDigest: string | null = null
+  let customer: { identityDigest: string; identityVersion: number } | null =
+    null
 
   try {
     if (!(await hasSameOrigin())) throw new Error('Invalid origin')
@@ -215,20 +259,15 @@ export const identifyCustomer = async (formData: FormData): Promise<void> => {
       const email = normalizeEmail(emailValue)
       const phone = normalizePhone(phoneValue)
       const candidateDigest = createCustomerIdentityDigest(email, phone)
-      const exists = await prisma.appointment.findFirst({
-        where: {
-          customerIdentityDigest: candidateDigest,
-          status: 'CONFIRMED',
-          startsAt: { gt: new Date() },
-        },
-        select: { id: true },
+      customer = await prisma.customer.findUnique({
+        where: { identityDigest: candidateDigest },
+        select: { identityDigest: true, identityVersion: true },
       })
-      if (exists) identityDigest = candidateDigest
     }
   } catch {}
 
-  if (!identityDigest) redirect('/mes-rendez-vous?error=invalid')
-  await setCustomerSession(identityDigest, 1)
+  if (!customer) redirect('/mes-rendez-vous?error=invalid')
+  await setCustomerSession(customer.identityDigest, customer.identityVersion)
   redirect('/mes-rendez-vous')
 }
 
@@ -237,43 +276,96 @@ export const logoutCustomer = async (): Promise<void> => {
   redirect('/mes-rendez-vous')
 }
 
-const requireCustomerMutation = async () => {
+const getSessionCustomer = async () => {
   const session = await getCustomerSession()
   if (!session) return null
+  return findCustomerForSession(prisma, session)
+}
+
+const requireCustomerMutation = async () => {
+  const customer = await getSessionCustomer()
+  if (!customer) return null
   const rateLimit = await checkRateLimit({
     action: 'customer-mutation',
-    key: session.subject,
+    key: customer.identityDigest,
     limit: CUSTOMER_SESSION_MUTATION_LIMIT,
     windowMs: 60 * 60 * 1000,
   })
-  return rateLimit.allowed ? session : null
+  return rateLimit.allowed ? customer : null
 }
 
-export const getCustomerMoveAvailability = async (
+export const getCustomerMoveWeekAvailability = async (
   appointmentId: string,
-  dateKey: string,
-): Promise<AvailableSlot[]> => {
+  fromDateKey: string,
+): Promise<Record<string, DayAvailability>> => {
   try {
-    const session = await getCustomerSession()
-    if (!session) return []
+    const customer = await getSessionCustomer()
+    if (!customer) return {}
     const appointment = await prisma.appointment.findFirst({
       where: {
         id: appointmentId,
-        customerIdentityDigest: session.subject,
+        customerId: customer.id,
         status: 'CONFIRMED',
       },
       select: { id: true, serviceId: true, startsAt: true },
     })
-    if (!appointment || !canCustomerChangeAppointment(appointment.startsAt))
-      return []
-    return getAvailableSlots({
+    const settings = await getBookingSettings()
+    if (
+      !appointment ||
+      !canCustomerChangeAppointment(
+        appointment.startsAt,
+        new Date(),
+        settings.customerChangeCutoffHours,
+      )
+    )
+      return {}
+    return getAvailabilityByDate({
       database: prisma,
       serviceId: appointment.serviceId,
-      dateKey,
+      fromDateKey,
+      toDateKey: addLocalDays(fromDateKey, PUBLIC_WEEK_LENGTH - 1),
       excludeAppointmentId: appointment.id,
+      settings,
     })
   } catch {
-    return []
+    return {}
+  }
+}
+
+export const getNextCustomerMoveAvailableSlot = async (
+  appointmentId: string,
+  fromDateKey: string,
+): Promise<NextAvailableSlot | null> => {
+  try {
+    const customer = await getSessionCustomer()
+    if (!customer) return null
+    const appointment = await prisma.appointment.findFirst({
+      where: {
+        id: appointmentId,
+        customerId: customer.id,
+        status: 'CONFIRMED',
+      },
+      select: { id: true, serviceId: true, startsAt: true },
+    })
+    const settings = await getBookingSettings()
+    if (
+      !appointment ||
+      !canCustomerChangeAppointment(
+        appointment.startsAt,
+        new Date(),
+        settings.customerChangeCutoffHours,
+      )
+    )
+      return null
+    return findNextAvailableSlot({
+      database: prisma,
+      serviceId: appointment.serviceId,
+      fromDateKey,
+      excludeAppointmentId: appointment.id,
+      settings,
+    })
+  } catch {
+    return null
   }
 }
 
@@ -284,19 +376,24 @@ export const moveCustomerAppointment = async (
     return { ok: false, message: 'La demande est invalide.' }
   const parsed = appointmentMutationSchema.safeParse(input)
   if (!parsed.success || !parsed.data.startsAt)
-    return { ok: false, message: 'Le nouveau créneau est invalide.' }
+    return {
+      ok: false,
+      message:
+        'Cette nouvelle heure n’est pas valable. Choisissez-en une autre dans le calendrier.',
+    }
 
   try {
-    const session = await requireCustomerMutation()
-    if (!session)
+    const customer = await requireCustomerMutation()
+    if (!customer)
       return { ok: false, message: 'Votre session a expiré. Reconnectez-vous.' }
     const appointment = await moveAppointmentSerializable(prisma, {
       appointmentId: parsed.data.appointmentId,
       startsAt: new Date(parsed.data.startsAt),
-      identityDigest: session.subject,
+      customerId: customer.id,
     })
     revalidatePath('/mes-rendez-vous')
     refreshAdminActivity()
+    notifyAppointmentRescheduled(appointment, appointment.previousStartsAt)
     return {
       ok: true,
       message: 'Votre rendez-vous a bien été déplacé.',
@@ -312,7 +409,7 @@ export const moveCustomerAppointment = async (
       ok: false,
       message:
         error instanceof ReservationError && error.code === 'SLOT_UNAVAILABLE'
-          ? 'Ce créneau n’est plus disponible.'
+          ? 'Cette heure vient d’être prise. Choisissez-en une autre, s’il vous plaît.'
           : 'Ce rendez-vous ne peut plus être déplacé.',
     }
   }
@@ -328,19 +425,23 @@ export const cancelCustomerAppointment = async (
     return { ok: false, message: 'Ce rendez-vous est invalide.' }
 
   try {
-    const session = await requireCustomerMutation()
-    if (!session)
+    const customer = await requireCustomerMutation()
+    if (!customer)
       return { ok: false, message: 'Votre session a expiré. Reconnectez-vous.' }
-    await cancelAppointmentSerializable(
+    const cancelled = await cancelAppointmentSerializable(
       prisma,
       parsed.data.appointmentId,
-      session.subject,
+      customer.id,
     )
-    await clearCustomerSession()
     revalidatePath('/mes-rendez-vous')
     refreshAdminActivity()
+    notifyAppointmentCancelled(cancelled)
     return { ok: true, message: 'Votre rendez-vous a bien été annulé.' }
   } catch {
-    return { ok: false, message: 'Ce rendez-vous ne peut plus être annulé.' }
+    return {
+      ok: false,
+      message:
+        'Ce rendez-vous n’est plus actif : il a déjà été annulé ou terminé.',
+    }
   }
 }

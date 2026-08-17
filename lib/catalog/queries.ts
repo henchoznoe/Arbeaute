@@ -14,16 +14,28 @@ export const CATALOG_TAG = 'catalog'
 
 interface CatalogService {
   id: string
+  slug: string
   name: string
   description: string | null
+  preparationAdvice: string | null
+  contraindications: string | null
+  expectedResults: string | null
+  aftercareAdvice: string | null
+  faqQuestion1: string | null
+  faqAnswer1: string | null
+  faqQuestion2: string | null
+  faqAnswer2: string | null
+  faqQuestion3: string | null
+  faqAnswer3: string | null
   durationMinutes: number
   priceCents: number
   priceNote: string | null
   imageUrl: string | null
   consentFormUrl: string | null
+  isBookable: boolean
 }
 
-interface CatalogCategory {
+export interface CatalogCategory {
   id: string
   name: string
   description: string | null
@@ -37,13 +49,25 @@ interface BookableService extends CatalogService {
 
 const serviceFields = {
   id: true,
+  slug: true,
   name: true,
   description: true,
+  preparationAdvice: true,
+  contraindications: true,
+  expectedResults: true,
+  aftercareAdvice: true,
+  faqQuestion1: true,
+  faqAnswer1: true,
+  faqQuestion2: true,
+  faqAnswer2: true,
+  faqQuestion3: true,
+  faqAnswer3: true,
   durationMinutes: true,
   priceCents: true,
   priceNote: true,
   imageUrl: true,
   consentFormUrl: true,
+  isBookable: true,
 } as const
 
 const serviceOrder = [{ sortOrder: 'asc' }, { name: 'asc' }] as const

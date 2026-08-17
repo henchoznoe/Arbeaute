@@ -4,6 +4,7 @@ import { uploadPresigned } from '@vercel/blob/client'
 import { FileText, LoaderCircle, Trash2, Upload } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { useState } from 'react'
+import { Button } from '@/components/ui/button'
 import {
   assignServiceConsentForm,
   removeServiceConsentForm,
@@ -61,15 +62,12 @@ export const ServiceConsentUpload = ({
       </p>
 
       {consentFormUrl ? (
-        <a
-          href={consentFormUrl}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="mt-4 inline-flex items-center gap-2 rounded-xl border bg-background px-4 py-3 text-sm font-medium"
-        >
-          <FileText className="size-4 text-destructive" />
-          Voir le formulaire actuel (PDF)
-        </a>
+        <Button asChild variant="outline" className="mt-4">
+          <a href={consentFormUrl} target="_blank" rel="noopener noreferrer">
+            <FileText className="size-4 text-destructive" />
+            Voir le formulaire actuel (PDF)
+          </a>
+        </Button>
       ) : (
         <p className="mt-4 rounded-xl bg-muted p-4 text-sm text-muted-foreground">
           Aucun formulaire pour cette prestation.
@@ -84,30 +82,23 @@ export const ServiceConsentUpload = ({
           required
           className="max-w-full text-sm"
         />
-        <button
-          type="submit"
-          disabled={isUploading}
-          className="inline-flex h-9 items-center gap-2 rounded-lg bg-primary px-3 text-sm font-medium text-primary-foreground disabled:opacity-50"
-        >
+        <Button type="submit" disabled={isUploading}>
           {isUploading ? (
             <LoaderCircle className="size-4 animate-spin" />
           ) : (
             <Upload className="size-4" />
           )}
           {consentFormUrl ? 'Remplacer' : 'Envoyer'}
-        </button>
+        </Button>
       </form>
 
       {consentFormUrl ? (
         <form action={removeServiceConsentForm} className="mt-3">
           <input type="hidden" name="id" value={serviceId} />
-          <button
-            type="submit"
-            className="inline-flex items-center gap-2 text-sm text-destructive"
-          >
+          <Button type="submit" variant="destructive" size="sm">
             <Trash2 className="size-4" />
             Supprimer le formulaire
-          </button>
+          </Button>
         </form>
       ) : null}
 

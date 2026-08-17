@@ -82,6 +82,13 @@ describe('Europe/Zurich date conversion', () => {
     )
   })
 
+  it('applies a configurable business-hour cutoff across DST', () => {
+    const startsAt = new Date('2026-10-26T09:00:00.000Z')
+    expect(getCustomerChangeDeadline(startsAt, 24).toISOString()).toBe(
+      '2026-10-23T08:00:00.000Z',
+    )
+  })
+
   it('lists every date in an inclusive range, single day included', () => {
     expect(getDateKeysInRange('2026-08-20', '2026-08-20')).toEqual([
       '2026-08-20',

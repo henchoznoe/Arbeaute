@@ -1,14 +1,20 @@
 import { formatInTimeZone } from 'date-fns-tz'
-import { Clock3, Plus, Settings2 } from 'lucide-react'
+import { Plus } from 'lucide-react'
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { Suspense } from 'react'
+import { ActivityAlert } from '@/components/admin/activity-alert'
 import { ActivityOverview } from '@/components/admin/activity-overview'
 import { AdminAgendaView } from '@/components/admin/admin-agenda-view'
 import { AdminSkeleton } from '@/components/admin/admin-skeleton'
-import { InstallAppButton } from '@/components/pwa/install-app-button'
-import { logoutAdmin } from '@/lib/actions/admin-auth'
+import { AppointmentStatusActions } from '@/components/admin/appointment-status-actions'
+import { DashboardMetrics } from '@/components/admin/dashboard-metrics'
+import { NextAppointmentCard } from '@/components/admin/next-appointment-card'
+import { EmptyState } from '@/components/ui/empty-state'
+import { StatusBadge } from '@/components/ui/status-badge'
 import { getActivityOverview } from '@/lib/admin/activity'
+import { buildAdminTimelineDay } from '@/lib/admin/agenda-timeline'
+import { buildDashboardMetrics } from '@/lib/admin/dashboard-metrics'
 import prisma from '@/lib/core/prisma'
 import { getAdminSession } from '@/lib/core/session-cookies'
 import { RESERVATION_TIME_ZONE } from '@/lib/reservation/constants'
@@ -21,6 +27,8 @@ import {
   getLocalWeekDateKeys,
   isDateKey,
 } from '@/lib/reservation/time'
+import { capitalizeFirst } from '@/lib/utils/format'
+import type { AppointmentStatus } from '@/prisma/generated/prisma/enums'
 
 interface AdminPageProps {
   searchParams: Promise<{ date?: string }>
@@ -39,6 +47,20 @@ const dayTitle = (dateKey: string, long = false) =>
 const formatTime = (date: Date) =>
   formatInTimeZone(date, RESERVATION_TIME_ZONE, 'HH:mm')
 
+const statusLabels: Record<AppointmentStatus, string> = {
+  CONFIRMED: 'Confirmé',
+  COMPLETED: 'Terminé',
+  CANCELLED: 'Annulé',
+  NO_SHOW: 'Absence',
+}
+
+const statusVariants = {
+  CONFIRMED: 'success',
+  COMPLETED: 'info',
+  CANCELLED: 'neutral',
+  NO_SHOW: 'danger',
+} as const
+
 const AdminPage = ({ searchParams }: Readonly<AdminPageProps>) => (
   <Suspense fallback={<AdminSkeleton />}>
     <AdminAgenda searchParams={searchParams} />
@@ -55,33 +77,61 @@ const AdminAgenda = async ({ searchParams }: Readonly<AdminPageProps>) => {
   const queryStart = getLocalDayBounds(weekDays[0]).start
   const queryEnd = getLocalDayBounds(weekDays.at(-1) as string).end
 
-  const [appointments, exceptions, activityOverview] = await Promise.all([
-    prisma.appointment.findMany({
-      where: {
-        status: 'CONFIRMED',
-        startsAt: { gte: queryStart, lt: queryEnd },
-      },
-      orderBy: { startsAt: 'asc' },
-      select: {
-        id: true,
-        startsAt: true,
-        endsAt: true,
-        customerFirstName: true,
-        customerLastName: true,
-        customerPhone: true,
-        serviceNameSnapshot: true,
-        service: {
-          select: { color: true, category: { select: { name: true } } },
+  // Une requête bornée de plus, jamais une par jour : le prochain rendez-vous
+  // doit rester juste même quand Arzu consulte une autre semaine.
+  const now = new Date()
+  const [appointments, exceptions, weekly, activityOverview, nextAppointment] =
+    await Promise.all([
+      prisma.appointment.findMany({
+        where: {
+          status: { in: ['CONFIRMED', 'COMPLETED', 'NO_SHOW'] },
+          occupiedStartsAt: { lt: queryEnd },
+          occupiedEndsAt: { gt: queryStart },
         },
-        source: true,
-      },
-    }),
-    prisma.availabilityException.findMany({
-      where: { startsAt: { lt: queryEnd }, endsAt: { gt: queryStart } },
-      orderBy: { startsAt: 'asc' },
-    }),
-    getActivityOverview(),
-  ])
+        orderBy: { startsAt: 'asc' },
+        select: {
+          id: true,
+          startsAt: true,
+          endsAt: true,
+          occupiedStartsAt: true,
+          occupiedEndsAt: true,
+          preparationMinutes: true,
+          cleanupMinutes: true,
+          serviceDurationMinutes: true,
+          servicePriceCents: true,
+          customerFirstName: true,
+          customerLastName: true,
+          customerPhone: true,
+          serviceNameSnapshot: true,
+          service: {
+            select: { color: true, category: { select: { name: true } } },
+          },
+          source: true,
+          status: true,
+        },
+      }),
+      prisma.availabilityException.findMany({
+        where: { startsAt: { lt: queryEnd }, endsAt: { gt: queryStart } },
+        orderBy: { startsAt: 'asc' },
+      }),
+      prisma.weeklyAvailability.findMany({
+        orderBy: [{ dayOfWeek: 'asc' }, { startMinute: 'asc' }],
+        select: { dayOfWeek: true, startMinute: true, endMinute: true },
+      }),
+      getActivityOverview(),
+      prisma.appointment.findFirst({
+        where: { status: 'CONFIRMED', startsAt: { gte: now } },
+        orderBy: { startsAt: 'asc' },
+        select: {
+          id: true,
+          startsAt: true,
+          customerFirstName: true,
+          customerLastName: true,
+          serviceNameSnapshot: true,
+          service: { select: { category: { select: { name: true } } } },
+        },
+      }),
+    ])
 
   const appointmentsFor = (dateKey: string) =>
     appointments.filter(
@@ -94,144 +144,147 @@ const AdminAgenda = async ({ searchParams }: Readonly<AdminPageProps>) => {
         exception.startsAt < bounds.end && exception.endsAt > bounds.start,
     )
   }
+  // Seule la grille hebdomadaire de bureau utilise cette carte, en version
+  // compacte : sept colonnes n'ont pas la place d'un bouton d'appel, qui vit
+  // dans la liste de la journée.
   const appointmentCard = (
     appointment: (typeof appointments)[number],
-    compact = false,
+    dateKey: string,
   ) => (
-    <Link
+    <article
       key={appointment.id}
-      href={`/admin/appointments/${appointment.id}`}
-      className={`block rounded-xl border bg-background p-3 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md ${compact ? 'text-xs' : ''}`}
+      className="block rounded-xl border bg-background p-3 text-xs shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
       style={{ borderLeftColor: appointment.service.color, borderLeftWidth: 4 }}
     >
-      <div className="flex items-start justify-between gap-2">
-        <span className="font-semibold">
-          {formatTime(appointment.startsAt)}–{formatTime(appointment.endsAt)}
-        </span>
-        {appointment.source === 'ADMIN' ? (
-          <span className="rounded-full bg-muted px-2 py-0.5 text-[10px] uppercase tracking-wide text-muted-foreground">
-            manuel
+      <Link href={`/admin/appointments/${appointment.id}?date=${dateKey}`}>
+        <div className="flex items-start justify-between gap-2">
+          <span className="font-semibold">
+            {formatTime(appointment.startsAt)}–{formatTime(appointment.endsAt)}
           </span>
-        ) : null}
-      </div>
-      <p className="mt-1 font-medium leading-snug">
-        {[appointment.customerFirstName, appointment.customerLastName]
+          {appointment.source === 'ADMIN' ? (
+            <span className="rounded-full bg-muted px-2 py-0.5 text-2xs uppercase tracking-wide text-muted-foreground">
+              manuel
+            </span>
+          ) : null}
+        </div>
+        <p className="mt-1 font-medium leading-snug">
+          {[appointment.customerFirstName, appointment.customerLastName]
+            .filter(Boolean)
+            .join(' ')}
+        </p>
+        <p className="mt-0.5 truncate text-muted-foreground">
+          {formatServiceLabel(
+            appointment.serviceNameSnapshot,
+            appointment.service.category?.name,
+          )}
+        </p>
+      </Link>
+      <StatusBadge
+        variant={statusVariants[appointment.status]}
+        className="mt-2"
+      >
+        {statusLabels[appointment.status]}
+      </StatusBadge>
+      <AppointmentStatusActions
+        appointmentId={appointment.id}
+        status={appointment.status}
+        startsAt={appointment.startsAt}
+        compact
+        className="mt-2"
+      />
+    </article>
+  )
+  const timelineDays = weekDays.map(dateKey => {
+    const dayOfWeek = getLocalDayOfWeek(dateKey)
+    return buildAdminTimelineDay({
+      dateKey,
+      today,
+      label: dayTitle(dateKey, true),
+      shortLabel: SHORT_DAY_LABELS[dayOfWeek],
+      weekly,
+      exceptions,
+      appointments: appointments.map(appointment => ({
+        id: appointment.id,
+        startsAt: appointment.startsAt,
+        endsAt: appointment.endsAt,
+        occupiedStartsAt: appointment.occupiedStartsAt,
+        occupiedEndsAt: appointment.occupiedEndsAt,
+        preparationMinutes: appointment.preparationMinutes,
+        cleanupMinutes: appointment.cleanupMinutes,
+        customerName: [
+          appointment.customerFirstName,
+          appointment.customerLastName,
+        ]
           .filter(Boolean)
-          .join(' ')}
-      </p>
-      <p className="mt-0.5 truncate text-muted-foreground">
-        {formatServiceLabel(
+          .join(' '),
+        customerPhone: appointment.customerPhone,
+        serviceLabel: formatServiceLabel(
           appointment.serviceNameSnapshot,
           appointment.service.category?.name,
-        )}
-      </p>
-      {!compact && appointment.customerPhone ? (
-        <p className="mt-1 text-xs text-muted-foreground">
-          {appointment.customerPhone}
-        </p>
-      ) : null}
-    </Link>
-  )
+        ),
+        serviceColor: appointment.service.color,
+        source: appointment.source,
+        status: appointment.status,
+      })),
+    })
+  })
+  const dashboardMetrics = buildDashboardMetrics({
+    anchorDateKey: anchor,
+    dateKeys: weekDays,
+    appointments,
+    weekly,
+    exceptions,
+  })
+  const periodLabel = `${dayTitle(weekDays[0])} – ${dayTitle(weekDays.at(-1) as string)}`
+
+  const nextAppointmentDateKey = nextAppointment
+    ? getLocalDateKey(nextAppointment.startsAt)
+    : null
 
   return (
     <main className="mx-auto min-h-screen max-w-7xl px-4 py-5 sm:px-8 sm:py-8">
-      <header className="flex flex-wrap items-center justify-between gap-4">
-        <div>
-          <p className="text-sm font-medium text-rose-500">Arbeauté</p>
-          <h1 className="font-heading text-3xl font-bold">Agenda</h1>
-        </div>
-        <div className="flex items-center gap-2">
-          <InstallAppButton className="min-h-11 rounded-xl border px-4 text-sm font-medium text-muted-foreground no-underline" />
-          <form action={logoutAdmin}>
-            <button
-              type="submit"
-              className="min-h-11 rounded-xl border px-4 text-sm font-medium"
-            >
-              Se déconnecter
-            </button>
-          </form>
-        </div>
+      <header className="flex items-baseline gap-2">
+        <h1 className="font-heading text-title font-bold">Agenda</h1>
+        <p className="text-sm font-medium text-brand">Arbeauté</p>
       </header>
 
-      <nav className="mt-6 grid grid-cols-2 gap-3 sm:flex sm:flex-wrap">
-        <Link
-          href={`/admin/appointments/new?date=${anchor}`}
-          className="col-span-2 inline-flex min-h-12 items-center justify-center gap-2 rounded-xl bg-primary px-4 text-sm font-medium text-primary-foreground sm:col-span-1"
-        >
-          <Plus className="size-4" /> Nouveau rendez-vous
-        </Link>
-        <Link
-          href="/admin/availability"
-          className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border px-4 text-sm font-medium"
-        >
-          <Clock3 className="size-4" /> Horaires
-        </Link>
-        <Link
-          href="/admin/services"
-          className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border px-4 text-sm font-medium"
-        >
-          <Settings2 className="size-4" /> Prestations
-        </Link>
-      </nav>
+      {nextAppointment && nextAppointmentDateKey ? (
+        <NextAppointmentCard
+          id={nextAppointment.id}
+          startsAt={nextAppointment.startsAt.toISOString()}
+          dateKey={nextAppointmentDateKey}
+          timeLabel={formatTime(nextAppointment.startsAt)}
+          dayLabel={dayTitle(nextAppointmentDateKey, true)}
+          isToday={nextAppointmentDateKey === today}
+          customerName={
+            [
+              nextAppointment.customerFirstName,
+              nextAppointment.customerLastName,
+            ]
+              .filter(Boolean)
+              .join(' ') || 'Cliente sans nom'
+          }
+          serviceLabel={formatServiceLabel(
+            nextAppointment.serviceNameSnapshot,
+            nextAppointment.service.category?.name,
+          )}
+        />
+      ) : (
+        <EmptyState
+          className="mt-4"
+          title="Aucun rendez-vous à venir"
+          description="Le prochain rendez-vous confirmé s’affichera ici dès qu’une cliente aura réservé."
+        />
+      )}
 
-      <ActivityOverview {...activityOverview} />
+      <ActivityAlert unreadCount={activityOverview.unreadCount} />
 
       <AdminAgendaView
         anchor={anchor}
         today={today}
         previousWeek={addLocalDays(anchor, -7)}
         nextWeek={addLocalDays(anchor, 7)}
-        days={weekDays.map(dateKey => {
-          const dayOfWeek = getLocalDayOfWeek(dateKey)
-          return {
-            dayOfWeek,
-            label: dayTitle(dateKey, true),
-            shortLabel: SHORT_DAY_LABELS[dayOfWeek],
-            appointmentCount: appointmentsFor(dateKey).length,
-          }
-        })}
-        mobileDays={weekDays.map(dateKey => {
-          const dailyAppointments = appointmentsFor(dateKey)
-          const dailyExceptions = exceptionsFor(dateKey)
-          return (
-            <section key={dateKey} className="rounded-2xl border bg-card p-4">
-              <div className="flex items-center justify-between gap-3">
-                <h2 className="font-semibold capitalize">
-                  {dateKey === today ? 'Aujourd’hui' : dayTitle(dateKey, true)}
-                </h2>
-                <Link
-                  href={`/admin/appointments/new?date=${dateKey}`}
-                  aria-label={`Ajouter un rendez-vous le ${dayTitle(dateKey, true)}`}
-                  className="grid size-11 place-items-center rounded-xl bg-muted"
-                >
-                  <Plus className="size-4" />
-                </Link>
-              </div>
-              {dailyExceptions.map(exception => (
-                <div
-                  key={exception.id}
-                  className={`mt-3 rounded-xl px-3 py-2 text-xs ${exception.type === 'AVAILABLE' ? 'bg-emerald-100 text-emerald-950' : 'bg-amber-100 text-amber-950'}`}
-                >
-                  {exception.type === 'AVAILABLE' ? 'Ouverture' : 'Fermeture'}{' '}
-                  {formatTime(exception.startsAt)}–
-                  {formatTime(exception.endsAt)}
-                  {exception.label ? ` · ${exception.label}` : ''}
-                </div>
-              ))}
-              <div className="mt-3 space-y-2">
-                {dailyAppointments.length ? (
-                  dailyAppointments.map(appointment =>
-                    appointmentCard(appointment),
-                  )
-                ) : (
-                  <p className="rounded-xl bg-muted/60 px-3 py-4 text-center text-sm text-muted-foreground">
-                    Aucun rendez-vous
-                  </p>
-                )}
-              </div>
-            </section>
-          )
-        })}
+        days={timelineDays}
         desktopDays={weekDays.map(dateKey => {
           const dailyAppointments = appointmentsFor(dateKey)
           const dailyExceptions = exceptionsFor(dateKey)
@@ -241,13 +294,13 @@ const AdminAgenda = async ({ searchParams }: Readonly<AdminPageProps>) => {
               className={`min-h-[28rem] border-r p-2 last:border-r-0 ${dateKey === today ? 'bg-primary/5' : ''}`}
             >
               <div className="flex items-center justify-between gap-1 border-b pb-2">
-                <h3 className="text-sm font-semibold capitalize">
-                  {dayTitle(dateKey)}
+                <h3 className="text-sm font-semibold">
+                  {capitalizeFirst(dayTitle(dateKey))}
                 </h3>
                 <Link
                   href={`/admin/appointments/new?date=${dateKey}`}
                   aria-label={`Ajouter le ${dayTitle(dateKey, true)}`}
-                  className="grid size-8 place-items-center rounded-lg hover:bg-muted"
+                  className="grid size-11 place-items-center rounded-xl hover:bg-muted"
                 >
                   <Plus className="size-3.5" />
                 </Link>
@@ -256,7 +309,7 @@ const AdminAgenda = async ({ searchParams }: Readonly<AdminPageProps>) => {
                 {dailyExceptions.map(exception => (
                   <div
                     key={exception.id}
-                    className={`rounded-lg px-2 py-1.5 text-[11px] leading-snug ${exception.type === 'AVAILABLE' ? 'bg-emerald-100 text-emerald-950' : 'bg-amber-100 text-amber-950'}`}
+                    className={`rounded-lg px-2 py-1.5 text-[11px] leading-snug ${exception.type === 'AVAILABLE' ? 'bg-success-soft text-success-strong' : 'bg-warning-soft text-warning-strong'}`}
                   >
                     {exception.type === 'AVAILABLE' ? 'Ouvert' : 'Fermé'}{' '}
                     {formatTime(exception.startsAt)}–
@@ -264,13 +317,25 @@ const AdminAgenda = async ({ searchParams }: Readonly<AdminPageProps>) => {
                   </div>
                 ))}
                 {dailyAppointments.map(appointment =>
-                  appointmentCard(appointment, true),
+                  appointmentCard(appointment, dateKey),
                 )}
               </div>
             </section>
           )
         })}
       />
+
+      {/* Les indicateurs et l'activité passent après la journée : ils se
+          consultent au mieux une fois par semaine, l'agenda tous les jours. */}
+      <DashboardMetrics
+        metrics={dashboardMetrics}
+        periodLabel={periodLabel}
+        selectedDayLabel={dayTitle(anchor, true)}
+      />
+
+      {/* Plus de `hidden md:block` : sur téléphone, Arzu ne voyait jamais les
+          réservations et annulations depuis son agenda. */}
+      <ActivityOverview {...activityOverview} />
     </main>
   )
 }

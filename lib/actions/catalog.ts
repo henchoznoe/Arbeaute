@@ -4,10 +4,12 @@ import { del } from '@vercel/blob'
 import { revalidatePath, updateTag } from 'next/cache'
 import { redirect } from 'next/navigation'
 import { z } from 'zod/v4'
+import { runAuditedMutation, writeAuditEvent } from '@/lib/admin/audit'
 import { CATALOG_TAG } from '@/lib/catalog/queries'
 import { env } from '@/lib/core/env'
 import prisma from '@/lib/core/prisma'
 import { getAdminSession } from '@/lib/core/session-cookies'
+import { hasSameOrigin } from '@/lib/utils/request'
 import { Prisma } from '@/prisma/generated/prisma/client'
 
 const colorSchema = z.string().regex(/^#[0-9a-f]{6}$/i)
@@ -16,6 +18,12 @@ const optionalText = z.preprocess(
   value => (typeof value === 'string' && value.trim() ? value.trim() : null),
   z.string().nullable(),
 )
+
+const optionalTextWithMax = (max: number) =>
+  z.preprocess(
+    value => (typeof value === 'string' && value.trim() ? value.trim() : null),
+    z.string().max(max).nullable(),
+  )
 
 const categorySchema = z.object({
   name: z.string().trim().min(1).max(100),
@@ -27,6 +35,16 @@ const serviceSchema = z.object({
   categoryId: z.string().min(1),
   name: z.string().trim().min(1).max(150),
   description: optionalText,
+  preparationAdvice: optionalTextWithMax(2000),
+  contraindications: optionalTextWithMax(2000),
+  expectedResults: optionalTextWithMax(2000),
+  aftercareAdvice: optionalTextWithMax(2000),
+  faqQuestion1: optionalTextWithMax(200),
+  faqAnswer1: optionalTextWithMax(1000),
+  faqQuestion2: optionalTextWithMax(200),
+  faqAnswer2: optionalTextWithMax(1000),
+  faqQuestion3: optionalTextWithMax(200),
+  faqAnswer3: optionalTextWithMax(1000),
   durationMinutes: z.coerce.number().int().min(1).max(720),
   preparationMinutes: z.coerce.number().int().min(0).max(240),
   cleanupMinutes: z.coerce.number().int().min(0).max(240),
@@ -58,7 +76,8 @@ const reorderIds = (
 }
 
 const requireAdmin = async () => {
-  if (!(await getAdminSession())) redirect('/admin/login')
+  if (!(await getAdminSession()) || !(await hasSameOrigin()))
+    redirect('/admin/login')
 }
 
 const slugify = (value: string): string =>
@@ -104,13 +123,23 @@ export const createCategory = async (formData: FormData): Promise<void> => {
   const last = await prisma.serviceCategory.aggregate({
     _max: { sortOrder: true },
   })
-  await prisma.serviceCategory.create({
-    data: {
-      ...data,
-      sortOrder: (last._max.sortOrder ?? -1) + 1,
-      slug: await uniqueCategorySlug(data.name),
-    },
-  })
+  const slug = await uniqueCategorySlug(data.name)
+  await runAuditedMutation(
+    prisma,
+    transaction =>
+      transaction.serviceCategory.create({
+        data: { ...data, sortOrder: (last._max.sortOrder ?? -1) + 1, slug },
+      }),
+    created => ({
+      actorType: 'ADMIN',
+      actorId: 'admin',
+      entityType: 'SERVICE_CATEGORY',
+      entityId: created.id,
+      entityLabel: created.name,
+      action: 'CREATED',
+      after: { name: created.name, color: created.color },
+    }),
+  )
   refreshCatalog()
 }
 
@@ -118,20 +147,50 @@ export const updateCategory = async (formData: FormData): Promise<void> => {
   await requireAdmin()
   const id = z.string().min(1).parse(formData.get('id'))
   const data = categorySchema.parse(Object.fromEntries(formData))
-  await prisma.serviceCategory.update({ where: { id }, data })
+  await prisma.$transaction(async transaction => {
+    const before = await transaction.serviceCategory.findUniqueOrThrow({
+      where: { id },
+    })
+    const after = await transaction.serviceCategory.update({
+      where: { id },
+      data,
+    })
+    await writeAuditEvent(transaction, {
+      actorType: 'ADMIN',
+      actorId: 'admin',
+      entityType: 'SERVICE_CATEGORY',
+      entityId: after.id,
+      entityLabel: after.name,
+      action: 'UPDATED',
+      before: { name: before.name, color: before.color },
+      after: { name: after.name, color: after.color },
+    })
+  })
   refreshCatalog()
 }
 
 export const toggleCategory = async (formData: FormData): Promise<void> => {
   await requireAdmin()
   const id = z.string().min(1).parse(formData.get('id'))
-  const category = await prisma.serviceCategory.findUniqueOrThrow({
-    where: { id },
-    select: { isActive: true },
-  })
-  await prisma.serviceCategory.update({
-    where: { id },
-    data: { isActive: !category.isActive },
+  await prisma.$transaction(async transaction => {
+    const category = await transaction.serviceCategory.findUniqueOrThrow({
+      where: { id },
+      select: { id: true, name: true, isActive: true },
+    })
+    const updated = await transaction.serviceCategory.update({
+      where: { id },
+      data: { isActive: !category.isActive },
+    })
+    await writeAuditEvent(transaction, {
+      actorType: 'ADMIN',
+      actorId: 'admin',
+      entityType: 'SERVICE_CATEGORY',
+      entityId: updated.id,
+      entityLabel: updated.name,
+      action: updated.isActive ? 'RESTORED' : 'ARCHIVED',
+      before: { isActive: category.isActive },
+      after: { isActive: updated.isActive },
+    })
   })
   refreshCatalog()
 }
@@ -154,16 +213,25 @@ export const moveCategory = async (formData: FormData): Promise<void> => {
   const current = categories.find(category => category.id === currentId)
   const sibling = categories.find(category => category.id === siblingId)
   if (!current || !sibling) return
-  await prisma.$transaction([
-    prisma.serviceCategory.update({
+  await prisma.$transaction(async transaction => {
+    await transaction.serviceCategory.update({
       where: { id: current.id },
       data: { sortOrder: sibling.sortOrder },
-    }),
-    prisma.serviceCategory.update({
+    })
+    await transaction.serviceCategory.update({
       where: { id: sibling.id },
       data: { sortOrder: current.sortOrder },
-    }),
-  ])
+    })
+    await writeAuditEvent(transaction, {
+      actorType: 'ADMIN',
+      actorId: 'admin',
+      entityType: 'SERVICE_CATEGORY',
+      entityId: current.id,
+      action: 'REORDERED',
+      before: { sortOrder: current.sortOrder },
+      after: { sortOrder: sibling.sortOrder },
+    })
+  })
   refreshCatalog()
 }
 
@@ -184,14 +252,29 @@ export const createService = async (formData: FormData): Promise<void> => {
     where: { categoryId: data.categoryId },
     _max: { sortOrder: true },
   })
-  const service = await prisma.service.create({
-    data: {
-      ...data,
-      sortOrder: (last._max.sortOrder ?? -1) + 1,
-      slug: await uniqueServiceSlug(data.name),
-    },
-    select: { id: true },
-  })
+  const slug = await uniqueServiceSlug(data.name)
+  const service = await runAuditedMutation(
+    prisma,
+    transaction =>
+      transaction.service.create({
+        data: { ...data, sortOrder: (last._max.sortOrder ?? -1) + 1, slug },
+      }),
+    created => ({
+      actorType: 'ADMIN',
+      actorId: 'admin',
+      entityType: 'SERVICE',
+      entityId: created.id,
+      entityLabel: created.name,
+      action: 'CREATED',
+      after: {
+        categoryId: created.categoryId,
+        priceCents: created.priceCents,
+        durationMinutes: created.durationMinutes,
+        isBookable: created.isBookable,
+        isVisible: created.isVisible,
+      },
+    }),
+  )
   refreshCatalog()
   redirect(`/admin/services/${service.id}`)
 }
@@ -200,7 +283,40 @@ export const updateService = async (formData: FormData): Promise<void> => {
   await requireAdmin()
   const id = z.string().min(1).parse(formData.get('id'))
   const { priceChf: _priceChf, ...data } = parseServiceForm(formData)
-  await prisma.service.update({ where: { id }, data })
+  await prisma.$transaction(async transaction => {
+    const before = await transaction.service.findUniqueOrThrow({
+      where: { id },
+    })
+    const after = await transaction.service.update({ where: { id }, data })
+    await writeAuditEvent(transaction, {
+      actorType: 'ADMIN',
+      actorId: 'admin',
+      entityType: 'SERVICE',
+      entityId: after.id,
+      entityLabel: after.name,
+      action: 'UPDATED',
+      before: {
+        name: before.name,
+        categoryId: before.categoryId,
+        priceCents: before.priceCents,
+        durationMinutes: before.durationMinutes,
+        preparationMinutes: before.preparationMinutes,
+        cleanupMinutes: before.cleanupMinutes,
+        isBookable: before.isBookable,
+        isVisible: before.isVisible,
+      },
+      after: {
+        name: after.name,
+        categoryId: after.categoryId,
+        priceCents: after.priceCents,
+        durationMinutes: after.durationMinutes,
+        preparationMinutes: after.preparationMinutes,
+        cleanupMinutes: after.cleanupMinutes,
+        isBookable: after.isBookable,
+        isVisible: after.isVisible,
+      },
+    })
+  })
   refreshCatalog()
   redirect(`/admin/services/${id}?saved=1`)
 }
@@ -217,16 +333,29 @@ export const duplicateService = async (formData: FormData): Promise<void> => {
     ...copy
   } = source
   const name = `${source.name} — copie`
-  const duplicate = await prisma.service.create({
-    data: {
-      ...copy,
-      name,
-      slug: await uniqueServiceSlug(name),
-      imageUrl: source.imageUrl,
-      isArchived: false,
-    },
-    select: { id: true },
-  })
+  const slug = await uniqueServiceSlug(name)
+  const duplicate = await runAuditedMutation(
+    prisma,
+    transaction =>
+      transaction.service.create({
+        data: {
+          ...copy,
+          name,
+          slug,
+          imageUrl: source.imageUrl,
+          isArchived: false,
+        },
+      }),
+    created => ({
+      actorType: 'ADMIN',
+      actorId: 'admin',
+      entityType: 'SERVICE',
+      entityId: created.id,
+      entityLabel: created.name,
+      action: 'CREATED',
+      after: { duplicatedFrom: source.id, name: created.name },
+    }),
+  )
   refreshCatalog()
   redirect(`/admin/services/${duplicate.id}`)
 }
@@ -236,13 +365,25 @@ export const toggleServiceArchive = async (
 ): Promise<void> => {
   await requireAdmin()
   const id = z.string().min(1).parse(formData.get('id'))
-  const service = await prisma.service.findUniqueOrThrow({
-    where: { id },
-    select: { isArchived: true },
-  })
-  await prisma.service.update({
-    where: { id },
-    data: { isArchived: !service.isArchived },
+  await prisma.$transaction(async transaction => {
+    const service = await transaction.service.findUniqueOrThrow({
+      where: { id },
+      select: { id: true, name: true, isArchived: true },
+    })
+    const updated = await transaction.service.update({
+      where: { id },
+      data: { isArchived: !service.isArchived },
+    })
+    await writeAuditEvent(transaction, {
+      actorType: 'ADMIN',
+      actorId: 'admin',
+      entityType: 'SERVICE',
+      entityId: updated.id,
+      entityLabel: updated.name,
+      action: updated.isArchived ? 'ARCHIVED' : 'RESTORED',
+      before: { isArchived: service.isArchived },
+      after: { isArchived: updated.isArchived },
+    })
   })
   refreshCatalog()
 }
@@ -270,16 +411,25 @@ export const moveService = async (formData: FormData): Promise<void> => {
   const current = siblings.find(sibling => sibling.id === currentId)
   const sibling = siblings.find(sibling => sibling.id === siblingId)
   if (!current || !sibling) return
-  await prisma.$transaction([
-    prisma.service.update({
+  await prisma.$transaction(async transaction => {
+    await transaction.service.update({
       where: { id: current.id },
       data: { sortOrder: sibling.sortOrder },
-    }),
-    prisma.service.update({
+    })
+    await transaction.service.update({
       where: { id: sibling.id },
       data: { sortOrder: current.sortOrder },
-    }),
-  ])
+    })
+    await writeAuditEvent(transaction, {
+      actorType: 'ADMIN',
+      actorId: 'admin',
+      entityType: 'SERVICE',
+      entityId: current.id,
+      action: 'REORDERED',
+      before: { sortOrder: current.sortOrder },
+      after: { sortOrder: sibling.sortOrder },
+    })
+  })
   refreshCatalog()
 }
 
@@ -290,12 +440,27 @@ export const deleteService = async (
   const id = z.string().min(1).parse(serviceId)
   const service = await prisma.service.findUnique({
     where: { id },
-    select: { imageUrl: true },
+    select: { id: true, name: true, imageUrl: true },
   })
-  if (!service) return { ok: false, message: 'Prestation introuvable.' }
+  if (!service)
+    return {
+      ok: false,
+      message: 'Cette prestation n’existe plus. Revenez à la liste des soins.',
+    }
 
   try {
-    await prisma.service.delete({ where: { id } })
+    await prisma.$transaction(async transaction => {
+      await transaction.service.delete({ where: { id } })
+      await writeAuditEvent(transaction, {
+        actorType: 'ADMIN',
+        actorId: 'admin',
+        entityType: 'SERVICE',
+        entityId: service.id,
+        entityLabel: service.name,
+        action: 'DELETED',
+        before: { name: service.name, hadImage: Boolean(service.imageUrl) },
+      })
+    })
   } catch (error) {
     if (isForeignKeyRestriction(error))
       return {
@@ -342,11 +507,24 @@ export const assignServiceImage = async (
   const url = z.url().parse(imageUrl)
   if (!isBlobUrl(url)) throw new Error('Invalid Blob URL')
 
-  const previous = await prisma.service.findUniqueOrThrow({
-    where: { id },
-    select: { imageUrl: true },
+  const previous = await prisma.$transaction(async transaction => {
+    const service = await transaction.service.findUniqueOrThrow({
+      where: { id },
+      select: { id: true, name: true, imageUrl: true },
+    })
+    await transaction.service.update({ where: { id }, data: { imageUrl: url } })
+    await writeAuditEvent(transaction, {
+      actorType: 'ADMIN',
+      actorId: 'admin',
+      entityType: 'SERVICE',
+      entityId: service.id,
+      entityLabel: service.name,
+      action: 'FILE_ASSIGNED',
+      before: { hadImage: Boolean(service.imageUrl) },
+      after: { hasImage: true },
+    })
+    return service
   })
-  await prisma.service.update({ where: { id }, data: { imageUrl: url } })
 
   if (previous.imageUrl && previous.imageUrl !== url)
     await deleteBlobIfOrphan(previous.imageUrl)
@@ -362,13 +540,26 @@ export const assignServiceConsentForm = async (
   const url = z.url().parse(fileUrl)
   if (!isBlobUrl(url)) throw new Error('Invalid Blob URL')
 
-  const previous = await prisma.service.findUniqueOrThrow({
-    where: { id },
-    select: { consentFormUrl: true },
-  })
-  await prisma.service.update({
-    where: { id },
-    data: { consentFormUrl: url },
+  const previous = await prisma.$transaction(async transaction => {
+    const service = await transaction.service.findUniqueOrThrow({
+      where: { id },
+      select: { id: true, name: true, consentFormUrl: true },
+    })
+    await transaction.service.update({
+      where: { id },
+      data: { consentFormUrl: url },
+    })
+    await writeAuditEvent(transaction, {
+      actorType: 'ADMIN',
+      actorId: 'admin',
+      entityType: 'SERVICE',
+      entityId: service.id,
+      entityLabel: service.name,
+      action: 'FILE_ASSIGNED',
+      before: { hadConsentForm: Boolean(service.consentFormUrl) },
+      after: { hasConsentForm: true },
+    })
+    return service
   })
 
   if (previous.consentFormUrl && previous.consentFormUrl !== url)
@@ -381,13 +572,26 @@ export const removeServiceConsentForm = async (
 ): Promise<void> => {
   await requireAdmin()
   const id = z.string().min(1).parse(formData.get('id'))
-  const service = await prisma.service.findUniqueOrThrow({
-    where: { id },
-    select: { consentFormUrl: true },
-  })
-  await prisma.service.update({
-    where: { id },
-    data: { consentFormUrl: null },
+  const service = await prisma.$transaction(async transaction => {
+    const current = await transaction.service.findUniqueOrThrow({
+      where: { id },
+      select: { id: true, name: true, consentFormUrl: true },
+    })
+    await transaction.service.update({
+      where: { id },
+      data: { consentFormUrl: null },
+    })
+    await writeAuditEvent(transaction, {
+      actorType: 'ADMIN',
+      actorId: 'admin',
+      entityType: 'SERVICE',
+      entityId: current.id,
+      entityLabel: current.name,
+      action: 'FILE_REMOVED',
+      before: { hadConsentForm: Boolean(current.consentFormUrl) },
+      after: { hasConsentForm: false },
+    })
+    return current
   })
   if (service.consentFormUrl)
     await deleteConsentBlobIfOrphan(service.consentFormUrl)
@@ -397,11 +601,27 @@ export const removeServiceConsentForm = async (
 export const removeServiceImage = async (formData: FormData): Promise<void> => {
   await requireAdmin()
   const id = z.string().min(1).parse(formData.get('id'))
-  const service = await prisma.service.findUniqueOrThrow({
-    where: { id },
-    select: { imageUrl: true },
+  const service = await prisma.$transaction(async transaction => {
+    const current = await transaction.service.findUniqueOrThrow({
+      where: { id },
+      select: { id: true, name: true, imageUrl: true },
+    })
+    await transaction.service.update({
+      where: { id },
+      data: { imageUrl: null },
+    })
+    await writeAuditEvent(transaction, {
+      actorType: 'ADMIN',
+      actorId: 'admin',
+      entityType: 'SERVICE',
+      entityId: current.id,
+      entityLabel: current.name,
+      action: 'FILE_REMOVED',
+      before: { hadImage: Boolean(current.imageUrl) },
+      after: { hasImage: false },
+    })
+    return current
   })
-  await prisma.service.update({ where: { id }, data: { imageUrl: null } })
   if (service.imageUrl) await deleteBlobIfOrphan(service.imageUrl)
   refreshCatalog()
 }

@@ -30,6 +30,49 @@ enum AvailabilityExceptionType {
   UNAVAILABLE
 }
 
+enum AuditActorType {
+  ADMIN
+  CUSTOMER
+}
+
+enum AuditEntityType {
+  APPOINTMENT
+  CUSTOMER
+  SERVICE
+  SERVICE_CATEGORY
+  WEEKLY_AVAILABILITY
+  AVAILABILITY_EXCEPTION
+  BOOKING_SETTINGS
+}
+
+enum EmailKind {
+  BOOKING_CONFIRMATION
+  BOOKING_RESCHEDULED
+  BOOKING_CANCELLED
+  APPOINTMENT_REMINDER
+  DAILY_DIGEST
+}
+
+enum EmailStatus {
+  SENT
+  FAILED
+}
+
+enum AuditActionType {
+  CREATED
+  UPDATED
+  DELETED
+  CANCELLED
+  RESCHEDULED
+  REORDERED
+  ARCHIVED
+  RESTORED
+  FILE_ASSIGNED
+  FILE_REMOVED
+  ANONYMIZED
+  MERGED
+}
+
 model ServiceCategory {
   id          String    @id @default(cuid())
   slug        String    @unique
@@ -53,6 +96,16 @@ model Service {
   categoryId         String?
   name               String
   description        String?
+  preparationAdvice  String?
+  contraindications  String?
+  expectedResults    String?
+  aftercareAdvice    String?
+  faqQuestion1       String?
+  faqAnswer1         String?
+  faqQuestion2       String?
+  faqAnswer2         String?
+  faqQuestion3       String?
+  faqAnswer3         String?
   priceNote          String?
   durationMinutes    Int
   preparationMinutes Int              @default(0)
@@ -90,6 +143,7 @@ model WeeklyAvailability {
 
 model AvailabilityException {
   id        String                    @id @default(cuid())
+  groupId   String                    @default(cuid())
   type      AvailabilityExceptionType
   startsAt  DateTime
   endsAt    DateTime
@@ -98,43 +152,92 @@ model AvailabilityException {
   updatedAt DateTime                  @updatedAt
 
   @@index([startsAt, endsAt, type])
+  @@index([groupId, startsAt])
   @@map("availability_exception")
 }
 
+model BookingSettings {
+  id                        String   @id @default("default")
+  minBookingNoticeHours     Int      @default(12)
+  bookingHorizonMonths      Int      @default(3)
+  customerChangeCutoffHours Int      @default(48)
+  slotIntervalMinutes       Int      @default(15)
+  createdAt                 DateTime @default(now())
+  updatedAt                 DateTime @updatedAt
+
+  @@map("booking_settings")
+}
+
+model Customer {
+  id              String        @id @default(cuid())
+  identityDigest  String        @unique
+  identityVersion Int           @default(1)
+  firstName       String?
+  lastName        String
+  email           String
+  emailNormalized String
+  phone           String
+  phoneNormalized String
+  searchName      String
+  firstSeenAt     DateTime      @default(now())
+  lastSeenAt      DateTime      @default(now())
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+  anonymizedAt    DateTime?
+  internalNote    String?
+  preferences     String?
+  appointments    Appointment[]
+
+  @@index([emailNormalized])
+  @@index([phoneNormalized])
+  @@index([searchName])
+  @@index([anonymizedAt])
+  @@map("customer")
+}
+
 model Appointment {
-  id                      String            @id @default(cuid())
+  id                      String                @id @default(cuid())
   serviceId               String
+  customerId              String?
   serviceNameSnapshot     String
   servicePriceCents       Int
   serviceDurationMinutes  Int
-  preparationMinutes      Int               @default(0)
-  cleanupMinutes          Int               @default(0)
+  preparationMinutes      Int                   @default(0)
+  cleanupMinutes          Int                   @default(0)
   startsAt                DateTime
   endsAt                  DateTime
   // timestamptz est imposé par la contrainte d'exclusion GIST
   // `appointment_no_confirmed_overlap`, qui s'appuie sur tstzrange().
-  occupiedStartsAt        DateTime          @db.Timestamptz(3)
-  occupiedEndsAt          DateTime          @db.Timestamptz(3)
+  occupiedStartsAt        DateTime              @db.Timestamptz(3)
+  occupiedEndsAt          DateTime              @db.Timestamptz(3)
   customerFirstName       String?
   customerLastName        String
+  customerSearchName      String
   customerEmail           String?
   customerPhone           String?
   customerIdentityDigest  String?
-  customerIdentityVersion Int               @default(1)
+  customerIdentityVersion Int                   @default(1)
   comment                 String?
   source                  AppointmentSource
-  status                  AppointmentStatus @default(CONFIRMED)
+  status                  AppointmentStatus     @default(CONFIRMED)
   cancelledAt             DateTime?
-  createdAt               DateTime          @default(now())
-  updatedAt               DateTime          @updatedAt
-  service                 Service           @relation(fields: [serviceId], references: [id], onDelete: Restrict)
+  createdAt               DateTime              @default(now())
+  updatedAt               DateTime              @updatedAt
+  service                 Service               @relation(fields: [serviceId], references: [id], onDelete: Restrict)
+  customer                Customer?             @relation(fields: [customerId], references: [id], onDelete: SetNull)
   activities              AppointmentActivity[]
+  emailDeliveries         EmailDelivery[]
 
   @@index([startsAt, endsAt, status])
   @@index([occupiedStartsAt, occupiedEndsAt, status])
   @@index([customerEmail, customerPhone, startsAt])
+  @@index([customerPhone, startsAt])
+  @@index([customerSearchName, startsAt])
+  @@index([customerSearchName(ops: raw("gin_trgm_ops"))], map: "appointment_customerSearchName_trgm_idx", type: Gin)
   @@index([customerIdentityDigest, startsAt, status])
+  @@index([customerId, startsAt, status])
   @@index([serviceId, startsAt])
+  @@index([status, source, startsAt])
   @@map("appointment")
 }
 
@@ -155,6 +258,51 @@ model AppointmentActivity {
   @@index([readAt, createdAt])
   @@index([appointmentId, createdAt])
   @@map("appointment_activity")
+}
+
+model AuditEvent {
+  id          String          @id @default(cuid())
+  actorType   AuditActorType
+  actorId     String
+  entityType  AuditEntityType
+  entityId    String
+  entityLabel String?
+  action      AuditActionType
+  changes     Json?
+  createdAt   DateTime        @default(now())
+
+  @@index([createdAt])
+  @@index([entityType, entityId, createdAt])
+  @@index([action, createdAt])
+  @@index([actorType, createdAt])
+  @@map("audit_event")
+}
+
+/// Trace de chaque e-mail transactionnel.
+///
+/// L'envoi est volontairement secondaire : le rendez-vous est déjà enregistré
+/// quand la ligne est écrite. Seul le strict nécessaire au renvoi est conservé
+/// — destinataire, objet, et le rendez-vous d'origine — le corps du message
+/// étant reconstruit à la demande plutôt que dupliqué ici.
+model EmailDelivery {
+  id            String       @id @default(cuid())
+  kind          EmailKind
+  status        EmailStatus
+  recipient     String
+  subject       String
+  appointmentId String?
+  providerId    String?
+  error         String?
+  attempts      Int          @default(1)
+  sentAt        DateTime?
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+  appointment   Appointment? @relation(fields: [appointmentId], references: [id], onDelete: SetNull)
+
+  @@index([status, createdAt])
+  @@index([createdAt])
+  @@index([appointmentId, createdAt])
+  @@map("email_delivery")
 }
 
 model RateLimitBucket {

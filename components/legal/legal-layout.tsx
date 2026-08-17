@@ -18,12 +18,10 @@ export const LegalLayout = ({
     <SiteHeader />
     <main className="min-h-screen px-5 pt-24 pb-16 sm:px-8 sm:pt-28">
       <div className="mx-auto max-w-3xl">
-        <p className="text-sm font-semibold tracking-widest text-rose-500 uppercase">
+        <p className="text-sm font-semibold tracking-widest text-brand uppercase">
           {eyebrow}
         </p>
-        <h1 className="mt-2 font-heading text-3xl font-bold sm:text-4xl">
-          {title}
-        </h1>
+        <h1 className="mt-2 font-heading text-title font-bold">{title}</h1>
         <p className="mt-3 text-sm text-muted-foreground">
           Dernière mise à jour : {lastUpdated}
         </p>

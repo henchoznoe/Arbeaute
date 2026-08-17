@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from 'vitest'
 import {
   findNextAvailableSlot,
+  getAvailabilityByDate,
   getAvailableSlots,
   getAvailableSlotsByDate,
 } from '@/lib/reservation/availability'
@@ -163,6 +164,49 @@ describe('public availability', () => {
     })
     expect(tooFar).toHaveLength(0)
   })
+
+  it('applies the configured notice, horizon and slot interval', async () => {
+    const slots = await getAvailableSlots({
+      database: makeDatabase({}),
+      serviceId: 'service',
+      dateKey: monday,
+      now: new Date('2026-08-10T05:59:00.000Z'),
+      settings: {
+        minBookingNoticeHours: 0,
+        bookingHorizonMonths: 1,
+        customerChangeCutoffHours: 24,
+        slotIntervalMinutes: 20,
+      },
+    })
+    expect(slots.slice(0, 3).map(slot => slot.label)).toEqual([
+      '08:00',
+      '08:20',
+      '08:40',
+    ])
+  })
+
+  it('keeps preparation and cleanup inside openings with a custom interval', async () => {
+    const slots = await getAvailableSlots({
+      database: makeDatabase({
+        durationMinutes: 40,
+        preparationMinutes: 10,
+        cleanupMinutes: 10,
+        weekly: [{ dayOfWeek: 1, startMinute: 8 * 60, endMinute: 10 * 60 }],
+      }),
+      serviceId: 'service',
+      dateKey: monday,
+      now: earlySunday,
+      settings: {
+        minBookingNoticeHours: 0,
+        bookingHorizonMonths: 1,
+        customerChangeCutoffHours: 24,
+        slotIntervalMinutes: 20,
+      },
+    })
+    expect(slots.some(slot => slot.label === '08:00')).toBe(false)
+    expect(slots.some(slot => slot.label === '08:20')).toBe(true)
+    expect(slots.some(slot => slot.label === '09:20')).toBe(false)
+  })
 })
 
 /**
@@ -223,6 +267,64 @@ describe('batched availability', () => {
     expect(database.availabilityException.findMany).toHaveBeenCalledTimes(1)
   })
 
+  it('distinguishes available, full and closed days in one range', async () => {
+    const availability = await getAvailabilityByDate({
+      database: makeDatabase({
+        weekly: [
+          { dayOfWeek: 1, startMinute: 8 * 60, endMinute: 9 * 60 },
+          { dayOfWeek: 2, startMinute: 8 * 60, endMinute: 9 * 60 },
+          { dayOfWeek: 3, startMinute: 8 * 60, endMinute: 9 * 60 },
+        ],
+        appointments: [
+          {
+            startsAt: new Date('2026-08-11T06:00:00.000Z'),
+            endsAt: new Date('2026-08-11T07:00:00.000Z'),
+            preparationMinutes: 0,
+            cleanupMinutes: 0,
+          },
+        ],
+        exceptions: [
+          {
+            type: 'UNAVAILABLE',
+            startsAt: new Date('2026-08-12T05:00:00.000Z'),
+            endsAt: new Date('2026-08-12T18:00:00.000Z'),
+          },
+        ],
+      }),
+      serviceId: 'service',
+      fromDateKey: monday,
+      toDateKey: '2026-08-13',
+      now: earlySunday,
+    })
+
+    expect(availability[monday]?.state).toBe('AVAILABLE')
+    expect(availability['2026-08-11']).toEqual({ state: 'FULL', slots: [] })
+    expect(availability['2026-08-12']).toEqual({
+      state: 'CLOSED',
+      slots: [],
+    })
+    expect(availability['2026-08-13']).toEqual({
+      state: 'CLOSED',
+      slots: [],
+    })
+  })
+
+  it('loads each availability source once for calendar states', async () => {
+    const database = makeDatabase({})
+    await getAvailabilityByDate({
+      database,
+      serviceId: 'service',
+      fromDateKey: monday,
+      toDateKey: sunday,
+      now: earlySunday,
+    })
+
+    expect(database.service.findFirst).toHaveBeenCalledTimes(1)
+    expect(database.appointment.findMany).toHaveBeenCalledTimes(1)
+    expect(database.weeklyAvailability.findMany).toHaveBeenCalledTimes(1)
+    expect(database.availabilityException.findMany).toHaveBeenCalledTimes(1)
+  })
+
   it('finds the next open day without querying per day', async () => {
     const database = makeDatabase({})
     const found = await findNextAvailableSlot({
@@ -235,6 +337,25 @@ describe('batched availability', () => {
     expect(found?.dateKey).toBe('2026-08-17')
     expect(found?.slot.label).toBe('08:00')
     expect(database.appointment.findMany).toHaveBeenCalledTimes(1)
+  })
+
+  it('excludes the moved appointment while scanning the next slot', async () => {
+    const database = makeDatabase({})
+    await findNextAvailableSlot({
+      database,
+      serviceId: 'service',
+      fromDateKey: '2026-08-11',
+      now: earlySunday,
+      excludeAppointmentId: 'current-appointment',
+    })
+
+    expect(database.appointment.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({
+          id: { not: 'current-appointment' },
+        }),
+      }),
+    )
   })
 
   it('returns nothing when the service is not bookable', async () => {

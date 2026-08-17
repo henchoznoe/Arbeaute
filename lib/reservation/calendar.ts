@@ -17,13 +17,48 @@ const escapeIcs = (value: string): string =>
     .replaceAll(',', '\\,')
     .replaceAll(';', '\\;')
 
+const textEncoder = new TextEncoder()
+
+/**
+ * RFC 5545 limite chaque ligne à 75 octets. Le découpage tient compte des
+ * caractères accentués et réserve un octet à l'espace de continuation.
+ */
+const foldIcsLine = (line: string): string => {
+  const folded: string[] = []
+  let segment = ''
+  let segmentBytes = 0
+
+  for (const character of line) {
+    const characterBytes = textEncoder.encode(character).length
+    const maxBytes = folded.length === 0 ? 75 : 74
+    if (segment && segmentBytes + characterBytes > maxBytes) {
+      folded.push(folded.length === 0 ? segment : ` ${segment}`)
+      segment = character
+      segmentBytes = characterBytes
+    } else {
+      segment += character
+      segmentBytes += characterBytes
+    }
+  }
+
+  folded.push(folded.length === 0 ? segment : ` ${segment}`)
+  return folded.join('\r\n')
+}
+
 export const createAppointmentCalendar = ({
   id,
   serviceName,
   startsAt,
   endsAt,
-}: CalendarAppointment): string =>
-  [
+}: CalendarAppointment): string => {
+  const description = [
+    `Rendez-vous chez ${contact.name}.`,
+    `Adresse : ${contact.address}`,
+    `Téléphone : ${contact.phone}`,
+    `Gérer mes rendez-vous : ${contact.website}/mes-rendez-vous`,
+  ].join('\n')
+
+  return [
     'BEGIN:VCALENDAR',
     'VERSION:2.0',
     'PRODID:-//Arbeauté//Rendez-vous//FR',
@@ -34,10 +69,15 @@ export const createAppointmentCalendar = ({
     `DTSTAMP:${formatIcsDate(new Date())}`,
     `DTSTART:${formatIcsDate(startsAt)}`,
     `DTEND:${formatIcsDate(endsAt)}`,
-    `SUMMARY:${escapeIcs(serviceName)} — Arbeauté`,
+    `SUMMARY:${escapeIcs(`${serviceName} — ${contact.name}`)}`,
     `LOCATION:${escapeIcs(contact.address)}`,
-    `DESCRIPTION:${escapeIcs(`Gérer mes rendez-vous : ${contact.website}/mes-rendez-vous`)}`,
+    `DESCRIPTION:${escapeIcs(description)}`,
+    'STATUS:CONFIRMED',
+    'TRANSP:OPAQUE',
     'END:VEVENT',
     'END:VCALENDAR',
     '',
-  ].join('\r\n')
+  ]
+    .map(foldIcsLine)
+    .join('\r\n')
+}

@@ -31,7 +31,12 @@ const ACTIVITY_PAGE_SIZE = 20
 export const getActivityOverview = async () => {
   const [activities, unreadCount] = await Promise.all([
     prisma.appointmentActivity.findMany({
-      orderBy: { createdAt: 'desc' },
+      // Le non-lu passe devant : une annulation de dernière minute change la
+      // journée d'Arzu, une réservation déjà vue ne lui apprend rien.
+      orderBy: [
+        { readAt: { sort: 'asc', nulls: 'first' } },
+        { createdAt: 'desc' },
+      ],
       take: 3,
       select: activitySelect,
     }),
@@ -39,6 +44,9 @@ export const getActivityOverview = async () => {
   ])
   return { activities, unreadCount }
 }
+
+export const getUnreadActivityCount = async (): Promise<number> =>
+  prisma.appointmentActivity.count({ where: { readAt: null } })
 
 export const getActivityPage = async (requestedPage: number) => {
   const totalCount = await prisma.appointmentActivity.count()

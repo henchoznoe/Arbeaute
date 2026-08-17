@@ -63,6 +63,30 @@ CI runs exactly the `check:com` steps. `main` is released by semantic-release, s
 **PR titles must follow Conventional Commits** (`feat`, `fix`, `chore`, `ci`,
 `docs`, `refactor`, `test`, `perf`). `develop` is the working branch.
 
+### No end-to-end tests — do not add any
+
+**Vitest unit tests are the only automated suite.** Do not add Playwright,
+Cypress, WebdriverIO, Puppeteer, a headless browser, a driven browser, or
+reference screenshots. Do not add an `e2e` script, an `e2e` workflow step, or a
+throwaway database for testing.
+
+A Playwright recipe existed and was removed. On a single-practitioner salon it
+cost a browser to install in CI, an ephemeral PostgreSQL, reference screenshots
+to regenerate and two CI steps — and its screenshots went stale on the very
+first typography change, before catching a single real regression. The
+maintenance outweighed the benefit.
+
+What replaces it:
+
+- `vitest run` for every piece of domain logic, with Prisma mocked;
+- `scripts/verify-build-quality.ts`, called by `pnpm build`, which reads the
+  `next build` output and fails when a public route stops being prerendered or
+  when a JavaScript or image budget is exceeded;
+- manual checks in the browser during development.
+
+If a regression escapes, add a unit test on the function responsible — not a
+browser.
+
 ## Architecture
 
 ### Cache Components is enabled
@@ -88,7 +112,8 @@ Cached data is centralised and tagged, then invalidated from server actions with
 |---|---|---|---|
 | Service catalogue | `lib/catalog/queries.ts` | `CATALOG_TAG` | `refreshCatalog()` in `lib/actions/catalog.ts` |
 | Opening hours | `lib/reservation/opening-hours.ts` | `OPENING_HOURS_TAG` | `refreshAvailability()` in `lib/actions/admin-agenda.ts` |
-| Booking date bounds | `lib/reservation/booking-window.ts` | — (`cacheLife('hours')`) | time only |
+| Booking rules | `lib/reservation/booking-settings.ts` | `BOOKING_SETTINGS_TAG` | `saveBookingSettings()` in `lib/actions/admin-booking-settings.ts` |
+| Booking date bounds | `lib/reservation/booking-window.ts` | `BOOKING_SETTINGS_TAG` (`cacheLife('hours')`) | settings or time |
 
 Availability **slots are never cached** — stale slots would cause double bookings.
 
@@ -101,7 +126,7 @@ queries:
   (service timings, weekly availability, exceptions, appointments over the range
   with a ±24 h margin for preparation/cleanup spilling across days).
 - `computeSlotsForDay()` — pure; merges openings, subtracts blocked intervals,
-  walks the day in `SLOT_INTERVAL_MINUTES` steps. Unit-testable without a DB.
+  walks the day using the configured slot interval. Unit-testable without a DB.
 - Public entry points: `getAvailableSlots` (one day), `getAvailableSlotsByDate`
   (a range, used by the booking calendar to load a whole week at once) and
   `findNextAvailableSlot` (scans up to 100 days in memory).
@@ -133,6 +158,13 @@ and converted with `localDateMinuteToUtc` / `getLocalDayBounds`. The customer
 change deadline is counted in *business* hours (weekends skipped) by
 `getCustomerChangeDeadline`.
 
+### Booking settings
+
+The singleton `BookingSettings` row is the source of truth for booking notice,
+horizon, customer change cutoff and slot interval. Public reads go through the
+tagged cache in `lib/reservation/booking-settings.ts`; the admin mutation updates
+the row and audit event in one transaction, then invalidates every public view.
+
 ### Auth and access control
 
 - Two independent HMAC-signed cookie sessions (`lib/core/session.ts`,
@@ -146,6 +178,33 @@ change deadline is counted in *business* hours (weekends skipped) by
   (`lib/utils/request.ts`) as CSRF defence.
 - Sensitive actions go through `checkRateLimit` (`lib/services/rate-limit.ts`),
   a DB-backed fixed-window counter keyed by an HMAC of the IP or identity.
+
+### Transactional emails
+
+`lib/email/` sends through Resend over plain `fetch` — no SDK, the project
+counts its kilobytes. The layering matters:
+
+- `templates.ts` is pure (subject, text, HTML) and unit-tested;
+- `client.ts` only knows the envelope, with a ten-second timeout;
+- `send.ts` writes one `EmailDelivery` row per attempt and **never throws**;
+- `notifications.ts` queues the send with `after()`, so a booking never waits
+  on Resend and a Resend outage cannot fail a reservation.
+
+`RESEND_API_KEY`, `RESEND_FROM`, `ADMIN_NOTIFICATION_EMAIL` and `CRON_SECRET`
+are **optional** in `lib/core/env.ts`: without them the app behaves exactly as
+before, silently sending nothing. Free-tier limits (100/day, 3000/month) are
+counted from successful sends and surfaced at `/admin/emails`, where a failed
+message can be resent — its body is rebuilt from the appointment rather than
+stored.
+
+Reminders and Arzu's evening digest share the single daily cron declared in
+`vercel.json`, which is all the Vercel Hobby plan allows.
+
+**Cron schedules are UTC and ignore daylight saving.** `0 18 * * *` fires at
+20:00 in Bulle in summer and 19:00 in winter. Hobby triggers within the hour,
+not to the minute, so nothing in the job may depend on an exact time. Vercel
+sends `Authorization: Bearer $CRON_SECRET`; without that variable the route
+answers 503 rather than running unauthenticated.
 
 ### PWA
 
@@ -172,3 +231,7 @@ startup if anything is missing — add new variables there and to `.env.example`
   `@/prisma/generated/prisma/client`), not from `@prisma/client`.
 - Comments explain *why*, in French, and are used sparingly on non-obvious
   decisions (caching choices, concurrency, timezone rules). Follow that density.
+- **User-facing wording follows [docs/vocabulaire.md](docs/vocabulaire.md).**
+  Neither the owner nor her clients have ever administered a website, so no
+  screen may expose the data model's vocabulary. Check the banned-terms table
+  before writing a label, a setting description or an error message.

@@ -41,6 +41,7 @@ yarn-error.log*
 
 # prisma
 /prisma/generated
+/backups
 
 # typescript
 *.tsbuildinfo

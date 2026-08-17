@@ -6,3 +6,8 @@ allowBuilds:
   sharp: true
 overrides:
   fast-uri: 3.1.2
+# `next` déclare @playwright/test en peer optionnel. Sans ce blocage, pnpm le
+# réinstalle et le navigateur revient dans l'arbre alors que le projet interdit
+# les tests de bout en bout (voir AGENTS.md).
+ignoredOptionalDependencies:
+  - '@playwright/test'

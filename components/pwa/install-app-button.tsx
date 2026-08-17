@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-
+import { Button } from '@/components/ui/button'
 import {
   INSTALLABLE_EVENT,
   isIos,
@@ -46,15 +46,13 @@ export const InstallAppButton = ({
   if (!installable) return null
 
   return (
-    <button
+    <Button
       type="button"
+      variant="link"
       onClick={() => window.dispatchEvent(new Event(SHOW_INSTALL_EVENT))}
-      className={cn(
-        'underline underline-offset-2 transition-colors hover:text-foreground',
-        className,
-      )}
+      className={cn('text-foreground', className)}
     >
       {label}
-    </button>
+    </Button>
   )
 }

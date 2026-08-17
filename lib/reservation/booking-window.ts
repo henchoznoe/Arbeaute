@@ -1,9 +1,15 @@
-import { cacheLife } from 'next/cache'
+import { cacheLife, cacheTag } from 'next/cache'
+import {
+  BOOKING_SETTINGS_TAG,
+  formatCustomerChangeCutoff,
+  getBookingSettings,
+} from '@/lib/reservation/booking-settings'
 import { getBookingDateLimits } from '@/lib/reservation/time'
 
 export interface BookingWindow {
   min: string
   max: string
+  customerChangeCutoffLabel: string
 }
 
 /**
@@ -16,7 +22,18 @@ export interface BookingWindow {
 export const getPublicBookingWindow = async (): Promise<BookingWindow> => {
   'use cache'
   cacheLife('hours')
+  cacheTag(BOOKING_SETTINGS_TAG)
 
-  const { min, max } = getBookingDateLimits()
-  return { min, max }
+  const settings = await getBookingSettings()
+  const { min, max } = getBookingDateLimits(
+    new Date(),
+    settings.bookingHorizonMonths,
+  )
+  return {
+    min,
+    max,
+    customerChangeCutoffLabel: formatCustomerChangeCutoff(
+      settings.customerChangeCutoffHours,
+    ),
+  }
 }

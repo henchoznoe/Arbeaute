@@ -34,7 +34,8 @@ peut être enregistré, même en cas de réservations simultanées.
 
 ### Features
 
-- **Réservation en trois étapes** — prestation, créneau, coordonnées. Le
+- **Réservation en quatre étapes** — prestation, créneau, coordonnées et
+  vérification. Le
   calendrier charge la semaine entière d'un coup et grise les jours complets ; un
   bouton « prochain créneau disponible » balaie les trois mois à venir.
 - **Espace client sans mot de passe** — identification par email et téléphone,
@@ -66,12 +67,13 @@ peut être enregistré, même en cas de réservations simultanées.
 | Auth | Sessions signées HMAC (admin et client), sans dépendance externe |
 | Validation | Zod (env + schémas runtime) |
 | Dates | date-fns, date-fns-tz (`Europe/Zurich`) |
-| Quality | Biome, knip, husky, lint-staged |
-| Testing | Vitest |
+| Quality | Biome, knip, budgets de build, husky, lint-staged |
+| Testing | Vitest (tests unitaires uniquement) |
 | Release | Semantic Release, Conventional Commits |
 | CI/CD | GitHub Actions |
 | Analytics | Vercel Analytics |
 | Hosting | Vercel |
+| E-mails | Resend (offre gratuite, optionnelle) |
 
 ## Quick Start
 
@@ -117,7 +119,7 @@ l'administration sur [/admin](http://localhost:3000/admin).
 | Command | Description |
 | --- | --- |
 | `pnpm dev` | Serveur de développement |
-| `pnpm build` | Build de production (Prisma generate + migrate deploy) |
+| `pnpm build` | Build de production (Prisma generate + migrate deploy en production uniquement) |
 | `pnpm start` | Serveur de production |
 | `pnpm check` | Biome : formatage, lint et tri des imports |
 | `pnpm check:all` | Biome + knip |
@@ -133,6 +135,8 @@ l'administration sur [/admin](http://localhost:3000/admin).
 | `pnpm db:verify-catalog` | Contrôle la cohérence du catalogue |
 | `pnpm db:verify-concurrency` | Vérifie l'absence de chevauchement en réservation simultanée |
 | `pnpm db:verify-rate-limit` | Vérifie la limitation de débit |
+| `pnpm db:backup:local` | Crée une archive de la base PostgreSQL locale |
+| `pnpm db:restore:verify -- <archive>` | Restaure une archive dans une base locale jetable |
 
 ## Architecture
 
@@ -154,6 +158,18 @@ Le détail est documenté dans [`AGENTS.md`](AGENTS.md). Les points structurants
 ## Deployment
 
 Déploiement sur Vercel depuis `main`. `develop` est la branche de travail.
+
+**Seule la production migre la base.** Le build est partagé par tous les
+déploiements ; `scripts/migrate-production.ts` n'exécute `prisma migrate deploy`
+que lorsque `VERCEL_ENV` vaut `production`. Sans ce filtre, chaque preview de
+`develop` appliquerait ses migrations à la base de production, qui prendrait de
+l'avance sur le code servi depuis `main` — une colonne `NOT NULL` non publiée
+suffit à casser toute réservation.
+
+Ce filtre ne dispense pas de cloisonner les données : tant que les previews
+partagent `DATABASE_URL` avec la production, elles lisent et écrivent les vraies
+données clientes. Donner aux previews leur propre base (branche Neon) reste la
+protection de fond.
 
 **Variables à définir dans le projet Vercel :**
 
@@ -188,8 +204,27 @@ knip (code mort)
   ↓
 vitest run (tests)
   ↓
-next build (build de production)
+next build + budgets de qualité (rendu, JavaScript, images)
 ```
+
+`pnpm check:com` reproduit exactement cette chaîne en local : c’est la seule
+porte de qualité du projet.
+
+### Stratégie de test
+
+**Uniquement des tests unitaires Vitest.** Le projet n’a aucun test de bout en
+bout et n’en aura pas : voir la règle et sa justification dans
+[AGENTS.md](AGENTS.md).
+
+Ce qui tient lieu de garde-fou à la place :
+
+- `vitest run` couvre le moteur de disponibilité, la concurrence, les sessions,
+  les actions serveur et les fonctions de formatage ;
+- `scripts/verify-build-quality.ts`, appelé par `pnpm build`, analyse la sortie
+  de `next build` : il échoue si une route publique cesse d’être prérendue ou si
+  un budget JavaScript ou image est dépassé ;
+- `tests/quality/service-worker.test.ts` vérifie que le service worker ne met en
+  cache que la coquille et la page hors ligne.
 
 ### Additional Workflows
 

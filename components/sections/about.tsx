@@ -10,15 +10,15 @@ export function About() {
   return (
     <section
       id="about"
-      className="scroll-mt-16 bg-linear-to-b from-rose-50/50 to-transparent px-6 py-24"
+      className="scroll-mt-16 bg-linear-to-b from-brand-subtle/50 to-transparent px-6 py-24"
     >
       <div className="mx-auto max-w-4xl">
         <Animate>
           <div className="mb-16 text-center">
-            <p className="mb-2 text-sm font-medium tracking-[0.2em] text-rose-400/80 uppercase">
+            <p className="mb-2 text-sm font-medium tracking-[0.2em] text-brand uppercase">
               Votre esthéticienne
             </p>
-            <h2 className="font-heading text-3xl font-bold tracking-tight sm:text-4xl">
+            <h2 className="font-heading text-title font-bold">
               {contact.owner}
             </h2>
           </div>
@@ -26,7 +26,7 @@ export function About() {
 
         <div className="flex flex-col items-center gap-10 md:flex-row md:items-start">
           <Animate animation="scale-in" delay={200}>
-            <div className="size-36 shrink-0 overflow-hidden rounded-2xl shadow-lg ring-1 ring-rose-100 md:size-44">
+            <div className="size-36 shrink-0 overflow-hidden rounded-2xl shadow-lg ring-1 ring-brand-soft md:size-44">
               <Image
                 src="/arzu.jpeg"
                 alt={contact.owner}
@@ -47,13 +47,13 @@ export function About() {
               <Separator className="my-6" />
 
               <div className="flex flex-wrap justify-center gap-3 text-sm text-muted-foreground md:justify-start">
-                <span className="rounded-full bg-rose-50 px-4 py-1.5">
+                <span className="rounded-full bg-brand-subtle px-4 py-1.5">
                   Esthéticienne diplômée
                 </span>
-                <span className="rounded-full bg-rose-50 px-4 py-1.5">
+                <span className="rounded-full bg-brand-subtle px-4 py-1.5">
                   Formation continue
                 </span>
-                <span className="rounded-full bg-rose-50 px-4 py-1.5">
+                <span className="rounded-full bg-brand-subtle px-4 py-1.5">
                   Basée à Bulle
                 </span>
               </div>

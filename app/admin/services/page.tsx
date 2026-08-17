@@ -1,6 +1,7 @@
 import {
   Archive,
   ChevronDown,
+  ChevronLeft,
   ChevronUp,
   Copy,
   Eye,
@@ -13,6 +14,8 @@ import { redirect } from 'next/navigation'
 import { Suspense } from 'react'
 import { AdminSkeleton } from '@/components/admin/admin-skeleton'
 import { ServiceDeleteButton } from '@/components/admin/service-delete-button'
+import { Button } from '@/components/ui/button'
+import { formControlClass } from '@/components/ui/form-field'
 import { SubmitButton } from '@/components/ui/submit-button'
 import {
   createCategory,
@@ -25,9 +28,9 @@ import {
 } from '@/lib/actions/catalog'
 import prisma from '@/lib/core/prisma'
 import { getAdminSession } from '@/lib/core/session-cookies'
+import { formatPrice } from '@/lib/utils/format'
 
-const fieldClass =
-  'h-9 rounded-lg border bg-background px-3 text-sm outline-none focus:ring-2 focus:ring-ring'
+const fieldClass = formControlClass
 
 const AdminServicesPage = () => (
   <Suspense fallback={<AdminSkeleton maxWidth="max-w-6xl" />}>
@@ -48,10 +51,19 @@ const AdminServices = async () => {
     <main className="mx-auto min-h-screen max-w-6xl px-4 py-6 sm:px-8">
       <header className="flex flex-wrap items-center justify-between gap-4">
         <div>
-          <Link href="/admin" className="text-sm text-muted-foreground">
-            ← Agenda
-          </Link>
-          <h1 className="mt-2 font-heading text-3xl font-bold">Prestations</h1>
+          <Button
+            asChild
+            variant="ghost"
+            size="sm"
+            className="-ml-2 text-muted-foreground"
+          >
+            <Link href="/admin">
+              <ChevronLeft className="size-4" /> Agenda
+            </Link>
+          </Button>
+          <h1 className="mt-2 font-heading text-title font-bold">
+            Prestations
+          </h1>
           <p className="mt-1 text-sm text-muted-foreground">
             {categories.reduce(
               (total, item) => total + item.services.length,
@@ -60,13 +72,12 @@ const AdminServices = async () => {
             prestations dans {categories.length} groupes
           </p>
         </div>
-        <Link
-          href="/admin/services/new"
-          className="inline-flex h-10 items-center gap-2 rounded-lg bg-primary px-4 text-sm font-medium text-primary-foreground"
-        >
-          <Plus className="size-4" />
-          Nouvelle prestation
-        </Link>
+        <Button asChild>
+          <Link href="/admin/services/new">
+            <Plus className="size-4" />
+            Nouvelle prestation
+          </Link>
+        </Button>
       </header>
 
       <details className="mt-8 rounded-2xl border bg-card p-5">
@@ -96,12 +107,7 @@ const AdminServices = async () => {
               required
               className={`${fieldClass} min-w-0 flex-1`}
             />
-            <SubmitButton
-              pendingLabel="Ajout…"
-              className="rounded-lg bg-primary px-4 text-sm font-medium text-primary-foreground"
-            >
-              Ajouter
-            </SubmitButton>
+            <SubmitButton pendingLabel="Ajout…">Ajouter</SubmitButton>
           </div>
         </form>
       </details>
@@ -123,7 +129,8 @@ const AdminServices = async () => {
                   <SubmitButton
                     disabled={categoryIndex === 0}
                     aria-label={`Monter ${category.name}`}
-                    className="grid size-8 place-items-center rounded-lg border"
+                    variant="outline"
+                    size="icon"
                   >
                     <ChevronUp className="size-4" />
                   </SubmitButton>
@@ -134,7 +141,8 @@ const AdminServices = async () => {
                   <SubmitButton
                     disabled={categoryIndex === categories.length - 1}
                     aria-label={`Descendre ${category.name}`}
-                    className="grid size-8 place-items-center rounded-lg border"
+                    variant="outline"
+                    size="icon"
                   >
                     <ChevronDown className="size-4" />
                   </SubmitButton>
@@ -163,12 +171,9 @@ const AdminServices = async () => {
                 type="color"
                 required
                 defaultValue={category.color}
-                className="h-9 w-12 rounded-lg border bg-background p-1"
+                className="h-11 w-12 rounded-xl border bg-background p-1"
               />
-              <SubmitButton
-                pendingLabel="Enregistrement…"
-                className="h-9 rounded-lg border px-3 text-sm font-medium"
-              >
+              <SubmitButton pendingLabel="Enregistrement…" variant="outline">
                 <Settings2 className="size-4" />
                 Enregistrer
               </SubmitButton>
@@ -188,7 +193,7 @@ const AdminServices = async () => {
                     <p className="font-medium">{service.name}</p>
                     <p className="text-xs text-muted-foreground">
                       {service.durationMinutes} min ·{' '}
-                      {(service.priceCents / 100).toLocaleString('fr-CH')} CHF
+                      {formatPrice(service.priceCents)}
                       {service.priceNote ? ` ${service.priceNote}` : ''}
                     </p>
                   </div>
@@ -207,7 +212,8 @@ const AdminServices = async () => {
                       <SubmitButton
                         disabled={serviceIndex === 0}
                         aria-label={`Monter ${service.name}`}
-                        className="rounded-lg border p-2"
+                        variant="outline"
+                        size="icon"
                       >
                         <ChevronUp className="size-4" />
                       </SubmitButton>
@@ -218,23 +224,22 @@ const AdminServices = async () => {
                       <SubmitButton
                         disabled={serviceIndex === category.services.length - 1}
                         aria-label={`Descendre ${service.name}`}
-                        className="rounded-lg border p-2"
+                        variant="outline"
+                        size="icon"
                       >
                         <ChevronDown className="size-4" />
                       </SubmitButton>
                     </form>
                   </div>
-                  <Link
-                    href={`/admin/services/${service.id}`}
-                    className="rounded-lg border px-3 py-2 text-sm font-medium"
-                  >
-                    Modifier
-                  </Link>
+                  <Button asChild variant="outline" size="sm">
+                    <Link href={`/admin/services/${service.id}`}>Modifier</Link>
+                  </Button>
                   <form action={duplicateService}>
                     <input type="hidden" name="id" value={service.id} />
                     <SubmitButton
                       aria-label={`Dupliquer ${service.name}`}
-                      className="rounded-lg border p-2"
+                      variant="outline"
+                      size="icon"
                     >
                       <Copy className="size-4" />
                     </SubmitButton>
@@ -247,7 +252,8 @@ const AdminServices = async () => {
                           ? `Réactiver ${service.name}`
                           : `Archiver ${service.name}`
                       }
-                      className="rounded-lg border p-2"
+                      variant="outline"
+                      size="icon"
                     >
                       <Archive className="size-4" />
                     </SubmitButton>
@@ -259,7 +265,11 @@ const AdminServices = async () => {
 
             <form action={toggleCategory} className="border-t p-3 text-right">
               <input type="hidden" name="id" value={category.id} />
-              <SubmitButton className="text-xs text-muted-foreground">
+              <SubmitButton
+                variant="ghost"
+                size="sm"
+                className="text-muted-foreground"
+              >
                 {category.isActive
                   ? 'Désactiver le groupe'
                   : 'Réactiver le groupe'}

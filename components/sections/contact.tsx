@@ -1,4 +1,11 @@
-import { CalendarCheck, Clock, Mail, MapPin, Phone } from 'lucide-react'
+import {
+  CalendarCheck,
+  Clock,
+  ExternalLink,
+  Mail,
+  MapPin,
+  Phone,
+} from 'lucide-react'
 import Link from 'next/link'
 
 import { Animate } from '@/components/ui/animate'
@@ -15,12 +22,10 @@ export async function Contact() {
       <div className="mx-auto max-w-6xl">
         <Animate>
           <div className="mb-16 text-center">
-            <p className="mb-2 text-sm font-medium tracking-[0.2em] text-rose-400/80 uppercase">
+            <p className="mb-2 text-sm font-medium tracking-[0.2em] text-brand uppercase">
               Nous trouver
             </p>
-            <h2 className="font-heading text-3xl font-bold tracking-tight sm:text-4xl">
-              Contact
-            </h2>
+            <h2 className="font-heading text-title font-bold">Contact</h2>
           </div>
         </Animate>
 
@@ -30,7 +35,7 @@ export async function Contact() {
               <Card className="border-border/50">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-3 text-base">
-                    <MapPin className="size-5 text-rose-400" />
+                    <MapPin className="size-5 text-brand" />
                     Adresse
                   </CardTitle>
                 </CardHeader>
@@ -43,7 +48,7 @@ export async function Contact() {
                   >
                     {contact.address}
                   </Link>
-                  <p className="mt-4 flex items-start gap-2 rounded-lg border border-rose-200 bg-rose-50 p-3 text-sm font-medium text-rose-700">
+                  <p className="mt-4 flex items-start gap-2 rounded-lg border border-brand-line bg-brand-subtle p-3 text-sm font-medium text-brand-strong">
                     <CalendarCheck className="mt-0.5 size-4 shrink-0" />
                     Uniquement sur rendez-vous : merci de réserver en ligne ou
                     par téléphone, aucune visite à l’improviste n’est possible.
@@ -57,7 +62,7 @@ export async function Contact() {
                 <Card className="border-border/50">
                   <CardHeader>
                     <CardTitle className="flex items-center gap-3 text-base">
-                      <Phone className="size-5 text-rose-400" />
+                      <Phone className="size-5 text-brand" />
                       Téléphone
                     </CardTitle>
                   </CardHeader>
@@ -74,7 +79,7 @@ export async function Contact() {
                 <Card className="border-border/50">
                   <CardHeader>
                     <CardTitle className="flex items-center gap-3 text-base">
-                      <Mail className="size-5 text-rose-400" />
+                      <Mail className="size-5 text-brand" />
                       Email
                     </CardTitle>
                   </CardHeader>
@@ -94,7 +99,7 @@ export async function Contact() {
               <Card className="border-border/50">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-3 text-base">
-                    <Clock className="size-5 text-rose-400" />
+                    <Clock className="size-5 text-brand" />
                     Horaires d&apos;ouverture
                   </CardTitle>
                 </CardHeader>
@@ -118,7 +123,10 @@ export async function Contact() {
             </Animate>
 
             <Animate animation="fade-up" delay={400}>
-              <div className="text-center lg:text-left">
+              <div
+                data-primary-booking-cta
+                className="text-center lg:text-left"
+              >
                 <Button
                   asChild
                   size="lg"
@@ -131,7 +139,26 @@ export async function Contact() {
           </div>
 
           <Animate animation="fade-right" delay={200}>
-            <div className="h-full overflow-hidden rounded-2xl shadow-lg">
+            <Link
+              href={contact.mapsUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="relative flex min-h-56 items-center justify-center overflow-hidden rounded-2xl border bg-[linear-gradient(90deg,transparent_24%,rgba(146,123,89,0.08)_25%,rgba(146,123,89,0.08)_26%,transparent_27%,transparent_74%,rgba(146,123,89,0.08)_75%,rgba(146,123,89,0.08)_76%,transparent_77%),linear-gradient(0deg,transparent_24%,rgba(146,123,89,0.08)_25%,rgba(146,123,89,0.08)_26%,transparent_27%,transparent_74%,rgba(146,123,89,0.08)_75%,rgba(146,123,89,0.08)_76%,transparent_77%)] bg-[length:48px_48px] shadow-sm lg:hidden"
+            >
+              <span className="rounded-2xl border bg-card/95 p-5 text-center shadow-lg backdrop-blur-sm">
+                <MapPin className="mx-auto size-8 text-brand" />
+                <span className="mt-3 block font-heading text-lg font-bold">
+                  Place du marché 25
+                </span>
+                <span className="mt-1 block text-sm text-muted-foreground">
+                  1630 Bulle
+                </span>
+                <span className="mt-4 inline-flex min-h-11 items-center gap-2 rounded-full bg-primary px-4 text-sm font-medium text-primary-foreground">
+                  Ouvrir dans Maps <ExternalLink className="size-4" />
+                </span>
+              </span>
+            </Link>
+            <div className="hidden h-full overflow-hidden rounded-2xl shadow-lg lg:block">
               <iframe
                 src={contact.mapsEmbed}
                 width="100%"

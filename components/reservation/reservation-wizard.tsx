@@ -1,32 +1,63 @@
 'use client'
 
 import {
-  CalendarDays,
   Check,
   ChevronLeft,
-  ChevronRight,
-  Clock,
-  Download,
   FileText,
-  MailX,
+  Mail,
+  MapPin,
+  Pencil,
+  Phone,
   Settings2,
+  UserRound,
   Zap,
 } from 'lucide-react'
-import { useEffect, useRef, useState, useTransition } from 'react'
+import { useSearchParams } from 'next/navigation'
+import { useCallback, useEffect, useRef, useState, useTransition } from 'react'
+import { ServiceDetails } from '@/components/catalog/service-details'
+import { BookingSummary } from '@/components/reservation/booking-summary'
+import { ConfirmationActions } from '@/components/reservation/confirmation-actions'
+import { WeekAvailabilityPicker } from '@/components/reservation/week-availability-picker'
+import { Button } from '@/components/ui/button'
+import { FormField, formControlClass } from '@/components/ui/form-field'
 import {
   type BookingResult,
   createPublicAppointment,
   getNextPublicAvailableSlot,
   getPublicWeekAvailability,
 } from '@/lib/actions/reservation'
-import type { AvailableSlot } from '@/lib/reservation/availability'
+import type { ServiceCareDetails } from '@/lib/catalog/service-content'
+import { contact } from '@/lib/constants/contact'
+import type { DayAvailability } from '@/lib/reservation/availability'
+import {
+  availabilityStateLabels,
+  formatCalendarDate,
+  formatCalendarPeriod,
+} from '@/lib/reservation/calendar-view'
+import { describeConfirmationDelivery } from '@/lib/reservation/confirmation-wording'
+import {
+  type CustomerFormErrors,
+  type CustomerFormField,
+  type CustomerFormValues,
+  customerFieldOrder,
+  emptyCustomerForm,
+  normalizeCustomerFormDisplay,
+  validateCustomerField,
+  validateCustomerForm,
+} from '@/lib/reservation/customer-form'
+import {
+  buildServiceReservationPath,
+  resolveInitialServiceId,
+} from '@/lib/reservation/deep-link'
 import { formatServiceLabel } from '@/lib/reservation/service-label'
+import { formatAppointmentDate } from '@/lib/reservation/time'
 import { cn } from '@/lib/utils/cn'
-import { downloadCalendar } from './calendar-download'
+import { capitalizeFirst, formatPrice } from '@/lib/utils/format'
 import { CancellationPolicy } from './cancellation-policy'
 
-interface ReservationService {
+interface ReservationService extends ServiceCareDetails {
   id: string
+  slug: string
   name: string
   description: string | null
   durationMinutes: number
@@ -40,13 +71,10 @@ interface ReservationWizardProps {
   services: ReservationService[]
   minDate: string
   maxDate: string
+  customerChangeCutoffLabel: string
 }
 
-const fieldClass =
-  'h-12 w-full rounded-xl border bg-background px-4 text-base outline-none transition focus:ring-2 focus:ring-ring'
-
-const formatPrice = (priceCents: number): string =>
-  `${(priceCents / 100).toLocaleString('fr-CH')} CHF`
+const fieldClass = cn(formControlClass, 'min-h-12 px-4')
 
 const addDateKeyDays = (dateKey: string, amount: number): string => {
   const [year, month, day] = dateKey.split('-').map(Number)
@@ -59,16 +87,8 @@ const addDateKeyDays = (dateKey: string, amount: number): string => {
 const weekCacheKey = (serviceId: string, weekStart: string): string =>
   `${serviceId}|${weekStart}`
 
-const formatQuickDate = (dateKey: string): string =>
-  new Intl.DateTimeFormat('fr-CH', {
-    timeZone: 'UTC',
-    weekday: 'short',
-    day: 'numeric',
-    month: 'short',
-  }).format(new Date(`${dateKey}T12:00:00Z`))
-
 const ConsentFormNotice = ({ url }: Readonly<{ url: string }>) => (
-  <div className="mt-5 rounded-xl border border-amber-300 bg-amber-50 p-4 text-sm text-amber-950">
+  <div className="mt-5 rounded-xl border border-warning-accent bg-warning-subtle p-4 text-sm text-warning-strong">
     <p className="flex items-start gap-2">
       <FileText className="mt-0.5 size-4 shrink-0" />
       <span>
@@ -79,15 +99,16 @@ const ConsentFormNotice = ({ url }: Readonly<{ url: string }>) => (
         le jour du rendez-vous.
       </span>
     </p>
-    <a
-      href={url}
-      target="_blank"
-      rel="noopener noreferrer"
-      className="mt-3 inline-flex h-10 items-center gap-2 rounded-lg border border-amber-400 bg-white px-4 font-medium"
+    <Button
+      asChild
+      variant="outline"
+      className="mt-3 border-warning-accent bg-background"
     >
-      <FileText className="size-4" />
-      Télécharger le formulaire (PDF)
-    </a>
+      <a href={url} target="_blank" rel="noopener noreferrer">
+        <FileText className="size-4" />
+        Télécharger le formulaire (PDF)
+      </a>
+    </Button>
   </div>
 )
 
@@ -95,44 +116,152 @@ export const ReservationWizard = ({
   services,
   minDate,
   maxDate,
+  customerChangeCutoffLabel,
 }: Readonly<ReservationWizardProps>) => {
-  const [step, setStep] = useState(1)
-  const [serviceId, setServiceId] = useState('')
-  const [date, setDate] = useState(minDate)
-  const [weekSlots, setWeekSlots] = useState<Record<string, AvailableSlot[]>>(
-    {},
+  const searchParams = useSearchParams()
+  const requestedServiceSlug = searchParams.get('service')
+  const initialServiceId = resolveInitialServiceId(
+    services,
+    requestedServiceSlug,
   )
+  const deepLinkSelectionKey = `${requestedServiceSlug ?? ''}:${initialServiceId ?? ''}`
+  const [step, setStep] = useState(initialServiceId ? 2 : 1)
+  const [serviceId, setServiceId] = useState(initialServiceId ?? '')
+  const [date, setDate] = useState(minDate)
+  const [weekAvailability, setWeekAvailability] = useState<
+    Record<string, DayAvailability>
+  >({})
   const [loadedWeek, setLoadedWeek] = useState<string | null>(null)
   const [startsAt, setStartsAt] = useState('')
   const [loadingSlots, startSlotsTransition] = useTransition()
   const [submitting, startSubmitTransition] = useTransition()
   const [searchingNext, startNextTransition] = useTransition()
   const [nextSlotNotice, setNextSlotNotice] = useState<string | null>(null)
+  const [calendarAnnouncement, setCalendarAnnouncement] = useState('')
   const [result, setResult] = useState<BookingResult | null>(null)
+  const [customer, setCustomer] =
+    useState<CustomerFormValues>(emptyCustomerForm)
+  const [customerErrors, setCustomerErrors] = useState<CustomerFormErrors>({})
+  const [website, setWebsite] = useState('')
   const [viewStart, setViewStart] = useState(minDate)
+  const wizardRef = useRef<HTMLElement>(null)
+  const customerFormRef = useRef<HTMLFormElement>(null)
   const pendingSlotRef = useRef<{ dateKey: string; startsAt: string } | null>(
     null,
   )
+  const synchronizedDeepLinkRef = useRef(deepLinkSelectionKey)
+  // Le tunnel ne se place tout seul sur un jour ouvert que tant que la cliente
+  // n'a rien choisi elle-même : dès qu'elle touche au calendrier, elle décide.
+  const customerChoseDayRef = useRef(false)
+  const autoSearchedServiceRef = useRef<string | null>(null)
   const selectedService = services.find(service => service.id === serviceId)
   const weekEnd = addDateKeyDays(viewStart, 6)
-  const weekDates = Array.from({ length: 7 }, (_, index) =>
-    addDateKeyDays(viewStart, index),
-  ).filter(dateKey => dateKey <= maxDate)
-  const canGoPreviousWeek = viewStart > minDate
-  const canGoNextWeek = addDateKeyDays(viewStart, 7) <= maxDate
+  const lastCompleteWeekStart = addDateKeyDays(maxDate, -6)
+  const maxViewStart =
+    lastCompleteWeekStart < minDate ? minDate : lastCompleteWeekStart
   const weekReady = loadedWeek === weekCacheKey(serviceId, viewStart)
-  const slots = weekSlots[date] ?? []
+
+  const scrollToWizardTop = useCallback(() => {
+    const wizard = wizardRef.current
+    if (!wizard) return
+    const target = wizard.getBoundingClientRect().top + window.scrollY - 80
+    const behavior = window.matchMedia('(prefers-reduced-motion: reduce)')
+      .matches
+      ? 'auto'
+      : 'smooth'
+    requestAnimationFrame(() =>
+      window.scrollTo({ top: Math.max(0, target), behavior }),
+    )
+  }, [])
+
+  const goToStep = useCallback(
+    (nextStep: number) => {
+      setStep(nextStep)
+      scrollToWizardTop()
+    },
+    [scrollToWizardTop],
+  )
 
   const goToWeek = (amount: number) => {
-    const next = addDateKeyDays(viewStart, amount)
-    setViewStart(next < minDate ? minDate : next > maxDate ? maxDate : next)
+    customerChoseDayRef.current = true
+    const candidate = addDateKeyDays(viewStart, amount)
+    const next =
+      candidate < minDate
+        ? minDate
+        : candidate > maxViewStart
+          ? maxViewStart
+          : candidate
+    setViewStart(next)
+    setDate(next)
+    setStartsAt('')
+    setNextSlotNotice(null)
+    setCalendarAnnouncement(
+      `Période du ${formatCalendarPeriod(next, addDateKeyDays(next, 6))} affichée.`,
+    )
   }
 
   const selectDate = (dateKey: string) => {
+    customerChoseDayRef.current = true
     setDate(dateKey)
     setStartsAt('')
-    if (dateKey < viewStart || dateKey > weekEnd) setViewStart(dateKey)
+    setNextSlotNotice(null)
+    setResult(null)
+    const state = weekAvailability[dateKey]?.state
+    setCalendarAnnouncement(
+      `${formatCalendarDate(dateKey)} sélectionné${
+        state ? ` : ${availabilityStateLabels[state].toLowerCase()}` : ''
+      }.`,
+    )
   }
+
+  const selectService = (service: ReservationService) => {
+    window.history.replaceState(
+      window.history.state,
+      '',
+      buildServiceReservationPath(service.slug),
+    )
+    customerChoseDayRef.current = false
+    autoSearchedServiceRef.current = null
+    setServiceId(service.id)
+    setDate(minDate)
+    setViewStart(minDate)
+    setStartsAt('')
+    setNextSlotNotice(null)
+    setResult(null)
+    goToStep(2)
+  }
+
+  // L'état React peut survivre à une navigation cliente vers la même route.
+  // On resynchronise donc le tunnel avec l'URL au lieu de ne lire le slug
+  // qu'une seule fois lors de l'initialisation des useState.
+  useEffect(() => {
+    // Une action serveur peut recréer le tableau `services` sans changer son
+    // contenu. Seule cette clé stable doit alors pouvoir réinitialiser l'étape.
+    if (synchronizedDeepLinkRef.current === deepLinkSelectionKey) return
+    synchronizedDeepLinkRef.current = deepLinkSelectionKey
+
+    if (requestedServiceSlug === null || initialServiceId === null) {
+      setServiceId('')
+      setStartsAt('')
+      goToStep(1)
+      return
+    }
+
+    customerChoseDayRef.current = false
+    autoSearchedServiceRef.current = null
+    setServiceId(initialServiceId)
+    setDate(minDate)
+    setViewStart(minDate)
+    setStartsAt('')
+    setNextSlotNotice(null)
+    goToStep(2)
+  }, [
+    deepLinkSelectionKey,
+    goToStep,
+    initialServiceId,
+    minDate,
+    requestedServiceSlug,
+  ])
 
   // Une seule requête par semaine affichée : passer d'un jour à l'autre à
   // l'intérieur de la semaine ne touche plus le serveur.
@@ -143,18 +272,49 @@ export const ReservationWizard = ({
       const pending = pendingSlotRef.current
       pendingSlotRef.current = null
 
-      setWeekSlots(loaded)
+      setWeekAvailability(loaded)
       setLoadedWeek(weekCacheKey(serviceId, viewStart))
-      setStartsAt(
-        pending?.startsAt &&
-          loaded[pending.dateKey]?.some(
-            slot => slot.startsAt === pending.startsAt,
-          )
-          ? pending.startsAt
-          : '',
+      setStartsAt(current => {
+        const candidate = pending?.startsAt ?? current
+        const stillAvailable = Object.values(loaded).some(day =>
+          day.slots.some(slot => slot.startsAt === candidate),
+        )
+        return stillAvailable ? candidate : ''
+      })
+
+      // Une cliente sans préférence de date ne doit pas avoir à chercher : le
+      // tunnel s'ouvre sur le premier jour qui a des heures libres, au lieu de
+      // lui annoncer « L'institut est fermé ce jour-là ».
+      if (customerChoseDayRef.current || pending) return
+
+      const firstOpenDay = Object.keys(loaded)
+        .sort()
+        .find(dateKey => loaded[dateKey].slots.length > 0)
+      if (firstOpenDay) {
+        setDate(firstOpenDay)
+        return
+      }
+
+      // Semaine entièrement fermée ou pleine : on va chercher la suivante, une
+      // seule fois par prestation pour ne pas enchaîner les appels.
+      if (autoSearchedServiceRef.current === serviceId) return
+      autoSearchedServiceRef.current = serviceId
+
+      const found = await getNextPublicAvailableSlot(serviceId, viewStart)
+      if (!found) {
+        setNextSlotNotice(
+          'Aucune heure libre dans les prochains mois pour ce soin. Appelez l’institut, il reste peut-être une solution.',
+        )
+        return
+      }
+
+      setNextSlotNotice(
+        `Rien de libre cette semaine-là. Voici le prochain jour disponible : ${formatCalendarDate(found.dateKey)}.`,
       )
+      setDate(found.dateKey)
+      setViewStart(found.dateKey > maxViewStart ? maxViewStart : found.dateKey)
     })
-  }, [serviceId, step, viewStart])
+  }, [maxViewStart, serviceId, step, viewStart])
 
   const findNextSlot = () => {
     if (!serviceId) return
@@ -169,6 +329,10 @@ export const ReservationWizard = ({
       }
 
       setDate(found.dateKey)
+      const foundNotice = `Prochain créneau trouvé : ${formatCalendarDate(
+        found.dateKey,
+      )} à ${found.slot.label}.`
+      setNextSlotNotice(foundNotice)
       if (found.dateKey >= viewStart && found.dateKey <= weekEnd) {
         setStartsAt(found.slot.startsAt)
         return
@@ -179,39 +343,95 @@ export const ReservationWizard = ({
         dateKey: found.dateKey,
         startsAt: found.slot.startsAt,
       }
-      setViewStart(found.dateKey)
+      setViewStart(found.dateKey > maxViewStart ? maxViewStart : found.dateKey)
     })
   }
 
-  const submitBooking = (formData: FormData) => {
+  const updateCustomerField = <Field extends CustomerFormField>(
+    field: Field,
+    value: CustomerFormValues[Field],
+  ) => {
+    const next = { ...customer, [field]: value }
+    setCustomer(next)
+    if (customerErrors[field]) {
+      const error = validateCustomerField(field, next)
+      setCustomerErrors(current => ({
+        ...current,
+        [field]: error ?? undefined,
+      }))
+    }
+  }
+
+  const validateCustomerOnBlur = (field: CustomerFormField) => {
+    const error = validateCustomerField(field, customer)
+    setCustomerErrors(current => ({
+      ...current,
+      [field]: error ?? undefined,
+    }))
+  }
+
+  const reviewBooking = () => {
+    const errors = validateCustomerForm(customer)
+    setCustomerErrors(errors)
+    const firstInvalidField = customerFieldOrder.find(field => errors[field])
+    if (firstInvalidField) {
+      requestAnimationFrame(() => {
+        const element =
+          customerFormRef.current?.elements.namedItem(firstInvalidField)
+        if (element instanceof HTMLElement) element.focus()
+      })
+      return
+    }
+
+    setCustomer(normalizeCustomerFormDisplay(customer))
+    setResult(null)
+    goToStep(4)
+  }
+
+  const submitBooking = () => {
     setResult(null)
     startSubmitTransition(async () => {
       const response = await createPublicAppointment({
         serviceId,
         startsAt,
-        firstName: formData.get('firstName'),
-        lastName: formData.get('lastName'),
-        email: formData.get('email'),
-        phone: formData.get('phone'),
-        comment: formData.get('comment'),
-        consent: formData.get('consent') === 'on',
-        website: formData.get('website'),
+        firstName: customer.firstName,
+        lastName: customer.lastName,
+        email: customer.email,
+        phone: customer.phone,
+        comment: customer.comment,
+        consent: customer.consent,
+        website,
       })
       setResult(response)
-      if (response.ok) setStep(4)
+      if (response.ok) {
+        scrollToWizardTop()
+        return
+      }
+      if (response.reason === 'SLOT_CONFLICT') {
+        setStartsAt('')
+        goToStep(2)
+      } else if (response.reason === 'INVALID_CUSTOMER') goToStep(3)
     })
   }
 
-  if (step === 4 && result?.appointment)
+  const deliveryNotice = describeConfirmationDelivery(
+    result?.appointment?.confirmationEmailTo,
+  )
+
+  if (result?.appointment)
     return (
-      <section className="mx-auto max-w-xl rounded-3xl border bg-card p-6 text-center shadow-sm sm:p-10">
-        <div className="mx-auto flex size-14 items-center justify-center rounded-full bg-emerald-100 text-emerald-700">
+      <section
+        ref={wizardRef}
+        data-print-receipt
+        className="mx-auto max-w-xl rounded-3xl border bg-card p-6 text-center shadow-sm sm:p-10"
+      >
+        <div className="mx-auto flex size-14 items-center justify-center rounded-full bg-success-soft text-success">
           <Check className="size-7" />
         </div>
-        <p className="mt-5 text-sm font-semibold tracking-widest text-emerald-700 uppercase">
+        <p className="mt-5 text-sm font-semibold tracking-widest text-success uppercase">
           Rendez-vous confirmé
         </p>
-        <h2 className="mt-2 font-heading text-3xl font-bold">
+        <h2 className="mt-2 font-heading text-title font-bold">
           Votre rendez-vous est bien enregistré
         </h2>
         <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
@@ -220,43 +440,46 @@ export const ReservationWizard = ({
         </p>
         <div className="mt-6 rounded-2xl bg-muted p-5 text-left">
           <p className="font-semibold">{result.appointment.serviceName}</p>
-          <p className="mt-2 text-sm capitalize">
-            {result.appointment.dateLabel}
+          <p className="mt-2 text-sm">
+            {capitalizeFirst(result.appointment.dateLabel)}
           </p>
           <p className="mt-1 text-sm text-muted-foreground">
             {result.appointment.priceLabel}
           </p>
+          <div className="mt-4 space-y-2 border-t pt-4 text-sm text-muted-foreground">
+            <p className="flex items-start gap-2">
+              <MapPin className="mt-0.5 size-4 shrink-0" />
+              {contact.address}
+            </p>
+            <p className="flex items-center gap-2">
+              <Phone className="size-4 shrink-0" />
+              {contact.phone}
+            </p>
+          </div>
         </div>
-        <div className="mt-5 rounded-2xl border border-amber-300 bg-amber-50 p-5 text-left text-amber-950">
-          <p className="flex items-start gap-3 font-semibold">
-            <MailX className="mt-0.5 size-5 shrink-0" />
-            Aucun e-mail de confirmation ne sera envoyé
-          </p>
-          <p className="mt-2 pl-8 text-sm leading-relaxed">
-            Cet écran confirme définitivement votre réservation. Pensez à
-            ajouter le rendez-vous à votre calendrier ci-dessous.
-          </p>
-        </div>
-        <button
-          type="button"
-          onClick={() =>
-            downloadCalendar(
-              result.appointment?.calendar ?? '',
-              'rendez-vous-arbeaute.ics',
-            )
-          }
-          className="mt-6 inline-flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-primary px-5 font-medium text-primary-foreground"
-        >
-          <Download className="size-4" />
-          Ajouter à mon calendrier
-        </button>
+        {deliveryNotice ? (
+          <div className="mt-5 rounded-2xl border border-success-line bg-success-subtle p-5 text-left text-success-strong">
+            <p className="flex items-start gap-3 font-semibold">
+              <Mail className="mt-0.5 size-5 shrink-0" />
+              {/* `wrap-anywhere` et non `break-words` : dans un conteneur flex,
+                  seul le premier autorise l'adresse à descendre sous sa largeur
+                  min-content. Sans lui, une adresse longue déborde l'écran. */}
+              <span className="wrap-anywhere">{deliveryNotice.title}</span>
+            </p>
+            <p className="mt-2 pl-8 text-sm leading-relaxed">
+              {deliveryNotice.detail}
+            </p>
+          </div>
+        ) : null}
         {selectedService?.consentFormUrl ? (
           <div className="text-left">
             <ConsentFormNotice url={selectedService.consentFormUrl} />
           </div>
         ) : null}
 
-        <div className="mt-5 rounded-2xl border p-5 text-left">
+        <ConfirmationActions appointment={result.appointment} />
+
+        <div className="mt-5 rounded-2xl border p-5 text-left" data-no-print>
           <p className="flex items-start gap-3 font-semibold">
             <Settings2 className="mt-0.5 size-5 shrink-0 text-primary" />
             Modifier ou annuler ce rendez-vous
@@ -266,55 +489,80 @@ export const ReservationWizard = ({
             prochaine visite, utilisez exactement l’adresse e-mail et le numéro
             de téléphone saisis lors de la réservation.
           </p>
-          <a
-            href="/mes-rendez-vous"
-            className="mt-4 inline-flex h-11 w-full items-center justify-center rounded-xl border border-primary px-4 text-sm font-medium text-primary"
-          >
-            Accéder à mes rendez-vous
-          </a>
+          <Button asChild variant="outline" className="mt-4 w-full">
+            <a href="/mes-rendez-vous">Accéder à mes rendez-vous</a>
+          </Button>
         </div>
       </section>
     )
 
   return (
-    <section className="mx-auto max-w-3xl">
+    <section ref={wizardRef} className="mx-auto max-w-3xl">
       <ol
-        className="mb-8 grid grid-cols-3 gap-1.5 sm:gap-2"
+        className="mb-5 grid grid-cols-4 gap-1 sm:mb-8 sm:gap-2"
         aria-label="Étapes"
       >
-        {['Prestation', 'Créneau', 'Coordonnées'].map((label, index) => {
-          const number = index + 1
-          const canGoBack = step > number
-          const active = step >= number
-          return (
-            <li key={label}>
-              <button
-                type="button"
-                disabled={!canGoBack}
-                onClick={() => setStep(number)}
-                aria-current={step === number ? 'step' : undefined}
-                className={cn(
-                  'flex w-full flex-col items-center gap-1 rounded-2xl border px-1.5 py-2.5 text-center transition sm:flex-row sm:justify-center sm:gap-2 sm:rounded-full sm:px-3',
-                  active && 'border-primary bg-primary text-primary-foreground',
-                  canGoBack ? 'cursor-pointer' : 'cursor-default',
-                )}
-              >
-                <span
+        {['Prestation', 'Créneau', 'Coordonnées', 'Vérification'].map(
+          (label, index) => {
+            const number = index + 1
+            const done = step > number
+            const current = step === number
+            return (
+              <li key={label}>
+                {/* Trois états distingués par la forme autant que par la
+                    couleur : une coche pour ce qui est fait, un numéro plein
+                    pour l'étape en cours, un numéro discret pour la suite. */}
+                <button
+                  type="button"
+                  disabled={!done}
+                  onClick={() => goToStep(number)}
+                  aria-current={current ? 'step' : undefined}
                   className={cn(
-                    'grid size-5 shrink-0 place-items-center rounded-full text-[11px] font-semibold',
-                    active ? 'bg-primary-foreground/20' : 'bg-foreground/10',
+                    'flex min-h-16 w-full flex-col items-center justify-center gap-1 rounded-2xl border px-0.5 py-2 text-center transition sm:min-h-0 sm:flex-row sm:gap-2 sm:rounded-full sm:px-3 sm:py-2.5',
+                    current &&
+                      'border-primary bg-primary font-semibold text-primary-foreground',
+                    done &&
+                      'cursor-pointer border-primary bg-primary/10 text-foreground',
+                    !done &&
+                      !current &&
+                      'cursor-default border-dashed text-muted-foreground',
                   )}
                 >
-                  {number}
-                </span>
-                <span className="text-[11px] leading-tight font-medium text-balance sm:text-sm">
-                  {label}
-                </span>
-              </button>
-            </li>
-          )
-        })}
+                  <span
+                    className={cn(
+                      'grid size-5 shrink-0 place-items-center rounded-full text-[11px] font-semibold',
+                      current && 'bg-primary-foreground/20',
+                      done && 'bg-primary text-primary-foreground',
+                      !done && !current && 'bg-foreground/10',
+                    )}
+                  >
+                    {done ? <Check className="size-3" /> : number}
+                  </span>
+                  <span className="text-2xs leading-tight font-medium text-balance sm:text-sm">
+                    {label}
+                    <span className="sr-only">
+                      {done
+                        ? ' : étape terminée, revenir ici'
+                        : current
+                          ? ' : étape en cours'
+                          : ' : étape à venir'}
+                    </span>
+                  </span>
+                </button>
+              </li>
+            )
+          },
+        )}
       </ol>
+
+      {selectedService && step >= 2 ? (
+        <BookingSummary
+          service={selectedService}
+          startsAt={startsAt}
+          sticky={step === 2 || step === 3}
+          className="mb-5"
+        />
+      ) : null}
 
       {step === 1 ? (
         <div className="space-y-8">
@@ -329,10 +577,7 @@ export const ReservationWizard = ({
                       <button
                         key={service.id}
                         type="button"
-                        onClick={() => {
-                          setServiceId(service.id)
-                          setStep(2)
-                        }}
+                        onClick={() => selectService(service)}
                         className="rounded-2xl border bg-card p-5 text-left transition hover:border-primary hover:shadow-sm focus-visible:ring-2 focus-visible:ring-ring"
                       >
                         <span className="block font-semibold">
@@ -342,7 +587,7 @@ export const ReservationWizard = ({
                           <span className="text-muted-foreground">
                             {service.durationMinutes} min
                           </span>
-                          <span className="font-semibold text-[#927b59]">
+                          <span className="font-semibold text-price">
                             {formatPrice(service.priceCents)}
                           </span>
                         </span>
@@ -362,228 +607,254 @@ export const ReservationWizard = ({
 
       {step === 2 ? (
         <div className="rounded-3xl border bg-card p-5 sm:p-8">
-          <button
+          <Button
             type="button"
-            onClick={() => setStep(1)}
-            className="inline-flex items-center gap-1 text-sm font-medium"
+            variant="ghost"
+            size="sm"
+            onClick={() => goToStep(1)}
+            className="-ml-2"
           >
             <ChevronLeft className="size-4" /> Changer de prestation
-          </button>
+          </Button>
           <h2 className="mt-5 font-heading text-2xl font-bold">
             Choisissez votre créneau
           </h2>
-          <p className="mt-1 text-sm text-muted-foreground">
-            {selectedService
-              ? formatServiceLabel(
-                  selectedService.name,
-                  selectedService.categoryName,
-                )
-              : null}{' '}
-            · {selectedService?.durationMinutes} min
-          </p>
+          {selectedService ? (
+            <ServiceDetails
+              service={selectedService}
+              className="mt-4 rounded-xl border px-4 pt-0 [&>summary]:pt-1"
+            />
+          ) : null}
 
-          <button
+          {result?.reason === 'SLOT_CONFLICT' ? (
+            <p
+              className="mt-5 rounded-xl bg-destructive/10 p-4 text-sm text-destructive"
+              role="alert"
+            >
+              {result.message}
+            </p>
+          ) : null}
+
+          <Button
             type="button"
+            variant="secondary"
             onClick={findNextSlot}
             disabled={searchingNext}
-            className="mt-5 inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl border border-primary/30 bg-primary/5 px-4 text-sm font-medium whitespace-nowrap text-primary transition hover:bg-primary/10 disabled:opacity-60 sm:w-auto"
+            className="mt-5 w-full sm:w-auto"
           >
             <Zap className="size-4 shrink-0" />
             {searchingNext ? 'Recherche…' : 'Prochain créneau disponible'}
-          </button>
+          </Button>
           {nextSlotNotice ? (
-            <p className="mt-2 text-sm text-muted-foreground">
+            <p className="mt-2 text-sm text-muted-foreground" role="status">
               {nextSlotNotice}
             </p>
           ) : null}
 
-          <label className="mt-6 flex flex-col gap-2 text-sm font-medium">
-            <span className="flex items-center gap-2">
-              <CalendarDays className="size-4" /> Date
-            </span>
-            <input
-              type="date"
-              value={date}
-              min={minDate}
-              max={maxDate}
-              onChange={event => selectDate(event.target.value)}
-              className={fieldClass}
-            />
-          </label>
-          <div className="mt-4 flex items-center gap-2">
-            <button
-              type="button"
-              onClick={() => goToWeek(-7)}
-              disabled={!canGoPreviousWeek}
-              aria-label="Semaine précédente"
-              className="grid size-9 shrink-0 place-items-center rounded-full border disabled:opacity-30"
-            >
-              <ChevronLeft className="size-4" />
-            </button>
-            <div className="flex flex-1 gap-2 overflow-x-auto pb-2">
-              {weekDates.map(dateKey => {
-                // Les créneaux de toute la semaine sont déjà là : autant
-                // signaler les jours complets avant que la cliente ne clique.
-                const isFull = weekReady && weekSlots[dateKey]?.length === 0
-                return (
-                  <button
-                    key={dateKey}
-                    type="button"
-                    onClick={() => selectDate(dateKey)}
-                    aria-label={
-                      isFull
-                        ? `${formatQuickDate(dateKey)} — complet`
-                        : formatQuickDate(dateKey)
-                    }
-                    className={cn(
-                      'min-w-24 shrink-0 rounded-xl border px-3 py-2 text-sm font-medium capitalize',
-                      date === dateKey
-                        ? 'border-primary bg-primary text-primary-foreground'
-                        : isFull
-                          ? 'bg-muted text-muted-foreground/60'
-                          : 'bg-background hover:border-primary',
-                    )}
-                  >
-                    {formatQuickDate(dateKey)}
-                  </button>
-                )
-              })}
-            </div>
-            <button
-              type="button"
-              onClick={() => goToWeek(7)}
-              disabled={!canGoNextWeek}
-              aria-label="Semaine suivante"
-              className="grid size-9 shrink-0 place-items-center rounded-full border disabled:opacity-30"
-            >
-              <ChevronRight className="size-4" />
-            </button>
-          </div>
-          <div className="mt-6">
-            <p className="flex items-center gap-2 text-sm font-medium">
-              <Clock className="size-4" /> Heures disponibles
-            </p>
-            {loadingSlots || !weekReady ? (
-              <p className="mt-4 text-sm text-muted-foreground">
-                Recherche des créneaux…
-              </p>
-            ) : slots.length > 0 ? (
-              <div className="mt-3 grid grid-cols-3 gap-2 sm:grid-cols-5">
-                {slots.map(slot => (
-                  <button
-                    key={slot.startsAt}
-                    type="button"
-                    onClick={() => setStartsAt(slot.startsAt)}
-                    className={cn(
-                      'h-11 rounded-xl border text-sm font-medium',
-                      startsAt === slot.startsAt
-                        ? 'border-primary bg-primary text-primary-foreground'
-                        : 'bg-background hover:border-primary',
-                    )}
-                  >
-                    {slot.label}
-                  </button>
-                ))}
-              </div>
-            ) : (
-              <p className="mt-4 rounded-xl bg-muted p-4 text-sm text-muted-foreground">
-                Aucun créneau disponible ce jour-là. Essayez une autre date.
-              </p>
-            )}
-          </div>
-          <button
+          <WeekAvailabilityPicker
+            announcement={calendarAnnouncement}
+            availability={weekAvailability}
+            date={date}
+            loading={loadingSlots}
+            maxDate={maxDate}
+            minDate={minDate}
+            onChangeWeek={goToWeek}
+            onSelectDate={selectDate}
+            onSelectSlot={slot => {
+              setStartsAt(slot)
+              setResult(null)
+            }}
+            ready={weekReady}
+            startsAt={startsAt}
+            viewStart={viewStart}
+          />
+          <Button
             type="button"
+            size="lg"
             disabled={!startsAt}
-            onClick={() => setStep(3)}
-            className="mt-7 h-12 w-full rounded-xl bg-primary px-5 font-medium text-primary-foreground disabled:opacity-40"
+            onClick={() => goToStep(3)}
+            className="mt-7 w-full"
           >
             Continuer
-          </button>
+          </Button>
         </div>
       ) : null}
 
       {step === 3 ? (
         <form
+          ref={customerFormRef}
+          noValidate
           onSubmit={event => {
             event.preventDefault()
-            submitBooking(new FormData(event.currentTarget))
+            reviewBooking()
           }}
           className="rounded-3xl border bg-card p-5 sm:p-8"
         >
-          <button
+          <Button
             type="button"
-            onClick={() => setStep(2)}
-            className="inline-flex items-center gap-1 text-sm font-medium"
+            variant="ghost"
+            size="sm"
+            onClick={() => goToStep(2)}
+            className="-ml-2"
           >
             <ChevronLeft className="size-4" /> Changer de créneau
-          </button>
+          </Button>
           <h2 className="mt-5 font-heading text-2xl font-bold">
             Vos coordonnées
           </h2>
           <p className="mt-1 text-sm text-muted-foreground">
-            Aucun e-mail de confirmation ne sera envoyé. Votre e-mail et votre
-            téléphone serviront à retrouver, modifier ou annuler ce rendez-vous
-            dans « Mes rendez-vous ».
+            Votre confirmation part à l’adresse e-mail indiquée ici. Cette
+            adresse et votre numéro servent aussi à retrouver, modifier ou
+            annuler ce rendez-vous dans « Mes rendez-vous ».
           </p>
           <div className="mt-6 grid gap-4 sm:grid-cols-2">
-            <label className="flex flex-col gap-2 text-sm font-medium">
-              Prénom
+            <FormField
+              controlId="firstName"
+              label="Prénom"
+              error={customerErrors.firstName}
+              errorId="firstName-error"
+            >
               <input
+                id="firstName"
                 name="firstName"
-                required
+                value={customer.firstName}
+                onChange={event =>
+                  updateCustomerField('firstName', event.target.value)
+                }
+                onBlur={() => validateCustomerOnBlur('firstName')}
                 maxLength={100}
+                autoComplete="given-name"
+                aria-invalid={Boolean(customerErrors.firstName)}
+                aria-describedby={
+                  customerErrors.firstName ? 'firstName-error' : undefined
+                }
                 className={fieldClass}
               />
-            </label>
-            <label className="flex flex-col gap-2 text-sm font-medium">
-              Nom
+            </FormField>
+            <FormField
+              controlId="lastName"
+              label="Nom"
+              error={customerErrors.lastName}
+              errorId="lastName-error"
+            >
               <input
+                id="lastName"
                 name="lastName"
-                required
+                value={customer.lastName}
+                onChange={event =>
+                  updateCustomerField('lastName', event.target.value)
+                }
+                onBlur={() => validateCustomerOnBlur('lastName')}
                 maxLength={100}
+                autoComplete="family-name"
+                aria-invalid={Boolean(customerErrors.lastName)}
+                aria-describedby={
+                  customerErrors.lastName ? 'lastName-error' : undefined
+                }
                 className={fieldClass}
               />
-            </label>
-            <label className="flex flex-col gap-2 text-sm font-medium">
-              Email
+            </FormField>
+            <FormField
+              controlId="email"
+              label="Adresse e-mail"
+              error={customerErrors.email}
+              errorId="email-error"
+            >
               <input
+                id="email"
                 name="email"
                 type="email"
-                required
+                inputMode="email"
+                value={customer.email}
+                onChange={event =>
+                  updateCustomerField('email', event.target.value)
+                }
+                onBlur={() => validateCustomerOnBlur('email')}
                 autoComplete="email"
+                spellCheck={false}
+                aria-invalid={Boolean(customerErrors.email)}
+                aria-describedby={
+                  customerErrors.email ? 'email-error' : undefined
+                }
                 className={fieldClass}
               />
-            </label>
-            <label className="flex flex-col gap-2 text-sm font-medium">
-              Téléphone
+            </FormField>
+            <FormField
+              controlId="phone"
+              label="Téléphone"
+              error={customerErrors.phone}
+              errorId="phone-error"
+              helpId="phone-help"
+              help="Les espaces sont acceptés. Avant confirmation, le numéro sera présenté au format international, par exemple +41 79 123 45 67."
+            >
               <input
+                id="phone"
                 name="phone"
                 type="tel"
-                required
+                inputMode="tel"
+                value={customer.phone}
+                onChange={event =>
+                  updateCustomerField('phone', event.target.value)
+                }
+                onBlur={() => validateCustomerOnBlur('phone')}
                 autoComplete="tel"
                 placeholder="079 123 45 67"
+                aria-invalid={Boolean(customerErrors.phone)}
+                aria-describedby={
+                  customerErrors.phone ? 'phone-help phone-error' : 'phone-help'
+                }
                 className={fieldClass}
               />
-            </label>
+            </FormField>
           </div>
-          <label className="mt-4 flex flex-col gap-2 text-sm font-medium">
-            Commentaire facultatif
+          <FormField
+            controlId="comment"
+            label="Commentaire"
+            optional
+            className="mt-4"
+            error={customerErrors.comment}
+            errorId="comment-error"
+          >
             <textarea
+              id="comment"
               name="comment"
+              value={customer.comment}
+              onChange={event =>
+                updateCustomerField('comment', event.target.value)
+              }
+              onBlur={() => validateCustomerOnBlur('comment')}
               rows={4}
               maxLength={1000}
-              className="w-full rounded-xl border bg-background px-4 py-3 outline-none focus:ring-2 focus:ring-ring"
+              aria-invalid={Boolean(customerErrors.comment)}
+              aria-describedby={
+                customerErrors.comment ? 'comment-error' : undefined
+              }
+              className={cn(fieldClass, 'py-3')}
             />
-          </label>
+          </FormField>
           <label className="sr-only" aria-hidden="true">
             Site web
-            <input name="website" tabIndex={-1} autoComplete="off" />
+            <input
+              name="website"
+              value={website}
+              onChange={event => setWebsite(event.target.value)}
+              tabIndex={-1}
+              autoComplete="off"
+            />
           </label>
           <label className="mt-5 flex items-start gap-3 text-sm">
             <input
               name="consent"
               type="checkbox"
-              required
+              checked={customer.consent}
+              onChange={event =>
+                updateCustomerField('consent', event.target.checked)
+              }
+              onBlur={() => validateCustomerOnBlur('consent')}
+              aria-invalid={Boolean(customerErrors.consent)}
+              aria-describedby={
+                customerErrors.consent ? 'consent-error' : undefined
+              }
               className="mt-1 size-4"
             />
             <span>
@@ -599,11 +870,23 @@ export const ReservationWizard = ({
               .
             </span>
           </label>
+          {customerErrors.consent ? (
+            <p
+              id="consent-error"
+              className="mt-2 text-xs text-destructive"
+              role="alert"
+            >
+              {customerErrors.consent}
+            </p>
+          ) : null}
           {selectedService?.consentFormUrl ? (
             <ConsentFormNotice url={selectedService.consentFormUrl} />
           ) : null}
 
-          <CancellationPolicy className="mt-5" />
+          <CancellationPolicy
+            className="mt-5"
+            cutoffLabel={customerChangeCutoffLabel}
+          />
 
           {result && !result.ok ? (
             <p
@@ -613,14 +896,132 @@ export const ReservationWizard = ({
               {result.message}
             </p>
           ) : null}
-          <button
-            type="submit"
-            disabled={submitting}
-            className="mt-6 h-12 w-full rounded-xl bg-primary px-5 font-medium text-primary-foreground disabled:opacity-50"
-          >
-            {submitting ? 'Confirmation…' : 'Confirmer le rendez-vous'}
-          </button>
+          <Button type="submit" size="lg" className="mt-6 w-full">
+            Vérifier mes informations
+          </Button>
         </form>
+      ) : null}
+
+      {step === 4 && selectedService ? (
+        <section className="rounded-3xl border bg-card p-5 sm:p-8">
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            onClick={() => goToStep(3)}
+            className="-ml-2"
+          >
+            <ChevronLeft className="size-4" /> Modifier mes coordonnées
+          </Button>
+          <h2 className="mt-5 font-heading text-2xl font-bold">
+            Vérifiez votre réservation
+          </h2>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Rien n’est encore créé. Relisez ces informations avant la
+            confirmation définitive.
+          </p>
+
+          <div className="mt-6 divide-y rounded-2xl border">
+            <div className="flex items-start justify-between gap-4 p-4">
+              <div>
+                <p className="text-xs font-semibold tracking-wider text-muted-foreground uppercase">
+                  Prestation
+                </p>
+                <p className="mt-1 font-semibold">
+                  {formatServiceLabel(
+                    selectedService.name,
+                    selectedService.categoryName,
+                  )}
+                </p>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  {selectedService.durationMinutes} min ·{' '}
+                  {formatPrice(selectedService.priceCents)}
+                </p>
+              </div>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => goToStep(1)}
+                className="min-h-11 shrink-0 rounded-full"
+              >
+                <Pencil className="size-3.5" /> Modifier
+              </Button>
+            </div>
+            <div className="flex items-start justify-between gap-4 p-4">
+              <div>
+                <p className="text-xs font-semibold tracking-wider text-muted-foreground uppercase">
+                  Créneau
+                </p>
+                <p className="mt-1 font-semibold">
+                  {capitalizeFirst(formatAppointmentDate(new Date(startsAt)))}
+                </p>
+              </div>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => goToStep(2)}
+                className="min-h-11 shrink-0 rounded-full"
+              >
+                <Pencil className="size-3.5" /> Modifier
+              </Button>
+            </div>
+            <div className="flex items-start justify-between gap-4 p-4">
+              <div className="min-w-0">
+                <p className="flex items-center gap-1.5 text-xs font-semibold tracking-wider text-muted-foreground uppercase">
+                  <UserRound className="size-3.5" /> Coordonnées
+                </p>
+                <p className="mt-1 font-semibold">
+                  {customer.firstName} {customer.lastName}
+                </p>
+                <p className="mt-1 break-all text-sm text-muted-foreground">
+                  {customer.email}
+                </p>
+                <p className="text-sm text-muted-foreground">
+                  {customer.phone}
+                </p>
+                {customer.comment ? (
+                  <p className="mt-2 text-sm">« {customer.comment} »</p>
+                ) : null}
+              </div>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => goToStep(3)}
+                className="min-h-11 shrink-0 rounded-full"
+              >
+                <Pencil className="size-3.5" /> Modifier
+              </Button>
+            </div>
+          </div>
+
+          <CancellationPolicy
+            className="mt-5"
+            cutoffLabel={customerChangeCutoffLabel}
+          />
+
+          {result && !result.ok ? (
+            <p
+              className="mt-5 rounded-xl bg-destructive/10 p-4 text-sm text-destructive"
+              role="alert"
+            >
+              {result.message}
+            </p>
+          ) : null}
+          <Button
+            type="button"
+            size="lg"
+            onClick={submitBooking}
+            disabled={submitting}
+            className="mt-6 w-full"
+          >
+            {submitting
+              ? 'Création du rendez-vous…'
+              : 'Confirmer et créer le rendez-vous'}
+          </Button>
+        </section>
       ) : null}
     </section>
   )
