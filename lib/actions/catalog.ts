@@ -442,7 +442,11 @@ export const deleteService = async (
     where: { id },
     select: { id: true, name: true, imageUrl: true },
   })
-  if (!service) return { ok: false, message: 'Prestation introuvable.' }
+  if (!service)
+    return {
+      ok: false,
+      message: 'Cette prestation n’existe plus. Revenez à la liste des soins.',
+    }
 
   try {
     await prisma.$transaction(async transaction => {

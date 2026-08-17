@@ -28,6 +28,8 @@ import {
   type AvailabilityExceptionGroup,
   hasAvailabilityExceptionOverlap,
 } from '@/lib/admin/availability-calendar'
+import { formatLongDate } from '@/lib/reservation/time'
+import { capitalizeFirst } from '@/lib/utils/format'
 
 interface CalendarDay {
   dateKey: string
@@ -89,13 +91,7 @@ const minuteLabel = (minute: number): string =>
   ).padStart(2, '0')}`
 
 const formatDate = (dateKey: string): string =>
-  new Intl.DateTimeFormat('fr-CH', {
-    weekday: 'long',
-    day: 'numeric',
-    month: 'long',
-    year: 'numeric',
-    timeZone: 'UTC',
-  }).format(dateFromKey(dateKey))
+  formatLongDate(dateFromKey(dateKey))
 
 const formatShortDate = (dateKey: string): string =>
   new Intl.DateTimeFormat('fr-CH', {
@@ -255,8 +251,8 @@ export const AvailabilityExceptionCalendar = ({
             <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
               Jours particuliers
             </p>
-            <h2 className="font-heading text-2xl font-bold capitalize">
-              {monthLabel}
+            <h2 className="font-heading text-2xl font-bold">
+              {capitalizeFirst(monthLabel)}
             </h2>
           </div>
           <Button asChild variant="outline" size="icon">
@@ -420,8 +416,8 @@ export const AvailabilityExceptionCalendar = ({
                 <p className="text-xs font-semibold uppercase tracking-wide text-brand">
                   Jour particulier
                 </p>
-                <Dialog.Title className="mt-1 font-heading text-2xl font-bold capitalize">
-                  {formatDate(selectedDate)}
+                <Dialog.Title className="mt-1 font-heading text-2xl font-bold">
+                  {capitalizeFirst(formatDate(selectedDate))}
                 </Dialog.Title>
                 <Dialog.Description className="mt-1 text-sm text-muted-foreground">
                   Fermez l’institut sur ce jour, ou ouvrez des heures en plus de
@@ -629,8 +625,8 @@ export const AvailabilityExceptionCalendar = ({
                   role="alert"
                   className="rounded-xl border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive"
                 >
-                  Cette plage chevauche une ouverture ou une fermeture déjà
-                  enregistrée. Modifiez-la avant l’envoi.
+                  Cette plage se superpose à une ouverture ou à une fermeture
+                  déjà enregistrée. Modifiez-la avant l’envoi.
                 </p>
               ) : invalidRange ? (
                 <p role="alert" className="text-sm text-destructive">
@@ -659,7 +655,7 @@ export const AvailabilityExceptionCalendar = ({
                 ) : (
                   <Plus className="size-4" />
                 )}
-                Enregistrer l’exception
+                Enregistrer ce jour particulier
               </Button>
             </form>
           </Dialog.Content>

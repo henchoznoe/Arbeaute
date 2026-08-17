@@ -66,7 +66,7 @@ export const changeAdminAppointmentStatus = async (input: {
       return {
         ok: false,
         message:
-          'Ce créneau chevauche désormais un autre rendez-vous confirmé. Le rétablissement a été refusé.',
+          'Cette heure se superpose maintenant à un autre rendez-vous confirmé. Déplacez-en un, puis réessayez.',
       }
     return {
       ok: false,

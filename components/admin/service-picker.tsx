@@ -5,6 +5,7 @@ import { useId, useMemo, useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { formControlClass } from '@/components/ui/form-field'
 import { formatServiceLabel } from '@/lib/reservation/service-label'
+import { formatPrice } from '@/lib/utils/format'
 
 export interface AdminServiceOption {
   id: string
@@ -74,7 +75,7 @@ export const ServicePicker = ({
             </span>
             <span className="block text-xs text-muted-foreground">
               {selected.durationMinutes} min ·{' '}
-              {(selected.priceCents / 100).toLocaleString('fr-CH')} CHF
+              {formatPrice(selected.priceCents)}
             </span>
           </span>
           <Button
@@ -126,7 +127,7 @@ export const ServicePicker = ({
                       </span>
                       <span className="shrink-0 text-xs text-muted-foreground">
                         {service.durationMinutes} min ·{' '}
-                        {(service.priceCents / 100).toLocaleString('fr-CH')} CHF
+                        {formatPrice(service.priceCents)}
                       </span>
                     </button>
                   ))}

@@ -123,7 +123,7 @@ const NewAppointment = async ({
           ? 'Le soin et les coordonnées ont été repris. Choisissez un nouveau créneau avant de créer le rendez-vous.'
           : customer
             ? 'Les coordonnées de la cliente ont été reprises. Choisissez le soin et le créneau.'
-            : 'Seul le nom est obligatoire. Les créneaux hors horaires sont possibles après confirmation.'}
+            : 'Seul le nom est obligatoire. Les heures hors ouverture sont possibles après confirmation.'}
       </p>
       <div className="mt-7">
         <AppointmentForm

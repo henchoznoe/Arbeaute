@@ -1,5 +1,7 @@
 import { contact } from '@/lib/constants/contact'
 import { RESERVATION_TIME_ZONE } from '@/lib/reservation/constants'
+import { formatLongDate } from '@/lib/reservation/time'
+import { formatPrice } from '@/lib/utils/format'
 
 /**
  * Gabarits des e-mails transactionnels.
@@ -28,25 +30,14 @@ export interface MailContent {
   html: string
 }
 
-const dateFormatter = new Intl.DateTimeFormat('fr-CH', {
-  timeZone: RESERVATION_TIME_ZONE,
-  weekday: 'long',
-  day: 'numeric',
-  month: 'long',
-  year: 'numeric',
-})
-
 const timeFormatter = new Intl.DateTimeFormat('fr-CH', {
   timeZone: RESERVATION_TIME_ZONE,
   hour: '2-digit',
   minute: '2-digit',
 })
 
-export const formatMailDate = (date: Date): string => dateFormatter.format(date)
+export const formatMailDate = (date: Date): string => formatLongDate(date)
 export const formatMailTime = (date: Date): string => timeFormatter.format(date)
-
-const formatPrice = (priceCents: number): string =>
-  `${(priceCents / 100).toLocaleString('fr-CH')} CHF`
 
 const greetingName = (data: AppointmentMailData): string =>
   data.customerFirstName?.trim() || data.customerLastName.trim()

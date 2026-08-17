@@ -34,7 +34,7 @@ export const CustomerPicker = ({
         </h2>
       </div>
       <p className="mt-1 text-xs text-muted-foreground">
-        Recherchez par nom, email ou téléphone pour remplir ses coordonnées.
+        Recherchez par nom, e-mail ou téléphone pour remplir ses coordonnées.
       </p>
       <div className="mt-3 flex min-w-0 gap-2">
         <div className="relative min-w-0 flex-1">
@@ -48,7 +48,7 @@ export const CustomerPicker = ({
                 search()
               }
             }}
-            placeholder="Marie, 079…, email…"
+            placeholder="Marie, 079…, e-mail…"
             aria-label="Rechercher une cliente existante"
             className={`${formControlClass} pl-10`}
           />

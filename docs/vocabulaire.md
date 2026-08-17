@@ -2,8 +2,7 @@
 
 Arzu n’a jamais administré de site, et ses clientes non plus. Aucun écran ne doit
 donc employer le vocabulaire du modèle de données. Ce document fixe les termes
-retenus : l’administration, le site public et, à terme, les e-mails de
-l’élément 11 emploient les mêmes.
+retenus : l’administration, le site public et les e-mails emploient les mêmes.
 
 ## Règle générale
 
@@ -40,6 +39,10 @@ explication l’emporte, même si elle est plus longue.
 | Occurrence | Rendez-vous, ou date |
 | Hors horaires | Hors ouverture |
 | Chevauche | Se superpose à |
+| Snapshot | Le nom et le prix d’alors |
+| Propager les coordonnées | Reporter sur ses rendez-vous à venir |
+| Exception (bouton, phrase) | Jour particulier |
+| Email | E-mail |
 
 Restent tels quels parce qu’ils appartiennent au français courant et que
 l’interface les enseigne d’elle-même : rendez-vous, prestation, créneau, soin,
@@ -82,3 +85,34 @@ réessayez » indique le geste.
 
 Quand rien ne dépend de l’utilisatrice — une panne — le message le dit et
 propose l’action réaliste : réessayer, ou prévenir le développeur.
+
+## Une donnée, une seule écriture
+
+Une même information ne doit pas s’écrire de deux façons selon l’écran : c’est
+ce qui fait douter quelqu’un qui n’a pas les repères pour distinguer une
+coquille d’une vraie erreur. Les mises en forme partagées sont donc les seules
+autorisées, et elles sont couvertes par `tests/reservation/formatting.test.ts`.
+
+| Donnée | Fonction | Rendu |
+| --- | --- | --- |
+| Date longue | `formatLongDate` | lundi 17 août 2026 |
+| Date et heure | `formatAppointmentDate` | lundi 17 août 2026 à 14:00 |
+| Date et heure, en liste | `formatCompactMoment` | lun. 17 août 2026 à 14:00 |
+| Heure seule | `formatSlotTime` | 14:00 |
+| Prix | `formatPrice` | 30 CHF · 75.50 CHF · 1'250 CHF |
+
+Deux pièges que ces fonctions existent pour éviter :
+
+- **La virgule d’ICU.** En `fr-CH`, dès que le jour de la semaine et l’année
+  cohabitent, ICU intercale une virgule — « lundi, 17 août 2026 » — et une autre
+  devant l’heure. Ce n’est pas l’usage français et cela donnait quatre écritures
+  différentes d’une même date. Les formateurs la retirent.
+- **Le séparateur décimal.** Le formateur *numérique* `fr-CH` écrit « 75,5 », le
+  formateur *monétaire* écrit « 75.50 ». Un prix passe par le second.
+
+## La majuscule à chaque mot est interdite
+
+La classe CSS `capitalize` met une majuscule à **chaque** mot : appliquée à une
+phrase elle produisait « Créneau À Choisir », appliquée à une date « Lundi, 17
+Août 2026 ». Elle n’est plus employée nulle part. Pour une majuscule initiale,
+`capitalizeFirst` de `lib/utils/format.ts`.

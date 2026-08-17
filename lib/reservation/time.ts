@@ -141,16 +141,56 @@ export const canCustomerChangeAppointment = (
   now.getTime() <
   getCustomerChangeDeadline(startsAt, cutoffBusinessHours).getTime()
 
+/**
+ * Deux gabarits de date, et deux seulement.
+ *
+ * `fr-CH` fait insérer à ICU une virgule dès que le jour de la semaine et
+ * l'année cohabitent — « lundi, 17 août 2026 » — et une autre devant l'heure
+ * — « lun. 17 août 2026, 14:00 ». Ce n'est pas l'usage français, et surtout
+ * cela donnait quatre écritures différentes d'une même date selon l'écran.
+ * `normalizeFrenchDate` ramène tout le monde sur « lundi 17 août 2026 à 14:00 ».
+ */
+const normalizeFrenchDate = (formatted: string): string =>
+  formatted.replace(/^(\S+),/, '$1').replace(/,\s(?=\d{1,2}:\d{2})/, ' à ')
+
+const longDateParts = {
+  timeZone: RESERVATION_TIME_ZONE,
+  day: 'numeric',
+  month: 'long',
+  year: 'numeric',
+} as const
+
+const timeParts = { hour: '2-digit', minute: '2-digit' } as const
+
+/** « lundi 17 août 2026 » — partout où la place ne manque pas. */
+export const formatLongDate = (date: Date): string =>
+  normalizeFrenchDate(
+    new Intl.DateTimeFormat('fr-CH', {
+      ...longDateParts,
+      weekday: 'long',
+    }).format(date),
+  )
+
+/** « lundi 17 août 2026 à 14:00 ». */
 export const formatAppointmentDate = (date: Date): string =>
-  new Intl.DateTimeFormat('fr-CH', {
-    timeZone: RESERVATION_TIME_ZONE,
-    weekday: 'long',
-    day: 'numeric',
-    month: 'long',
-    year: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-  }).format(date)
+  normalizeFrenchDate(
+    new Intl.DateTimeFormat('fr-CH', {
+      ...longDateParts,
+      weekday: 'long',
+      ...timeParts,
+    }).format(date),
+  )
+
+/** « lun. 17 août 2026 à 14:00 » — pour les listes, où chaque ligne compte. */
+export const formatCompactMoment = (date: Date): string =>
+  normalizeFrenchDate(
+    new Intl.DateTimeFormat('fr-CH', {
+      ...longDateParts,
+      weekday: 'short',
+      month: 'short',
+      ...timeParts,
+    }).format(date),
+  )
 
 export const formatSlotTime = (date: Date): string =>
   formatInTimeZone(date, RESERVATION_TIME_ZONE, 'HH:mm')

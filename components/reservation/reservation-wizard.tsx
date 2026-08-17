@@ -52,6 +52,7 @@ import {
 import { formatServiceLabel } from '@/lib/reservation/service-label'
 import { formatAppointmentDate } from '@/lib/reservation/time'
 import { cn } from '@/lib/utils/cn'
+import { capitalizeFirst, formatPrice } from '@/lib/utils/format'
 import { CancellationPolicy } from './cancellation-policy'
 
 interface ReservationService extends ServiceCareDetails {
@@ -74,9 +75,6 @@ interface ReservationWizardProps {
 }
 
 const fieldClass = cn(formControlClass, 'min-h-12 px-4')
-
-const formatPrice = (priceCents: number): string =>
-  `${(priceCents / 100).toLocaleString('fr-CH')} CHF`
 
 const addDateKeyDays = (dateKey: string, amount: number): string => {
   const [year, month, day] = dateKey.split('-').map(Number)
@@ -400,9 +398,9 @@ export const ReservationWizard = ({
         </p>
         <div className="mt-6 rounded-2xl bg-muted p-5 text-left">
           <p className="font-semibold">{result.appointment.serviceName}</p>
-          {/* Pas de `capitalize` : appliqué à la date entière, il produirait
-              « Lundi, 17 Août 2026 À 14:00 ». */}
-          <p className="mt-2 text-sm">{result.appointment.dateLabel}</p>
+          <p className="mt-2 text-sm">
+            {capitalizeFirst(result.appointment.dateLabel)}
+          </p>
           <p className="mt-1 text-sm text-muted-foreground">
             {result.appointment.priceLabel}
           </p>
@@ -897,8 +895,8 @@ export const ReservationWizard = ({
                 <p className="text-xs font-semibold tracking-wider text-muted-foreground uppercase">
                   Créneau
                 </p>
-                <p className="mt-1 font-semibold capitalize">
-                  {formatAppointmentDate(new Date(startsAt))}
+                <p className="mt-1 font-semibold">
+                  {capitalizeFirst(formatAppointmentDate(new Date(startsAt)))}
                 </p>
               </div>
               <Button

@@ -2,6 +2,7 @@ import { CalendarDays, Clock } from 'lucide-react'
 import { formatServiceLabel } from '@/lib/reservation/service-label'
 import { formatAppointmentDate } from '@/lib/reservation/time'
 import { cn } from '@/lib/utils/cn'
+import { capitalizeFirst, formatPrice } from '@/lib/utils/format'
 
 interface SummaryService {
   name: string
@@ -11,10 +12,11 @@ interface SummaryService {
   priceNote: string | null
 }
 
-const formatPrice = (priceCents: number, priceNote: string | null): string =>
-  `${(priceCents / 100).toLocaleString('fr-CH')} CHF${
-    priceNote === '/ min' ? ' / min' : ''
-  }`
+const formatSummaryPrice = (
+  priceCents: number,
+  priceNote: string | null,
+): string =>
+  `${formatPrice(priceCents)}${priceNote === '/ min' ? ' / min' : ''}`
 
 export const BookingSummary = ({
   service,
@@ -45,17 +47,17 @@ export const BookingSummary = ({
         </p>
       </div>
       <p className="shrink-0 text-sm font-semibold text-price">
-        {formatPrice(service.priceCents, service.priceNote)}
+        {formatSummaryPrice(service.priceCents, service.priceNote)}
       </p>
     </div>
     <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground sm:text-sm">
       <span className="flex items-center gap-1.5">
         <Clock className="size-3.5" /> {service.durationMinutes} min
       </span>
-      <span className="flex items-center gap-1.5 capitalize">
+      <span className="flex items-center gap-1.5">
         <CalendarDays className="size-3.5" />
         {startsAt
-          ? formatAppointmentDate(new Date(startsAt))
+          ? capitalizeFirst(formatAppointmentDate(new Date(startsAt)))
           : 'Créneau à choisir'}
       </span>
     </div>

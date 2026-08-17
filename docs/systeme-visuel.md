@@ -109,6 +109,27 @@ jour du calendrier, cellules de calendrier, options de liste déroulante
 (`role="option"`), pastilles de filtre du catalogue, cartes de prestation
 sélectionnables et blocs de la chronologie admin.
 
+## Mise en forme des données
+
+Une même donnée ne s’écrit **jamais** de deux façons selon l’écran. Les
+formateurs partagés sont les seuls autorisés, et ils sont couverts par
+`tests/reservation/formatting.test.ts` :
+
+| Donnée | Fonction | Rendu |
+| --- | --- | --- |
+| Date longue | `formatLongDate` | lundi 17 août 2026 |
+| Date et heure | `formatAppointmentDate` | lundi 17 août 2026 à 14:00 |
+| Date et heure, en liste | `formatCompactMoment` | lun. 17 août 2026 à 14:00 |
+| Heure seule | `formatSlotTime` | 14:00 |
+| Prix | `formatPrice` | 30 CHF · 75.50 CHF · 1'250 CHF |
+
+La classe CSS `capitalize` est **interdite** : elle met une majuscule à chaque
+mot et produisait « Créneau À Choisir » ou « Lundi, 17 Août 2026 ». Pour une
+majuscule initiale, `capitalizeFirst` de `lib/utils/format.ts`.
+
+Le détail du raisonnement — virgule d’ICU, séparateur décimal monétaire — est
+dans [vocabulaire.md](vocabulaire.md).
+
 ## Confirmation destructive
 
 Le déclencheur conserve un libellé explicite. Le dialogue reçoit le focus,
@@ -119,8 +140,8 @@ rendez-vous côté cliente passe elle aussi par `ConfirmDialog`.
 
 ## État de la migration
 
-Les points 1 à 6 de [ROADMAP-V2.md](../ROADMAP-V2.md) ont aligné l’ensemble des
-écrans sur ce document :
+Les points 1 à 7, 10 et 13 de [ROADMAP-V2.md](../ROADMAP-V2.md) ont aligné
+l’ensemble des écrans sur ce document :
 
 - typographie unifiée sur Geist et Plus Jakarta Sans, avec une échelle fluide ;
 - toutes les actions passent par `Button`, `SubmitButton` ou `ConfirmDialog` ;
@@ -130,4 +151,6 @@ Les points 1 à 6 de [ROADMAP-V2.md](../ROADMAP-V2.md) ont aligné l’ensemble 
 - plancher de 11 px appliqué partout, `--brand` porté à 4,54:1 sur fond clair ;
 - aucune cible tactile sous 44 px, `Button` compris en taille `sm` ;
 - toute action asynchrone confirme son résultat par un `AppToast`, au lieu de
-  laisser la page se rafraîchir en silence.
+  laisser la page se rafraîchir en silence ;
+- dates, heures et prix passent par les formateurs partagés ci-dessus, et plus
+  aucun écran n’emploie `capitalize`.

@@ -288,8 +288,8 @@ export const createAdminAppointmentSeries = async (
         ok: false,
         message:
           error.code === 'CONFLICT'
-            ? 'La série a changé : au moins une occurrence est maintenant en conflit.'
-            : 'Confirmez la création des occurrences hors horaires.',
+            ? 'La répétition a changé : au moins une date se superpose à un autre rendez-vous. Relancez la vérification.'
+            : 'Confirmez la création des rendez-vous placés hors ouverture.',
         preview: error.preview,
         needsOutsideHoursConfirmation: error.code === 'OUTSIDE_HOURS',
       }
@@ -333,7 +333,8 @@ export const saveAdminAppointment = async (
   } catch {
     return {
       ok: false,
-      message: 'L’adresse email ou le numéro de téléphone est invalide.',
+      message:
+        'L’adresse e-mail ou le numéro de téléphone n’est pas au bon format. Corrigez-les, puis réessayez.',
     }
   }
 
@@ -348,7 +349,7 @@ export const saveAdminAppointment = async (
       return {
         ok: false,
         message:
-          'Ce rendez-vous est hors des horaires publics ou traverse une indisponibilité.',
+          'Ce rendez-vous tombe hors ouverture, ou se superpose à une fermeture. Choisissez une autre heure, ou ouvrez ce jour dans « Jours particuliers ».',
         needsOutsideHoursConfirmation: true,
       }
 
@@ -396,7 +397,11 @@ export const cancelAdminAppointment = async (
     }
   const parsedId = z.string().min(1).safeParse(appointmentId)
   if (!parsedId.success)
-    return { ok: false, message: 'Ce rendez-vous est invalide.' }
+    return {
+      ok: false,
+      message:
+        'Ce rendez-vous n’existe plus. Revenez à l’agenda et rouvrez-le.',
+    }
   try {
     await cancelAdminAppointmentSerializable(prisma, parsedId.data)
     revalidatePath('/admin')
@@ -605,7 +610,11 @@ export const deleteAvailabilityExceptionGroup = async (
     }
   const parsed = z.string().min(1).safeParse(groupId)
   if (!parsed.success)
-    return { ok: false, message: 'Cette période est invalide.' }
+    return {
+      ok: false,
+      message:
+        'Cette période n’est pas valable. Vérifiez les deux dates, puis réessayez.',
+    }
   try {
     const deletedCount = await deleteAvailabilityExceptionGroupAudited(
       prisma,
@@ -619,7 +628,8 @@ export const deleteAvailabilityExceptionGroup = async (
   } catch {
     return {
       ok: false,
-      message: 'Cette période ne peut plus être supprimée.',
+      message:
+        'Cette période a déjà été supprimée. Rafraîchissez la page pour voir l’état actuel.',
     }
   }
 }

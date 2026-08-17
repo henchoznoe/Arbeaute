@@ -29,6 +29,7 @@ import {
   getCustomerChangeDeadline,
 } from '@/lib/reservation/time'
 import { cn } from '@/lib/utils/cn'
+import { formatPrice } from '@/lib/utils/format'
 
 export const metadata = createPageMetadata({
   title: 'Mes rendez-vous',
@@ -103,11 +104,11 @@ const CustomerAppointments = async ({
               Mes rendez-vous
             </h1>
             <p className="mt-3 text-sm text-muted-foreground">
-              Saisissez exactement l’email et le numéro de téléphone utilisés
+              Saisissez exactement l’e-mail et le numéro de téléphone utilisés
               lors de votre réservation.
             </p>
             <form action={identifyCustomer} className="mt-7 space-y-4">
-              <FormField controlId="customer-email" label="Email">
+              <FormField controlId="customer-email" label="E-mail">
                 <input
                   id="customer-email"
                   name="email"
@@ -141,7 +142,7 @@ const CustomerAppointments = async ({
                   className="rounded-xl bg-destructive/10 p-4 text-sm text-destructive"
                   role="alert"
                 >
-                  Aucun rendez-vous ne correspond à cet email et ce numéro de
+                  Aucun rendez-vous ne correspond à cet e-mail et ce numéro de
                   téléphone. Vérifiez les informations saisies lors de la
                   réservation, ou prenez un nouveau rendez-vous si vous n’en
                   avez pas encore.
@@ -241,7 +242,7 @@ const CustomerAppointments = async ({
                       appointment.service.category?.name,
                     )}
                     dateLabel={formatAppointmentDate(appointment.startsAt)}
-                    priceLabel={`${(appointment.servicePriceCents / 100).toLocaleString('fr-CH')} CHF`}
+                    priceLabel={formatPrice(appointment.servicePriceCents)}
                     canChange={canCustomerChangeAppointment(
                       appointment.startsAt,
                       now,
@@ -306,7 +307,7 @@ const CustomerAppointments = async ({
                         appointment.service.category?.name,
                       )}
                       dateLabel={formatAppointmentDate(appointment.startsAt)}
-                      priceLabel={`${(appointment.servicePriceCents / 100).toLocaleString('fr-CH')} CHF`}
+                      priceLabel={formatPrice(appointment.servicePriceCents)}
                       state={state}
                       bookingPath={getCustomerRebookingPath(
                         appointment.service,

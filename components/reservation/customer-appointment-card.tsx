@@ -21,6 +21,7 @@ import {
   formatCalendarPeriod,
 } from '@/lib/reservation/calendar-view'
 import { addLocalDays } from '@/lib/reservation/time'
+import { capitalizeFirst } from '@/lib/utils/format'
 import { openCalendar } from './calendar-download'
 import { CancellationPolicy } from './cancellation-policy'
 
@@ -197,7 +198,7 @@ export const CustomerAppointmentCard = ({
         Rendez-vous confirmé
       </p>
       <h3 className="mt-1 font-heading text-2xl font-bold">{serviceName}</h3>
-      <p className="mt-3 capitalize">{dateLabel}</p>
+      <p className="mt-3">{capitalizeFirst(dateLabel)}</p>
       <p className="mt-1 text-sm text-muted-foreground">{priceLabel}</p>
 
       {!moving ? (

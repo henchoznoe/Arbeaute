@@ -28,6 +28,7 @@ import {
 } from '@/lib/actions/catalog'
 import prisma from '@/lib/core/prisma'
 import { getAdminSession } from '@/lib/core/session-cookies'
+import { formatPrice } from '@/lib/utils/format'
 
 const fieldClass = formControlClass
 
@@ -192,7 +193,7 @@ const AdminServices = async () => {
                     <p className="font-medium">{service.name}</p>
                     <p className="text-xs text-muted-foreground">
                       {service.durationMinutes} min ·{' '}
-                      {(service.priceCents / 100).toLocaleString('fr-CH')} CHF
+                      {formatPrice(service.priceCents)}
                       {service.priceNote ? ` ${service.priceNote}` : ''}
                     </p>
                   </div>

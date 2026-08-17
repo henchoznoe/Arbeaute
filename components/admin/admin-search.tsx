@@ -25,8 +25,9 @@ import type {
   AdminSearchPage,
   AdminSearchService,
 } from '@/lib/admin/search'
-import { RESERVATION_TIME_ZONE } from '@/lib/reservation/constants'
 import { formatServiceLabel } from '@/lib/reservation/service-label'
+import { formatCompactMoment } from '@/lib/reservation/time'
+import { capitalizeFirst } from '@/lib/utils/format'
 import type {
   AppointmentSource,
   AppointmentStatus,
@@ -64,16 +65,7 @@ const statusVariants = {
   NO_SHOW: 'danger',
 } as const
 
-const formatMoment = (date: Date): string =>
-  new Intl.DateTimeFormat('fr-CH', {
-    timeZone: RESERVATION_TIME_ZONE,
-    weekday: 'short',
-    day: 'numeric',
-    month: 'short',
-    year: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-  }).format(new Date(date))
+const formatMoment = (date: Date): string => formatCompactMoment(new Date(date))
 
 const toInput = (filters: SearchFilters, page: number): AdminSearchInput => ({
   query: filters.query,
@@ -149,7 +141,7 @@ export const AdminSearch = ({
             id="admin-global-search"
             value={filters.query}
             onChange={event => updateFilter('query', event.target.value)}
-            placeholder="Nom, email exact ou téléphone complet…"
+            placeholder="Nom, e-mail exact ou téléphone complet…"
             autoComplete="off"
             className={`${formControlClass} pr-10 pl-10`}
           />
@@ -288,9 +280,9 @@ export const AdminSearch = ({
                 <article className="min-w-0 rounded-2xl border bg-card p-4 shadow-sm">
                   <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0">
-                      <p className="flex items-center gap-2 text-sm font-semibold capitalize">
+                      <p className="flex items-center gap-2 text-sm font-semibold">
                         <Clock3 className="size-4 shrink-0 text-primary" />
-                        {formatMoment(appointment.startsAt)}
+                        {capitalizeFirst(formatMoment(appointment.startsAt))}
                       </p>
                       <p className="mt-2 flex min-w-0 items-center gap-2">
                         <UserRound className="size-4 shrink-0 text-muted-foreground" />

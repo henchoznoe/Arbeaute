@@ -27,6 +27,7 @@ import {
   getLocalWeekDateKeys,
   isDateKey,
 } from '@/lib/reservation/time'
+import { capitalizeFirst } from '@/lib/utils/format'
 import type { AppointmentStatus } from '@/prisma/generated/prisma/enums'
 
 interface AdminPageProps {
@@ -293,8 +294,8 @@ const AdminAgenda = async ({ searchParams }: Readonly<AdminPageProps>) => {
               className={`min-h-[28rem] border-r p-2 last:border-r-0 ${dateKey === today ? 'bg-primary/5' : ''}`}
             >
               <div className="flex items-center justify-between gap-1 border-b pb-2">
-                <h3 className="text-sm font-semibold capitalize">
-                  {dayTitle(dateKey)}
+                <h3 className="text-sm font-semibold">
+                  {capitalizeFirst(dayTitle(dateKey))}
                 </h3>
                 <Link
                   href={`/admin/appointments/new?date=${dateKey}`}

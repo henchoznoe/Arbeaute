@@ -38,6 +38,7 @@ import {
   formatAppointmentDate,
 } from '@/lib/reservation/time'
 import { checkRateLimit } from '@/lib/services/rate-limit'
+import { formatPrice } from '@/lib/utils/format'
 import { getRequestIp, hasSameOrigin } from '@/lib/utils/request'
 
 const bookingSchema = z.object({
@@ -209,7 +210,7 @@ export const createPublicAppointment = async (
       appointment: {
         serviceName: appointment.serviceNameSnapshot,
         dateLabel: formatAppointmentDate(appointment.startsAt),
-        priceLabel: `${(appointment.servicePriceCents / 100).toLocaleString('fr-CH')} CHF`,
+        priceLabel: formatPrice(appointment.servicePriceCents),
         startsAt: appointment.startsAt.toISOString(),
         endsAt: appointment.endsAt.toISOString(),
         calendar: createAppointmentCalendar({
@@ -375,7 +376,11 @@ export const moveCustomerAppointment = async (
     return { ok: false, message: 'La demande est invalide.' }
   const parsed = appointmentMutationSchema.safeParse(input)
   if (!parsed.success || !parsed.data.startsAt)
-    return { ok: false, message: 'Le nouveau créneau est invalide.' }
+    return {
+      ok: false,
+      message:
+        'Cette nouvelle heure n’est pas valable. Choisissez-en une autre dans le calendrier.',
+    }
 
   try {
     const customer = await requireCustomerMutation()
@@ -404,7 +409,7 @@ export const moveCustomerAppointment = async (
       ok: false,
       message:
         error instanceof ReservationError && error.code === 'SLOT_UNAVAILABLE'
-          ? 'Ce créneau n’est plus disponible.'
+          ? 'Cette heure vient d’être prise. Choisissez-en une autre, s’il vous plaît.'
           : 'Ce rendez-vous ne peut plus être déplacé.',
     }
   }

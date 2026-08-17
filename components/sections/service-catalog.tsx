@@ -10,9 +10,7 @@ import { filterCatalog } from '@/lib/catalog/filter'
 import type { CatalogCategory } from '@/lib/catalog/queries'
 import { contact } from '@/lib/constants/contact'
 import { buildServiceReservationPath } from '@/lib/reservation/deep-link'
-
-const formatPrice = (priceCents: number): string =>
-  `${(priceCents / 100).toLocaleString('fr-CH')} CHF`
+import { formatPrice } from '@/lib/utils/format'
 
 export const ServiceCatalog = ({
   categories,

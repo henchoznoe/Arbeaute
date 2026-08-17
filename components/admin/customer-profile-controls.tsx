@@ -131,7 +131,7 @@ export const CustomerProfileForm = ({
             className={formControlClass}
           />
         </FormField>
-        <FormField controlId="customer-email" label="Email">
+        <FormField controlId="customer-email" label="E-mail">
           <input
             id="customer-email"
             name="email"
@@ -198,11 +198,12 @@ export const CustomerProfileForm = ({
         />
         <span>
           <span className="block font-semibold">
-            Propager les coordonnées corrigées
+            Reporter aussi sur ses rendez-vous à venir
           </span>
           <span className="mt-1 block text-xs leading-relaxed">
-            Actualise uniquement les rendez-vous futurs confirmés. Les snapshots
-            passés, annulés, terminés ou marqués absents restent inchangés.
+            Seuls les rendez-vous à venir et confirmés sont corrigés. Les
+            rendez-vous passés, annulés, terminés ou notés absents gardent les
+            coordonnées d’alors.
           </span>
         </span>
       </label>
@@ -291,7 +292,7 @@ export const CustomerDuplicateList = ({
               </p>
               <ConfirmDialog
                 title={`Fusionner ${name} ?`}
-                description={`Les ${duplicate._count.appointments} rendez-vous seront rattachés à la fiche actuelle sans modifier leurs snapshots historiques. La fiche doublon sera supprimée et l’opération journalisée.`}
+                description={`Les ${duplicate._count.appointments} rendez-vous seront rattachés à cette fiche ; chacun garde le nom et le prix qu’il avait. L’autre fiche sera supprimée, et le changement inscrit dans l’historique des modifications.`}
                 confirmLabel="Fusionner les fiches"
                 onConfirm={() => merge(duplicate.id)}
                 pending={pending}

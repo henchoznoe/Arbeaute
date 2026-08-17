@@ -27,6 +27,8 @@ import prisma from '@/lib/core/prisma'
 import { getAdminSession } from '@/lib/core/session-cookies'
 import { RESERVATION_TIME_ZONE } from '@/lib/reservation/constants'
 import { formatServiceLabel } from '@/lib/reservation/service-label'
+import { formatCompactMoment } from '@/lib/reservation/time'
+import { capitalizeFirst } from '@/lib/utils/format'
 import type { AppointmentStatus } from '@/prisma/generated/prisma/enums'
 
 interface CustomerPageProps {
@@ -47,16 +49,7 @@ const statusVariants = {
   NO_SHOW: 'danger',
 } as const
 
-const formatMoment = (date: Date): string =>
-  new Intl.DateTimeFormat('fr-CH', {
-    timeZone: RESERVATION_TIME_ZONE,
-    weekday: 'short',
-    day: 'numeric',
-    month: 'short',
-    year: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-  }).format(date)
+const formatMoment = (date: Date): string => formatCompactMoment(date)
 
 const formatDate = (date: Date): string =>
   new Intl.DateTimeFormat('fr-CH', {
@@ -91,8 +84,8 @@ const CustomerAppointmentList = ({
               className="flex min-h-11 items-start gap-3 transition hover:text-primary"
             >
               <span className="min-w-0 flex-1">
-                <span className="block text-sm font-semibold capitalize">
-                  {formatMoment(appointment.startsAt)}
+                <span className="block text-sm font-semibold">
+                  {capitalizeFirst(formatMoment(appointment.startsAt))}
                 </span>
                 <span className="mt-1 block truncate text-xs text-muted-foreground">
                   {formatServiceLabel(

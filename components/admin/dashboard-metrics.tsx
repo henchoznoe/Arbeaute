@@ -1,5 +1,6 @@
 import { Banknote, CalendarCheck2, Gauge, UserX } from 'lucide-react'
 import type { DashboardMetrics as DashboardMetricsValues } from '@/lib/admin/dashboard-metrics'
+import { formatPrice } from '@/lib/utils/format'
 
 const formatDuration = (minutes: number): string => {
   const hours = Math.floor(minutes / 60)
@@ -31,7 +32,7 @@ export const DashboardMetrics = ({
     },
     {
       label: 'Recette attendue',
-      value: `${(metrics.plannedRevenueCents / 100).toLocaleString('fr-CH')} CHF`,
+      value: formatPrice(metrics.plannedRevenueCents),
       scope:
         'Rendez-vous confirmés et terminés, au prix du jour de la réservation',
       icon: Banknote,

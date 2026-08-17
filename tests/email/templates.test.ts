@@ -20,25 +20,26 @@ describe('buildConfirmationMail', () => {
   const mail = buildConfirmationMail(base)
 
   it('annonce la date et l’heure dans le fuseau du salon', () => {
-    // 11:30 UTC en août à Zurich correspond à 13:30 locales. La virgule
-    // après le jour vient de la convention fr-CH, déjà employée à l'écran.
+    // 11:30 UTC en août à Zurich correspond à 13:30 locales. La date suit le
+    // gabarit unique de `formatLongDate`, celui-là même employé à l'écran.
     expect(mail.subject).toBe(
-      'Rendez-vous confirmé — lundi, 17 août 2026 à 13:30',
+      'Rendez-vous confirmé — lundi 17 août 2026 à 13:30',
     )
   })
 
   it('rappelle soin, date, heure, prix et adresse en texte brut', () => {
     expect(mail.text).toContain('Soin : Soins visage — Soin visage bio')
-    expect(mail.text).toContain('Date : lundi, 17 août 2026')
+    expect(mail.text).toContain('Date : lundi 17 août 2026')
     expect(mail.text).toContain('Heure : 13:30')
-    expect(mail.text).toContain('Prix : 120 CHF')
+    // `Intl` colle le montant au sigle par une espace insécable.
+    expect(mail.text.replace(/\u00a0/g, ' ')).toContain('Prix : 120 CHF')
     expect(mail.text).toContain('Place du marché 25, 1630 Bulle')
   })
 
   it('produit une version HTML complète', () => {
     expect(mail.html).toContain('<!doctype html>')
     expect(mail.html).toContain('Votre rendez-vous est confirmé')
-    expect(mail.html).toContain('120 CHF')
+    expect(mail.html.replace(/\u00a0/g, ' ')).toContain('120 CHF')
   })
 
   it('salue par le prénom, et retombe sur le nom quand il manque', () => {
@@ -66,7 +67,7 @@ describe('buildRescheduledMail', () => {
       ...base,
       previousStartsAt: new Date('2026-08-15T08:00:00.000Z'),
     })
-    expect(mail.text).toContain('Ancien horaire : samedi, 15 août 2026 à 10:00')
+    expect(mail.text).toContain('Ancien horaire : samedi 15 août 2026 à 10:00')
     expect(mail.subject).toContain('Rendez-vous déplacé')
   })
 
@@ -80,7 +81,7 @@ describe('buildCancelledMail', () => {
   it('emploie le passé et invite à reprendre rendez-vous', () => {
     const mail = buildCancelledMail(base)
     expect(mail.subject).toContain('Rendez-vous annulé')
-    expect(mail.text).toContain('Était prévu le : lundi, 17 août 2026 à 13:30')
+    expect(mail.text).toContain('Était prévu le : lundi 17 août 2026 à 13:30')
     expect(mail.text).toContain('/reservation')
   })
 })

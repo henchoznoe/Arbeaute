@@ -58,8 +58,8 @@ export const NextAppointmentCard = ({
 
       {/* Le délai restant est posé à côté de l'heure, dont il découle : sur la
           ligne du titre, il forçait « Prochain rendez-vous » à se couper. */}
-      {/* Pas de `capitalize` : appliqué à une date entière il produirait
-          « Lundi 17 Août », que le français n'écrit pas ainsi. */}
+      {/* Pas de `capitalizeFirst` ici : la date suit l'heure sur la même
+          ligne, elle ne commence donc rien. */}
       <div className="mt-2 flex flex-wrap items-baseline gap-x-3 gap-y-1">
         <p className="font-heading text-2xl font-bold tabular-nums">
           {timeLabel}

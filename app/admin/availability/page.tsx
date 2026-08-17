@@ -140,8 +140,8 @@ const Availability = async ({
         <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
           Les horaires de la semaine décident des heures que vos clientes voient
           en ligne. Pour un jour particulier — vacances, ouverture spéciale —
-          ajoutez une exception au calendrier : une fermeture retire des heures,
-          une ouverture en ajoute.
+          marquez-le dans le calendrier : une fermeture retire des heures, une
+          ouverture en ajoute.
         </p>
       </header>
 

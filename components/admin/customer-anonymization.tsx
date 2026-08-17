@@ -61,7 +61,7 @@ export const CustomerAnonymization = () => {
           </h2>
           <p className="mt-1 text-sm leading-relaxed text-muted-foreground">
             À utiliser quand une cliente demande la suppression de ses données.
-            Son nom, son email et son téléphone disparaissent définitivement.
+            Son nom, son e-mail et son téléphone disparaissent définitivement.
             Les rendez-vous restent, sans nom, pour que vos chiffres restent
             justes. <strong className="font-semibold">C’est définitif :</strong>{' '}
             on ne peut pas revenir en arrière.

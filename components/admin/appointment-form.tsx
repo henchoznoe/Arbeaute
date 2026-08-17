@@ -30,6 +30,7 @@ import {
   saveAdminAppointment,
 } from '@/lib/actions/admin-agenda'
 import type { AdminAppointmentSeriesPreview } from '@/lib/admin/agenda'
+import { capitalizeFirst } from '@/lib/utils/format'
 
 interface AppointmentValues {
   id?: string
@@ -309,7 +310,7 @@ export const AppointmentForm = ({
       </div>
 
       <div className="grid gap-5 sm:grid-cols-2">
-        <FormField controlId="admin-appointment-email" label="Email" optional>
+        <FormField controlId="admin-appointment-email" label="E-mail" optional>
           <input
             id="admin-appointment-email"
             name="email"
@@ -340,7 +341,7 @@ export const AppointmentForm = ({
       </div>
       <p className="-mt-3 text-xs leading-relaxed text-muted-foreground">
         Le rendez-vous sera accessible dans « Mes rendez-vous » uniquement si
-        l’email et le téléphone sont tous les deux renseignés.
+        l’e-mail et le téléphone sont tous les deux renseignés.
       </p>
 
       <FormField
@@ -391,8 +392,9 @@ export const AppointmentForm = ({
                 >
                   <div className="flex items-start justify-between gap-3">
                     <span>
-                      <span className="block text-sm font-semibold capitalize">
-                        {occurrence.index}. {formatSeriesDate(occurrence.date)}
+                      <span className="block text-sm font-semibold">
+                        {occurrence.index}.{' '}
+                        {capitalizeFirst(formatSeriesDate(occurrence.date))}
                       </span>
                       <span className="block text-xs text-muted-foreground">
                         Soin de {occurrence.time} à {occurrence.endsAtTime},

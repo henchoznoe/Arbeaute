@@ -76,7 +76,7 @@ export const saveAdminCustomerProfile = async (
       ok: true,
       message: parsed.data.propagateFuture
         ? `Fiche enregistrée et ${result.propagatedAppointments} rendez-vous futur${result.propagatedAppointments > 1 ? 's' : ''} actualisé${result.propagatedAppointments > 1 ? 's' : ''}.`
-        : 'Fiche cliente enregistrée sans modifier les snapshots des rendez-vous.',
+        : 'Fiche enregistrée. Les rendez-vous déjà pris gardent le nom et le prix d’alors.',
     }
   } catch (error) {
     if (
@@ -106,7 +106,11 @@ export const mergeAdminCustomerProfiles = async (
     }
   const parsed = mergeSchema.safeParse(input)
   if (!parsed.success)
-    return { ok: false, message: 'Cette fusion est invalide.' }
+    return {
+      ok: false,
+      message:
+        'Cette fusion n’est pas valable. Rafraîchissez la page, puis recommencez.',
+    }
   try {
     const result = await mergeAdminCustomers(
       prisma,
@@ -121,7 +125,8 @@ export const mergeAdminCustomerProfiles = async (
   } catch {
     return {
       ok: false,
-      message: 'Ces deux fiches ne peuvent plus être fusionnées.',
+      message:
+        'Ces deux fiches ne peuvent plus être fusionnées : l’une d’elles a changé. Rafraîchissez la page.',
     }
   }
 }

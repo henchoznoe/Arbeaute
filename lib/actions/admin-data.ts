@@ -44,7 +44,7 @@ export const previewCustomerAnonymization = async (
     return {
       ok: false,
       message:
-        'L’email ou le téléphone n’est pas au bon format. Corrigez-les, puis réessayez.',
+        'L’e-mail ou le téléphone n’est pas au bon format. Corrigez-les, puis réessayez.',
     }
 
   try {
@@ -58,14 +58,14 @@ export const previewCustomerAnonymization = async (
       return {
         ok: false,
         message:
-          'Aucune cliente ne correspond à cet email et à ce téléphone. Vérifiez les deux, en les recopiant depuis un de ses rendez-vous.',
+          'Aucune cliente ne correspond à cet e-mail et à ce téléphone. Vérifiez les deux, en les recopiant depuis un de ses rendez-vous.',
       }
     return { ok: true, message: 'Cliente trouvée.', preview }
   } catch {
     return {
       ok: false,
       message:
-        'L’email ou le téléphone n’est pas au bon format. Corrigez-les, puis réessayez.',
+        'L’e-mail ou le téléphone n’est pas au bon format. Corrigez-les, puis réessayez.',
     }
   }
 }

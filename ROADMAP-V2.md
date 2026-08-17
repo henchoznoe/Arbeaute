@@ -53,9 +53,9 @@ figure dans le titre et se réévalue après chaque livraison.
 
 | Statut | Éléments |
 | --- | --- |
-| ✅ Terminés | 1 à 7, 10, 11, 12 |
+| ✅ Terminés | 1 à 7, 10 à 13 |
 | 🟡 En cours | Aucun |
-| ⏳ Prêt à démarrer | 8, 9, 13 |
+| ⏳ Prêt à démarrer | 8, 9 |
 | 🔒 Bloqués | Aucun |
 
 Les fondations visuelles sont posées et l’agenda d’Arzu est traité de bout en
@@ -740,7 +740,7 @@ commit.
 
 **Dépendances :** aucune.
 
-### 13. Éliminer les incohérences visibles par une non-technicienne — ⏳ Prêt à démarrer
+### 13. Éliminer les incohérences visibles par une non-technicienne — ✅ Terminé
 
 **Priorité : P0 · Effort : M · Nature : amélioration**
 
@@ -772,6 +772,51 @@ remplacent la couverture perdue avec l’élément 12.
   prestation sont couvertes par des tests unitaires ;
 - aucun test ajouté ne nécessite de base de données ni de navigateur.
 
+**Livré.** Les quatorze mises en majuscules automatiques sont supprimées : à la
+mesure, **aucune ne portait sur un mot isolé**, toutes portaient sur une date ou
+une phrase. `capitalizeFirst` les remplace, et `docs/systeme-visuel.md` interdit
+désormais la classe CSS `capitalize`. « Créneau À Choisir » est redevenu
+« Créneau à choisir ».
+
+**Une même date s'écrivait de quatre façons.** En `fr-CH`, ICU intercale une
+virgule dès que le jour de la semaine et l'année cohabitent, et une autre devant
+l'heure. Selon l'écran, le même rendez-vous s'affichait « lundi, 17 août 2026 à
+14:00 », « lun. 17 août 2026, 14:00 », « lundi 17 août à 14:00 » ou
+« lundi 17 août 2026 ». Trois gabarits partagés remplacent les quinze
+constructions locales : `formatLongDate`, `formatAppointmentDate` et
+`formatCompactMoment`, tous sans virgule et avec « à » devant l'heure.
+
+**Un prix pouvait s'afficher « 75,5 CHF ».** Le formateur *numérique* `fr-CH`
+met une virgule décimale et supprime le zéro final ; le formateur *monétaire*
+écrit « 75.50 ». Les onze copies de la mise en forme des prix sont remplacées
+par un `formatPrice` unique, monétaire, qui laisse les francs entiers sans
+décimale et en donne exactement deux sinon. Le défaut n'était pas encore visible
+au catalogue actuel — tous les prix sont ronds — mais il attendait la première
+prestation à 75.50.
+
+**Vocabulaire.** Douze occurrences de « email » côtoyaient « e-mail » ;
+« snapshots » et « propager » — le vocabulaire de la base — étaient lus par Arzu
+sur sa fiche cliente ; « exception », « chevauche », « occurrence » et « hors
+horaires » subsistaient malgré l'élément 7. Tous sont remplacés, et
+`docs/vocabulaire.md` gagne quatre entrées et deux règles : une donnée, une seule
+écriture ; jamais de majuscule à chaque mot.
+
+**Messages d'erreur.** Quinze messages se contentaient de constater — « Ce
+rendez-vous est invalide. », « La demande est invalide. », « Cette période ne
+peut plus être supprimée. » Chacun dit maintenant quoi faire ensuite. Exemple :
+« Ce rendez-vous tombe hors ouverture, ou se superpose à une fermeture.
+Choisissez une autre heure, ou ouvrez ce jour dans « Jours particuliers ». »
+
+**Tests.** `tests/reservation/formatting.test.ts` couvre les trois gabarits de
+date, l'heure, la majuscule initiale, le prix et le libellé de prestation —
+onze cas, dont l'ancrage sur `Europe/Zurich` en heure d'hiver comme en heure
+d'été. Aucun ne demande de base de données ni de navigateur. La suite passe de
+233 à 244 tests.
+
+**Deux corrections d'attentes, pas de code.** Mes premières assertions sur le
+prix étaient fausses : `fr-CH` sépare bien les milliers par une apostrophe et
+colle le sigle par une espace insécable. Le code avait raison, les tests non.
+
 **Dépendances :** élément 12 pour la stratégie de test.
 
 ---
@@ -781,11 +826,10 @@ remplacent la couverture perdue avec l’élément 12.
 Sans calendrier, mais avec un enchaînement qui évite de refaire deux fois le même
 travail :
 
-1. **Chasser les incohérences (13)** avant de toucher au tunnel : la mise en
-   majuscules automatique y produit encore « Créneau À Choisir », et
-   l’élément 9 réécrira ces mêmes écrans.
-2. **Finir par la vitrine et le tunnel (8, 9)**, qui bénéficient de toutes les
-   décisions précédentes.
+Il ne reste que la vitrine et le tunnel, **8 puis 9** : le premier écran mobile
+d’abord, puisqu’il décide de ce que voit une visiteuse, le raccourcissement du
+tunnel ensuite. Tous deux héritent des formateurs, des jetons et du vocabulaire
+posés par les douze éléments précédents.
 
 Chaque livraison conserve les invariants de sécurité, de cache, de fuseau horaire
 et de concurrence rappelés en tête de document.

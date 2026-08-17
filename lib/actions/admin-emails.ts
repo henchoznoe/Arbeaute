@@ -36,7 +36,11 @@ export const resendFailedEmail = async (
   deliveryId: string,
 ): Promise<ResendResult> => {
   if (!(await hasSameOrigin()))
-    return { ok: false, message: 'La demande est invalide.' }
+    return {
+      ok: false,
+      message:
+        'Cette demande n’est pas valable. Rafraîchissez la page, puis réessayez.',
+    }
   if (!(await getAdminSession()))
     return {
       ok: false,
@@ -47,7 +51,11 @@ export const resendFailedEmail = async (
     where: { id: deliveryId },
     select: { id: true, kind: true, status: true, appointmentId: true },
   })
-  if (!delivery) return { ok: false, message: 'Cet envoi n’existe plus.' }
+  if (!delivery)
+    return {
+      ok: false,
+      message: 'Cet envoi n’est plus dans la liste. Rafraîchissez la page.',
+    }
   if (delivery.status === 'SENT')
     return { ok: false, message: 'Cet e-mail est déjà parti.' }
 

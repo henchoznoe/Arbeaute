@@ -125,7 +125,7 @@ export const AppointmentStatusActions = ({
           <ConfirmDialog
             key={`restore-${status}`}
             title="Rétablir ce rendez-vous ?"
-            description="Le créneau sera contrôlé à nouveau, préparation et rangement inclus. Le rétablissement sera refusé si un autre rendez-vous confirmé le chevauche."
+            description="L’heure sera contrôlée à nouveau, installation et rangement compris. Le rétablissement sera refusé si un autre rendez-vous confirmé s’y superpose."
             confirmLabel="Rétablir le rendez-vous"
             confirmVariant="default"
             onConfirm={() => changeStatus('CONFIRMED')}

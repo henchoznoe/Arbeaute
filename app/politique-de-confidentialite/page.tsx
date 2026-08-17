@@ -30,15 +30,16 @@ const PrivacyPage = () => (
       <h2>Données collectées lors d’une réservation</h2>
       <p>
         Pour réserver un rendez-vous, ce site vous demande votre prénom, votre
-        nom, votre email, votre numéro de téléphone complet et, facultativement,
-        un commentaire. Ces informations sont utilisées uniquement pour créer et
-        gérer votre rendez-vous, et pour vous permettre de le retrouver dans
-        l’espace « Mes rendez-vous ». Elles ne sont ni vendues, ni utilisées à
-        des fins de prospection commerciale, ni transmises à des tiers en dehors
-        des prestataires techniques mentionnés ci-dessous.
+        nom, votre e-mail, votre numéro de téléphone complet et,
+        facultativement, un commentaire. Ces informations sont utilisées
+        uniquement pour créer et gérer votre rendez-vous, et pour vous permettre
+        de le retrouver dans l’espace « Mes rendez-vous ». Elles ne sont ni
+        vendues, ni utilisées à des fins de prospection commerciale, ni
+        transmises à des tiers en dehors des prestataires techniques mentionnés
+        ci-dessous.
       </p>
       <p>
-        L’espace « Mes rendez-vous » exige la combinaison exacte de l’email et
+        L’espace « Mes rendez-vous » exige la combinaison exacte de l’e-mail et
         du téléphone utilisés lors de la réservation. Il n’affiche que les
         rendez-vous futurs confirmés ; la session d’identification est conservée
         dans un cookie technique et expire automatiquement.

@@ -1,5 +1,6 @@
 import prisma from '@/lib/core/prisma'
 import { RESERVATION_TIME_ZONE } from '@/lib/reservation/constants'
+import { formatPrice } from '@/lib/utils/format'
 import type { Prisma, PrismaClient } from '@/prisma/generated/prisma/client'
 import type {
   AuditActionType,
@@ -200,7 +201,7 @@ const formatAuditValue = (key: string, value: Prisma.JsonValue): string => {
   if (key === 'status' && typeof value === 'string')
     return appointmentStatusLabels[value] ?? value
   if (key === 'priceCents' && typeof value === 'number')
-    return `${(value / 100).toLocaleString('fr-CH')} CHF`
+    return formatPrice(value)
   if (
     ['durationMinutes', 'preparationMinutes', 'cleanupMinutes'].includes(key) &&
     typeof value === 'number'

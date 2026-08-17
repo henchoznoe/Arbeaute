@@ -7,6 +7,7 @@ import { AdminDayTimeline } from '@/components/admin/admin-day-timeline'
 import { Button } from '@/components/ui/button'
 import type { AdminTimelineDay } from '@/lib/admin/agenda-timeline'
 import { ADMIN_AGENDA_DATE_EVENT } from '@/lib/admin/navigation'
+import { capitalizeFirst } from '@/lib/utils/format'
 
 const STORAGE_KEY = 'admin-agenda-visible-days'
 const ALL_DAYS = [1, 2, 3, 4, 5, 6, 0]
@@ -109,7 +110,7 @@ export const AdminAgendaView = ({
               <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
                 Semaine
               </p>
-              <p className="text-xs font-semibold capitalize sm:text-sm">
+              <p className="text-xs font-semibold sm:text-sm">
                 {days[0].label.replace(/^\S+\s/, '')} –{' '}
                 {days.at(-1)?.label.replace(/^\S+\s/, '')}
               </p>
@@ -177,8 +178,8 @@ export const AdminAgendaView = ({
               <p className="text-xs font-medium text-brand">
                 {selectedDay.isToday ? 'Aujourd’hui' : 'Journée sélectionnée'}
               </p>
-              <h2 className="font-heading text-2xl font-bold capitalize">
-                {selectedDay.label}
+              <h2 className="font-heading text-2xl font-bold">
+                {capitalizeFirst(selectedDay.label)}
               </h2>
             </div>
             <Button asChild size="icon">
@@ -198,8 +199,9 @@ export const AdminAgendaView = ({
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div>
             <h2 className="font-heading text-2xl font-bold">Semaine</h2>
-            <p className="text-sm capitalize text-muted-foreground">
-              {firstVisibleDay.label} – {lastVisibleDay.label}
+            <p className="text-sm text-muted-foreground">
+              {capitalizeFirst(firstVisibleDay.label)} –{' '}
+              {capitalizeFirst(lastVisibleDay.label)}
             </p>
           </div>
           <div className="flex items-center gap-2">
