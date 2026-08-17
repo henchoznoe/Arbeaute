@@ -150,6 +150,10 @@ export const ReservationWizard = ({
     null,
   )
   const synchronizedDeepLinkRef = useRef(deepLinkSelectionKey)
+  // Le tunnel ne se place tout seul sur un jour ouvert que tant que la cliente
+  // n'a rien choisi elle-même : dès qu'elle touche au calendrier, elle décide.
+  const customerChoseDayRef = useRef(false)
+  const autoSearchedServiceRef = useRef<string | null>(null)
   const selectedService = services.find(service => service.id === serviceId)
   const weekEnd = addDateKeyDays(viewStart, 6)
   const lastCompleteWeekStart = addDateKeyDays(maxDate, -6)
@@ -179,6 +183,7 @@ export const ReservationWizard = ({
   )
 
   const goToWeek = (amount: number) => {
+    customerChoseDayRef.current = true
     const candidate = addDateKeyDays(viewStart, amount)
     const next =
       candidate < minDate
@@ -196,6 +201,7 @@ export const ReservationWizard = ({
   }
 
   const selectDate = (dateKey: string) => {
+    customerChoseDayRef.current = true
     setDate(dateKey)
     setStartsAt('')
     setNextSlotNotice(null)
@@ -214,6 +220,8 @@ export const ReservationWizard = ({
       '',
       buildServiceReservationPath(service.slug),
     )
+    customerChoseDayRef.current = false
+    autoSearchedServiceRef.current = null
     setServiceId(service.id)
     setDate(minDate)
     setViewStart(minDate)
@@ -239,6 +247,8 @@ export const ReservationWizard = ({
       return
     }
 
+    customerChoseDayRef.current = false
+    autoSearchedServiceRef.current = null
     setServiceId(initialServiceId)
     setDate(minDate)
     setViewStart(minDate)
@@ -271,8 +281,40 @@ export const ReservationWizard = ({
         )
         return stillAvailable ? candidate : ''
       })
+
+      // Une cliente sans préférence de date ne doit pas avoir à chercher : le
+      // tunnel s'ouvre sur le premier jour qui a des heures libres, au lieu de
+      // lui annoncer « L'institut est fermé ce jour-là ».
+      if (customerChoseDayRef.current || pending) return
+
+      const firstOpenDay = Object.keys(loaded)
+        .sort()
+        .find(dateKey => loaded[dateKey].slots.length > 0)
+      if (firstOpenDay) {
+        setDate(firstOpenDay)
+        return
+      }
+
+      // Semaine entièrement fermée ou pleine : on va chercher la suivante, une
+      // seule fois par prestation pour ne pas enchaîner les appels.
+      if (autoSearchedServiceRef.current === serviceId) return
+      autoSearchedServiceRef.current = serviceId
+
+      const found = await getNextPublicAvailableSlot(serviceId, viewStart)
+      if (!found) {
+        setNextSlotNotice(
+          'Aucune heure libre dans les prochains mois pour ce soin. Appelez l’institut, il reste peut-être une solution.',
+        )
+        return
+      }
+
+      setNextSlotNotice(
+        `Rien de libre cette semaine-là. Voici le prochain jour disponible : ${formatCalendarDate(found.dateKey)}.`,
+      )
+      setDate(found.dateKey)
+      setViewStart(found.dateKey > maxViewStart ? maxViewStart : found.dateKey)
     })
-  }, [serviceId, step, viewStart])
+  }, [maxViewStart, serviceId, step, viewStart])
 
   const findNextSlot = () => {
     if (!serviceId) return
@@ -463,32 +505,48 @@ export const ReservationWizard = ({
         {['Prestation', 'Créneau', 'Coordonnées', 'Vérification'].map(
           (label, index) => {
             const number = index + 1
-            const canGoBack = step > number
-            const active = step >= number
+            const done = step > number
+            const current = step === number
             return (
               <li key={label}>
+                {/* Trois états distingués par la forme autant que par la
+                    couleur : une coche pour ce qui est fait, un numéro plein
+                    pour l'étape en cours, un numéro discret pour la suite. */}
                 <button
                   type="button"
-                  disabled={!canGoBack}
+                  disabled={!done}
                   onClick={() => goToStep(number)}
-                  aria-current={step === number ? 'step' : undefined}
+                  aria-current={current ? 'step' : undefined}
                   className={cn(
                     'flex min-h-16 w-full flex-col items-center justify-center gap-1 rounded-2xl border px-0.5 py-2 text-center transition sm:min-h-0 sm:flex-row sm:gap-2 sm:rounded-full sm:px-3 sm:py-2.5',
-                    active &&
-                      'border-primary bg-primary text-primary-foreground',
-                    canGoBack ? 'cursor-pointer' : 'cursor-default',
+                    current &&
+                      'border-primary bg-primary font-semibold text-primary-foreground',
+                    done &&
+                      'cursor-pointer border-primary bg-primary/10 text-foreground',
+                    !done &&
+                      !current &&
+                      'cursor-default border-dashed text-muted-foreground',
                   )}
                 >
                   <span
                     className={cn(
                       'grid size-5 shrink-0 place-items-center rounded-full text-[11px] font-semibold',
-                      active ? 'bg-primary-foreground/20' : 'bg-foreground/10',
+                      current && 'bg-primary-foreground/20',
+                      done && 'bg-primary text-primary-foreground',
+                      !done && !current && 'bg-foreground/10',
                     )}
                   >
-                    {number}
+                    {done ? <Check className="size-3" /> : number}
                   </span>
                   <span className="text-2xs leading-tight font-medium text-balance sm:text-sm">
                     {label}
+                    <span className="sr-only">
+                      {done
+                        ? ' : étape terminée, revenir ici'
+                        : current
+                          ? ' : étape en cours'
+                          : ' : étape à venir'}
+                    </span>
                   </span>
                 </button>
               </li>

@@ -53,15 +53,17 @@ figure dans le titre et se réévalue après chaque livraison.
 
 | Statut | Éléments |
 | --- | --- |
-| ✅ Terminés | 1 à 7, 10 à 13 |
+| ✅ Terminés | 1 à 13 — backlog clos |
 | 🟡 En cours | Aucun |
-| ⏳ Prêt à démarrer | 8, 9 |
+| ⏳ Prêt à démarrer | Aucun |
 | 🔒 Bloqués | Aucun |
 
-Les fondations visuelles sont posées et l’agenda d’Arzu est traité de bout en
-bout : il s’ouvre sur sa journée, chaque rendez-vous s’actionne d’un geste et
-les changements des clientes lui parviennent sur téléphone. Côté cliente, la
-réservation confirme et prévient par e-mail, sans plus rien avertir.
+**Les treize éléments sont livrés.** Les fondations visuelles sont posées et
+l’agenda d’Arzu est traité de bout en bout : il s’ouvre sur sa journée, chaque
+rendez-vous s’actionne d’un geste et les changements des clientes lui parviennent
+sur téléphone. Côté cliente, la vitrine tient dans un écran de téléphone, le
+tunnel propose d’emblée la première heure libre, et la réservation confirme puis
+prévient par e-mail sans plus rien avertir.
 
 - **Priorité P0** : corrige une friction quotidienne ou prépare plusieurs autres
   éléments.
@@ -477,7 +479,7 @@ s’y conformer.
 
 ## Vitrine et tunnel de réservation
 
-### 8. Refondre le premier écran mobile de la vitrine — ⏳ Prêt à démarrer
+### 8. Refondre le premier écran mobile de la vitrine — ✅ Terminé
 
 **Priorité : P0 · Effort : M · Nature : amélioration**
 
@@ -508,9 +510,47 @@ raison immédiate de continuer.
   décalage de mise en page ;
 - la page d’accueil reste servie depuis le CDN, sans invocation de fonction.
 
+**Livré.** Le contenu est ancré en haut sur mobile au lieu d’être centré dans une
+hauteur d’écran complète ; la pleine hauteur ne revient qu’à partir de `md`.
+Mesuré à 360 × 620 : le titre commence à 168 px et le bouton « Prendre
+rendez-vous » se termine à 460 px, donc **tout est visible sans défiler**, et la
+section suivante affleure — le visiteur voit qu’il y a une suite.
+
+La photo entre dans la composition : sur téléphone, une vignette ronde de 56 px
+précède « Soins esthétiques à Bulle » et « Arzu Yurdakul ». Les marges droites
+codées en dur (`pr-24`, `pr-28`, `pr-32`, `pr-36`) disparaissent, et le sur-titre
+cesse de se casser sur « BULLE » tout seul. La grande photo reste au bureau.
+
+Les deux actions passent par une grille à colonnes égales : **320 × 48 px chacune
+à 360 px, 250 × 48 px chacune à 1280 px**. Elles restent empilées jusqu’à `lg`,
+car côte à côte dans la colonne étroite du bureau « Prendre rendez-vous » venait
+toucher ses bords. La pastille « Uniquement sur rendez-vous », qui était un
+encadré concurrent de l’appel à l’action, devient une simple ligne en dessous.
+
+**Deux pièges rencontrés.**
+
+- Enveloppée dans un `Animate` en `hidden md:block`, la grande photo restait
+  **invisible sur ordinateur** : l’observateur d’intersection ne se déclenche pas
+  sur un élément né sans boîte, et l’opacité restait à 0. Le portrait est
+  au-dessus de la ligne de flottaison — une entrée déclenchée au défilement n’a
+  rien à déclencher — il se passe donc d’`Animate`.
+- En `loading="eager"`, cette même photo se téléchargeait sur téléphone alors
+  qu’elle y est en `display:none`. Passée en `lazy`, elle n’est plus demandée du
+  tout : mesuré, le premier écran mobile ne charge plus que la vignette de
+  **2,1 Kio**.
+
+**Ce que je n’ai pas fait, et pourquoi.** La recommandation suggérait d’annoncer
+la prochaine disponibilité dans le hero. Je m’en suis abstenu : les créneaux ne
+peuvent pas être mis en cache — c’est la règle qui protège des doubles
+réservations — donc l’afficher imposerait soit une lecture dynamique par
+visiteur, qui ferait glisser `/` de `○ Static` à `◐` et coûterait une invocation
+de fonction à chaque visite sur un plan Hobby, soit un chiffre potentiellement
+faux. Les deux contredisent un critère de cet élément. L’appel à l’action, lui,
+mène en un geste au tunnel qui affiche désormais la première heure libre.
+
 **Dépendances :** éléments 1 et 3.
 
-### 9. Raccourcir et clarifier le tunnel de réservation — ⏳ Prêt à démarrer
+### 9. Raccourcir et clarifier le tunnel de réservation — ✅ Terminé
 
 **Priorité : P1 · Effort : M · Nature : amélioration**
 
@@ -538,6 +578,32 @@ cliente.
 - un créneau pris entre-temps produit un message qui explique quoi faire, et
   ramène au calendrier avec les créneaux à jour ;
 - le parcours reste utilisable au clavier, dans l’ordre visuel.
+
+**Livré.** Le tunnel se place tout seul sur la première journée qui a des heures
+libres, au lieu d’ouvrir sur « L’institut est fermé ce jour-là ». La règle tient
+en deux temps et **ne coûte aucune requête supplémentaire dans le cas courant** :
+la semaine est déjà chargée, on y cherche le premier jour ouvert ; ce n’est que
+si la semaine entière est fermée ou pleine qu’un appel va chercher la suivante,
+une seule fois par prestation. Vérifié en fermant toute la semaine du 17 août :
+le tunnel saute au 24, l’explique — « Rien de libre cette semaine-là. Voici le
+prochain jour disponible : lundi 24 août 2026. » — et affiche les heures.
+
+Le placement automatique s’arrête dès que la cliente touche au calendrier : à
+partir de là, c’est elle qui décide.
+
+Les quatre étapes ont maintenant **trois états distingués par la forme** et non
+par la seule couleur : une coche pour ce qui est fait, un numéro plein pour
+l’étape en cours, un numéro discret sur bordure pointillée pour la suite. Chaque
+étape porte en plus son état en toutes lettres pour les lecteurs d’écran.
+
+**Trois critères étaient déjà tenus, et je l’ai vérifié plutôt que supposé :**
+
+- le récapitulatif ne garde rien d’obsolète — revenir à l’étape 1 et changer de
+  soin le remet sur « Créneau à choisir » ;
+- un créneau pris entre-temps ramène au calendrier rechargé avec un message qui
+  dit quoi faire ;
+- l’ordre du clavier suit l’ordre visuel : 26 éléments focalisables, aucune
+  rupture, aucun `tabindex` positif.
 
 **Dépendances :** éléments 2, 3 et 13.
 
@@ -588,10 +654,17 @@ par sept tests.
 **Deux défauts trouvés par la vérification.**
 
 - Une adresse longue mais réaliste
-  (`marie-antoinette.vandenberghe@fournisseur-suisse-romand.ch`) débordait de
-  l’écran et provoquait un défilement horizontal — ce que l’élément 3 interdit.
-  `break-words` ne suffisait pas : dans un conteneur flex, seul
-  `wrap-anywhere` autorise le texte à descendre sous sa largeur `min-content`.
+  (`marie-antoinette.vandenberghe@fournisseur-suisse-romand.ch`) sortait de son
+  cadre vert et se faisait couper au bord de l’écran. `break-words` ne suffisait
+  pas : dans un conteneur flex, seul `wrap-anywhere` autorise le texte à
+  descendre sous sa largeur `min-content`.
+
+  **Correction d’une affirmation.** Cette page a d’abord écrit que le débordement
+  « provoquait un défilement horizontal ». C’est faux, et la mesure le montre :
+  `maxScrollLeft` vaut 0 avec comme sans le correctif. Le texte débordait de
+  83 px et était simplement tronqué. Ma mesure initiale comparait `scrollWidth` à
+  `clientWidth`, dont l’écart de 8 px n’est que la barre de défilement verticale
+  — un faux positif à ne pas reproduire.
 - Resend répond **403** tant que le domaine n’est pas vérifié, et l’élément 11
   traduisait tout 403 par « la clé Resend a été refusée » — une fausse piste qui
   aurait envoyé Arzu vérifier sa clé alors que le problème est le domaine. Le
@@ -826,10 +899,16 @@ colle le sigle par une espace insécable. Le code avait raison, les tests non.
 Sans calendrier, mais avec un enchaînement qui évite de refaire deux fois le même
 travail :
 
-Il ne reste que la vitrine et le tunnel, **8 puis 9** : le premier écran mobile
-d’abord, puisqu’il décide de ce que voit une visiteuse, le raccourcissement du
-tunnel ensuite. Tous deux héritent des formateurs, des jetons et du vocabulaire
-posés par les douze éléments précédents.
+Ce backlog est clos. L’ordre suivi aura été : les fondations visuelles (1, 2, 3),
+puis l’agenda d’Arzu (4, 5, 6, 7), puis les garde-fous (12), les e-mails (11) et
+la confirmation qu’ils débloquaient (10), la chasse aux incohérences (13), et
+enfin la vitrine et le tunnel (8, 9) — qui ont hérité des formateurs, des jetons
+et du vocabulaire posés par tout le reste.
+
+**Ce qui reste, côté exploitation et non côté code** : terminer la vérification du
+domaine `arbeaute-bulle.ch` chez Resend, et ajouter `RESEND_API_KEY`,
+`RESEND_FROM` et `ADMIN_NOTIFICATION_EMAIL` dans Vercel — `CRON_SECRET` étant
+injecté dès que la tâche planifiée est déclarée.
 
 Chaque livraison conserve les invariants de sécurité, de cache, de fuseau horaire
 et de concurrence rappelés en tête de document.
