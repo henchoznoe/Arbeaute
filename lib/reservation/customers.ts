@@ -1,5 +1,4 @@
 import { writeAuditEvent } from '@/lib/admin/audit'
-import { createCustomerIdentityDigest } from '@/lib/core/session-cookies'
 import { normalizeEmail, normalizePhone } from '@/lib/reservation/identity'
 import type { Prisma } from '@/prisma/generated/prisma/client'
 
@@ -32,13 +31,9 @@ export const normalizeCustomerSearchName = (
  * Rattache une identité à partir de son e-mail seul.
  *
  * L'adresse désigne la personne : le téléphone la suit — quelqu'un qui change de
- * numéro reste la même personne — et le nom aussi.
- *
- * Volontairement en deux temps plutôt qu'un `upsert` : l'index unique sur
- * `emailNormalized` n'arrive qu'avec la migration de retrait des condensés, et
- * `upsert` produirait un `ON CONFLICT` que la base refuse tant que cet index
- * n'existe pas. Le tri par `firstSeenAt` retient la fiche la plus ancienne,
- * exactement celle que cette migration conservera en fusionnant les doublons.
+ * numéro reste la même personne — et le nom aussi. L'index unique sur
+ * `emailNormalized` rend l'`upsert` atomique : deux réservations simultanées
+ * depuis la même adresse ne peuvent pas créer deux fiches.
  */
 export const upsertCustomerIdentity = async (
   transaction: Prisma.TransactionClient,
@@ -51,39 +46,27 @@ export const upsertCustomerIdentity = async (
     lastName: input.lastName.trim(),
     searchName: normalizeCustomerSearchName(input.firstName, input.lastName),
   }
-  const existing = await transaction.customer.findFirst({
+  const existing = await transaction.customer.findUnique({
     where: { emailNormalized },
-    orderBy: [{ firstSeenAt: 'asc' }, { id: 'asc' }],
     select: { id: true },
   })
-
-  const updated = existing
-    ? await transaction.customer.update({
-        where: { id: existing.id },
-        data: {
-          ...names,
-          email: emailNormalized,
-          phone: phoneNormalized,
-          phoneNormalized,
-          lastSeenAt: new Date(),
-        },
-      })
-    : await transaction.customer.create({
-        data: {
-          ...names,
-          email: emailNormalized,
-          emailNormalized,
-          phone: phoneNormalized,
-          phoneNormalized,
-          // Transitoire : la version précédente du site cherche encore ses
-          // fiches par ce condensé. Retiré par la release suivante, voir
-          // docs/data-operations.md.
-          identityDigest: createCustomerIdentityDigest(
-            emailNormalized,
-            phoneNormalized,
-          ),
-        },
-      })
+  const updated = await transaction.customer.upsert({
+    where: { emailNormalized },
+    update: {
+      ...names,
+      email: emailNormalized,
+      phone: phoneNormalized,
+      phoneNormalized,
+      lastSeenAt: new Date(),
+    },
+    create: {
+      ...names,
+      email: emailNormalized,
+      emailNormalized,
+      phone: phoneNormalized,
+      phoneNormalized,
+    },
+  })
 
   await writeAuditEvent(transaction, {
     actorType: 'CUSTOMER',

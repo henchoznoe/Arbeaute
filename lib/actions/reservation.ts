@@ -260,7 +260,6 @@ export const identifyCustomer = async (formData: FormData): Promise<void> => {
       const email = normalizeEmail(emailValue)
       customer = await prisma.customer.findFirst({
         where: { emailNormalized: email, anonymizedAt: null },
-        orderBy: [{ firstSeenAt: 'asc' }, { id: 'asc' }],
         select: { id: true, identityVersion: true },
       })
     }
