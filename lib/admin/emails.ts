@@ -27,10 +27,17 @@ export const describeEmailError = (error: string | null): string | null => {
   if (!error) return null
   const lower = error.toLowerCase()
 
+  // Le domaine non vérifié se présente en 403 comme en 422 selon le cas : il
+  // se reconnaît au message, pas au code, et ne doit pas être confondu avec
+  // une clé refusée — les deux n'appellent pas du tout la même action.
+  if (lower.includes('not verified') || lower.includes('domain'))
+    return 'Votre domaine d’envoi n’est pas encore vérifié chez Resend. Terminez la vérification, puis renvoyez.'
   if (lower.includes('422') || lower.includes('validation_error'))
     return 'Resend a refusé le destinataire. Tant que votre domaine n’est pas vérifié, seuls vos propres e-mails sont acceptés : terminez la vérification, puis renvoyez.'
-  if (lower.includes('401') || lower.includes('403'))
+  if (lower.includes('401'))
     return 'La clé Resend a été refusée. Vérifiez-la dans la configuration du site, puis renvoyez.'
+  if (lower.includes('403'))
+    return 'Resend a refusé l’envoi. Vérifiez que votre domaine est vérifié et que la clé a le droit d’envoyer, puis renvoyez.'
   if (lower.includes('429'))
     return 'Trop d’envois d’un coup. Attendez quelques minutes, puis renvoyez.'
   if (lower.includes('dix secondes'))

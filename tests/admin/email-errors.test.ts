@@ -26,6 +26,18 @@ describe('describeEmailError', () => {
     )
   })
 
+  /**
+   * Cas observé en conditions réelles : Resend répond 403 tant que le domaine
+   * n'est pas vérifié. Envoyer Arzu vérifier sa clé serait une fausse piste.
+   */
+  it('distingue le domaine non vérifié d’une clé refusée', () => {
+    const phrase = describeEmailError(
+      'Resend a répondu 403. {"statusCode":403,"message":"The arbeaute-bulle.ch domain is not verified."}',
+    )
+    expect(phrase).toContain('domaine')
+    expect(phrase).not.toContain('clé Resend')
+  })
+
   it('demande d’attendre quand le rythme est trop élevé', () => {
     expect(describeEmailError('Resend a répondu 429.')).toContain(
       'quelques minutes',

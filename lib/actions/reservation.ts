@@ -68,6 +68,8 @@ export interface BookingResult {
     startsAt: string
     endsAt: string
     calendar: string
+    /** Adresse à laquelle la confirmation part, `null` si aucun envoi n'a lieu. */
+    confirmationEmailTo: string | null
   }
 }
 
@@ -199,7 +201,7 @@ export const createPublicAppointment = async (
       comment: parsed.data.comment || null,
     })
     refreshAdminActivity()
-    notifyAppointmentConfirmed(appointment)
+    const confirmationEmailTo = notifyAppointmentConfirmed(appointment)
 
     return {
       ok: true,
@@ -216,6 +218,7 @@ export const createPublicAppointment = async (
           startsAt: appointment.startsAt,
           endsAt: appointment.endsAt,
         }),
+        confirmationEmailTo,
       },
     }
   } catch (error) {

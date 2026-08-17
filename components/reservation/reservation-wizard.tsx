@@ -4,7 +4,7 @@ import {
   Check,
   ChevronLeft,
   FileText,
-  MailX,
+  Mail,
   MapPin,
   Pencil,
   Phone,
@@ -34,6 +34,7 @@ import {
   formatCalendarDate,
   formatCalendarPeriod,
 } from '@/lib/reservation/calendar-view'
+import { describeConfirmationDelivery } from '@/lib/reservation/confirmation-wording'
 import {
   type CustomerFormErrors,
   type CustomerFormField,
@@ -373,6 +374,10 @@ export const ReservationWizard = ({
     })
   }
 
+  const deliveryNotice = describeConfirmationDelivery(
+    result?.appointment?.confirmationEmailTo,
+  )
+
   if (result?.appointment)
     return (
       <section
@@ -395,9 +400,9 @@ export const ReservationWizard = ({
         </p>
         <div className="mt-6 rounded-2xl bg-muted p-5 text-left">
           <p className="font-semibold">{result.appointment.serviceName}</p>
-          <p className="mt-2 text-sm capitalize">
-            {result.appointment.dateLabel}
-          </p>
+          {/* Pas de `capitalize` : appliqué à la date entière, il produirait
+              « Lundi, 17 Août 2026 À 14:00 ». */}
+          <p className="mt-2 text-sm">{result.appointment.dateLabel}</p>
           <p className="mt-1 text-sm text-muted-foreground">
             {result.appointment.priceLabel}
           </p>
@@ -412,21 +417,25 @@ export const ReservationWizard = ({
             </p>
           </div>
         </div>
+        {deliveryNotice ? (
+          <div className="mt-5 rounded-2xl border border-success-line bg-success-subtle p-5 text-left text-success-strong">
+            <p className="flex items-start gap-3 font-semibold">
+              <Mail className="mt-0.5 size-5 shrink-0" />
+              {/* `wrap-anywhere` et non `break-words` : dans un conteneur flex,
+                  seul le premier autorise l'adresse à descendre sous sa largeur
+                  min-content. Sans lui, une adresse longue déborde l'écran. */}
+              <span className="wrap-anywhere">{deliveryNotice.title}</span>
+            </p>
+            <p className="mt-2 pl-8 text-sm leading-relaxed">
+              {deliveryNotice.detail}
+            </p>
+          </div>
+        ) : null}
         {selectedService?.consentFormUrl ? (
           <div className="text-left">
             <ConsentFormNotice url={selectedService.consentFormUrl} />
           </div>
         ) : null}
-        <div className="mt-5 rounded-2xl border border-warning-accent bg-warning-subtle p-5 text-left text-warning-strong">
-          <p className="flex items-start gap-3 font-semibold">
-            <MailX className="mt-0.5 size-5 shrink-0" />
-            Aucun e-mail de confirmation ne sera envoyé
-          </p>
-          <p className="mt-2 pl-8 text-sm leading-relaxed">
-            Cet écran confirme définitivement votre réservation. Pensez à
-            ajouter le rendez-vous à votre calendrier ci-dessous.
-          </p>
-        </div>
 
         <ConfirmationActions appointment={result.appointment} />
 
@@ -638,9 +647,9 @@ export const ReservationWizard = ({
             Vos coordonnées
           </h2>
           <p className="mt-1 text-sm text-muted-foreground">
-            Aucun e-mail de confirmation ne sera envoyé. Votre e-mail et votre
-            téléphone serviront à retrouver, modifier ou annuler ce rendez-vous
-            dans « Mes rendez-vous ».
+            Votre confirmation part à l’adresse e-mail indiquée ici. Cette
+            adresse et votre numéro servent aussi à retrouver, modifier ou
+            annuler ce rendez-vous dans « Mes rendez-vous ».
           </p>
           <div className="mt-6 grid gap-4 sm:grid-cols-2">
             <FormField

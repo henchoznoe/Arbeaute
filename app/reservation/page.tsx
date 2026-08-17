@@ -4,6 +4,7 @@ import { SiteHeader } from '@/components/layout/site-header'
 import { ReservationWizard } from '@/components/reservation/reservation-wizard'
 import { getBookableServices } from '@/lib/catalog/queries'
 import { createPageMetadata } from '@/lib/config/seo'
+import { isEmailConfigured } from '@/lib/core/env'
 import { getPublicBookingWindow } from '@/lib/reservation/booking-window'
 
 export const metadata = createPageMetadata({
@@ -41,7 +42,8 @@ const ReservationPage = async () => {
           </h1>
           <p className="mt-3 text-muted-foreground">
             Choisissez votre soin et un créneau disponible. La réservation est
-            confirmée immédiatement à l’écran, sans envoi d’e-mail.
+            confirmée immédiatement à l’écran
+            {isEmailConfigured ? ', puis par e-mail' : null}.
           </p>
         </div>
         <Suspense

@@ -53,14 +53,15 @@ figure dans le titre et se réévalue après chaque livraison.
 
 | Statut | Éléments |
 | --- | --- |
-| ✅ Terminés | 1 à 7, 11, 12 |
+| ✅ Terminés | 1 à 7, 10, 11, 12 |
 | 🟡 En cours | Aucun |
-| ⏳ Prêt à démarrer | 8, 9, 10, 13 |
+| ⏳ Prêt à démarrer | 8, 9, 13 |
 | 🔒 Bloqués | Aucun |
 
 Les fondations visuelles sont posées et l’agenda d’Arzu est traité de bout en
 bout : il s’ouvre sur sa journée, chaque rendez-vous s’actionne d’un geste et
-les changements des clientes lui parviennent sur téléphone.
+les changements des clientes lui parviennent sur téléphone. Côté cliente, la
+réservation confirme et prévient par e-mail, sans plus rien avertir.
 
 - **Priorité P0** : corrige une friction quotidienne ou prépare plusieurs autres
   éléments.
@@ -540,7 +541,7 @@ cliente.
 
 **Dépendances :** éléments 2, 3 et 13.
 
-### 10. Rendre la confirmation rassurante — ⏳ Prêt à démarrer
+### 10. Rendre la confirmation rassurante — ✅ Terminé
 
 **Priorité : P1 · Effort : S · Nature : amélioration**
 
@@ -563,6 +564,44 @@ consentement s’il y en a un). Les avertissements disparaissent.
   une faute de saisie tout de suite ;
 - l’ajout au calendrier et le formulaire de consentement restent accessibles ;
 - l’impression du récapitulatif continue de fonctionner.
+
+**Livré.** Les trois formulations négatives ont disparu : le bandeau ambre
+« Aucun e-mail de confirmation ne sera envoyé », la phrase d’introduction de
+l’étape « Vos coordonnées » et le chapeau de la page de réservation. À leur
+place, un bloc vert rappelle l’adresse de destination — « Le détail part par
+e-mail à … » — et dit quoi faire en cas de faute de saisie : appeler l’institut,
+le rendez-vous étant enregistré de toute façon. L’ajout au calendrier, la copie
+des détails, l’enregistrement en PDF et le formulaire de consentement restent en
+place, simplement présentés comme des compléments et non comme un filet de
+sécurité.
+
+**Ce que l’écran sait, et ce qu’il ne sait pas.** L’envoi part avec `after()`,
+donc l’écran ne peut pas connaître son issue : il annonce un départ, jamais une
+réception. `createPublicAppointment` renvoie désormais `confirmationEmailTo`,
+l’adresse réellement mise en file — `null` si aucun envoi n’est configuré ou si
+le rendez-vous n’a pas d’adresse. L’écran s’appuie sur cette valeur, si bien
+qu’il ne promet jamais un e-mail qui ne partira pas. Quand rien ne part, il
+n’affiche simplement rien : le rendez-vous est confirmé dans les deux cas.
+`describeConfirmationDelivery` et le filtrage de la mise en file sont couverts
+par sept tests.
+
+**Deux défauts trouvés par la vérification.**
+
+- Une adresse longue mais réaliste
+  (`marie-antoinette.vandenberghe@fournisseur-suisse-romand.ch`) débordait de
+  l’écran et provoquait un défilement horizontal — ce que l’élément 3 interdit.
+  `break-words` ne suffisait pas : dans un conteneur flex, seul
+  `wrap-anywhere` autorise le texte à descendre sous sa largeur `min-content`.
+- Resend répond **403** tant que le domaine n’est pas vérifié, et l’élément 11
+  traduisait tout 403 par « la clé Resend a été refusée » — une fausse piste qui
+  aurait envoyé Arzu vérifier sa clé alors que le problème est le domaine. Le
+  domaine se reconnaît au message, pas au code : la traduction le teste d’abord,
+  et 401 (clé) est désormais séparé de 403 (droit d’envoi).
+
+**Le `capitalize` de cet écran est supprimé** : appliqué à la date entière, il
+affichait « Mardi, 18 Août 2026 À 10:45 ». Les treize autres usages relèvent de
+l’élément 13, et l’un d’eux — « Créneau À Choisir » — reste visible dans le
+récapitulatif du tunnel.
 
 **Dépendances :** élément 11.
 
@@ -742,10 +781,11 @@ remplacent la couverture perdue avec l’élément 12.
 Sans calendrier, mais avec un enchaînement qui évite de refaire deux fois le même
 travail :
 
-1. **Réécrire la confirmation (10)**, désormais débloquée : l’écran peut cesser
-   d’avertir qu’aucun e-mail ne sera envoyé.
-2. **Finir par la vitrine et le tunnel (8, 9)** et par la chasse aux
-   incohérences (13), qui bénéficient de toutes les décisions précédentes.
+1. **Chasser les incohérences (13)** avant de toucher au tunnel : la mise en
+   majuscules automatique y produit encore « Créneau À Choisir », et
+   l’élément 9 réécrira ces mêmes écrans.
+2. **Finir par la vitrine et le tunnel (8, 9)**, qui bénéficient de toutes les
+   décisions précédentes.
 
 Chaque livraison conserve les invariants de sécurité, de cache, de fuseau horaire
 et de concurrence rappelés en tête de document.

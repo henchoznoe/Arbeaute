@@ -1,4 +1,5 @@
 import { after } from 'next/server'
+import { isEmailConfigured } from '@/lib/core/env'
 import { deliverEmail } from '@/lib/email/send'
 import {
   type AppointmentMailData,
@@ -51,9 +52,11 @@ const queue = (
     html: string
   },
   previousStartsAt?: Date,
-): void => {
+): string | null => {
   const recipient = appointment.customerEmail
-  if (!recipient) return
+  // Sans envoi configuré, rien n'est mis en file : l'écran de confirmation
+  // s'appuie sur cette réponse pour ne pas promettre un e-mail qui ne part pas.
+  if (!recipient || !isEmailConfigured) return null
 
   const content = build(toMailData(appointment, previousStartsAt))
   after(async () => {
@@ -64,23 +67,29 @@ const queue = (
       ...content,
     })
   })
+  return recipient
 }
 
+/** Renvoie l'adresse à laquelle la confirmation part, ou `null` si rien ne part. */
 export const notifyAppointmentConfirmed = (
   appointment: NotifiableAppointment,
-): void => queue(appointment, 'BOOKING_CONFIRMATION', buildConfirmationMail)
+): string | null =>
+  queue(appointment, 'BOOKING_CONFIRMATION', buildConfirmationMail)
 
 export const notifyAppointmentRescheduled = (
   appointment: NotifiableAppointment,
   previousStartsAt: Date,
-): void =>
+): void => {
   queue(
     appointment,
     'BOOKING_RESCHEDULED',
     buildRescheduledMail,
     previousStartsAt,
   )
+}
 
 export const notifyAppointmentCancelled = (
   appointment: NotifiableAppointment,
-): void => queue(appointment, 'BOOKING_CANCELLED', buildCancelledMail)
+): void => {
+  queue(appointment, 'BOOKING_CANCELLED', buildCancelledMail)
+}
