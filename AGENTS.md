@@ -205,21 +205,31 @@ counts its kilobytes. The layering matters:
 - `notifications.ts` queues the send with `after()`, so a booking never waits
   on Resend and a Resend outage cannot fail a reservation.
 
-`RESEND_API_KEY`, `RESEND_FROM`, `ADMIN_NOTIFICATION_EMAIL` and `CRON_SECRET`
-are **optional** in `lib/core/env.ts`: without them the app behaves exactly as
-before, silently sending nothing. Free-tier limits (100/day, 3000/month) are
+`RESEND_API_KEY`, `RESEND_FROM` and `ADMIN_NOTIFICATION_EMAIL` are **optional**
+in `lib/core/env.ts`: without them the app behaves exactly as before, silently
+sending nothing. Free-tier limits (100/day, 3000/month) are
 counted from successful sends and surfaced at `/admin/emails`, where a failed
 message can be resent — its body is rebuilt from the appointment rather than
 stored.
 
-Reminders and Arzu's evening digest share the single daily cron declared in
-`vercel.json`, which is all the Vercel Hobby plan allows.
+**Only three messages are sent, and all three are triggered by a booking**:
+confirmation, reschedule, cancellation. Nothing is sent by the passage of time.
+The day-before reminder and the nightly digest were removed in v3 — the owner
+does not want a daily message — along with `vercel.json` and the cron route.
+`APPOINTMENT_REMINDER` and `DAILY_DIGEST` remain in the `EmailKind` enum because
+past `EmailDelivery` rows carry them and dropping an enum value would be a
+destructive migration; `emailKindLabels` still translates them so the history
+reads in French, but `isResendableKind` excludes them — no template can rebuild
+them any more.
 
-**Cron schedules are UTC and ignore daylight saving.** `0 18 * * *` fires at
-20:00 in Bulle in summer and 19:00 in winter. Hobby triggers within the hour,
-not to the minute, so nothing in the job may depend on an exact time. Vercel
-sends `Authorization: Bearer $CRON_SECRET`; without that variable the route
-answers 503 rather than running unauthenticated.
+A weekly summary for Arzu (Sunday evening) is planned as item 8 of
+[ROADMAP-V3.md](ROADMAP-V3.md); it will reintroduce a single cron. When it does,
+remember that **cron schedules are UTC and ignore daylight saving** — `0 18 * * 0`
+fires at 20:00 in Bulle in summer and 19:00 in winter — that Hobby triggers
+within the hour rather than to the minute, so nothing in the job may depend on
+an exact time, and that `CRON_SECRET` has to be added back to `lib/core/env.ts`
+and to `.env.example` — Vercel only injects it when a cron is declared in
+`vercel.json`.
 
 ### PWA
 

@@ -22,7 +22,6 @@ const serverSchema = z.object({
   RESEND_API_KEY: z.string().min(1).optional(),
   RESEND_FROM: z.string().min(3).optional(),
   ADMIN_NOTIFICATION_EMAIL: z.string().min(3).optional(),
-  CRON_SECRET: z.string().min(16).optional(),
   VERCEL_ENV: z.enum(['development', 'preview', 'production']).optional(),
   VERCEL_PROJECT_PRODUCTION_URL: z.string().optional(),
   VERCEL_GIT_COMMIT_SHA: z.string().optional(),

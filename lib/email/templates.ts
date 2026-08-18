@@ -36,8 +36,8 @@ const timeFormatter = new Intl.DateTimeFormat('fr-CH', {
   minute: '2-digit',
 })
 
-export const formatMailDate = (date: Date): string => formatLongDate(date)
-export const formatMailTime = (date: Date): string => timeFormatter.format(date)
+const formatMailDate = (date: Date): string => formatLongDate(date)
+const formatMailTime = (date: Date): string => timeFormatter.format(date)
 
 const greetingName = (data: AppointmentMailData): string =>
   data.customerFirstName?.trim() || data.customerLastName.trim()
@@ -165,75 +165,6 @@ export const buildCancelledMail = (data: AppointmentMailData): MailContent => {
       `<strong>Soin :</strong> ${escapeHtml(data.serviceLabel)}`,
       `<strong>Était prévu le :</strong> ${escapeHtml(`${formatMailDate(data.startsAt)} à ${formatMailTime(data.startsAt)}`)}`,
       escapeHtml(closing),
-    ]),
-  }
-}
-
-export const buildReminderMail = (data: AppointmentMailData): MailContent => {
-  const title = 'Votre rendez-vous, c’est demain'
-  const intro = `Bonjour ${greetingName(data)}, petit rappel : nous vous attendons demain.`
-  const closing = `Un empêchement ? Prévenez-nous au ${contact.phone}.`
-
-  return {
-    subject: `Rappel — rendez-vous demain à ${formatMailTime(data.startsAt)}`,
-    text: [
-      intro,
-      '',
-      ...appointmentSummaryText(data),
-      '',
-      closing,
-      '',
-      signOff,
-    ].join('\n'),
-    html: wrapHtml(title, [
-      escapeHtml(intro),
-      ...appointmentSummaryHtml(data),
-      escapeHtml(closing),
-    ]),
-  }
-}
-
-export interface DigestEntry {
-  time: string
-  customerName: string
-  serviceLabel: string
-  phone: string | null
-}
-
-export const buildDailyDigestMail = (
-  dayLabel: string,
-  entries: DigestEntry[],
-): MailContent => {
-  const title = `Vos rendez-vous du ${dayLabel}`
-
-  if (!entries.length)
-    return {
-      subject: `Aucun rendez-vous ${dayLabel}`,
-      text: `Bonjour Arzu,\n\nAucun rendez-vous n’est prévu ${dayLabel}.\n\n${contact.name}`,
-      html: wrapHtml(title, [
-        `Aucun rendez-vous n’est prévu ${escapeHtml(dayLabel)}.`,
-      ]),
-    }
-
-  const lines = entries.map(
-    entry =>
-      `${entry.time} — ${entry.customerName} — ${entry.serviceLabel}${entry.phone ? ` — ${entry.phone}` : ''}`,
-  )
-
-  return {
-    subject: `${entries.length} rendez-vous ${dayLabel}`,
-    text: [
-      'Bonjour Arzu,',
-      '',
-      `Voici vos rendez-vous du ${dayLabel} :`,
-      '',
-      ...lines,
-      '',
-      contact.name,
-    ].join('\n'),
-    html: wrapHtml(title, [
-      `Voici vos ${entries.length} rendez-vous :`,
-      ...lines.map(line => escapeHtml(line)),
     ]),
   }
 }

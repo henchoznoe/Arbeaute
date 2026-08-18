@@ -7,7 +7,6 @@ import { deliverEmail } from '@/lib/email/send'
 import {
   buildCancelledMail,
   buildConfirmationMail,
-  buildReminderMail,
   buildRescheduledMail,
 } from '@/lib/email/templates'
 import { formatServiceLabel } from '@/lib/reservation/service-label'
@@ -23,7 +22,6 @@ const builders = {
   BOOKING_CONFIRMATION: buildConfirmationMail,
   BOOKING_RESCHEDULED: buildRescheduledMail,
   BOOKING_CANCELLED: buildCancelledMail,
-  APPOINTMENT_REMINDER: buildReminderMail,
 } as const satisfies Partial<Record<EmailKind, unknown>>
 
 /**
@@ -64,7 +62,7 @@ export const resendFailedEmail = async (
     return {
       ok: false,
       message:
-        'Ce message ne peut pas être reconstruit. Le récapitulatif du soir repartira de lui-même demain.',
+        'Ce message ne peut plus être reconstruit. Seules les confirmations, les déplacements et les annulations peuvent repartir.',
     }
 
   const appointment = await prisma.appointment.findUnique({

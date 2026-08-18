@@ -78,9 +78,9 @@ figure dans le titre et se réévalue après chaque livraison.
 
 | Statut | Éléments |
 | --- | --- |
-| ✅ Terminés | Aucun |
+| ✅ Terminés | 7, 14 |
 | 🟡 En cours | Aucun |
-| ⏳ Prêt à démarrer | 1 à 14 |
+| ⏳ Prêt à démarrer | 1 à 6, 8 à 13 |
 | 🔒 Bloqués | Aucun |
 
 - **Priorité P0** : corrige une friction quotidienne ou prépare plusieurs autres
@@ -420,7 +420,7 @@ nuances, chacune pour une raison :
 **Dépendances :** élément 5 pour les gabarits ; élément 2 pour que l’adresse
 soit presque toujours présente.
 
-### 7. Supprimer les rappels de la veille et l’envoi quotidien — ⏳
+### 7. Supprimer les rappels de la veille et l’envoi quotidien — ✅
 
 **Priorité : P0 · Effort : S · Nature : simplification**
 
@@ -450,6 +450,23 @@ s’interdit. Son libellé reste dans `emailKindLabels` (`lib/admin/emails.ts:8`
 pour que `/admin/emails` continue d’afficher le passé. En revanche, un rappel
 ne doit plus pouvoir être **renvoyé** : `isResendableKind` (ligne 17) doit
 l’exclure au même titre que le récapitulatif.
+
+**Livré.** Ont disparu : `lib/email/daily-run.ts`, la route
+`/api/cron/daily-emails`, `vercel.json` en entier — il ne contenait que le cron —
+et les gabarits `buildReminderMail` et `buildDailyDigestMail` avec leurs tests.
+`formatMailDate` et `formatMailTime` redeviennent privés au module, faute de
+lecteur extérieur.
+
+Deux points non prévus par le texte ci-dessus :
+
+- **`CRON_SECRET` a été retiré de `lib/core/env.ts` et de `.env.example`.** Plus
+  aucune route ne la lisait : c’était de la configuration morte, et elle faisait
+  en outre échouer le build en local, où la variable existe vide — `.optional()`
+  ne rattrape pas une chaîne vide, seulement une variable absente. L’élément 8
+  la réintroduira avec sa route.
+- **`isResendableKind` s’écrit maintenant par liste blanche** plutôt que par
+  exclusion : seuls les trois messages de réservation ont encore un gabarit
+  capable de les reconstruire.
 
 **Critères d’acceptation :**
 
@@ -514,7 +531,9 @@ que s’il y en a, et un lien direct vers `/admin` pour la semaine à venir.
 - une semaine vide produit un message court et sans alarme ;
 - le gabarit reste pur et testé, sans I/O ni Prisma ; le calcul réutilise
   `buildDashboardMetrics` sans le dupliquer ;
-- sans `CRON_SECRET`, la route répond 503 et n’exécute rien ;
+- sans `CRON_SECRET`, la route répond 503 et n’exécute rien — la variable a été
+  retirée de `lib/core/env.ts` par l’élément 7 et doit y revenir, avec son entrée
+  dans `.env.example` et le cron dans un `vercel.json` recréé ;
 - la tâche planifiée reste unique.
 
 **Dépendances :** élément 7 (qui libère la route), élément 5 (mise en forme
@@ -729,7 +748,7 @@ Trois précautions :
 **Dépendances :** aucune ; à livrer en premier, tout élément ultérieur en
 profite.
 
-### 14. Réparer les formats oubliés par la v2, et empêcher la récidive — ⏳
+### 14. Réparer les formats oubliés par la v2, et empêcher la récidive — ✅
 
 **Priorité : P0 · Effort : S · Nature : correction**
 
@@ -742,15 +761,40 @@ par trois gabarits partagés. **Deux écrans y ont échappé** :
   celui-là même qui affiche « 75,5 CHF » au lieu de « 75.50 CHF », défaut que la
   v2 dit avoir corrigé ;
 - `app/admin/appointments/[id]/page.tsx:179` refait la même chose pour le prix
-  et construit sa date avec `dateStyle`/`timeStyle`, ce qui produit « 18 août
-  2026, 10:45 » — la virgule d’ICU que `formatCompactMoment` élimine partout
-  ailleurs.
+  et construit sa date avec `dateStyle`/`timeStyle` au lieu du gabarit partagé.
+
+*Correction apportée en cours d’implémentation :* ce document annonçait que la
+seconde date produisait la virgule d’ICU. Vérification faite, `fr-CH` rend
+« 17 août 2026 à 14:00 » pour cette combinaison — il n’y avait pas de virgule.
+Le vrai défaut de cet écran était le prix, et une date construite à la main
+plutôt qu’empruntée. Les préréglages `dateStyle`/`timeStyle` restent bannis pour
+une autre raison, qui elle tient : ils imposent leur ponctuation ailleurs, et
+c’est `normalizeFrenchDate` qui passe ensuite son temps à la défaire.
 
 Ce n’est pas grave en soi. C’est grave que ce soit revenu : la v2 a corrigé
 les occurrences sans installer de garde-fou, donc une troisième reviendra.
 
-**Recommandation.** Basculer les deux écrans sur `formatPrice` et
-`formatCompactMoment`, puis ajouter un test de garde dans `tests/quality/`.
+**Livré.** Le garde-fou a trouvé plus large que les deux écrans annoncés : neuf
+fichiers construisaient leur propre formateur, dont **trois copies identiques**
+de l’horodatage court de l’administration (`formatActivityCreatedAt`,
+`formatAuditCreatedAt`, `formatEmailMoment`) — trois noms pour un seul
+comportement, désormais `formatShortMoment`. Les mises en forme manquantes ont
+rejoint les modules partagés : `formatDayDate` et `formatShortMoment` dans
+`lib/reservation/time.ts`, quatre formateurs de clé de date dans
+`lib/reservation/calendar-view.ts`, et `formatCount` dans `lib/utils/format.ts`
+pour que plus aucun écran n’ait de raison d’appeler `toLocaleString`.
+
+`tests/quality/formatting.test.ts` tient en trois règles :
+
+1. `Intl.NumberFormat` et `toLocaleString` n’existent que dans
+   `lib/utils/format.ts` — un seul module autorisé, ce qui garantit qu’un prix
+   passe par `formatPrice` ;
+2. aucun écran (`app/`, `components/`) ne construit de formateur de date : la
+   couche de mise en forme est dans `lib/` ;
+3. `dateStyle` et `timeStyle` ne s’emploient nulle part.
+
+**Recommandation initiale.** Basculer les deux écrans sur `formatPrice` et le
+gabarit de date partagé, puis ajouter un test de garde dans `tests/quality/`.
 Le patron existe déjà et fonctionne : `tests/quality/wording.test.ts` parcourt
 `app/`, `components/` et `lib/` à la recherche d’un terme banni et échoue en
 citant fichier et ligne. Le nouveau test cherche `toLocaleString('fr-CH')` et
@@ -781,10 +825,8 @@ moins coûteuse.
 1. **13** — la base de preview séparée. À faire avant tout le reste : tant
    qu’elle manque, chaque élément qui touche au schéma se paie deux fois, et
    toute vérification en preview abîme des données réelles.
-2. **14** — le garde-fou de format. Une demi-journée, et il protège tout ce qui
-   suit.
-3. **7** — supprimer les rappels et le cron quotidien. Le plus court du
-   backlog, et il retire de la surface aux éléments 5 et 8.
+2. ~~**14** — le garde-fou de format.~~ ✅ Livré.
+3. ~~**7** — supprimer les rappels et le cron quotidien.~~ ✅ Livré.
 4. **5**, puis **6** — les gabarits avant les envois qui s’en servent. C’est le
    cœur du backlog : à la fin de ces deux éléments, Arzu ne téléphone plus pour
    annoncer un déplacement.

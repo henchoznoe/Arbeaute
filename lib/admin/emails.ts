@@ -4,6 +4,12 @@ import type { EmailKind } from '@/prisma/generated/prisma/enums'
 
 const EMAIL_PAGE_SIZE = 25
 
+/**
+ * Les deux derniers libellés ne désignent plus rien d'envoyable : le rappel de
+ * la veille et le récapitulatif quotidien ont été supprimés. Ils restent
+ * traduits parce que des envois passés les portent encore, et que l'historique
+ * doit se lire en français plutôt qu'en noms d'énumération.
+ */
 export const emailKindLabels: Record<EmailKind, string> = {
   BOOKING_CONFIRMATION: 'Confirmation de rendez-vous',
   BOOKING_RESCHEDULED: 'Rendez-vous déplacé',
@@ -12,9 +18,18 @@ export const emailKindLabels: Record<EmailKind, string> = {
   DAILY_DIGEST: 'Votre récapitulatif du soir',
 }
 
-/** Seuls les e-mails rattachés à un rendez-vous peuvent être reconstruits. */
+/**
+ * Seuls les messages déclenchés par une réservation peuvent être reconstruits :
+ * ce sont les seuls dont un gabarit existe encore.
+ */
+const RESENDABLE_KINDS: ReadonlySet<EmailKind> = new Set<EmailKind>([
+  'BOOKING_CONFIRMATION',
+  'BOOKING_RESCHEDULED',
+  'BOOKING_CANCELLED',
+])
+
 export const isResendableKind = (kind: EmailKind): boolean =>
-  kind !== 'DAILY_DIGEST'
+  RESENDABLE_KINDS.has(kind)
 
 /**
  * Traduit l'échec technique en une phrase qui dit quoi faire.

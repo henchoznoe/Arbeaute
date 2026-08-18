@@ -3,8 +3,6 @@ import {
   type AppointmentMailData,
   buildCancelledMail,
   buildConfirmationMail,
-  buildDailyDigestMail,
-  buildReminderMail,
   buildRescheduledMail,
 } from '@/lib/email/templates'
 
@@ -83,43 +81,5 @@ describe('buildCancelledMail', () => {
     expect(mail.subject).toContain('Rendez-vous annulé')
     expect(mail.text).toContain('Était prévu le : lundi 17 août 2026 à 13:30')
     expect(mail.text).toContain('/reservation')
-  })
-})
-
-describe('buildReminderMail', () => {
-  it('annonce le rendez-vous du lendemain', () => {
-    const mail = buildReminderMail(base)
-    expect(mail.subject).toBe('Rappel — rendez-vous demain à 13:30')
-    expect(mail.text).toContain('nous vous attendons demain')
-  })
-})
-
-describe('buildDailyDigestMail', () => {
-  it('liste les rendez-vous avec heure, cliente, soin et téléphone', () => {
-    const mail = buildDailyDigestMail('lundi 17 août 2026', [
-      {
-        time: '09:00',
-        customerName: 'Marie Dupont',
-        serviceLabel: 'Soin visage bio',
-        phone: '+41 79 123 45 67',
-      },
-      {
-        time: '14:00',
-        customerName: 'Sans Numéro',
-        serviceLabel: 'Épilation',
-        phone: null,
-      },
-    ])
-    expect(mail.subject).toBe('2 rendez-vous lundi 17 août 2026')
-    expect(mail.text).toContain(
-      '09:00 — Marie Dupont — Soin visage bio — +41 79 123 45 67',
-    )
-    expect(mail.text).toContain('14:00 — Sans Numéro — Épilation')
-  })
-
-  it('le dit clairement quand la journée est vide', () => {
-    const mail = buildDailyDigestMail('dimanche 16 août 2026', [])
-    expect(mail.subject).toBe('Aucun rendez-vous dimanche 16 août 2026')
-    expect(mail.text).toContain('Aucun rendez-vous n’est prévu')
   })
 })
