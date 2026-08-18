@@ -89,6 +89,13 @@ const CustomerAppointmentList = ({
                   <StatusBadge variant={statusVariants[appointment.status]}>
                     {statusLabels[appointment.status]}
                   </StatusBadge>
+                  {/* Un rendez-vous ancien, saisi avant que l'adresse ne
+                      devienne obligatoire : aucun message ne peut l'atteindre. */}
+                  {appointment.customerEmail ? null : (
+                    <span className="ml-2 text-xs text-muted-foreground">
+                      Sans adresse e-mail
+                    </span>
+                  )}
                 </span>
               </span>
               <ChevronRight className="mt-2 size-4 shrink-0 text-muted-foreground" />

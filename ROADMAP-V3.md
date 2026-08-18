@@ -78,9 +78,9 @@ figure dans le titre et se réévalue après chaque livraison.
 
 | Statut | Éléments |
 | --- | --- |
-| ✅ Terminés | 5, 6, 7, 13, 14 |
+| ✅ Terminés | 1, 2, 3, 5, 6, 7, 13, 14 |
 | 🟡 En cours | Aucun |
-| ⏳ Prêt à démarrer | 1 à 4, 8 à 12 |
+| ⏳ Prêt à démarrer | 4, 8 à 12 |
 | 🔒 Bloqués | Aucun |
 
 - **Priorité P0** : corrige une friction quotidienne ou prépare plusieurs autres
@@ -96,7 +96,7 @@ touche au schéma, et de façon purement additive.
 
 ## I. Le parcours de réservation
 
-### 1. Réordonner le tunnel : prestation → informations → créneau — ⏳
+### 1. Réordonner le tunnel : prestation → informations → créneau — ✅
 
 **Priorité : P0 · Effort : S · Nature : évolution**
 
@@ -115,7 +115,16 @@ Ce que cet ordre apporte concrètement :
   pris entre le choix et l’envoi oblige aujourd’hui à revenir en arrière de deux
   étapes ; il n’en coûtera plus qu’une, et rien de saisi n’est perdu.
 
-**Recommandation.** C’est un réagencement d’interface, et **rien d’autre** —
+**Livré.** Les étapes sont désormais nommées (`STEPS`) plutôt que numérotées,
+et le fil d’Ariane se construit sur cette liste au lieu d’une arithmétique
+d’index. L’ordre affiché est Prestation, Coordonnées, Créneau, Vérification ;
+l’étape des coordonnées se termine par « Choisir mon créneau », et celle du
+créneau par « Vérifier ma réservation ».
+
+Vérifié dans le navigateur de bout en bout : sélection d’une prestation,
+coordonnées, semaine chargée à l’étape du créneau, récapitulatif, confirmation.
+
+**Recommandation initiale.** C’est un réagencement d’interface, et **rien d’autre** —
 c’est ce qui le rend court. Aucune action serveur nouvelle, aucune requête
 supplémentaire, aucun appel de vérification d’adresse : la fiche continue d’être
 retrouvée là où elle l’est déjà, dans l’`upsert` de
@@ -162,7 +171,7 @@ question « est-ce que cette personne vient ici ? ».
 
 **Dépendances :** aucune.
 
-### 2. Faire de l’adresse la clé de tout rendez-vous, administration comprise — ⏳
+### 2. Faire de l’adresse la clé de tout rendez-vous, administration comprise — ✅
 
 **Priorité : P0 · Effort : M · Nature : évolution**
 
@@ -188,7 +197,28 @@ fait — son message d’erreur annonce que l’e-mail et le téléphone « serv
 envoyer la confirmation », alors qu’aucune confirmation ne part (voir
 l’élément 6).
 
-**Recommandation.** Rendre l’adresse obligatoire **à la création**, des deux
+**Livré.** L’essentiel était déjà acquis, et le vérifier faisait partie du
+travail : `appointmentSchema` exige l’adresse et le téléphone depuis la v2, et
+les deux chemins de création appellent `upsertCustomerIdentity`. Un test le
+verrouille désormais — enregistrer sans adresse est refusé, et rien n’est écrit.
+
+Ce qui manquait vraiment, c’est le **signalement des rendez-vous anciens** : le
+détail d’un rendez-vous affiche « personne ne sera prévenu si vous le déplacez
+ou l’annulez » quand aucune adresse n’est enregistrée, et la fiche marque ces
+lignes d’un discret « Sans adresse e-mail ». Une colonne de plus dans le
+`select`, aucune requête de plus.
+
+**La fusion de doublons garde un objet, mais plus le même.** La recherche par
+`emailNormalized` ne pouvait plus rien trouver — la colonne est unique depuis la
+v1.10 — et a été retirée. Restent le téléphone et le nom, qui rapprochent encore
+deux fiches légitimement : un couple qui partage un numéro, ou une personne
+inscrite sous deux adresses.
+
+**Non fait, et assumé :** la journée de l’agenda ne porte pas ce marqueur. Il
+aurait fallu le faire traverser `buildAdminTimelineDay` et la grille de semaine,
+pour une information que le détail du rendez-vous donne déjà au moment d’agir.
+
+**Recommandation initiale.** Rendre l’adresse obligatoire **à la création**, des deux
 côtés, sans jamais toucher aux colonnes ni aux données existantes :
 
 - côté public, c’est déjà le cas ;
@@ -226,7 +256,7 @@ Deux garde-fous à ne pas oublier :
 **Dépendances :** aucune ; prépare l’élément 6, qui n’a de sens que si une
 adresse est presque toujours là.
 
-### 3. Ouvrir la session juste après la réservation — ⏳
+### 3. Ouvrir la session juste après la réservation — ✅
 
 **Priorité : P0 · Effort : S · Nature : amélioration**
 
@@ -239,7 +269,20 @@ session (`lib/actions/reservation.ts:204`), alors qu’`identifyCustomer` le fai
 Pour quelqu’un qui n’administre aucun site, se voir redemander une information
 que l’on vient de donner est le signe que rien n’a été enregistré.
 
-**Recommandation.** Appeler `setCustomerSession(customer.id,
+**Livré.** `createAppointmentSerializable` rend désormais
+`{ appointment, customer }` — la fiche est déjà là, l’`upsert` vient de la créer
+ou de la retrouver — et l’action ouvre la session juste après.
+
+**Un point vérifié avant d’écrire la ligne :** le trigger
+`customer_identity_version_trigger` est un `BEFORE UPDATE`. La valeur
+`identityVersion` renvoyée par l’`upsert` est donc déjà incrémentée, et la
+session naît valide. Avec un trigger `AFTER`, elle aurait été périmée dès sa
+création, et n’aurait échoué que pour les personnes ayant changé de numéro.
+
+Vérifié dans le navigateur : après une réservation, `/mes-rendez-vous` affiche
+directement le rendez-vous, sans formulaire d’identification.
+
+**Recommandation initiale.** Appeler `setCustomerSession(customer.id,
 customer.identityVersion)` juste après la création. La fiche existe déjà —
 l’`upsert` vient de la créer ou de la retrouver — et la fonction existe aussi.
 
@@ -877,12 +920,9 @@ moins coûteuse.
 1. ~~**13** — la base de preview séparée.~~ ✅ Livré.
 2. ~~**14** — le garde-fou de format.~~ ✅ Livré.
 3. ~~**7** — supprimer les rappels et le cron quotidien.~~ ✅ Livré.
-4. **5**, puis **6** — les gabarits avant les envois qui s’en servent. C’est le
-   cœur du backlog : à la fin de ces deux éléments, Arzu ne téléphone plus pour
-   annoncer un déplacement.
-5. **1**, **2**, **3** — le parcours de réservation, dans cet ordre : le
-   réagencement, puis l’adresse obligatoire, puis la session. L’élément 2 est
-   celui qui rend l’identification réellement unique dans le tableau de bord.
+4. ~~**5**, puis **6** — les gabarits, puis les envois qui s’en servent.~~
+   ✅ Livrés. Arzu ne téléphone plus pour annoncer un déplacement.
+5. ~~**1**, **2**, **3** — le parcours de réservation.~~ ✅ Livrés ensemble.
 6. **10** et **11** — deux gains immédiats pour Arzu, et l’élément 11 est ce qui
    rend les statuts à nouveau vrais.
 7. **8** — le bilan du dimanche, une fois que le mot « réalisé » veut dire

@@ -191,17 +191,27 @@ export const createPublicAppointment = async (
     ])
     if (!ipLimit.allowed || !emailLimit.allowed) return genericBookingError()
 
-    const appointment = await createAppointmentSerializable(prisma, {
-      serviceId: parsed.data.serviceId,
-      startsAt: new Date(parsed.data.startsAt),
-      firstName: parsed.data.firstName,
-      lastName: parsed.data.lastName,
-      email,
-      phone,
-      comment: parsed.data.comment || null,
-    })
+    const { appointment, customer } = await createAppointmentSerializable(
+      prisma,
+      {
+        serviceId: parsed.data.serviceId,
+        startsAt: new Date(parsed.data.startsAt),
+        firstName: parsed.data.firstName,
+        lastName: parsed.data.lastName,
+        email,
+        phone,
+        comment: parsed.data.comment || null,
+      },
+    )
     refreshAdminActivity()
     const confirmationEmailTo = notifyAppointmentConfirmed(appointment)
+
+    // La personne vient de saisir son adresse : lui redemander trente secondes
+    // plus tard, sur « Mes rendez-vous », laisserait croire que rien n'a été
+    // enregistré. La session ne contient aucune coordonnée, dure quinze
+    // minutes, et le trigger `customer_identity_version_trigger` l'invalide dès
+    // qu'une adresse ou un téléphone change.
+    await setCustomerSession(customer.id, customer.identityVersion)
 
     return {
       ok: true,

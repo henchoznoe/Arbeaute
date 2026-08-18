@@ -112,6 +112,29 @@ const ConsentFormNotice = ({ url }: Readonly<{ url: string }>) => (
   </div>
 )
 
+/**
+ * L'ordre du tunnel, nommé plutôt que numéroté.
+ *
+ * Les coordonnées passent avant le créneau : la dernière étape redevient une
+ * pure vérification, et le créneau — seule donnée qui peut être prise entre
+ * temps — se choisit en dernier, à une étape du récapitulatif.
+ */
+const STEPS = {
+  service: 1,
+  details: 2,
+  slot: 3,
+  review: 4,
+} as const
+
+type WizardStep = (typeof STEPS)[keyof typeof STEPS]
+
+const STEP_LABELS: Array<{ label: string; step: WizardStep }> = [
+  { label: 'Prestation', step: STEPS.service },
+  { label: 'Coordonnées', step: STEPS.details },
+  { label: 'Créneau', step: STEPS.slot },
+  { label: 'Vérification', step: STEPS.review },
+]
+
 export const ReservationWizard = ({
   services,
   minDate,
@@ -125,7 +148,9 @@ export const ReservationWizard = ({
     requestedServiceSlug,
   )
   const deepLinkSelectionKey = `${requestedServiceSlug ?? ''}:${initialServiceId ?? ''}`
-  const [step, setStep] = useState(initialServiceId ? 2 : 1)
+  const [step, setStep] = useState<WizardStep>(
+    initialServiceId ? STEPS.details : STEPS.service,
+  )
   const [serviceId, setServiceId] = useState(initialServiceId ?? '')
   const [date, setDate] = useState(minDate)
   const [weekAvailability, setWeekAvailability] = useState<
@@ -175,7 +200,7 @@ export const ReservationWizard = ({
   }, [])
 
   const goToStep = useCallback(
-    (nextStep: number) => {
+    (nextStep: WizardStep) => {
       setStep(nextStep)
       scrollToWizardTop()
     },
@@ -228,7 +253,7 @@ export const ReservationWizard = ({
     setStartsAt('')
     setNextSlotNotice(null)
     setResult(null)
-    goToStep(2)
+    goToStep(STEPS.details)
   }
 
   // L'état React peut survivre à une navigation vers la même route.
@@ -243,7 +268,7 @@ export const ReservationWizard = ({
     if (requestedServiceSlug === null || initialServiceId === null) {
       setServiceId('')
       setStartsAt('')
-      goToStep(1)
+      goToStep(STEPS.service)
       return
     }
 
@@ -254,7 +279,7 @@ export const ReservationWizard = ({
     setViewStart(minDate)
     setStartsAt('')
     setNextSlotNotice(null)
-    goToStep(2)
+    goToStep(STEPS.details)
   }, [
     deepLinkSelectionKey,
     goToStep,
@@ -266,7 +291,7 @@ export const ReservationWizard = ({
   // Une seule requête par semaine affichée : passer d'un jour à l'autre à
   // l'intérieur de la semaine ne touche plus le serveur.
   useEffect(() => {
-    if (step !== 2 || !serviceId) return
+    if (step !== STEPS.slot || !serviceId) return
     startSlotsTransition(async () => {
       const loaded = await getPublicWeekAvailability(serviceId, viewStart)
       const pending = pendingSlotRef.current
@@ -370,7 +395,7 @@ export const ReservationWizard = ({
     }))
   }
 
-  const reviewBooking = () => {
+  const confirmCustomerDetails = () => {
     const errors = validateCustomerForm(customer)
     setCustomerErrors(errors)
     const firstInvalidField = customerFieldOrder.find(field => errors[field])
@@ -385,7 +410,7 @@ export const ReservationWizard = ({
 
     setCustomer(normalizeCustomerFormDisplay(customer))
     setResult(null)
-    goToStep(4)
+    goToStep(STEPS.slot)
   }
 
   const submitBooking = () => {
@@ -409,8 +434,8 @@ export const ReservationWizard = ({
       }
       if (response.reason === 'SLOT_CONFLICT') {
         setStartsAt('')
-        goToStep(2)
-      } else if (response.reason === 'INVALID_CUSTOMER') goToStep(3)
+        goToStep(STEPS.slot)
+      } else if (response.reason === 'INVALID_CUSTOMER') goToStep(STEPS.details)
     })
   }
 
@@ -501,69 +526,66 @@ export const ReservationWizard = ({
         className="mb-5 grid grid-cols-4 gap-1 sm:mb-8 sm:gap-2"
         aria-label="Étapes"
       >
-        {['Prestation', 'Créneau', 'Coordonnées', 'Vérification'].map(
-          (label, index) => {
-            const number = index + 1
-            const done = step > number
-            const current = step === number
-            return (
-              <li key={label}>
-                {/* Trois états distingués par la forme autant que par la
+        {STEP_LABELS.map(({ label, step: number }) => {
+          const done = step > number
+          const current = step === number
+          return (
+            <li key={label}>
+              {/* Trois états distingués par la forme autant que par la
                     couleur : une coche pour ce qui est fait, un numéro plein
                     pour l'étape en cours, un numéro discret pour la suite. */}
-                <button
-                  type="button"
-                  disabled={!done}
-                  onClick={() => goToStep(number)}
-                  aria-current={current ? 'step' : undefined}
+              <button
+                type="button"
+                disabled={!done}
+                onClick={() => goToStep(number)}
+                aria-current={current ? 'step' : undefined}
+                className={cn(
+                  'flex min-h-16 w-full flex-col items-center justify-center gap-1 rounded-2xl border px-0.5 py-2 text-center transition sm:min-h-0 sm:flex-row sm:gap-2 sm:rounded-full sm:px-3 sm:py-2.5',
+                  current &&
+                    'border-primary bg-primary font-semibold text-primary-foreground',
+                  done &&
+                    'cursor-pointer border-primary bg-primary/10 text-foreground',
+                  !done &&
+                    !current &&
+                    'cursor-default border-dashed text-muted-foreground',
+                )}
+              >
+                <span
                   className={cn(
-                    'flex min-h-16 w-full flex-col items-center justify-center gap-1 rounded-2xl border px-0.5 py-2 text-center transition sm:min-h-0 sm:flex-row sm:gap-2 sm:rounded-full sm:px-3 sm:py-2.5',
-                    current &&
-                      'border-primary bg-primary font-semibold text-primary-foreground',
-                    done &&
-                      'cursor-pointer border-primary bg-primary/10 text-foreground',
-                    !done &&
-                      !current &&
-                      'cursor-default border-dashed text-muted-foreground',
+                    'grid size-5 shrink-0 place-items-center rounded-full text-[11px] font-semibold',
+                    current && 'bg-primary-foreground/20',
+                    done && 'bg-primary text-primary-foreground',
+                    !done && !current && 'bg-foreground/10',
                   )}
                 >
-                  <span
-                    className={cn(
-                      'grid size-5 shrink-0 place-items-center rounded-full text-[11px] font-semibold',
-                      current && 'bg-primary-foreground/20',
-                      done && 'bg-primary text-primary-foreground',
-                      !done && !current && 'bg-foreground/10',
-                    )}
-                  >
-                    {done ? <Check className="size-3" /> : number}
+                  {done ? <Check className="size-3" /> : number}
+                </span>
+                <span className="text-2xs leading-tight font-medium text-balance sm:text-sm">
+                  {label}
+                  <span className="sr-only">
+                    {done
+                      ? ' : étape terminée, revenir ici'
+                      : current
+                        ? ' : étape en cours'
+                        : ' : étape à venir'}
                   </span>
-                  <span className="text-2xs leading-tight font-medium text-balance sm:text-sm">
-                    {label}
-                    <span className="sr-only">
-                      {done
-                        ? ' : étape terminée, revenir ici'
-                        : current
-                          ? ' : étape en cours'
-                          : ' : étape à venir'}
-                    </span>
-                  </span>
-                </button>
-              </li>
-            )
-          },
-        )}
+                </span>
+              </button>
+            </li>
+          )
+        })}
       </ol>
 
-      {selectedService && step >= 2 ? (
+      {selectedService && step >= STEPS.details ? (
         <BookingSummary
           service={selectedService}
           startsAt={startsAt}
-          sticky={step === 2 || step === 3}
+          sticky={step === STEPS.details || step === STEPS.slot}
           className="mb-5"
         />
       ) : null}
 
-      {step === 1 ? (
+      {step === STEPS.service ? (
         <div className="space-y-8">
           {[...new Set(services.map(service => service.categoryName))].map(
             category => (
@@ -604,88 +626,13 @@ export const ReservationWizard = ({
         </div>
       ) : null}
 
-      {step === 2 ? (
-        <div className="rounded-3xl border bg-card p-5 sm:p-8">
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            onClick={() => goToStep(1)}
-            className="-ml-2"
-          >
-            <ChevronLeft className="size-4" /> Changer de prestation
-          </Button>
-          <h2 className="mt-5 font-heading text-2xl font-bold">
-            Choisissez votre créneau
-          </h2>
-          {selectedService ? (
-            <ServiceDetails
-              service={selectedService}
-              className="mt-4 rounded-xl border px-4 pt-0 [&>summary]:pt-1"
-            />
-          ) : null}
-
-          {result?.reason === 'SLOT_CONFLICT' ? (
-            <p
-              className="mt-5 rounded-xl bg-destructive/10 p-4 text-sm text-destructive"
-              role="alert"
-            >
-              {result.message}
-            </p>
-          ) : null}
-
-          <Button
-            type="button"
-            variant="secondary"
-            onClick={findNextSlot}
-            disabled={searchingNext}
-            className="mt-5 w-full sm:w-auto"
-          >
-            <Zap className="size-4 shrink-0" />
-            {searchingNext ? 'Recherche…' : 'Prochain créneau disponible'}
-          </Button>
-          {nextSlotNotice ? (
-            <p className="mt-2 text-sm text-muted-foreground" role="status">
-              {nextSlotNotice}
-            </p>
-          ) : null}
-
-          <WeekAvailabilityPicker
-            announcement={calendarAnnouncement}
-            availability={weekAvailability}
-            date={date}
-            loading={loadingSlots}
-            maxDate={maxDate}
-            minDate={minDate}
-            onChangeWeek={goToWeek}
-            onSelectDate={selectDate}
-            onSelectSlot={slot => {
-              setStartsAt(slot)
-              setResult(null)
-            }}
-            ready={weekReady}
-            startsAt={startsAt}
-            viewStart={viewStart}
-          />
-          <Button
-            type="button"
-            size="lg"
-            disabled={!startsAt}
-            onClick={() => goToStep(3)}
-            className="mt-7 w-full"
-          >
-            Continuer
-          </Button>
-        </div>
-      ) : null}
-
-      {step === 3 ? (
+      {step === STEPS.details ? (
         <form
           ref={customerFormRef}
           noValidate
           onSubmit={event => {
             event.preventDefault()
-            reviewBooking()
+            confirmCustomerDetails()
           }}
           className="rounded-3xl border bg-card p-5 sm:p-8"
         >
@@ -693,18 +640,19 @@ export const ReservationWizard = ({
             type="button"
             variant="ghost"
             size="sm"
-            onClick={() => goToStep(2)}
+            onClick={() => goToStep(STEPS.service)}
             className="-ml-2"
           >
-            <ChevronLeft className="size-4" /> Changer de créneau
+            <ChevronLeft className="size-4" /> Changer de prestation
           </Button>
           <h2 className="mt-5 font-heading text-2xl font-bold">
             Vos coordonnées
           </h2>
           <p className="mt-1 text-sm text-muted-foreground">
-            Votre confirmation part à l’adresse e-mail indiquée ici. Cette
-            adresse et votre numéro servent aussi à retrouver, modifier ou
-            annuler ce rendez-vous dans « Mes rendez-vous ».
+            Votre confirmation part à l’adresse e-mail indiquée ici. C’est aussi
+            elle qui vous permettra de retrouver, déplacer ou annuler ce
+            rendez-vous dans « Mes rendez-vous ». Le créneau se choisit à
+            l’étape suivante.
           </p>
           <div className="mt-6 grid gap-4 sm:grid-cols-2">
             <FormField
@@ -896,21 +844,96 @@ export const ReservationWizard = ({
             </p>
           ) : null}
           <Button type="submit" size="lg" className="mt-6 w-full">
-            Vérifier mes informations
+            Choisir mon créneau
           </Button>
         </form>
       ) : null}
 
-      {step === 4 && selectedService ? (
+      {step === STEPS.slot ? (
+        <div className="rounded-3xl border bg-card p-5 sm:p-8">
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            onClick={() => goToStep(STEPS.details)}
+            className="-ml-2"
+          >
+            <ChevronLeft className="size-4" /> Modifier mes coordonnées
+          </Button>
+          <h2 className="mt-5 font-heading text-2xl font-bold">
+            Choisissez votre créneau
+          </h2>
+          {selectedService ? (
+            <ServiceDetails
+              service={selectedService}
+              className="mt-4 rounded-xl border px-4 pt-0 [&>summary]:pt-1"
+            />
+          ) : null}
+
+          {result?.reason === 'SLOT_CONFLICT' ? (
+            <p
+              className="mt-5 rounded-xl bg-destructive/10 p-4 text-sm text-destructive"
+              role="alert"
+            >
+              {result.message}
+            </p>
+          ) : null}
+
+          <Button
+            type="button"
+            variant="secondary"
+            onClick={findNextSlot}
+            disabled={searchingNext}
+            className="mt-5 w-full sm:w-auto"
+          >
+            <Zap className="size-4 shrink-0" />
+            {searchingNext ? 'Recherche…' : 'Prochain créneau disponible'}
+          </Button>
+          {nextSlotNotice ? (
+            <p className="mt-2 text-sm text-muted-foreground" role="status">
+              {nextSlotNotice}
+            </p>
+          ) : null}
+
+          <WeekAvailabilityPicker
+            announcement={calendarAnnouncement}
+            availability={weekAvailability}
+            date={date}
+            loading={loadingSlots}
+            maxDate={maxDate}
+            minDate={minDate}
+            onChangeWeek={goToWeek}
+            onSelectDate={selectDate}
+            onSelectSlot={slot => {
+              setStartsAt(slot)
+              setResult(null)
+            }}
+            ready={weekReady}
+            startsAt={startsAt}
+            viewStart={viewStart}
+          />
+          <Button
+            type="button"
+            size="lg"
+            disabled={!startsAt}
+            onClick={() => goToStep(STEPS.review)}
+            className="mt-7 w-full"
+          >
+            Vérifier ma réservation
+          </Button>
+        </div>
+      ) : null}
+
+      {step === STEPS.review && selectedService ? (
         <section className="rounded-3xl border bg-card p-5 sm:p-8">
           <Button
             type="button"
             variant="ghost"
             size="sm"
-            onClick={() => goToStep(3)}
+            onClick={() => goToStep(STEPS.slot)}
             className="-ml-2"
           >
-            <ChevronLeft className="size-4" /> Modifier mes coordonnées
+            <ChevronLeft className="size-4" /> Changer de créneau
           </Button>
           <h2 className="mt-5 font-heading text-2xl font-bold">
             Vérifiez votre réservation
@@ -941,7 +964,7 @@ export const ReservationWizard = ({
                 type="button"
                 variant="outline"
                 size="sm"
-                onClick={() => goToStep(1)}
+                onClick={() => goToStep(STEPS.service)}
                 className="min-h-11 shrink-0 rounded-full"
               >
                 <Pencil className="size-3.5" /> Modifier
@@ -960,7 +983,7 @@ export const ReservationWizard = ({
                 type="button"
                 variant="outline"
                 size="sm"
-                onClick={() => goToStep(2)}
+                onClick={() => goToStep(STEPS.slot)}
                 className="min-h-11 shrink-0 rounded-full"
               >
                 <Pencil className="size-3.5" /> Modifier
@@ -988,7 +1011,7 @@ export const ReservationWizard = ({
                 type="button"
                 variant="outline"
                 size="sm"
-                onClick={() => goToStep(3)}
+                onClick={() => goToStep(STEPS.details)}
                 className="min-h-11 shrink-0 rounded-full"
               >
                 <Pencil className="size-3.5" /> Modifier

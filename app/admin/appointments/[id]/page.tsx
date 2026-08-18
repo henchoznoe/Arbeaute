@@ -135,6 +135,15 @@ const EditAppointment = async ({
           Chaque changement est daté et conservé dans l’historique des
           modifications.
         </p>
+        {/* Sans reproche : ce sont d'anciens rendez-vous, saisis avant que
+            l'adresse ne devienne obligatoire. Le dire évite de croire qu'un
+            déplacement ou une annulation préviendra quelqu'un. */}
+        {appointment.customerEmail ? null : (
+          <p className="mt-3 rounded-xl bg-warning-subtle p-3 text-xs leading-relaxed text-warning-strong">
+            Ce rendez-vous n’a pas d’adresse e-mail : personne ne sera prévenu
+            si vous le déplacez ou l’annulez.
+          </p>
+        )}
         <CustomerCallButton
           phone={appointment.customerPhone}
           customerName={customerName}

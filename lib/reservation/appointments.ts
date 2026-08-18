@@ -132,7 +132,7 @@ export const createAppointmentSerializable = async (
               status: appointment.status,
             },
           })
-          return appointment
+          return { appointment, customer }
         },
         { isolationLevel: 'Serializable' },
       )

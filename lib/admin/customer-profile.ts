@@ -27,6 +27,9 @@ const appointmentSelect = {
   servicePriceCents: true,
   status: true,
   source: true,
+  // Sert uniquement à signaler les rendez-vous anciens que plus aucun message
+  // ne peut atteindre. Une colonne de plus, aucune requête de plus.
+  customerEmail: true,
   service: { select: { category: { select: { name: true } } } },
 } satisfies Prisma.AppointmentSelect
 
@@ -117,8 +120,11 @@ export const getAdminCustomerProfile = async (
         where: {
           id: { not: customerId },
           anonymizedAt: null,
+          // Plus de recherche par adresse : `emailNormalized` est unique
+          // depuis la v1.10, la condition ne pourrait jamais rien trouver.
+          // Deux fiches restent rapprochables par téléphone — un couple qui
+          // partage un numéro — ou par nom.
           OR: [
-            { emailNormalized: customer.emailNormalized },
             { phoneNormalized: customer.phoneNormalized },
             { searchName: customer.searchName },
           ],
