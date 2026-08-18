@@ -40,13 +40,18 @@ import { checkRateLimit } from '@/lib/services/rate-limit'
 import { formatPrice } from '@/lib/utils/format'
 import { getRequestIp, hasSameOrigin } from '@/lib/utils/request'
 
+/**
+ * Le nom et le téléphone sont facultatifs *dans la requête* : quelqu'un dont la
+ * fiche existe déjà ne les ressaisit pas, et le serveur les reprend dans la
+ * fiche. Ils ne sont jamais facultatifs dans la base.
+ */
 const bookingSchema = z.object({
   serviceId: z.string().min(1),
   startsAt: z.iso.datetime({ offset: true }),
-  firstName: z.string().trim().min(1).max(100),
-  lastName: z.string().trim().min(1).max(100),
+  firstName: z.string().trim().max(100).optional(),
+  lastName: z.string().trim().max(100).optional(),
   email: z.string().trim().min(1).max(254),
-  phone: z.string().trim().min(1).max(40),
+  phone: z.string().trim().max(40).optional(),
   comment: z.string().trim().max(1000).optional(),
   consent: z.literal(true),
   website: z.string().max(0).optional(),
@@ -143,6 +148,46 @@ export const getNextPublicAvailableSlot = async (
   }
 }
 
+/**
+ * Cette adresse a-t-elle déjà une fiche ?
+ *
+ * Ne renvoie **qu'un booléen** : ni nom, ni téléphone, ni identifiant ne
+ * traversent le réseau. Le tunnel s'en sert uniquement pour décider s'il faut
+ * afficher le second formulaire.
+ *
+ * L'écran répond donc « connu / inconnu » pour une adresse saisie. C'est le
+ * même compromis que `/mes-rendez-vous`, documenté dans `SECURITY.md`, et il
+ * porte ici sur strictement moins : savoir qu'une adresse est connue, pas y
+ * accéder. La limite de tentatives est la même.
+ *
+ * **Un échec n'est jamais bloquant** : en cas de doute, on répond « inconnu »,
+ * le second formulaire s'affiche, et la réservation aboutit quand même — saisir
+ * ses coordonnées alors qu'on est déjà connu met simplement la fiche à jour.
+ */
+export const lookupCustomerByEmail = async (
+  value: unknown,
+): Promise<{ known: boolean }> => {
+  try {
+    if (!(await hasSameOrigin())) return { known: false }
+    const limit = await checkRateLimit({
+      action: 'customer-lookup',
+      key: await getRequestIp(),
+      limit: 10,
+      windowMs: 15 * 60 * 1000,
+    })
+    if (!limit.allowed) return { known: false }
+
+    const email = normalizeEmail(z.string().max(254).parse(value))
+    const customer = await prisma.customer.findFirst({
+      where: { emailNormalized: email, anonymizedAt: null },
+      select: { id: true },
+    })
+    return { known: Boolean(customer) }
+  } catch {
+    return { known: false }
+  }
+}
+
 export const createPublicAppointment = async (
   input: unknown,
 ): Promise<BookingResult> => {
@@ -165,10 +210,28 @@ export const createPublicAppointment = async (
   }
 
   let email: string
-  let phone: string
   try {
     email = normalizeEmail(parsed.data.email)
-    phone = normalizePhone(parsed.data.phone)
+  } catch {
+    return invalidCustomerError()
+  }
+
+  // Fiche existante : c'est elle qui fournit le nom et le numéro quand la
+  // personne n'a saisi que son adresse. Rien de tout cela n'a transité par le
+  // navigateur, qui n'a jamais su si l'adresse était connue.
+  const known = await prisma.customer.findFirst({
+    where: { emailNormalized: email, anonymizedAt: null },
+    select: { firstName: true, lastName: true, phone: true },
+  })
+
+  const lastName = parsed.data.lastName?.trim() || known?.lastName
+  const firstName = parsed.data.firstName?.trim() || known?.firstName || null
+  const rawPhone = parsed.data.phone?.trim() || known?.phone
+  if (!lastName || !rawPhone) return invalidCustomerError()
+
+  let phone: string
+  try {
+    phone = normalizePhone(rawPhone)
   } catch {
     return invalidCustomerError()
   }
@@ -196,8 +259,8 @@ export const createPublicAppointment = async (
       {
         serviceId: parsed.data.serviceId,
         startsAt: new Date(parsed.data.startsAt),
-        firstName: parsed.data.firstName,
-        lastName: parsed.data.lastName,
+        firstName,
+        lastName,
         email,
         phone,
         comment: parsed.data.comment || null,

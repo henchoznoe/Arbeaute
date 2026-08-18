@@ -36,7 +36,7 @@ d’explication.
 | Sujet | Décision |
 | --- | --- |
 | Ordre du tunnel de réservation | **Prestation → informations → créneau.** L’ordre de ProBook, que l’institut connaît déjà. L’adresse est demandée avant le choix de l’heure. |
-| Ce que l’écran montre d’une adresse connue | **Rien.** La fiche est retrouvée côté serveur au moment d’enregistrer, exactement comme aujourd’hui. Aucun champ n’apparaît ni ne disparaît selon que l’adresse est connue : sinon le formulaire public devient un moyen de vérifier qui fréquente l’institut. |
+| Ce que l’écran montre d’une adresse connue | **Le parcours, jamais les données.** Une adresse connue passe directement au créneau ; une adresse inconnue mène à un second écran (nom, prénom, téléphone). Le serveur ne renvoie **qu’un booléen** : ni nom, ni numéro, ni identifiant ne traversent le réseau, et le récapitulatif n’affiche que l’adresse saisie. Le prix assumé est qu’une adresse saisie reçoit une réponse « connue / inconnue » — strictement moins que `/mes-rendez-vous`, qui donne accès aux rendez-vous, et protégé par la même limite de dix tentatives par quart d’heure. |
 | Code à usage unique par e-mail | **Écarté.** `SECURITY.md` le présente comme la suite naturelle, mais il ajoute une étape à des personnes qui n’administrent aucun site. L’adresse seule reste la clé ; le compromis reste documenté. |
 | Messages conservés | **Quatre.** Confirmation, déplacement, annulation, bilan du dimanche. **Les rappels de la veille sont supprimés** — la décision est d’envoyer moins. |
 | Tâche planifiée | **Une seule, le dimanche soir.** Plus aucun envoi quotidien, ni à la clientèle, ni à Arzu. |
@@ -115,14 +115,33 @@ Ce que cet ordre apporte concrètement :
   pris entre le choix et l’envoi oblige aujourd’hui à revenir en arrière de deux
   étapes ; il n’en coûtera plus qu’une, et rien de saisi n’est perdu.
 
-**Livré.** Les étapes sont désormais nommées (`STEPS`) plutôt que numérotées,
-et le fil d’Ariane se construit sur cette liste au lieu d’une arithmétique
-d’index. L’ordre affiché est Prestation, Coordonnées, Créneau, Vérification ;
-l’étape des coordonnées se termine par « Choisir mon créneau », et celle du
-créneau par « Vérifier ma réservation ».
+**Livré.** L’ordre est Prestation, Coordonnées, Créneau, Vérification. Les
+étapes sont nommées (`STEPS`) plutôt que numérotées, et le fil d’Ariane se
+construit sur cette liste au lieu d’une arithmétique d’index.
 
-Vérifié dans le navigateur de bout en bout : sélection d’une prestation,
-coordonnées, semaine chargée à l’étape du créneau, récapitulatif, confirmation.
+**« Coordonnées » compte deux écrans pour un seul jalon.** D’abord l’adresse
+e-mail, seule. Si une fiche existe, on passe directement au créneau ; sinon, un
+second écran demande le nom, le prénom et le numéro. C’est le parcours de
+ProBook, et c’est ce que la demande initiale décrivait.
+
+Deux conséquences à connaître :
+
+- **Le commentaire et l’accord ont migré vers la vérification.** C’est le seul
+  écran que tout le monde traverse : les laisser sur le formulaire d’identité
+  aurait privé les personnes reconnues du premier et fait sauter le second.
+- **Le récapitulatif n’affiche pas le nom d’une personne reconnue** — le
+  navigateur ne l’a jamais reçu. Il montre l’adresse et une phrase : « Nous
+  utilisons les coordonnées déjà enregistrées pour cette adresse. »
+
+Le champ téléphone se remet au format international en le quittant
+(`079 123 45 67` devient `+41 79 123 45 67`), et la phrase qui expliquait ce
+comportement a disparu : le placeholder `+41791234567` et le champ lui-même le
+disent mieux.
+
+Vérifié dans le navigateur, les deux chemins : une adresse inconnue ouvre le
+second écran, une adresse connue saute au créneau, et la réservation aboutit
+sans que le nom ni le numéro n’aient été ressaisis — la base confirme qu’ils ont
+été repris dans la fiche.
 
 **Recommandation initiale.** C’est un réagencement d’interface, et **rien d’autre** —
 c’est ce qui le rend court. Aucune action serveur nouvelle, aucune requête
@@ -143,24 +162,27 @@ Les points d’attention, tous dans le même fichier :
 - le fil d’Ariane cliquable (ligne 517) ne doit jamais permettre de sauter à
   l’étape du créneau sans informations valides.
 
-**Ce que cette décision coûte, et pourquoi elle est tenue.** Une personne qui
-revient retape son nom et son téléphone : l’écran ne peut pas les pré-remplir
-sans révéler, à qui saisit l’adresse d’un tiers, que cette personne fréquente
-l’institut. Deux choses compensent, et il ne faut pas les négliger : le
-remplissage automatique du navigateur fait déjà ce travail dès lors que les
-champs portent les bons `autocomplete`, et l’élément 3 offre le vrai parcours
-« je suis reconnu » à celles et ceux qui reviennent par leur e-mail. Si le
-pré-remplissage sur adresse connue devenait souhaitable malgré tout, c’est une
-seule décision à inverser — en acceptant que le formulaire réponde alors à la
-question « est-ce que cette personne vient ici ? ».
+**Ce que cette décision coûte, et ce qu’elle refuse de coûter.** L’écran répond
+« connue / inconnue » à une adresse saisie : c’est inévitable dès lors qu’une
+personne connue ne ressaisit rien. Ce qui reste interdit, en revanche, c’est
+d’en dire plus. `lookupCustomerByEmail` ne renvoie qu’un booléen ; le nom et le
+numéro d’une fiche existante ne quittent jamais le serveur, et le récapitulatif
+n’affiche que l’adresse. Un formulaire qui pré-remplirait le nom et le téléphone
+serait un annuaire ; celui-ci ne l’est pas.
+
+La recherche n’est jamais bloquante : limite atteinte, origine douteuse ou panne
+répondent « inconnue ». Le second écran s’affiche, la réservation aboutit, et la
+fiche existante est simplement mise à jour.
 
 **Critères d’acceptation :**
 
 - l’ordre affiché est prestation, informations, créneau, confirmation, et le
   fil d’Ariane le reflète ;
-- l’étape des informations est **strictement identique** pour une adresse
-  connue et pour une adresse inconnue : mêmes champs, mêmes libellés, même
-  temps de réponse ;
+- une adresse connue passe au créneau sans rien ressaisir ; une adresse inconnue
+  ouvre le second écran ;
+- le serveur ne renvoie qu’un booléen : aucun nom, aucun numéro, aucun
+  identifiant ne traverse le réseau, et l’écran n’en affiche aucun ;
+- une recherche limitée, refusée ou en panne n’empêche jamais de réserver ;
 - un lien direct vers une prestation ouvre l’étape des informations ;
 - un créneau devenu indisponible au moment d’envoyer ramène au choix de l’heure
   sans effacer ce qui a été saisi ;

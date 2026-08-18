@@ -25,6 +25,7 @@ import {
   createPublicAppointment,
   getNextPublicAvailableSlot,
   getPublicWeekAvailability,
+  lookupCustomerByEmail,
 } from '@/lib/actions/reservation'
 import type { ServiceCareDetails } from '@/lib/catalog/service-content'
 import { contact } from '@/lib/constants/contact'
@@ -43,12 +44,13 @@ import {
   emptyCustomerForm,
   normalizeCustomerFormDisplay,
   validateCustomerField,
-  validateCustomerForm,
+  validateCustomerFields,
 } from '@/lib/reservation/customer-form'
 import {
   buildServiceReservationPath,
   resolveInitialServiceId,
 } from '@/lib/reservation/deep-link'
+import { formatPhoneForDisplay } from '@/lib/reservation/identity'
 import { formatServiceLabel } from '@/lib/reservation/service-label'
 import { formatAppointmentDate } from '@/lib/reservation/time'
 import { cn } from '@/lib/utils/cn'
@@ -167,6 +169,13 @@ export const ReservationWizard = ({
   const [customer, setCustomer] =
     useState<CustomerFormValues>(emptyCustomerForm)
   const [customerErrors, setCustomerErrors] = useState<CustomerFormErrors>({})
+  // « Coordonnées » se joue en deux écrans : l'adresse, puis le nom et le
+  // numéro pour qui n'a pas encore de fiche. Un seul jalon dans le fil
+  // d'Ariane : c'est bien la même étape.
+  const [detailsStage, setDetailsStage] = useState<'email' | 'identity'>(
+    'email',
+  )
+  const [checkingEmail, startEmailTransition] = useTransition()
   const [website, setWebsite] = useState('')
   const [viewStart, setViewStart] = useState(minDate)
   const wizardRef = useRef<HTMLElement>(null)
@@ -395,22 +404,58 @@ export const ReservationWizard = ({
     }))
   }
 
-  const confirmCustomerDetails = () => {
-    const errors = validateCustomerForm(customer)
-    setCustomerErrors(errors)
+  const focusFirstInvalid = (errors: CustomerFormErrors) => {
     const firstInvalidField = customerFieldOrder.find(field => errors[field])
-    if (firstInvalidField) {
-      requestAnimationFrame(() => {
-        const element =
-          customerFormRef.current?.elements.namedItem(firstInvalidField)
-        if (element instanceof HTMLElement) element.focus()
-      })
-      return
-    }
+    if (!firstInvalidField) return false
+    requestAnimationFrame(() => {
+      const element =
+        customerFormRef.current?.elements.namedItem(firstInvalidField)
+      if (element instanceof HTMLElement) element.focus()
+    })
+    return true
+  }
+
+  /**
+   * L'adresse seule décide de la suite : fiche connue, on passe au créneau ;
+   * inconnue, on demande le nom et le numéro.
+   *
+   * Une recherche qui échoue répond « inconnue » : le second écran s'affiche,
+   * et la réservation aboutit quand même — ressaisir ses coordonnées alors
+   * qu'on est déjà connu met simplement la fiche à jour.
+   */
+  const submitEmailStage = () => {
+    const errors = validateCustomerFields(customer, ['email'])
+    setCustomerErrors(errors)
+    if (focusFirstInvalid(errors)) return
+
+    startEmailTransition(async () => {
+      const { known } = await lookupCustomerByEmail(customer.email)
+      setResult(null)
+      if (known) goToStep(STEPS.slot)
+      else setDetailsStage('identity')
+    })
+  }
+
+  const submitIdentityStage = () => {
+    const errors = validateCustomerFields(customer, [
+      'firstName',
+      'lastName',
+      'phone',
+    ])
+    setCustomerErrors(errors)
+    if (focusFirstInvalid(errors)) return
 
     setCustomer(normalizeCustomerFormDisplay(customer))
     setResult(null)
     goToStep(STEPS.slot)
+  }
+
+  /** Le commentaire et l'accord se donnent à la relecture, par tout le monde. */
+  const confirmBooking = () => {
+    const errors = validateCustomerFields(customer, ['comment', 'consent'])
+    setCustomerErrors(errors)
+    if (errors.comment || errors.consent) return
+    submitBooking()
   }
 
   const submitBooking = () => {
@@ -435,7 +480,12 @@ export const ReservationWizard = ({
       if (response.reason === 'SLOT_CONFLICT') {
         setStartsAt('')
         goToStep(STEPS.slot)
-      } else if (response.reason === 'INVALID_CUSTOMER') goToStep(STEPS.details)
+      } else if (response.reason === 'INVALID_CUSTOMER') {
+        // La fiche a disparu entre la recherche et l'envoi : on redemande les
+        // coordonnées plutôt que de laisser la personne devant un mur.
+        setDetailsStage('identity')
+        goToStep(STEPS.details)
+      }
     })
   }
 
@@ -632,7 +682,8 @@ export const ReservationWizard = ({
           noValidate
           onSubmit={event => {
             event.preventDefault()
-            confirmCustomerDetails()
+            if (detailsStage === 'email') submitEmailStage()
+            else submitIdentityStage()
           }}
           className="rounded-3xl border bg-card p-5 sm:p-8"
         >
@@ -640,200 +691,171 @@ export const ReservationWizard = ({
             type="button"
             variant="ghost"
             size="sm"
-            onClick={() => goToStep(STEPS.service)}
+            onClick={() =>
+              detailsStage === 'email'
+                ? goToStep(STEPS.service)
+                : setDetailsStage('email')
+            }
             className="-ml-2"
           >
-            <ChevronLeft className="size-4" /> Changer de prestation
+            <ChevronLeft className="size-4" />
+            {detailsStage === 'email'
+              ? 'Changer de prestation'
+              : 'Changer d’adresse e-mail'}
           </Button>
-          <h2 className="mt-5 font-heading text-2xl font-bold">
-            Vos coordonnées
-          </h2>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Votre confirmation part à l’adresse e-mail indiquée ici. C’est aussi
-            elle qui vous permettra de retrouver, déplacer ou annuler ce
-            rendez-vous dans « Mes rendez-vous ». Le créneau se choisit à
-            l’étape suivante.
-          </p>
-          <div className="mt-6 grid gap-4 sm:grid-cols-2">
-            <FormField
-              controlId="firstName"
-              label="Prénom"
-              error={customerErrors.firstName}
-              errorId="firstName-error"
-            >
-              <input
-                id="firstName"
-                name="firstName"
-                value={customer.firstName}
-                onChange={event =>
-                  updateCustomerField('firstName', event.target.value)
-                }
-                onBlur={() => validateCustomerOnBlur('firstName')}
-                maxLength={100}
-                autoComplete="given-name"
-                aria-invalid={Boolean(customerErrors.firstName)}
-                aria-describedby={
-                  customerErrors.firstName ? 'firstName-error' : undefined
-                }
-                className={fieldClass}
-              />
-            </FormField>
-            <FormField
-              controlId="lastName"
-              label="Nom"
-              error={customerErrors.lastName}
-              errorId="lastName-error"
-            >
-              <input
-                id="lastName"
-                name="lastName"
-                value={customer.lastName}
-                onChange={event =>
-                  updateCustomerField('lastName', event.target.value)
-                }
-                onBlur={() => validateCustomerOnBlur('lastName')}
-                maxLength={100}
-                autoComplete="family-name"
-                aria-invalid={Boolean(customerErrors.lastName)}
-                aria-describedby={
-                  customerErrors.lastName ? 'lastName-error' : undefined
-                }
-                className={fieldClass}
-              />
-            </FormField>
-            <FormField
-              controlId="email"
-              label="Adresse e-mail"
-              error={customerErrors.email}
-              errorId="email-error"
-            >
-              <input
-                id="email"
-                name="email"
-                type="email"
-                inputMode="email"
-                value={customer.email}
-                onChange={event =>
-                  updateCustomerField('email', event.target.value)
-                }
-                onBlur={() => validateCustomerOnBlur('email')}
-                autoComplete="email"
-                spellCheck={false}
-                aria-invalid={Boolean(customerErrors.email)}
-                aria-describedby={
-                  customerErrors.email ? 'email-error' : undefined
-                }
-                className={fieldClass}
-              />
-            </FormField>
-            <FormField
-              controlId="phone"
-              label="Téléphone"
-              error={customerErrors.phone}
-              errorId="phone-error"
-              helpId="phone-help"
-              help="Les espaces sont acceptés. Avant confirmation, le numéro sera présenté au format international, par exemple +41 79 123 45 67."
-            >
-              <input
-                id="phone"
-                name="phone"
-                type="tel"
-                inputMode="tel"
-                value={customer.phone}
-                onChange={event =>
-                  updateCustomerField('phone', event.target.value)
-                }
-                onBlur={() => validateCustomerOnBlur('phone')}
-                autoComplete="tel"
-                placeholder="079 123 45 67"
-                aria-invalid={Boolean(customerErrors.phone)}
-                aria-describedby={
-                  customerErrors.phone ? 'phone-help phone-error' : 'phone-help'
-                }
-                className={fieldClass}
-              />
-            </FormField>
-          </div>
-          <FormField
-            controlId="comment"
-            label="Commentaire"
-            optional
-            className="mt-4"
-            error={customerErrors.comment}
-            errorId="comment-error"
-          >
-            <textarea
-              id="comment"
-              name="comment"
-              value={customer.comment}
-              onChange={event =>
-                updateCustomerField('comment', event.target.value)
-              }
-              onBlur={() => validateCustomerOnBlur('comment')}
-              rows={4}
-              maxLength={1000}
-              aria-invalid={Boolean(customerErrors.comment)}
-              aria-describedby={
-                customerErrors.comment ? 'comment-error' : undefined
-              }
-              className={cn(fieldClass, 'py-3')}
-            />
-          </FormField>
-          <label className="sr-only" aria-hidden="true">
-            Site web
-            <input
-              name="website"
-              value={website}
-              onChange={event => setWebsite(event.target.value)}
-              tabIndex={-1}
-              autoComplete="off"
-            />
-          </label>
-          <label className="mt-5 flex items-start gap-3 text-sm">
-            <input
-              name="consent"
-              type="checkbox"
-              checked={customer.consent}
-              onChange={event =>
-                updateCustomerField('consent', event.target.checked)
-              }
-              onBlur={() => validateCustomerOnBlur('consent')}
-              aria-invalid={Boolean(customerErrors.consent)}
-              aria-describedby={
-                customerErrors.consent ? 'consent-error' : undefined
-              }
-              className="mt-1 size-4"
-            />
-            <span>
-              J’accepte que mes données soient utilisées pour gérer mon
-              rendez-vous, conformément à la{' '}
-              <a href="/politique-de-confidentialite" className="underline">
-                politique de confidentialité
-              </a>{' '}
-              et aux{' '}
-              <a href="/conditions-generales" className="underline">
-                conditions générales
-              </a>
-              .
-            </span>
-          </label>
-          {customerErrors.consent ? (
-            <p
-              id="consent-error"
-              className="mt-2 text-xs text-destructive"
-              role="alert"
-            >
-              {customerErrors.consent}
-            </p>
-          ) : null}
-          {selectedService?.consentFormUrl ? (
-            <ConsentFormNotice url={selectedService.consentFormUrl} />
-          ) : null}
 
-          <CancellationPolicy
-            className="mt-5"
-            cutoffLabel={customerChangeCutoffLabel}
-          />
+          {detailsStage === 'email' ? (
+            <>
+              <h2 className="mt-5 font-heading text-2xl font-bold">
+                Votre adresse e-mail
+              </h2>
+              <p className="mt-1 text-sm text-muted-foreground">
+                Elle suffit : si vous êtes déjà venu, nous retrouvons vos
+                coordonnées et vous passez directement au choix du créneau.
+                C’est aussi à cette adresse que part votre confirmation.
+              </p>
+              <FormField
+                controlId="email"
+                label="Adresse e-mail"
+                className="mt-6"
+                error={customerErrors.email}
+                errorId="email-error"
+              >
+                <input
+                  id="email"
+                  name="email"
+                  type="email"
+                  inputMode="email"
+                  value={customer.email}
+                  onChange={event =>
+                    updateCustomerField('email', event.target.value)
+                  }
+                  onBlur={() => validateCustomerOnBlur('email')}
+                  autoComplete="email"
+                  spellCheck={false}
+                  aria-invalid={Boolean(customerErrors.email)}
+                  aria-describedby={
+                    customerErrors.email ? 'email-error' : undefined
+                  }
+                  className={fieldClass}
+                />
+              </FormField>
+              <label className="sr-only" aria-hidden="true">
+                Site web
+                <input
+                  name="website"
+                  value={website}
+                  onChange={event => setWebsite(event.target.value)}
+                  tabIndex={-1}
+                  autoComplete="off"
+                />
+              </label>
+              <Button
+                type="submit"
+                size="lg"
+                disabled={checkingEmail}
+                className="mt-6 w-full"
+              >
+                {checkingEmail ? 'Vérification…' : 'Continuer'}
+              </Button>
+            </>
+          ) : (
+            <>
+              <h2 className="mt-5 font-heading text-2xl font-bold">
+                Vos coordonnées
+              </h2>
+              <p className="mt-1 text-sm text-muted-foreground">
+                Première visite avec cette adresse : indiquez votre nom et votre
+                numéro. Ils ne vous seront plus redemandés.
+              </p>
+              <div className="mt-6 grid gap-4 sm:grid-cols-2">
+                <FormField
+                  controlId="firstName"
+                  label="Prénom"
+                  error={customerErrors.firstName}
+                  errorId="firstName-error"
+                >
+                  <input
+                    id="firstName"
+                    name="firstName"
+                    value={customer.firstName}
+                    onChange={event =>
+                      updateCustomerField('firstName', event.target.value)
+                    }
+                    onBlur={() => validateCustomerOnBlur('firstName')}
+                    maxLength={100}
+                    autoComplete="given-name"
+                    aria-invalid={Boolean(customerErrors.firstName)}
+                    aria-describedby={
+                      customerErrors.firstName ? 'firstName-error' : undefined
+                    }
+                    className={fieldClass}
+                  />
+                </FormField>
+                <FormField
+                  controlId="lastName"
+                  label="Nom"
+                  error={customerErrors.lastName}
+                  errorId="lastName-error"
+                >
+                  <input
+                    id="lastName"
+                    name="lastName"
+                    value={customer.lastName}
+                    onChange={event =>
+                      updateCustomerField('lastName', event.target.value)
+                    }
+                    onBlur={() => validateCustomerOnBlur('lastName')}
+                    maxLength={100}
+                    autoComplete="family-name"
+                    aria-invalid={Boolean(customerErrors.lastName)}
+                    aria-describedby={
+                      customerErrors.lastName ? 'lastName-error' : undefined
+                    }
+                    className={fieldClass}
+                  />
+                </FormField>
+                <FormField
+                  controlId="phone"
+                  label="Téléphone"
+                  className="sm:col-span-2"
+                  error={customerErrors.phone}
+                  errorId="phone-error"
+                >
+                  {/* Le numéro se remet au format international en quittant le
+                      champ : l'exemple du placeholder devient la règle, sans
+                      qu'une phrase ait à l'expliquer. */}
+                  <input
+                    id="phone"
+                    name="phone"
+                    type="tel"
+                    inputMode="tel"
+                    value={customer.phone}
+                    onChange={event =>
+                      updateCustomerField('phone', event.target.value)
+                    }
+                    onBlur={() => {
+                      updateCustomerField(
+                        'phone',
+                        formatPhoneForDisplay(customer.phone),
+                      )
+                      validateCustomerOnBlur('phone')
+                    }}
+                    autoComplete="tel"
+                    placeholder="+41791234567"
+                    aria-invalid={Boolean(customerErrors.phone)}
+                    aria-describedby={
+                      customerErrors.phone ? 'phone-error' : undefined
+                    }
+                    className={fieldClass}
+                  />
+                </FormField>
+              </div>
+              <Button type="submit" size="lg" className="mt-6 w-full">
+                Choisir mon créneau
+              </Button>
+            </>
+          )}
 
           {result && !result.ok ? (
             <p
@@ -843,9 +865,6 @@ export const ReservationWizard = ({
               {result.message}
             </p>
           ) : null}
-          <Button type="submit" size="lg" className="mt-6 w-full">
-            Choisir mon créneau
-          </Button>
         </form>
       ) : null}
 
@@ -994,18 +1013,32 @@ export const ReservationWizard = ({
                 <p className="flex items-center gap-1.5 text-xs font-semibold tracking-wider text-muted-foreground uppercase">
                   <UserRound className="size-3.5" /> Coordonnées
                 </p>
-                <p className="mt-1 font-semibold">
-                  {customer.firstName} {customer.lastName}
-                </p>
-                <p className="mt-1 break-all text-sm text-muted-foreground">
-                  {customer.email}
-                </p>
-                <p className="text-sm text-muted-foreground">
-                  {customer.phone}
-                </p>
-                {customer.comment ? (
-                  <p className="mt-2 text-sm">« {customer.comment} »</p>
-                ) : null}
+                {/* Une personne déjà connue n'a saisi que son adresse : son
+                    nom et son numéro sont en base, jamais dans ce navigateur.
+                    On affiche ce que l'on a, sans inventer une ligne vide. */}
+                {customer.lastName ? (
+                  <>
+                    <p className="mt-1 font-semibold">
+                      {customer.firstName} {customer.lastName}
+                    </p>
+                    <p className="mt-1 break-all text-sm text-muted-foreground">
+                      {customer.email}
+                    </p>
+                    <p className="text-sm text-muted-foreground">
+                      {customer.phone}
+                    </p>
+                  </>
+                ) : (
+                  <>
+                    <p className="mt-1 font-semibold break-all">
+                      {customer.email}
+                    </p>
+                    <p className="mt-1 text-sm text-muted-foreground">
+                      Nous utilisons les coordonnées déjà enregistrées pour
+                      cette adresse.
+                    </p>
+                  </>
+                )}
               </div>
               <Button
                 type="button"
@@ -1019,10 +1052,80 @@ export const ReservationWizard = ({
             </div>
           </div>
 
+          <FormField
+            controlId="comment"
+            label="Un mot pour Arzu"
+            optional
+            className="mt-5"
+            error={customerErrors.comment}
+            errorId="comment-error"
+          >
+            <textarea
+              id="comment"
+              name="comment"
+              value={customer.comment}
+              onChange={event =>
+                updateCustomerField('comment', event.target.value)
+              }
+              onBlur={() => validateCustomerOnBlur('comment')}
+              rows={3}
+              maxLength={1000}
+              aria-invalid={Boolean(customerErrors.comment)}
+              aria-describedby={
+                customerErrors.comment ? 'comment-error' : undefined
+              }
+              className={cn(fieldClass, 'py-3')}
+            />
+          </FormField>
+
+          {selectedService.consentFormUrl ? (
+            <ConsentFormNotice url={selectedService.consentFormUrl} />
+          ) : null}
+
           <CancellationPolicy
             className="mt-5"
             cutoffLabel={customerChangeCutoffLabel}
           />
+
+          {/* L'accord se donne ici, à la dernière étape : c'est le seul écran
+              que tout le monde traverse, qu'une fiche existe déjà ou non. */}
+          <label className="mt-5 flex items-start gap-3 text-sm">
+            <input
+              name="consent"
+              type="checkbox"
+              checked={customer.consent}
+              onChange={event =>
+                updateCustomerField('consent', event.target.checked)
+              }
+              onBlur={() => validateCustomerOnBlur('consent')}
+              aria-invalid={Boolean(customerErrors.consent)}
+              aria-describedby={
+                customerErrors.consent ? 'consent-error' : undefined
+              }
+              className="mt-1 size-4"
+            />
+            <span>
+              J’accepte que mes données soient utilisées pour gérer mon
+              rendez-vous, conformément à la{' '}
+              <a href="/politique-de-confidentialite" className="underline">
+                politique de confidentialité
+              </a>{' '}
+              et aux{' '}
+              <a href="/conditions-generales" className="underline">
+                conditions générales
+              </a>
+              .
+            </span>
+          </label>
+          {customerErrors.consent ? (
+            <p
+              id="consent-error"
+              className="mt-2 text-xs text-destructive"
+              role="alert"
+            >
+              {customerErrors.consent}
+            </p>
+          ) : null}
 
           {result && !result.ok ? (
             <p
@@ -1035,7 +1138,7 @@ export const ReservationWizard = ({
           <Button
             type="button"
             size="lg"
-            onClick={submitBooking}
+            onClick={confirmBooking}
             disabled={submitting}
             className="mt-6 w-full"
           >
