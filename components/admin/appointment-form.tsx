@@ -30,6 +30,7 @@ import {
   saveAdminAppointment,
 } from '@/lib/actions/admin-agenda'
 import type { AdminAppointmentSeriesPreview } from '@/lib/admin/agenda'
+import { formatCalendarShortDate } from '@/lib/reservation/calendar-view'
 import { capitalizeFirst } from '@/lib/utils/format'
 
 interface AppointmentValues {
@@ -49,13 +50,7 @@ interface AppointmentFormProps {
   appointment: AppointmentValues
 }
 
-const formatSeriesDate = (date: string): string =>
-  new Intl.DateTimeFormat('fr-CH', {
-    weekday: 'short',
-    day: 'numeric',
-    month: 'short',
-    year: 'numeric',
-  }).format(new Date(`${date}T12:00:00`))
+const formatSeriesDate = (date: string): string => formatCalendarShortDate(date)
 
 export const AppointmentForm = ({
   services,

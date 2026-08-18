@@ -28,6 +28,7 @@ import {
   type AvailabilityExceptionGroup,
   hasAvailabilityExceptionOverlap,
 } from '@/lib/admin/availability-calendar'
+import { formatCalendarDayDate } from '@/lib/reservation/calendar-view'
 import { formatLongDate } from '@/lib/reservation/time'
 import { capitalizeFirst } from '@/lib/utils/format'
 
@@ -94,12 +95,7 @@ const formatDate = (dateKey: string): string =>
   formatLongDate(dateFromKey(dateKey))
 
 const formatShortDate = (dateKey: string): string =>
-  new Intl.DateTimeFormat('fr-CH', {
-    day: 'numeric',
-    month: 'short',
-    year: 'numeric',
-    timeZone: 'UTC',
-  }).format(dateFromKey(dateKey))
+  formatCalendarDayDate(dateKey)
 
 const shortcutButtons: Array<{
   value: Shortcut

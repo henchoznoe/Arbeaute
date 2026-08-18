@@ -7,9 +7,9 @@ import {
   auditActorLabels,
   auditEntityLabels,
   formatAuditChanges,
-  formatAuditCreatedAt,
   getAuditEntityHref,
 } from '@/lib/admin/audit'
+import { formatShortMoment } from '@/lib/reservation/time'
 
 export const AuditList = ({
   events,
@@ -65,7 +65,7 @@ export const AuditList = ({
                     dateTime={event.createdAt.toISOString()}
                     className="text-xs text-muted-foreground"
                   >
-                    {formatAuditCreatedAt(event.createdAt)}
+                    {formatShortMoment(event.createdAt)}
                   </time>
                   {href ? (
                     <Link

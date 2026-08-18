@@ -13,6 +13,8 @@ import prisma from '@/lib/core/prisma'
 import { getAdminSession } from '@/lib/core/session-cookies'
 import { RESERVATION_TIME_ZONE } from '@/lib/reservation/constants'
 import { formatServiceLabel } from '@/lib/reservation/service-label'
+import { formatAppointmentDate } from '@/lib/reservation/time'
+import { capitalizeFirst, formatPrice } from '@/lib/utils/format'
 import type { AppointmentStatus } from '@/prisma/generated/prisma/enums'
 
 interface EditAppointmentPageProps {
@@ -176,14 +178,8 @@ const EditAppointment = async ({
                 )}
               </h2>
               <p className="mt-1 text-sm text-muted-foreground">
-                {new Intl.DateTimeFormat('fr-CH', {
-                  timeZone: RESERVATION_TIME_ZONE,
-                  dateStyle: 'long',
-                  timeStyle: 'short',
-                }).format(appointment.startsAt)}{' '}
-                ·{' '}
-                {(appointment.servicePriceCents / 100).toLocaleString('fr-CH')}{' '}
-                CHF
+                {capitalizeFirst(formatAppointmentDate(appointment.startsAt))} ·{' '}
+                {formatPrice(appointment.servicePriceCents)}
               </p>
             </div>
           </div>

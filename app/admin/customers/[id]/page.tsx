@@ -25,10 +25,9 @@ import {
 } from '@/lib/admin/customer-profile'
 import prisma from '@/lib/core/prisma'
 import { getAdminSession } from '@/lib/core/session-cookies'
-import { RESERVATION_TIME_ZONE } from '@/lib/reservation/constants'
 import { formatServiceLabel } from '@/lib/reservation/service-label'
-import { formatCompactMoment } from '@/lib/reservation/time'
-import { capitalizeFirst } from '@/lib/utils/format'
+import { formatCompactMoment, formatDayDate } from '@/lib/reservation/time'
+import { capitalizeFirst, formatPrice } from '@/lib/utils/format'
 import type { AppointmentStatus } from '@/prisma/generated/prisma/enums'
 
 interface CustomerPageProps {
@@ -48,14 +47,6 @@ const statusVariants = {
   CANCELLED: 'neutral',
   NO_SHOW: 'danger',
 } as const
-
-const formatMoment = (date: Date): string => formatCompactMoment(date)
-
-const formatDate = (date: Date): string =>
-  new Intl.DateTimeFormat('fr-CH', {
-    timeZone: RESERVATION_TIME_ZONE,
-    dateStyle: 'long',
-  }).format(date)
 
 const CustomerAppointmentList = ({
   appointments,
@@ -85,18 +76,14 @@ const CustomerAppointmentList = ({
             >
               <span className="min-w-0 flex-1">
                 <span className="block text-sm font-semibold">
-                  {capitalizeFirst(formatMoment(appointment.startsAt))}
+                  {capitalizeFirst(formatCompactMoment(appointment.startsAt))}
                 </span>
                 <span className="mt-1 block truncate text-xs text-muted-foreground">
                   {formatServiceLabel(
                     appointment.serviceNameSnapshot,
                     appointment.service.category?.name,
                   )}{' '}
-                  ·{' '}
-                  {(appointment.servicePriceCents / 100).toLocaleString(
-                    'fr-CH',
-                  )}{' '}
-                  CHF
+                  · {formatPrice(appointment.servicePriceCents)}
                 </span>
                 <span className="mt-2 block">
                   <StatusBadge variant={statusVariants[appointment.status]}>
@@ -159,8 +146,8 @@ const CustomerProfile = async ({ params }: Readonly<CustomerPageProps>) => {
               {customerName}
             </h1>
             <p className="mt-1 text-xs text-muted-foreground">
-              Connue depuis le {formatDate(customer.firstSeenAt)} · dernière
-              activité le {formatDate(customer.lastSeenAt)}
+              Connue depuis le {formatDayDate(customer.firstSeenAt)} · dernière
+              activité le {formatDayDate(customer.lastSeenAt)}
             </p>
           </div>
         </div>

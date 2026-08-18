@@ -1,5 +1,5 @@
 import prisma from '@/lib/core/prisma'
-import { RESERVATION_TIME_ZONE } from '@/lib/reservation/constants'
+import { formatShortMoment } from '@/lib/reservation/time'
 import { formatPrice } from '@/lib/utils/format'
 import type { Prisma, PrismaClient } from '@/prisma/generated/prisma/client'
 import type {
@@ -123,13 +123,6 @@ export const auditActionLabels: Record<AuditActionType, string> = {
   MERGED: 'Fusion',
 }
 
-export const formatAuditCreatedAt = (date: Date): string =>
-  new Intl.DateTimeFormat('fr-CH', {
-    timeZone: RESERVATION_TIME_ZONE,
-    dateStyle: 'short',
-    timeStyle: 'short',
-  }).format(date)
-
 export const getAuditEntityHref = (
   event: Pick<AuditEventItem, 'entityType' | 'entityId'>,
 ): string | null => {
@@ -226,7 +219,7 @@ const formatAuditValue = (key: string, value: Prisma.JsonValue): string => {
     typeof value === 'string' &&
     !Number.isNaN(Date.parse(value))
   )
-    return formatAuditCreatedAt(new Date(value))
+    return formatShortMoment(new Date(value))
   return typeof value === 'string' || typeof value === 'number'
     ? String(value)
     : 'Modifié'

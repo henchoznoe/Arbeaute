@@ -10,12 +10,13 @@ import { StatusBadge } from '@/components/ui/status-badge'
 import {
   describeEmailError,
   emailKindLabels,
-  formatEmailMoment,
   getEmailOverview,
   isResendableKind,
 } from '@/lib/admin/emails'
 import { isEmailConfigured } from '@/lib/core/env'
 import { getAdminSession } from '@/lib/core/session-cookies'
+import { formatShortMoment } from '@/lib/reservation/time'
+import { formatCount } from '@/lib/utils/format'
 
 const EmailsPage = () => (
   <Suspense fallback={<AdminSkeleton variant="list" maxWidth="max-w-4xl" />}>
@@ -80,7 +81,7 @@ const Emails = async () => {
         <p className="mt-1 text-sm text-muted-foreground">{quota.message}</p>
         <p className="mt-2 text-2xs text-muted-foreground">
           L’offre gratuite couvre {quota.dailyLimit} e-mails par jour et{' '}
-          {quota.monthlyLimit.toLocaleString('fr-CH')} par mois.
+          {formatCount(quota.monthlyLimit)} par mois.
         </p>
       </section>
 
@@ -122,7 +123,7 @@ const Emails = async () => {
                 </div>
 
                 <p className="mt-2 text-2xs text-muted-foreground">
-                  {formatEmailMoment(delivery.createdAt)}
+                  {formatShortMoment(delivery.createdAt)}
                   {delivery.attempts > 1
                     ? ` · ${delivery.attempts} tentatives`
                     : ''}

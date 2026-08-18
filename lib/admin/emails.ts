@@ -1,6 +1,5 @@
 import prisma from '@/lib/core/prisma'
 import { buildQuotaStatus } from '@/lib/email/quota'
-import { RESERVATION_TIME_ZONE } from '@/lib/reservation/constants'
 import type { EmailKind } from '@/prisma/generated/prisma/enums'
 
 const EMAIL_PAGE_SIZE = 25
@@ -49,13 +48,6 @@ export const describeEmailError = (error: string | null): string | null => {
 
   return 'L’envoi a échoué. Réessayez ; si cela recommence, prévenez Noé avec le détail ci-dessous.'
 }
-
-export const formatEmailMoment = (date: Date): string =>
-  new Intl.DateTimeFormat('fr-CH', {
-    timeZone: RESERVATION_TIME_ZONE,
-    dateStyle: 'short',
-    timeStyle: 'short',
-  }).format(date)
 
 const startOfMonth = (now: Date): Date =>
   new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1))

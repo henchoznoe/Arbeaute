@@ -1,5 +1,14 @@
 import type { AvailabilityDayState } from '@/lib/reservation/availability'
 
+/**
+ * Mises en forme des clés de date (`'YYYY-MM-DD'`), pour les calendriers et les
+ * en-têtes de journée.
+ *
+ * Une clé de date ne porte ni heure ni fuseau : elle est lue à midi UTC, ce qui
+ * la place le bon jour quelle que soit la saison. Les dates rattachées à un
+ * instant précis relèvent de `lib/reservation/time.ts`, pas d'ici.
+ */
+
 export const availabilityStateLabels: Record<AvailabilityDayState, string> = {
   AVAILABLE: 'Disponible',
   FULL: 'Complet',
@@ -33,6 +42,46 @@ export const formatCalendarDate = (dateKey: string): string =>
   })
     .format(parseDateKey(dateKey))
     .replace(',', '')
+
+/** « 17 août 2026 » — une date sans jour de la semaine. */
+export const formatCalendarDayDate = (dateKey: string): string =>
+  new Intl.DateTimeFormat('fr-CH', {
+    timeZone: 'UTC',
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+  }).format(parseDateKey(dateKey))
+
+/** « lun. 17 août 2026 » — pour les listes d'occurrences. */
+export const formatCalendarShortDate = (dateKey: string): string =>
+  new Intl.DateTimeFormat('fr-CH', {
+    timeZone: 'UTC',
+    weekday: 'short',
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+  })
+    .format(parseDateKey(dateKey))
+    .replace(',', '')
+
+/** « lun. 17 août » ou « lundi 17 août » — en-tête d'une journée d'agenda. */
+export const formatCalendarDayTitle = (dateKey: string, long = false): string =>
+  new Intl.DateTimeFormat('fr-CH', {
+    timeZone: 'UTC',
+    weekday: long ? 'long' : 'short',
+    day: 'numeric',
+    month: long ? 'long' : 'short',
+  })
+    .format(parseDateKey(dateKey))
+    .replace(',', '')
+
+/** « août 2026 », à partir d'une clé de mois `'YYYY-MM'`. */
+export const formatCalendarMonth = (monthKey: string): string =>
+  new Intl.DateTimeFormat('fr-CH', {
+    timeZone: 'UTC',
+    month: 'long',
+    year: 'numeric',
+  }).format(parseDateKey(`${monthKey}-01`))
 
 export const formatCalendarPeriod = (
   fromDateKey: string,

@@ -18,6 +18,7 @@ import { buildAdminTimelineDay } from '@/lib/admin/agenda-timeline'
 import { buildDashboardMetrics } from '@/lib/admin/dashboard-metrics'
 import prisma from '@/lib/core/prisma'
 import { getAdminSession } from '@/lib/core/session-cookies'
+import { formatCalendarDayTitle } from '@/lib/reservation/calendar-view'
 import { RESERVATION_TIME_ZONE } from '@/lib/reservation/constants'
 import { formatServiceLabel } from '@/lib/reservation/service-label'
 import {
@@ -36,14 +37,6 @@ interface AdminPageProps {
 }
 
 const SHORT_DAY_LABELS = ['Di', 'Lu', 'Ma', 'Me', 'Je', 'Ve', 'Sa']
-
-const dayTitle = (dateKey: string, long = false) =>
-  new Intl.DateTimeFormat('fr-CH', {
-    timeZone: RESERVATION_TIME_ZONE,
-    weekday: long ? 'long' : 'short',
-    day: 'numeric',
-    month: long ? 'long' : 'short',
-  }).format(getLocalDayBounds(dateKey).start)
 
 const formatTime = (date: Date) =>
   formatInTimeZone(date, RESERVATION_TIME_ZONE, 'HH:mm')
@@ -208,7 +201,7 @@ const AdminAgenda = async ({ searchParams }: Readonly<AdminPageProps>) => {
     return buildAdminTimelineDay({
       dateKey,
       today,
-      label: dayTitle(dateKey, true),
+      label: formatCalendarDayTitle(dateKey, true),
       shortLabel: SHORT_DAY_LABELS[dayOfWeek],
       weekly,
       exceptions,
@@ -244,7 +237,7 @@ const AdminAgenda = async ({ searchParams }: Readonly<AdminPageProps>) => {
     weekly,
     exceptions,
   })
-  const periodLabel = `${dayTitle(weekDays[0])} – ${dayTitle(weekDays.at(-1) as string)}`
+  const periodLabel = `${formatCalendarDayTitle(weekDays[0])} – ${formatCalendarDayTitle(weekDays.at(-1) as string)}`
 
   const nextAppointmentDateKey = nextAppointment
     ? getLocalDateKey(nextAppointment.startsAt)
@@ -263,7 +256,7 @@ const AdminAgenda = async ({ searchParams }: Readonly<AdminPageProps>) => {
           startsAt={nextAppointment.startsAt.toISOString()}
           dateKey={nextAppointmentDateKey}
           timeLabel={formatTime(nextAppointment.startsAt)}
-          dayLabel={dayTitle(nextAppointmentDateKey, true)}
+          dayLabel={formatCalendarDayTitle(nextAppointmentDateKey, true)}
           isToday={nextAppointmentDateKey === today}
           customerName={
             [
@@ -305,11 +298,11 @@ const AdminAgenda = async ({ searchParams }: Readonly<AdminPageProps>) => {
             >
               <div className="flex items-center justify-between gap-1 border-b pb-2">
                 <h3 className="text-sm font-semibold">
-                  {capitalizeFirst(dayTitle(dateKey))}
+                  {capitalizeFirst(formatCalendarDayTitle(dateKey))}
                 </h3>
                 <Link
                   href={`/admin/appointments/new?date=${dateKey}`}
-                  aria-label={`Ajouter le ${dayTitle(dateKey, true)}`}
+                  aria-label={`Ajouter le ${formatCalendarDayTitle(dateKey, true)}`}
                   className="grid size-11 place-items-center rounded-xl hover:bg-muted"
                 >
                   <Plus className="size-3.5" />
@@ -340,7 +333,7 @@ const AdminAgenda = async ({ searchParams }: Readonly<AdminPageProps>) => {
       <DashboardMetrics
         metrics={dashboardMetrics}
         periodLabel={periodLabel}
-        selectedDayLabel={dayTitle(anchor, true)}
+        selectedDayLabel={formatCalendarDayTitle(anchor, true)}
       />
 
       {/* Plus de `hidden md:block` : sur téléphone, Arzu ne voyait jamais les

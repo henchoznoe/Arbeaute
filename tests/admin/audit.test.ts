@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { formatShortMoment } from '@/lib/reservation/time'
 
 const mocks = vi.hoisted(() => ({
   count: vi.fn(),
@@ -16,7 +17,6 @@ vi.mock('@/lib/core/prisma', () => ({
 
 import {
   formatAuditChanges,
-  formatAuditCreatedAt,
   getAuditEntityHref,
   getAuditPage,
   runAuditedMutation,
@@ -71,7 +71,7 @@ describe('admin audit journal', () => {
   })
 
   it('formats timestamps in the salon time zone', () => {
-    expect(formatAuditCreatedAt(new Date('2026-08-10T10:30:00.000Z'))).toBe(
+    expect(formatShortMoment(new Date('2026-08-10T10:30:00.000Z'))).toBe(
       '10.08.26 12:30',
     )
   })

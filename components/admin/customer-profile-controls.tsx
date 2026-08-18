@@ -24,7 +24,7 @@ import type {
   AdminCustomer,
   AdminCustomerDuplicate,
 } from '@/lib/admin/customer-profile'
-import { RESERVATION_TIME_ZONE } from '@/lib/reservation/constants'
+import { formatDayDate } from '@/lib/reservation/time'
 
 export const CustomerQuickActions = ({
   customerId,
@@ -231,11 +231,7 @@ export const CustomerProfileForm = ({
   )
 }
 
-const formatLastSeen = (date: Date): string =>
-  new Intl.DateTimeFormat('fr-CH', {
-    timeZone: RESERVATION_TIME_ZONE,
-    dateStyle: 'medium',
-  }).format(new Date(date))
+const formatLastSeen = (date: Date): string => formatDayDate(new Date(date))
 
 export const CustomerDuplicateList = ({
   targetId,

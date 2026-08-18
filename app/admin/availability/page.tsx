@@ -20,6 +20,7 @@ import {
 } from '@/lib/admin/availability-calendar'
 import prisma from '@/lib/core/prisma'
 import { getAdminSession } from '@/lib/core/session-cookies'
+import { formatCalendarMonth } from '@/lib/reservation/calendar-view'
 import { MAX_AVAILABILITY_EXCEPTION_RANGE_DAYS } from '@/lib/reservation/constants'
 import {
   addLocalDays,
@@ -115,11 +116,7 @@ const Availability = async ({
     isToday: dateKey === today,
     segments: segments.filter(segment => segment.dateKey === dateKey),
   }))
-  const monthLabel = new Intl.DateTimeFormat('fr-CH', {
-    month: 'long',
-    year: 'numeric',
-    timeZone: 'UTC',
-  }).format(new Date(`${monthKey}-01T12:00:00.000Z`))
+  const monthLabel = formatCalendarMonth(monthKey)
 
   return (
     <main className="mx-auto min-h-screen max-w-5xl px-4 py-6 sm:px-8">
