@@ -52,16 +52,25 @@ export const AppointmentStatusActions = ({
     })
   }
 
-  // En version compacte, une seule colonne : les colonnes de la semaine
-  // descendent à 150 px et `Button` refuse de rétrécir son libellé.
+  /**
+   * Dans les listes, l'absence se fait discrète.
+   *
+   * Une absence survient une à deux fois par mois ; le bouton, lui, s'affichait
+   * sur *chaque* rendez-vous, rouge et sur toute la largeur. Six rendez-vous
+   * dans la journée, c'étaient six boutons d'alerte pour un geste rare — la
+   * place d'une action fréquente donnée à une action qui ne l'est pas.
+   *
+   * Le détail d'un rendez-vous garde la version pleine : c'est l'écran où l'on
+   * vient exprès pour noter ce qui s'est passé, et la place n'y manque pas.
+   */
   const buttonClassName = compact
-    ? 'w-full min-w-0 whitespace-normal px-2 text-xs'
+    ? 'h-auto min-w-0 justify-start whitespace-normal px-2 py-1 text-xs'
     : undefined
 
   return (
     <>
       <div
-        className={`${compact ? 'grid gap-2' : 'grid gap-3 sm:flex sm:flex-wrap'} ${className ?? ''}`}
+        className={`${compact ? 'flex flex-wrap gap-2' : 'grid gap-3 sm:flex sm:flex-wrap'} ${className ?? ''}`}
       >
         {status === 'CONFIRMED' ? (
           <ConfirmDialog
@@ -82,9 +91,13 @@ export const AppointmentStatusActions = ({
             trigger={
               <Button
                 type="button"
-                variant="destructive"
+                variant={compact ? 'ghost' : 'destructive'}
                 disabled={pending}
-                className={buttonClassName}
+                className={
+                  compact
+                    ? `${buttonClassName} text-muted-foreground hover:text-destructive`
+                    : buttonClassName
+                }
               >
                 {pending ? (
                   <LoaderCircle className="size-4 animate-spin" />

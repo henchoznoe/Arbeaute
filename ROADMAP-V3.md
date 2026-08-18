@@ -71,7 +71,7 @@ d’explication.
 
 ## Lecture du backlog
 
-**Statuts :** ✅ terminé · 🟡 en cours · ⏳ prêt à démarrer · 🔒 bloqué. Le statut
+**Statuts :** ✅ terminé · 🟡 en cours · ⏳ prêt à démarrer · 🔒 bloqué · ❌ abandonné. Le statut
 figure dans le titre et se réévalue après chaque livraison.
 
 ### État actuel
@@ -81,7 +81,8 @@ figure dans le titre et se réévalue après chaque livraison.
 | ✅ Terminés | 1, 2, 3, 5, 6, 7, 8, 9, 10, 12, 13, 14 |
 | 🟡 En cours | Aucun |
 | ⏳ Prêt à démarrer | 4 |
-| 🔒 Bloqués | 11 — prémisse invalidée, à repenser (voir l’élément) |
+| 🔒 Bloqués | Aucun |
+| ❌ Abandonné | 11 — le besoin n’existe pas, voir l’élément |
 
 - **Priorité P0** : corrige une friction quotidienne ou prépare plusieurs autres
   éléments.
@@ -759,11 +760,27 @@ rien afficher plutôt qu’un lien mort.
 
 **Dépendances :** aucune.
 
-### 11. Clôturer les journées passées en un geste — 🔒
+### 11. Clôturer les journées passées en un geste — ❌
 
 **Priorité : P1 · Effort : M · Nature : amélioration**
 
-> **🔒 Bloqué : la prémisse ci-dessous est fausse.**
+> **❌ Abandonné après vérification dans le code, puis auprès de Noé.**
+>
+> **Ce que la conversation a établi :** une personne ne vient pas une à deux fois
+> par mois, et **Arzu le note sur le moment**, quand la personne ne se présente
+> pas — pas le soir, pas le dimanche. Or tout l’objet de cet élément était de lui
+> *rappeler* un travail oublié. Il n’y a rien à rappeler.
+>
+> **Ce que la conversation a révélé, en revanche**, c’est le défaut inverse : le
+> bouton « Absence » s’affichait en rouge et sur toute la largeur sur *chaque*
+> rendez-vous. Six rendez-vous dans la journée, six boutons d’alerte, pour un
+> geste mensuel. Dans les listes, il est devenu discret — fond transparent, texte
+> atténué, 91 px au lieu de la pleine largeur — tout en gardant ses 44 px de
+> hauteur tactile et sa demande de confirmation, désormais justifiée : avec les
+> nouvelles conditions générales, une absence est facturée. Le détail d’un
+> rendez-vous garde la version pleine : c’est l’écran où l’on vient exprès.
+>
+> **🔒 Le constat technique qui avait bloqué l’élément, conservé pour mémoire :**
 >
 > Vérification faite dans le code : **aucun chemin n’écrit jamais `COMPLETED`.**
 > Les seules transitions possibles sont `CONFIRMED ⇄ NO_SHOW`
@@ -784,15 +801,16 @@ rien afficher plutôt qu’un lien mort.
 > faudrait marquer les journées déjà passées en revue — une colonne additive,
 > donc une migration — ou trouver un autre angle. À décider avant d’écrire.
 >
-> **Deux éléments s’en trouvent débloqués**, et c’est le gain de cette
-> vérification :
+> **Deux éléments s’en sont trouvés débloqués**, et c’était le gain de cette
+> vérification : l’élément 8 a pu annoncer un chiffre réalisé sans attendre, et
+> l’élément 12 a perdu sa dépendance. Les deux sont livrés.
 >
-> - **l’élément 8** peut annoncer un chiffre **réalisé** sans attendre : il se
->   compte en rendez-vous confirmés dont l’heure est passée, comme `totalVisits` ;
-> - **l’élément 12** n’a plus de dépendance : la contradiction « Terminé 0 » à
->   côté de « Visites réalisées 12 » vient de ce que `COMPLETED` n’est plus
->   écrit, et c’est exactement ce que la réécriture de l’en-tête fait
->   disparaître.
+> **Ce qui reste, et qu’on accepte :** une absence qu’Arzu oublie de noter est
+> comptée comme une visite. Le compteur d’absences et le montant réalisé du
+> bilan sont donc approximatifs à la hausse. Le prix d’une exactitude complète
+> serait un marqueur « journée passée en revue » — une migration, une section de
+> plus à l’écran — pour corriger un oubli occasionnel sur un geste qu’elle fait
+> déjà au bon moment.
 
 **Constat et valeur.** Les statuts « terminé » et « absence » existent depuis la
 v1 et leurs boutons sont partout depuis la v2 — mais **rien ne rappelle jamais
@@ -1048,7 +1066,8 @@ moins coûteuse.
    ✅ Livrés ensemble. L’élément **11** est bloqué : sa prémisse est fausse.
 7. ~~**8** et **12** — le bilan du dimanche et l’en-tête de fiche.~~ ✅ Livrés
    ensemble, les deux que la vérification de l’élément 11 avait débloqués.
-8. **4** — la reprise de « Mes rendez-vous », dernier élément ouvert.
+8. **4** — la reprise de « Mes rendez-vous », **dernier élément ouvert** de
+   cette v3. L’élément **11** est abandonné.
 
 **Ce qui reste côté exploitation, et non côté code :**
 
