@@ -27,6 +27,7 @@ import {
   formatAppointmentDate,
   getBookingDateLimits,
   getCustomerChangeDeadline,
+  getLocalDateKey,
 } from '@/lib/reservation/time'
 import { cn } from '@/lib/utils/cn'
 import { formatPrice } from '@/lib/utils/format'
@@ -147,9 +148,10 @@ const CustomerAppointments = async ({
                   className="rounded-xl bg-destructive/10 p-4 text-sm text-destructive"
                   role="alert"
                 >
-                  Aucun rendez-vous ne correspond à cette adresse. Vérifiez-la
-                  telle qu’elle a été saisie lors de la réservation, ou prenez
-                  un nouveau rendez-vous si vous n’en avez pas encore.
+                  Aucun rendez-vous ne correspond à cette adresse. Elle est
+                  écrite dans l’e-mail de confirmation que vous avez reçu :
+                  recopiez-la telle quelle. Si vous n’avez pas encore de
+                  rendez-vous, prenez-en un.
                 </p>
               ) : null}
               <Button type="submit" size="lg" className="w-full">
@@ -266,6 +268,7 @@ const CustomerAppointments = async ({
                       endsAt: appointment.endsAt,
                     })}
                     bookingPath={getCustomerRebookingPath(appointment.service)}
+                    dateKey={getLocalDateKey(appointment.startsAt)}
                     minDate={limits.min}
                     maxDate={limits.max}
                   />

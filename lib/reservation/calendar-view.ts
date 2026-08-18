@@ -75,6 +75,25 @@ export const formatCalendarDayTitle = (dateKey: string, long = false): string =>
     .format(parseDateKey(dateKey))
     .replace(',', '')
 
+/**
+ * Ramène une clé de date dans la fenêtre réservable.
+ *
+ * Le calendrier de déplacement s'ouvre sur la semaine du rendez-vous en cours,
+ * qui peut tomber hors fenêtre : un rendez-vous très proche précède la première
+ * date encore réservable, un rendez-vous lointain dépasse la dernière semaine
+ * complète.
+ */
+export const clampDateKey = (
+  candidate: string,
+  minDateKey: string,
+  maxDateKey: string,
+): string =>
+  candidate < minDateKey
+    ? minDateKey
+    : candidate > maxDateKey
+      ? maxDateKey
+      : candidate
+
 /** « août 2026 », à partir d'une clé de mois `'YYYY-MM'`. */
 export const formatCalendarMonth = (monthKey: string): string =>
   new Intl.DateTimeFormat('fr-CH', {

@@ -78,9 +78,9 @@ figure dans le titre et se réévalue après chaque livraison.
 
 | Statut | Éléments |
 | --- | --- |
-| ✅ Terminés | 1, 2, 3, 5, 6, 7, 8, 9, 10, 12, 13, 14 |
+| ✅ Terminés | 1 à 10, 12, 13, 14 — **tous sauf le 11** |
 | 🟡 En cours | Aucun |
-| ⏳ Prêt à démarrer | 4 |
+| ⏳ Prêt à démarrer | Aucun — la v3 est close |
 | 🔒 Bloqués | Aucun |
 | ❌ Abandonné | 11 — le besoin n’existe pas, voir l’élément |
 
@@ -329,7 +329,7 @@ qu’une adresse ou un téléphone change.
 **Dépendances :** aucune ; c’est ce qui donne au retour par e-mail son parcours
 « reconnu », que l’élément 1 s’interdit d’offrir sur simple saisie d’adresse.
 
-### 4. Reprendre « Mes rendez-vous » maintenant que l’e-mail existe — ⏳
+### 4. Reprendre « Mes rendez-vous » maintenant que l’e-mail existe — ✅
 
 **Priorité : P1 · Effort : M · Nature : amélioration**
 
@@ -350,7 +350,29 @@ d’avant les e-mails :
   destination via `describeConfirmationDelivery`. Deux écrans, deux traitements
   du même événement.
 
-**Recommandation.** Ancrer le calendrier de déplacement sur la semaine du
+**Livré.** Les trois frictions sont traitées.
+
+Le calendrier de déplacement s’ouvre sur la semaine du rendez-vous concerné,
+ramenée dans la fenêtre réservable par `clampDateKey`. Ce calcul existait déjà,
+copié à l’identique dans `changeWeek` : il est désormais partagé, dans
+`lib/reservation/calendar-view.ts`, et couvert par quatre tests — dont celui du
+rendez-vous à trois semaines, le cas qui motivait l’élément.
+
+Le message d’échec d’identification renvoie vers l’e-mail de confirmation, où
+l’adresse exacte est imprimée.
+
+Un déplacement ou une annulation annonce l’adresse à laquelle le message part,
+via le `describeConfirmationDelivery` qu’employait déjà l’écran de confirmation :
+`moveCustomerAppointment` et `cancelCustomerAppointment` renvoient l’adresse
+prévenue, et n’annoncent rien quand rien ne part.
+
+**Sur la vérification, en toute franchise :** le message d’erreur a été contrôlé
+dans le navigateur ; l’ancrage du calendrier ne l’a pas pu — le panneau
+d’aperçu s’est bloqué de façon répétée. C’est précisément le cas que la règle du
+projet prévoit : la logique responsable a été extraite en fonction pure et
+testée, plutôt que poursuivie dans un navigateur.
+
+**Recommandation initiale.** Ancrer le calendrier de déplacement sur la semaine du
 rendez-vous en cours plutôt que sur la première date réservable ; renvoyer le
 message d’erreur vers l’e-mail reçu ; réutiliser `describeConfirmationDelivery`
 après un déplacement et une annulation.
@@ -1066,8 +1088,8 @@ moins coûteuse.
    ✅ Livrés ensemble. L’élément **11** est bloqué : sa prémisse est fausse.
 7. ~~**8** et **12** — le bilan du dimanche et l’en-tête de fiche.~~ ✅ Livrés
    ensemble, les deux que la vérification de l’élément 11 avait débloqués.
-8. **4** — la reprise de « Mes rendez-vous », **dernier élément ouvert** de
-   cette v3. L’élément **11** est abandonné.
+8. ~~**4** — la reprise de « Mes rendez-vous ».~~ ✅ Livré. **La v3 est close :
+   treize éléments livrés, un abandonné en connaissance de cause.**
 
 **Ce qui reste côté exploitation, et non côté code :**
 

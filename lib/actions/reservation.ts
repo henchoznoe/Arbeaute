@@ -82,6 +82,14 @@ export interface MutationResult {
   ok: boolean
   message: string
   calendar?: string
+  /**
+   * Adresse prévenue, ou `null` si rien ne part.
+   *
+   * L'écran de confirmation d'une réservation nomme déjà l'adresse de
+   * destination ; « Mes rendez-vous » traitait le même événement sans rien
+   * dire. Deux écrans, deux comportements, pour un seul e-mail.
+   */
+  notifiedEmail?: string | null
 }
 
 const genericBookingError = (): BookingResult => ({
@@ -465,10 +473,14 @@ export const moveCustomerAppointment = async (
     })
     revalidatePath('/mes-rendez-vous')
     refreshAdminActivity()
-    notifyAppointmentRescheduled(appointment, appointment.previousStartsAt)
+    const notifiedEmail = notifyAppointmentRescheduled(
+      appointment,
+      appointment.previousStartsAt,
+    )
     return {
       ok: true,
       message: 'Votre rendez-vous a bien été déplacé.',
+      notifiedEmail,
       calendar: createAppointmentCalendar({
         id: appointment.id,
         serviceName: appointment.serviceNameSnapshot,
@@ -507,8 +519,12 @@ export const cancelCustomerAppointment = async (
     )
     revalidatePath('/mes-rendez-vous')
     refreshAdminActivity()
-    notifyAppointmentCancelled(cancelled)
-    return { ok: true, message: 'Votre rendez-vous a bien été annulé.' }
+    const notifiedEmail = notifyAppointmentCancelled(cancelled)
+    return {
+      ok: true,
+      message: 'Votre rendez-vous a bien été annulé.',
+      notifiedEmail,
+    }
   } catch {
     return {
       ok: false,
