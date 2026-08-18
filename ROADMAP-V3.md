@@ -78,9 +78,9 @@ figure dans le titre et se réévalue après chaque livraison.
 
 | Statut | Éléments |
 | --- | --- |
-| ✅ Terminés | 7, 14 |
+| ✅ Terminés | 7, 13, 14 |
 | 🟡 En cours | Aucun |
-| ⏳ Prêt à démarrer | 1 à 6, 8 à 13 |
+| ⏳ Prêt à démarrer | 1 à 6, 8 à 12 |
 | 🔒 Bloqués | Aucun |
 
 - **Priorité P0** : corrige une friction quotidienne ou prépare plusieurs autres
@@ -677,7 +677,7 @@ mis en avant est une accusation gratuite.
 
 ## IV. Les fondations
 
-### 13. Séparer la base des previews de celle de production — ⏳
+### 13. Séparer la base des previews de celle de production — ✅
 
 **Priorité : P0 · Effort : L côté exploitation, S côté code · Nature : dette**
 
@@ -703,8 +703,23 @@ construit avec `prisma generate && prisma migrate deploy && next build`, sans
 garde-fou : non parce que son code est plus propre, mais parce que ses previews
 ne partagent pas la base de production.
 
-**Recommandation.** Créer dans Neon une base dédiée aux déploiements de preview
-et supprimer la branche `develop`, puis, **dans cet ordre** :
+**Livré.** Côté exploitation : la branche Neon `develop` a été supprimée, la
+branche `main` limitée à la portée *Production*, et une base Neon distincte
+rattachée à la portée *Preview*. Côté code : `scripts/migrate-production.ts` a
+disparu, le script `build` est redevenu
+`prisma generate && prisma migrate deploy && next build && verify-build-quality`,
+et `getAgendaSettings()` a perdu son `try/catch`.
+
+**Un écart assumé par rapport à BelougaTournament, et il est important.** Le
+build de Belouga se termine par `tsx prisma/seed.ts`. Ici, **non** : les `upsert`
+de `prisma/seed.ts` portent un `update` complet. Rejoué sur la production, il
+réécrirait les prix et descriptions modifiés depuis l’administration, remettrait
+`preparationMinutes` et `cleanupMinutes` à zéro et sortirait de l’archive les
+prestations archivées. Une base de preview neuve se peuple donc à la main, une
+fois. C’est écrit dans `docs/data-operations.md`, avec la commande.
+
+**Recommandation initiale.** Créer dans Neon une base dédiée aux déploiements de
+preview et supprimer la branche `develop`, puis, **dans cet ordre** :
 
 1. renseigner les variables de la portée *Preview* dans Vercel — `DATABASE_URL`
    et `DATABASE_URL_UNPOOLED` vers la nouvelle base — et **laisser
@@ -822,9 +837,7 @@ Sans calendrier, mais avec un enchaînement qui évite de refaire deux fois le
 même travail. Les quatre premières étapes se tiennent : chacune rend la suivante
 moins coûteuse.
 
-1. **13** — la base de preview séparée. À faire avant tout le reste : tant
-   qu’elle manque, chaque élément qui touche au schéma se paie deux fois, et
-   toute vérification en preview abîme des données réelles.
+1. ~~**13** — la base de preview séparée.~~ ✅ Livré.
 2. ~~**14** — le garde-fou de format.~~ ✅ Livré.
 3. ~~**7** — supprimer les rappels et le cron quotidien.~~ ✅ Livré.
 4. **5**, puis **6** — les gabarits avant les envois qui s’en servent. C’est le
@@ -842,7 +855,9 @@ moins coûteuse.
 
 **Ce qui reste côté exploitation, et non côté code :**
 
-- créer la base Neon de preview et supprimer la branche `develop` (élément 13) ;
+- ~~créer la base Neon de preview et supprimer la branche `develop`~~ ✅ fait ;
+- **peupler la base de preview** (`pnpm db:seed` pointé sur sa chaîne de
+  connexion) et **laisser `RESEND_API_KEY` vide en portée *Preview*** ;
 - terminer la vérification du domaine `arbeaute-bulle.ch` chez Resend, et
   renseigner `RESEND_API_KEY`, `RESEND_FROM` et `ADMIN_NOTIFICATION_EMAIL` dans
   la seule portée *Production* de Vercel ;

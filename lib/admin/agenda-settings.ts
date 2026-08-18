@@ -43,25 +43,17 @@ export type AgendaSettingsInput = z.infer<typeof agendaSettingsSchema>
  * toute façon dynamique, et une valeur de repli mise en cache pour toujours
  * serait pire que la requête évitée.
  *
- * L'échec est absorbé parce que les previews Vercel lisent la base de
- * production, qui ne migre qu'aux déploiements de production : la table peut
- * donc manquer alors que le code, lui, est déjà déployé. Un agenda qui montre
- * les sept jours vaut mieux qu'un agenda qui ne s'ouvre pas.
+ * La lecture ne rattrape plus l'absence de la table : chaque environnement a
+ * désormais sa propre base, migrée par son propre déploiement.
  */
 export const getAgendaSettings = async (): Promise<AgendaSettingsValues> => {
-  try {
-    const settings = await prisma.agendaSettings.findUnique({
-      where: { id: AGENDA_SETTINGS_ID },
-      select: { visibleDays: true },
-    })
-    const visibleDays = sortByAgendaOrder(settings?.visibleDays ?? [])
-    return {
-      visibleDays: visibleDays.length
-        ? visibleDays
-        : DEFAULT_AGENDA_VISIBLE_DAYS,
-    }
-  } catch {
-    return { visibleDays: DEFAULT_AGENDA_VISIBLE_DAYS }
+  const settings = await prisma.agendaSettings.findUnique({
+    where: { id: AGENDA_SETTINGS_ID },
+    select: { visibleDays: true },
+  })
+  const visibleDays = sortByAgendaOrder(settings?.visibleDays ?? [])
+  return {
+    visibleDays: visibleDays.length ? visibleDays : DEFAULT_AGENDA_VISIBLE_DAYS,
   }
 }
 

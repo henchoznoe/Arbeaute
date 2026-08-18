@@ -182,10 +182,18 @@ the row and audit event in one transaction, then invalidates every public view.
   build runs `prisma migrate deploy` *before* the new code serves traffic, so a
   migration that drops a column the live code still writes breaks bookings for
   the length of the deployment. Add and backfill in one release, remove in the
-  next — see the record in `docs/data-operations.md`. Previews never migrate
-  (`scripts/migrate-production.ts`) yet read the production database, so a
-  release that adds a table must tolerate its absence — see
-  `getAgendaSettings()`.
+  next — see the record in `docs/data-operations.md`. This rule survives the
+  database split below: production still migrates itself before serving.
+- **One database per environment.** The Neon `main` branch is scoped to
+  *Production* in Vercel; a separate Neon database is scoped to *Preview*. Every
+  deployment migrates its own database, which is why `build` is an ordinary
+  `prisma generate && prisma migrate deploy && next build` again — a preview can
+  no longer touch real bookings, and no code has to tolerate a missing table.
+  **The seed is deliberately not part of `build`**, unlike some sibling
+  projects: `prisma/seed.ts` upserts with a full `update`, so running it on
+  production would overwrite edited prices and descriptions, force
+  `preparationMinutes`/`cleanupMinutes` back to 0 and un-archive archived
+  services. Seed a fresh preview database once, by hand.
 - `proxy.ts` (Next middleware) gates every `/admin/*` path except those listed in
   `PUBLIC_ADMIN_PATHS` — currently the login page and the admin PWA manifest,
   which browsers fetch without cookies.
