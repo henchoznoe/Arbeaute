@@ -33,7 +33,7 @@ export const normalizeCustomerSearchName = (
  * L'adresse désigne la personne : le téléphone la suit — quelqu'un qui change de
  * numéro reste la même personne — et le nom aussi. L'index unique sur
  * `emailNormalized` rend l'`upsert` atomique : deux réservations simultanées
- * depuis la même adresse ne peuvent pas créer deux fiches.
+ * depuis la même adresse ne peuvent pas créer deux clients.
  */
 export const upsertCustomerIdentity = async (
   transaction: Prisma.TransactionClient,
@@ -79,7 +79,7 @@ export const upsertCustomerIdentity = async (
 }
 
 /**
- * `anonymizedAt` fait partie de la condition : une fiche dont les coordonnées
+ * `anonymizedAt` fait partie de la condition : un client dont les coordonnées
  * viennent d'être effacées ne doit plus ouvrir aucun espace personnel, même si
  * un cookie valide traîne encore.
  */

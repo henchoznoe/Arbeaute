@@ -118,9 +118,9 @@ export const AdminDayTimeline = ({
                     {statusLabels[appointment.status]}
                   </StatusBadge>
                 </Link>
-                {/* Appeler et ouvrir la fiche côte à côte : les deux gestes
-                    qu'Arzu fait en regardant un nom. Un rendez-vous ancien sans
-                    fiche rattachée n'affiche pas de lien mort. */}
+                {/* Appeler et ouvrir le client côte à côte : les deux gestes
+                    qu'Arzu fait en regardant un nom. Un rendez-vous ancien
+                    rattaché à personne n'affiche pas de lien mort. */}
                 <div className="mt-2 grid gap-2 sm:grid-cols-2">
                   <CustomerCallButton
                     phone={appointment.customerPhone}
@@ -130,7 +130,7 @@ export const AdminDayTimeline = ({
                   {appointment.customerId ? (
                     <Button asChild variant="outline" className="w-full">
                       <Link href={`/admin/customers/${appointment.customerId}`}>
-                        <UserRound className="size-4" /> Voir la fiche
+                        <UserRound className="size-4" /> Voir le client
                       </Link>
                     </Button>
                   ) : null}

@@ -239,6 +239,12 @@ model Appointment {
   customerEmail           String?
   customerPhone           String?
   comment                 String?
+  /// Superposition assumée par Arzu depuis l'agenda : un soin court glissé
+  /// pendant la pose d'un autre. La contrainte d'exclusion GIST ignore les
+  /// lignes marquées — c'est le seul moyen de les écrire — mais deux
+  /// rendez-vous ordinaires restent impossibles à superposer. Jamais écrit
+  /// depuis le site public, où les créneaux occupés ne sont pas proposés.
+  allowsOverlap           Boolean               @default(false)
   source                  AppointmentSource
   status                  AppointmentStatus     @default(CONFIRMED)
   cancelledAt             DateTime?

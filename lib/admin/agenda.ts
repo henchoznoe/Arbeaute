@@ -37,6 +37,8 @@ interface AdminAppointmentInput {
   email: string
   phone: string
   comment: string | null
+  /** Deuxième appui d'Arzu sur un rendez-vous qui se superpose à un autre. */
+  acknowledgeOverlap?: boolean
 }
 
 export interface AdminAppointmentSeriesInput {
@@ -76,6 +78,8 @@ export class AdminAgendaError extends Error {
       | 'APPOINTMENT_NOT_FOUND'
       | 'SERVICE_NOT_FOUND'
       | 'OVERLAP',
+    /** Heure du rendez-vous déjà en place, pour la nommer à l'écran. */
+    public readonly conflictTime?: string,
   ) {
     super(code)
   }
@@ -161,11 +165,38 @@ export const buildAvailabilityExceptionRows = ({
     label,
   }))
 
-export const isAdminAppointmentInsidePublicHours = async (
+const formatLocalTime = (date: Date): string =>
+  new Intl.DateTimeFormat('fr-CH', {
+    timeZone: RESERVATION_TIME_ZONE,
+    hour: '2-digit',
+    minute: '2-digit',
+  }).format(date)
+
+export interface AdminAppointmentPlacement {
+  insidePublicHours: boolean
+  /** Heure du rendez-vous déjà en place, ou `null` si l'heure est libre. */
+  conflictTime: string | null
+}
+
+/**
+ * Les deux réserves qu'un horaire peut soulever, constatées d'un coup.
+ *
+ * Les vérifier séparément ferait confirmer deux fois de suite une même
+ * décision : un rendez-vous ajouté un dimanche par-dessus un autre aurait
+ * demandé trois appuis. Ici, l'avertissement les annonce ensemble.
+ *
+ * Ce n'est qu'un préalable d'affichage : la transaction refait le contrôle des
+ * superpositions, et la contrainte d'exclusion garde le dernier mot pour tout
+ * rendez-vous non marqué.
+ */
+export const inspectAdminAppointmentPlacement = async (
   prisma: PrismaClient,
-  serviceId: string,
-  startsAt: Date,
-): Promise<boolean> => {
+  {
+    serviceId,
+    startsAt,
+    appointmentId,
+  }: { serviceId: string; startsAt: Date; appointmentId?: string },
+): Promise<AdminAppointmentPlacement> => {
   const service = await prisma.service.findUnique({
     where: { id: serviceId },
     select: {
@@ -178,14 +209,6 @@ export const isAdminAppointmentInsidePublicHours = async (
 
   const dateKey = getLocalDateKey(startsAt)
   const { start: dayStart, end: dayEnd } = getLocalDayBounds(dateKey)
-  const [weeklyRanges, exceptions] = await Promise.all([
-    prisma.weeklyAvailability.findMany({
-      where: { dayOfWeek: getLocalDayOfWeek(dateKey) },
-    }),
-    prisma.availabilityException.findMany({
-      where: { startsAt: { lt: dayEnd }, endsAt: { gt: dayStart } },
-    }),
-  ])
   const occupied = {
     start: new Date(startsAt.getTime() - service.preparationMinutes * 60_000),
     end: new Date(
@@ -193,27 +216,46 @@ export const isAdminAppointmentInsidePublicHours = async (
         (service.durationMinutes + service.cleanupMinutes) * 60_000,
     ),
   }
-  return isInsidePublicOpening({
-    occupied,
-    weekly: weeklyRanges.map(range => ({
-      start: localDateMinuteToUtc(dateKey, range.startMinute),
-      end: localDateMinuteToUtc(dateKey, range.endMinute),
-    })),
-    available: exceptions
-      .filter(exception => exception.type === 'AVAILABLE')
-      .map(exception => ({ start: exception.startsAt, end: exception.endsAt })),
-    unavailable: exceptions
-      .filter(exception => exception.type === 'UNAVAILABLE')
-      .map(exception => ({ start: exception.startsAt, end: exception.endsAt })),
-  })
+  const [weeklyRanges, exceptions, conflict] = await Promise.all([
+    prisma.weeklyAvailability.findMany({
+      where: { dayOfWeek: getLocalDayOfWeek(dateKey) },
+    }),
+    prisma.availabilityException.findMany({
+      where: { startsAt: { lt: dayEnd }, endsAt: { gt: dayStart } },
+    }),
+    prisma.appointment.findFirst({
+      where: {
+        id: appointmentId ? { not: appointmentId } : undefined,
+        status: 'CONFIRMED',
+        occupiedStartsAt: { lt: occupied.end },
+        occupiedEndsAt: { gt: occupied.start },
+      },
+      select: { startsAt: true },
+    }),
+  ])
+  return {
+    insidePublicHours: isInsidePublicOpening({
+      occupied,
+      weekly: weeklyRanges.map(range => ({
+        start: localDateMinuteToUtc(dateKey, range.startMinute),
+        end: localDateMinuteToUtc(dateKey, range.endMinute),
+      })),
+      available: exceptions
+        .filter(exception => exception.type === 'AVAILABLE')
+        .map(exception => ({
+          start: exception.startsAt,
+          end: exception.endsAt,
+        })),
+      unavailable: exceptions
+        .filter(exception => exception.type === 'UNAVAILABLE')
+        .map(exception => ({
+          start: exception.startsAt,
+          end: exception.endsAt,
+        })),
+    }),
+    conflictTime: conflict ? formatLocalTime(conflict.startsAt) : null,
+  }
 }
-
-const formatLocalTime = (date: Date): string =>
-  new Intl.DateTimeFormat('fr-CH', {
-    timeZone: RESERVATION_TIME_ZONE,
-    hour: '2-digit',
-    minute: '2-digit',
-  }).format(date)
 
 export const buildAdminAppointmentSeriesStarts = ({
   date,
@@ -422,9 +464,13 @@ export const saveAdminAppointmentSerializable = async (
               occupiedStartsAt: { lt: occupiedEndsAt },
               occupiedEndsAt: { gt: occupiedStartsAt },
             },
-            select: { id: true },
+            select: { id: true, startsAt: true },
           })
-          if (conflict) throw new AdminAgendaError('OVERLAP')
+          if (conflict && !input.acknowledgeOverlap)
+            throw new AdminAgendaError(
+              'OVERLAP',
+              formatLocalTime(conflict.startsAt),
+            )
 
           const customer = await upsertCustomerIdentity(transaction, {
             firstName: input.firstName,
@@ -454,6 +500,10 @@ export const saveAdminAppointmentSerializable = async (
             customerEmail: input.email,
             customerPhone: input.phone,
             comment: input.comment,
+            // Écrit d'après le conflit réellement constaté, jamais d'après le
+            // seul drapeau : déplacer plus tard ce rendez-vous sur une heure
+            // libre lève la marque, et la contrainte le reprend en charge.
+            allowsOverlap: conflict !== null,
           }
 
           if (!current) {
@@ -471,6 +521,9 @@ export const saveAdminAppointmentSerializable = async (
                 serviceId: created.serviceId,
                 startsAt: created.startsAt.toISOString(),
                 status: created.status,
+                // Une superposition assumée laisse une trace : c'est une
+                // décision, pas un accident, et elle doit se relire.
+                ...(created.allowsOverlap ? { allowsOverlap: true } : {}),
               },
             })
             return { appointment: created, previous: null }
@@ -494,6 +547,7 @@ export const saveAdminAppointmentSerializable = async (
             after: {
               serviceId: updated.serviceId,
               startsAt: updated.startsAt.toISOString(),
+              ...(updated.allowsOverlap ? { allowsOverlap: true } : {}),
             },
           })
           return {

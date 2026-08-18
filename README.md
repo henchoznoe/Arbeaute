@@ -152,7 +152,13 @@ Le détail est documenté dans [`AGENTS.md`](AGENTS.md). Les points structurants
   créneau sur trois mois coûte le même nombre de requêtes qu'un seul jour.
 - **Réservation concurrente** — transactions `Serializable` avec reprise, doublées
   d'une contrainte d'exclusion GIST sur l'intervalle occupé (préparation et
-  nettoyage inclus) comme garde-fou final.
+  nettoyage inclus) comme garde-fou final. Seule exception : un rendez-vous
+  qu'Arzu a volontairement superposé à un autre depuis l'agenda porte
+  `allowsOverlap`, ce qui le sort de la contrainte — sans quoi il serait
+  impossible à écrire. Deux rendez-vous ordinaires restent inconciliables, et
+  une réservation venue du site reste protégée par le recalcul des créneaux
+  dans la transaction, qui soustrait tous les rendez-vous confirmés, marqués ou
+  non.
 - **Fuseau horaire** — tout est ancré sur `Europe/Zurich`, jamais sur celui du
   visiteur ; les dates circulent sous forme de clés `YYYY-MM-DD`.
 

@@ -42,8 +42,8 @@ import { getRequestIp, hasSameOrigin } from '@/lib/utils/request'
 
 /**
  * Le nom et le téléphone sont facultatifs *dans la requête* : quelqu'un dont la
- * fiche existe déjà ne les ressaisit pas, et le serveur les reprend dans la
- * fiche. Ils ne sont jamais facultatifs dans la base.
+ * client existe déjà ne les ressaisit pas, et le serveur les reprend depuis
+ * ce client. Ils ne sont jamais facultatifs dans la base.
  */
 const bookingSchema = z.object({
   serviceId: z.string().min(1),
@@ -157,7 +157,7 @@ export const getNextPublicAvailableSlot = async (
 }
 
 /**
- * Cette adresse a-t-elle déjà une fiche ?
+ * Cette adresse correspond-elle déjà à un client ?
  *
  * Ne renvoie **qu'un booléen** : ni nom, ni téléphone, ni identifiant ne
  * traversent le réseau. Le tunnel s'en sert uniquement pour décider s'il faut
@@ -170,7 +170,7 @@ export const getNextPublicAvailableSlot = async (
  *
  * **Un échec n'est jamais bloquant** : en cas de doute, on répond « inconnu »,
  * le second formulaire s'affiche, et la réservation aboutit quand même — saisir
- * ses coordonnées alors qu'on est déjà connu met simplement la fiche à jour.
+ * ses coordonnées alors qu'on est déjà connu met simplement le client à jour.
  */
 export const lookupCustomerByEmail = async (
   value: unknown,
@@ -224,7 +224,7 @@ export const createPublicAppointment = async (
     return invalidCustomerError()
   }
 
-  // Fiche existante : c'est elle qui fournit le nom et le numéro quand la
+  // Client existant : c'est lui qui fournit le nom et le numéro quand la
   // personne n'a saisi que son adresse. Rien de tout cela n'a transité par le
   // navigateur, qui n'a jamais su si l'adresse était connue.
   const known = await prisma.customer.findFirst({

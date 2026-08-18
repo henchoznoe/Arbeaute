@@ -23,7 +23,7 @@ export class ReservationError extends Error {
 interface PublicAppointmentInput {
   serviceId: string
   startsAt: Date
-  /** Facultatif : la fiche peut n'avoir jamais porté de prénom. */
+  /** Facultatif : le client peut n'avoir jamais porté de prénom. */
   firstName: string | null
   lastName: string
   email: string

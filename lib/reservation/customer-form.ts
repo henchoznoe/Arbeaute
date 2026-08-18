@@ -77,7 +77,7 @@ export const validateCustomerField = (
  * Ne valide que les champs demandés.
  *
  * Le tunnel pose l'adresse seule, puis le nom et le téléphone à qui n'a pas
- * encore de fiche : valider tout le formulaire à chaque étape signalerait des
+ * encore client : valider tout le formulaire à chaque étape signalerait des
  * champs que l'écran n'a jamais montrés.
  */
 export const validateCustomerFields = (

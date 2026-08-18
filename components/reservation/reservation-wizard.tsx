@@ -170,7 +170,7 @@ export const ReservationWizard = ({
     useState<CustomerFormValues>(emptyCustomerForm)
   const [customerErrors, setCustomerErrors] = useState<CustomerFormErrors>({})
   // « Coordonnées » se joue en deux écrans : l'adresse, puis le nom et le
-  // numéro pour qui n'a pas encore de fiche. Un seul jalon dans le fil
+  // numéro pour qui n'est pas encore client. Un seul jalon dans le fil
   // d'Ariane : c'est bien la même étape.
   const [detailsStage, setDetailsStage] = useState<'email' | 'identity'>(
     'email',
@@ -416,12 +416,12 @@ export const ReservationWizard = ({
   }
 
   /**
-   * L'adresse seule décide de la suite : fiche connue, on passe au créneau ;
+   * L'adresse seule décide de la suite : client connu, on passe au créneau ;
    * inconnue, on demande le nom et le numéro.
    *
    * Une recherche qui échoue répond « inconnue » : le second écran s'affiche,
    * et la réservation aboutit quand même — ressaisir ses coordonnées alors
-   * qu'on est déjà connu met simplement la fiche à jour.
+   * qu'on est déjà connu met simplement le client à jour.
    */
   const submitEmailStage = () => {
     const errors = validateCustomerFields(customer, ['email'])
@@ -481,7 +481,7 @@ export const ReservationWizard = ({
         setStartsAt('')
         goToStep(STEPS.slot)
       } else if (response.reason === 'INVALID_CUSTOMER') {
-        // La fiche a disparu entre la recherche et l'envoi : on redemande les
+        // Le client a disparu entre la recherche et l'envoi : on redemande les
         // coordonnées plutôt que de laisser la personne devant un mur.
         setDetailsStage('identity')
         goToStep(STEPS.details)
@@ -1088,7 +1088,7 @@ export const ReservationWizard = ({
           />
 
           {/* L'accord se donne ici, à la dernière étape : c'est le seul écran
-              que tout le monde traverse, qu'une fiche existe déjà ou non. */}
+              que tout le monde traverse, qu'un client existe déjà ou non. */}
           <label className="mt-5 flex items-start gap-3 text-sm">
             <input
               name="consent"

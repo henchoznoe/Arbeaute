@@ -8,8 +8,9 @@ import {
   SlidersHorizontal,
 } from 'lucide-react'
 import Link from 'next/link'
-import { type ReactNode, useEffect, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { AdminDayTimeline } from '@/components/admin/admin-day-timeline'
+import { AdminWeekGrid } from '@/components/admin/admin-week-grid'
 import { Button } from '@/components/ui/button'
 import type { AdminTimelineDay } from '@/lib/admin/agenda-timeline'
 import { ADMIN_AGENDA_DATE_EVENT } from '@/lib/admin/navigation'
@@ -19,7 +20,6 @@ interface AdminAgendaViewProps {
   anchor: string
   today: string
   days: AdminTimelineDay[]
-  desktopDays: ReactNode[]
   /** Jours de la semaine affichés par la grille, réglés dans « Réglages ». */
   visibleDays: number[]
   previousWeek: string
@@ -30,7 +30,6 @@ export const AdminAgendaView = ({
   anchor,
   today,
   days,
-  desktopDays,
   visibleDays,
   previousWeek,
   nextWeek,
@@ -197,14 +196,7 @@ export const AdminAgendaView = ({
           </div>
         </div>
 
-        <div
-          className="mt-4 grid overflow-hidden rounded-2xl border bg-card"
-          style={{
-            gridTemplateColumns: `repeat(${visibleIndexes.length}, minmax(0, 1fr))`,
-          }}
-        >
-          {visibleIndexes.map(index => desktopDays[index])}
-        </div>
+        <AdminWeekGrid days={days} visibleIndexes={visibleIndexes} />
 
         {visibleIndexes.length < days.length ? (
           <p className="mt-3 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-foreground">

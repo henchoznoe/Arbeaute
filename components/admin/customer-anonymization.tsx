@@ -72,7 +72,7 @@ export const CustomerAnonymization = () => {
         <FormField
           controlId="anonymization-email"
           label="Adresse e-mail exacte"
-          help="C’est elle qui identifie la fiche. Recopiez-la depuis un de ses rendez-vous."
+          help="C’est elle qui identifie le client. Recopiez-la depuis un de ses rendez-vous."
         >
           <input
             id="anonymization-email"

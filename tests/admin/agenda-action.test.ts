@@ -5,7 +5,7 @@ const mocks = vi.hoisted(() => ({
   hasSameOrigin: vi.fn(),
   saveAppointment: vi.fn(),
   cancelAppointment: vi.fn(),
-  insideHours: vi.fn(),
+  inspectPlacement: vi.fn(),
   revalidatePath: vi.fn(),
   notifyConfirmed: vi.fn(),
   notifyRescheduled: vi.fn(),
@@ -23,7 +23,7 @@ vi.mock('@/lib/admin/agenda', async importOriginal => {
     ...original,
     saveAdminAppointmentSerializable: mocks.saveAppointment,
     cancelAdminAppointmentSerializable: mocks.cancelAppointment,
-    isAdminAppointmentInsidePublicHours: mocks.insideHours,
+    inspectAdminAppointmentPlacement: mocks.inspectPlacement,
   }
 })
 vi.mock('@/lib/email/notifications', () => ({
@@ -71,7 +71,10 @@ describe('saveAdminAppointment', () => {
     vi.clearAllMocks()
     mocks.getAdminSession.mockResolvedValue({ kind: 'admin' })
     mocks.hasSameOrigin.mockResolvedValue(true)
-    mocks.insideHours.mockResolvedValue(true)
+    mocks.inspectPlacement.mockResolvedValue({
+      insidePublicHours: true,
+      conflictTime: null,
+    })
     mocks.notifyConfirmed.mockReturnValue('claire@example.ch')
     mocks.notifyRescheduled.mockReturnValue('claire@example.ch')
   })
@@ -114,6 +117,58 @@ describe('saveAdminAppointment', () => {
     expect(mocks.notifyRescheduled).not.toHaveBeenCalled()
     expect(mocks.notifyConfirmed).not.toHaveBeenCalled()
     expect(result.message).toBe('Le rendez-vous a été mis à jour.')
+  })
+
+  it('nomme le rendez-vous déjà en place plutôt que d’enregistrer', async () => {
+    mocks.inspectPlacement.mockResolvedValue({
+      insidePublicHours: true,
+      conflictTime: '14:00',
+    })
+
+    const result = await saveAdminAppointment(validInput)
+
+    expect(result.ok).toBe(false)
+    expect(result.needsOverlapConfirmation).toBe(true)
+    expect(result.message).toContain('rendez-vous de 14:00')
+    expect(mocks.saveAppointment).not.toHaveBeenCalled()
+  })
+
+  it('enregistre la superposition dès qu’Arzu la confirme', async () => {
+    mocks.inspectPlacement.mockResolvedValue({
+      insidePublicHours: true,
+      conflictTime: '14:00',
+    })
+    mocks.saveAppointment.mockResolvedValue({
+      appointment: savedAppointment,
+      previous: { startsAt, serviceId: 'service-1' },
+    })
+
+    const result = await saveAdminAppointment({
+      ...validInput,
+      acknowledgeOverlap: true,
+    })
+
+    expect(result.ok).toBe(true)
+    expect(mocks.saveAppointment).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({ acknowledgeOverlap: true }),
+    )
+  })
+
+  it('annonce les deux réserves ensemble, pour une seule confirmation', async () => {
+    // Sans cela, un rendez-vous ajouté un dimanche par-dessus un autre aurait
+    // demandé trois appuis : un par motif, puis l'enregistrement.
+    mocks.inspectPlacement.mockResolvedValue({
+      insidePublicHours: false,
+      conflictTime: '14:00',
+    })
+
+    const result = await saveAdminAppointment(validInput)
+
+    expect(result.needsOutsideHoursConfirmation).toBe(true)
+    expect(result.needsOverlapConfirmation).toBe(true)
+    expect(result.message).toContain('hors ouverture')
+    expect(result.message).toContain('14:00')
   })
 })
 

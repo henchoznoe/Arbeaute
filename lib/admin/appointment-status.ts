@@ -58,6 +58,7 @@ export const changeAdminAppointmentStatusSerializable = async (
               serviceNameSnapshot: true,
               occupiedStartsAt: true,
               occupiedEndsAt: true,
+              allowsOverlap: true,
             },
           })
           if (!current)
@@ -65,7 +66,10 @@ export const changeAdminAppointmentStatusSerializable = async (
           if (!isAllowedTransition(current.status, targetStatus))
             throw new AdminAppointmentStatusError('INVALID_TRANSITION')
 
-          if (targetStatus === 'CONFIRMED') {
+          // Un rendez-vous qu'Arzu a volontairement superposé garde son droit :
+          // sans cette exception, le noter absent puis le rétablir le bloquerait
+          // définitivement.
+          if (targetStatus === 'CONFIRMED' && !current.allowsOverlap) {
             const conflict = await transaction.appointment.findFirst({
               where: {
                 id: { not: current.id },

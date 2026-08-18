@@ -46,7 +46,7 @@ export const clearAdminSession = async (): Promise<void> => {
 }
 
 /**
- * Le cookie porte l'identifiant de la fiche, jamais de coordonnée.
+ * Le cookie porte l'identifiant du client, jamais de coordonnée.
  *
  * Il portait auparavant un condensé HMAC de l'e-mail et du téléphone, parce que
  * l'identification exigeait les deux. Depuis qu'un e-mail suffit, un `cuid`

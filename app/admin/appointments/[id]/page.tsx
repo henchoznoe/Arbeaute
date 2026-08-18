@@ -173,7 +173,7 @@ const EditAppointment = async ({
           {appointment.customerId ? (
             <Button asChild variant="outline" className="w-full sm:w-auto">
               <Link href={`/admin/customers/${appointment.customerId}`}>
-                <UserRound className="size-4" /> Voir la fiche
+                <UserRound className="size-4" /> Voir le client
               </Link>
             </Button>
           ) : null}

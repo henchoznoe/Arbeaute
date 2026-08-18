@@ -23,7 +23,7 @@ interface AdminTimelineAppointment extends TimelineInterval {
   cleanupMinutes: number
   customerName: string
   customerPhone: string | null
-  /** `null` pour les rendez-vous anciens que rien ne rattache à une fiche. */
+  /** `null` pour les rendez-vous anciens que rien ne rattache à un client. */
   customerId: string | null
   serviceLabel: string
   serviceColor: string
@@ -231,6 +231,86 @@ export const buildAdminTimelineDay = ({
     timelineStartMinute: bounds.startMinute,
     timelineEndMinute: bounds.endMinute,
   }
+}
+
+/**
+ * L'échelle commune à toutes les colonnes de la semaine.
+ *
+ * Chaque journée calcule ses propres bornes, ce qui convient à l'écran mobile
+ * où l'on n'en regarde qu'une. Côte à côte, il faut au contraire une seule
+ * échelle : sans quoi 10:00 ne serait pas à la même hauteur d'un jour à
+ * l'autre, et la grille ne se lirait plus en travers.
+ */
+export const getWeekTimelineBounds = (
+  days: AdminTimelineDay[],
+): TimelineInterval => {
+  if (!days.length)
+    return {
+      startMinute: DEFAULT_START_MINUTE,
+      endMinute: DEFAULT_END_MINUTE,
+    }
+  return {
+    startMinute: Math.min(...days.map(day => day.timelineStartMinute)),
+    endMinute: Math.max(...days.map(day => day.timelineEndMinute)),
+  }
+}
+
+export interface TimelineLane {
+  /** Rang du rendez-vous parmi ceux qui occupent la même tranche. */
+  lane: number
+  /** Nombre de rangs à se partager la largeur de la colonne. */
+  laneCount: number
+}
+
+/**
+ * Répartit en colonnes côte à côte les rendez-vous qui se superposent.
+ *
+ * Devenu nécessaire depuis qu'Arzu peut volontairement en superposer deux :
+ * empilés au même endroit, ils se masqueraient l'un l'autre. Les rendez-vous
+ * sont regroupés par grappes de superposition, et toute une grappe partage la
+ * largeur, pour que les blocs restent alignés verticalement.
+ */
+export const assignTimelineLanes = (
+  appointments: TimelineInterval[],
+): TimelineLane[] => {
+  const order = appointments
+    .map((interval, index) => ({ interval, index }))
+    .sort(
+      (first, second) =>
+        first.interval.startMinute - second.interval.startMinute ||
+        first.index - second.index,
+    )
+  const lanes: TimelineLane[] = appointments.map(() => ({
+    lane: 0,
+    laneCount: 1,
+  }))
+  // Une grappe court tant qu'un rendez-vous commence avant la fin du plus
+  // tardif de ceux qui précèdent.
+  let cluster: Array<{ interval: TimelineInterval; index: number }> = []
+  let clusterEnd = Number.NEGATIVE_INFINITY
+
+  const flush = () => {
+    const laneEnds: number[] = []
+    for (const { interval, index } of cluster) {
+      const lane = laneEnds.findIndex(end => end <= interval.startMinute)
+      const assigned = lane === -1 ? laneEnds.length : lane
+      laneEnds[assigned] = interval.endMinute
+      ;(lanes[index] as TimelineLane).lane = assigned
+    }
+    for (const { index } of cluster)
+      (lanes[index] as TimelineLane).laneCount = laneEnds.length
+    cluster = []
+    clusterEnd = Number.NEGATIVE_INFINITY
+  }
+
+  for (const entry of order) {
+    if (cluster.length && entry.interval.startMinute >= clusterEnd) flush()
+    cluster.push(entry)
+    clusterEnd = Math.max(clusterEnd, entry.interval.endMinute)
+  }
+  if (cluster.length) flush()
+
+  return lanes
 }
 
 export const getFreeTimelineStarts = (day: AdminTimelineDay): number[] => {

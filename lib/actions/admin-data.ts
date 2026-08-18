@@ -54,9 +54,9 @@ export const previewCustomerAnonymization = async (
       return {
         ok: false,
         message:
-          'Aucune fiche ne correspond à cette adresse. Recopiez-la depuis un de ses rendez-vous.',
+          'Aucun client ne correspond à cette adresse. Recopiez-la depuis un de ses rendez-vous.',
       }
-    return { ok: true, message: 'Fiche trouvée.', preview }
+    return { ok: true, message: 'Client trouvé.', preview }
   } catch {
     return {
       ok: false,
@@ -98,7 +98,7 @@ export const confirmCustomerAnonymization = async (
       message:
         error instanceof Error && error.message === 'INVALID_CONFIRMATION'
           ? 'La phrase ne correspond plus au nombre de rendez-vous. Relancez l’aperçu.'
-          : 'Les coordonnées de cette fiche ne peuvent plus être effacées.',
+          : 'Les coordonnées de ce client ne peuvent plus être effacées.',
     }
   }
 }

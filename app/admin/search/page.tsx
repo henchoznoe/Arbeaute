@@ -2,9 +2,10 @@ import { ChevronLeft, Search } from 'lucide-react'
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { Suspense } from 'react'
-import { AdminSearch } from '@/components/admin/admin-search'
+import { AdminSearchTabs } from '@/components/admin/admin-search-tabs'
 import { AdminSkeleton } from '@/components/admin/admin-skeleton'
 import { Button } from '@/components/ui/button'
+import { getAdminCustomerSearchPage } from '@/lib/admin/customer-search'
 import { getAdminSearchPage, getAdminSearchServices } from '@/lib/admin/search'
 import prisma from '@/lib/core/prisma'
 import { getAdminSession } from '@/lib/core/session-cookies'
@@ -17,9 +18,10 @@ const AdminSearchPage = () => (
 
 const SearchAppointments = async () => {
   if (!(await getAdminSession())) redirect('/admin/login')
-  const [services, initialResult] = await Promise.all([
+  const [services, initialAppointments, initialCustomers] = await Promise.all([
     getAdminSearchServices(prisma),
     getAdminSearchPage(prisma, { query: '', page: 1 }),
+    getAdminCustomerSearchPage(prisma, { query: '', page: 1 }),
   ])
 
   return (
@@ -42,12 +44,17 @@ const SearchAppointments = async () => {
           <p className="text-sm font-medium text-brand">Arbeauté</p>
           <h1 className="font-heading text-title font-bold">Rechercher</h1>
           <p className="mt-1 text-sm leading-relaxed text-muted-foreground">
-            Retrouvez un rendez-vous avec des filtres combinables, sans exposer
-            les coordonnées dans l’adresse de la page.
+            Retrouvez quelqu’un par son nom, son adresse ou son numéro — ou un
+            rendez-vous précis. Rien de ce que vous tapez n’apparaît dans
+            l’adresse de la page.
           </p>
         </div>
       </header>
-      <AdminSearch services={services} initialResult={initialResult} />
+      <AdminSearchTabs
+        services={services}
+        initialAppointments={initialAppointments}
+        initialCustomers={initialCustomers}
+      />
     </main>
   )
 }

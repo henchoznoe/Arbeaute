@@ -53,7 +53,7 @@ export const GET = async (
       )
     }
     if (type === 'customers')
-      return csvResponse(await createCustomersExport(prisma), 'fiches')
+      return csvResponse(await createCustomersExport(prisma), 'clients')
     if (type === 'catalog')
       return csvResponse(await createCatalogExport(prisma), 'catalogue')
     return new Response('Export introuvable', { status: 404 })

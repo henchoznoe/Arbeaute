@@ -35,7 +35,8 @@ explication l’emporte, même si elle est plus longue.
 | Exports CSV | Télécharger vos données |
 | Exception horaire | Jour particulier |
 | Horaire hebdomadaire | Horaire de la semaine |
-| Confirmé · Terminé · Annulé · Absence (en tête de fiche) | Visites · Dernière venue · Soin habituel · Revient |
+| Fiche | Client |
+| Confirmé · Terminé · Annulé · Absence (en tête de client) | Visites · Dernière venue · Soin habituel · Revient |
 | Visites réalisées | Visites |
 | Récapitulatif du soir | Bilan de la semaine |
 | Chiffre réalisé | Montant réalisé |
@@ -66,19 +67,36 @@ fiche ou de la personne — et se lit à voix haute sans buter.
 | la cliente ne pourra plus le déplacer | le rendez-vous ne pourra plus être déplacé |
 | une cliente qui regarde le site | quelqu’un qui regarde le site |
 | les clientes, vos clientes | les personnes qui réservent, votre clientèle |
-| Fiche cliente | Fiche |
-| Cliente trouvée · Aucune cliente trouvée | Fiche trouvée · Aucune fiche trouvée |
+| Fiche cliente | Client |
+| Cliente trouvée · Aucune cliente trouvée | Client trouvé · Aucun client trouvé |
 | Clientes non venues | Rendez-vous non honorés |
 | Cliente sans nom | Sans nom |
 | Marquer cette cliente comme absente | Noter une absence |
 | Cliente anonymisée | Coordonnées effacées |
-| Reprendre une cliente existante | Reprendre une fiche existante |
+| Reprendre une cliente existante | Reprendre un client existant |
 | Effacer les coordonnées d’une cliente | Effacer les coordonnées d’une personne |
 | Historique des activités clientes | Historique de l’activité |
 
 Deux exceptions : Arzu, qui est une personne réelle — « une seule praticienne »
 reste juste —, et le mot « clientèle », collectif et sans genre porté sur les
 personnes.
+
+### « Client » est retenu, « cliente » reste banni
+
+L’interface disait « fiche », mot d’un vocabulaire administratif qu’Arzu
+n’emploie pas : elle parle de ses clients. Le terme est donc **« client »**, à
+sa demande explicite, y compris dans les commentaires du code.
+
+Ce que la règle ci-dessus continue d’interdire, elle l’interdit toujours :
+**« cliente » et « clientes » ne réapparaissent nulle part**, et c’est ce que
+`tests/quality/wording.test.ts` vérifie — son motif exige la lettre finale,
+« client » et « clients » passent donc sans que la garde ne se relâche.
+
+Une phrase longue préfère toujours tourner autour de la personne ou du
+rendez-vous plutôt que d’aligner les « le client » : « le rendez-vous ne pourra
+plus être déplacé » reste meilleur que « le client ne pourra plus le déplacer ».
+Le mot sert d’étiquette — un titre, un bouton, un onglet —, pas de sujet
+grammatical par défaut.
 
 `tests/quality/wording.test.ts` échoue si le mot réapparaît dans `app/`,
 `components/` ou `lib/`.

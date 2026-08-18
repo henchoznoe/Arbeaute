@@ -148,7 +148,7 @@ const CustomerProfile = async ({ params }: Readonly<CustomerPageProps>) => {
             <UserRound className="size-6" />
           </span>
           <div className="min-w-0">
-            <p className="text-sm font-medium text-brand">Fiche</p>
+            <p className="text-sm font-medium text-brand">Client</p>
             <h1 className="break-words font-heading text-title font-bold">
               {customerName}
             </h1>
@@ -161,13 +161,13 @@ const CustomerProfile = async ({ params }: Readonly<CustomerPageProps>) => {
         <CustomerQuickActions customerId={customer.id} phone={customer.phone} />
       </header>
 
-      {/* Quatre réponses aux questions qu'Arzu se pose en ouvrant une fiche,
+      {/* Quatre réponses aux questions qu'Arzu se pose en ouvrant un client,
           à la place de l'énumération des statuts de la base. Les comptages
           détaillés n'ont pas disparu : ils sont descendus avec l'historique,
           où ils sont à leur place. */}
       <section
         className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-4"
-        aria-label="L’essentiel de cette fiche"
+        aria-label="L’essentiel de ce client"
       >
         <article className="rounded-2xl border bg-primary/5 p-4">
           <p className="text-2xl font-bold tabular-nums">

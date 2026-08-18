@@ -133,7 +133,7 @@ export const AdminSearch = ({
     <>
       <section className="mt-6 rounded-3xl border bg-card p-4 shadow-sm sm:p-6">
         <label htmlFor="admin-global-search" className="text-sm font-semibold">
-          Fiche
+          Chercher un rendez-vous
         </label>
         <div className="relative mt-2">
           <Search className="pointer-events-none absolute top-3.5 left-3 size-4 text-muted-foreground" />
@@ -159,7 +159,8 @@ export const AdminSearch = ({
           ) : null}
         </div>
         <p className="mt-2 text-xs text-muted-foreground">
-          La saisie reste dans cet écran admin et n’est jamais ajoutée à l’URL.
+          La saisie reste dans cet écran et n’est jamais ajoutée à l’adresse de
+          la page.
         </p>
 
         <div className="mt-5 flex items-center gap-2 border-t pt-5">
@@ -318,7 +319,7 @@ export const AdminSearch = ({
                         {appointment.source === 'PUBLIC'
                           ? 'Réservation en ligne'
                           : 'Ajout manuel'}
-                        {appointment.customerId ? ' · fiche liée' : ''}
+                        {appointment.customerId ? ' · client rattaché' : ''}
                       </p>
                     </div>
                     <div className="mt-3 grid gap-2 sm:flex sm:justify-end">
@@ -327,7 +328,7 @@ export const AdminSearch = ({
                           <Link
                             href={`/admin/customers/${appointment.customerId}`}
                           >
-                            <UserRound className="size-4" /> Voir la fiche
+                            <UserRound className="size-4" /> Voir le client
                           </Link>
                         </Button>
                       ) : null}

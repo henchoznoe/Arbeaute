@@ -1,17 +1,12 @@
 import { formatInTimeZone } from 'date-fns-tz'
-import { Plus } from 'lucide-react'
-import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { Suspense } from 'react'
-import { ActivityAlert } from '@/components/admin/activity-alert'
 import { ActivityOverview } from '@/components/admin/activity-overview'
 import { AdminAgendaView } from '@/components/admin/admin-agenda-view'
 import { AdminSkeleton } from '@/components/admin/admin-skeleton'
-import { AppointmentStatusActions } from '@/components/admin/appointment-status-actions'
 import { DashboardMetrics } from '@/components/admin/dashboard-metrics'
 import { NextAppointmentCard } from '@/components/admin/next-appointment-card'
 import { EmptyState } from '@/components/ui/empty-state'
-import { StatusBadge } from '@/components/ui/status-badge'
 import { getActivityOverview } from '@/lib/admin/activity'
 import { getAgendaSettings } from '@/lib/admin/agenda-settings'
 import { buildAdminTimelineDay } from '@/lib/admin/agenda-timeline'
@@ -29,8 +24,6 @@ import {
   getLocalWeekDateKeys,
   isDateKey,
 } from '@/lib/reservation/time'
-import { capitalizeFirst } from '@/lib/utils/format'
-import type { AppointmentStatus } from '@/prisma/generated/prisma/enums'
 
 interface AdminPageProps {
   searchParams: Promise<{ date?: string }>
@@ -40,20 +33,6 @@ const SHORT_DAY_LABELS = ['Di', 'Lu', 'Ma', 'Me', 'Je', 'Ve', 'Sa']
 
 const formatTime = (date: Date) =>
   formatInTimeZone(date, RESERVATION_TIME_ZONE, 'HH:mm')
-
-const statusLabels: Record<AppointmentStatus, string> = {
-  CONFIRMED: 'Confirmé',
-  COMPLETED: 'Terminé',
-  CANCELLED: 'Annulé',
-  NO_SHOW: 'Absence',
-}
-
-const statusVariants = {
-  CONFIRMED: 'success',
-  COMPLETED: 'info',
-  CANCELLED: 'neutral',
-  NO_SHOW: 'danger',
-} as const
 
 const AdminPage = ({ searchParams }: Readonly<AdminPageProps>) => (
   <Suspense fallback={<AdminSkeleton variant="agenda" />}>
@@ -135,68 +114,6 @@ const AdminAgenda = async ({ searchParams }: Readonly<AdminPageProps>) => {
     getAgendaSettings(),
   ])
 
-  const appointmentsFor = (dateKey: string) =>
-    appointments.filter(
-      appointment => getLocalDateKey(appointment.startsAt) === dateKey,
-    )
-  const exceptionsFor = (dateKey: string) => {
-    const bounds = getLocalDayBounds(dateKey)
-    return exceptions.filter(
-      exception =>
-        exception.startsAt < bounds.end && exception.endsAt > bounds.start,
-    )
-  }
-  // Seule la grille hebdomadaire de bureau utilise cette carte, en version
-  // compacte : sept colonnes n'ont pas la place d'un bouton d'appel, qui vit
-  // dans la liste de la journée. `min-w-0` est indispensable, sans quoi le
-  // contenu impose sa largeur et déborde de la colonne.
-  const appointmentCard = (
-    appointment: (typeof appointments)[number],
-    dateKey: string,
-  ) => (
-    <article
-      key={appointment.id}
-      className="block min-w-0 rounded-xl border bg-background p-3 text-xs shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
-      style={{ borderLeftColor: appointment.service.color, borderLeftWidth: 4 }}
-    >
-      <Link href={`/admin/appointments/${appointment.id}?date=${dateKey}`}>
-        <div className="flex items-start justify-between gap-2">
-          <span className="font-semibold">
-            {formatTime(appointment.startsAt)}–{formatTime(appointment.endsAt)}
-          </span>
-          {appointment.source === 'ADMIN' ? (
-            <span className="rounded-full bg-muted px-2 py-0.5 text-2xs uppercase tracking-wide text-muted-foreground">
-              manuel
-            </span>
-          ) : null}
-        </div>
-        <p className="mt-1 font-medium leading-snug break-words">
-          {[appointment.customerFirstName, appointment.customerLastName]
-            .filter(Boolean)
-            .join(' ')}
-        </p>
-        <p className="mt-0.5 truncate text-muted-foreground">
-          {formatServiceLabel(
-            appointment.serviceNameSnapshot,
-            appointment.service.category?.name,
-          )}
-        </p>
-      </Link>
-      <StatusBadge
-        variant={statusVariants[appointment.status]}
-        className="mt-2"
-      >
-        {statusLabels[appointment.status]}
-      </StatusBadge>
-      <AppointmentStatusActions
-        appointmentId={appointment.id}
-        status={appointment.status}
-        startsAt={appointment.startsAt}
-        compact
-        className="mt-2"
-      />
-    </article>
-  )
   const timelineDays = weekDays.map(dateKey => {
     const dayOfWeek = getLocalDayOfWeek(dateKey)
     return buildAdminTimelineDay({
@@ -281,8 +198,6 @@ const AdminAgenda = async ({ searchParams }: Readonly<AdminPageProps>) => {
         />
       )}
 
-      <ActivityAlert unreadCount={activityOverview.unreadCount} />
-
       <AdminAgendaView
         anchor={anchor}
         today={today}
@@ -290,44 +205,6 @@ const AdminAgenda = async ({ searchParams }: Readonly<AdminPageProps>) => {
         nextWeek={addLocalDays(anchor, 7)}
         days={timelineDays}
         visibleDays={agendaSettings.visibleDays}
-        desktopDays={weekDays.map(dateKey => {
-          const dailyAppointments = appointmentsFor(dateKey)
-          const dailyExceptions = exceptionsFor(dateKey)
-          return (
-            <section
-              key={dateKey}
-              className={`min-h-[28rem] border-r p-2 last:border-r-0 ${dateKey === today ? 'bg-primary/5' : ''}`}
-            >
-              <div className="flex items-center justify-between gap-1 border-b pb-2">
-                <h3 className="text-sm font-semibold">
-                  {capitalizeFirst(formatCalendarDayTitle(dateKey))}
-                </h3>
-                <Link
-                  href={`/admin/appointments/new?date=${dateKey}`}
-                  aria-label={`Ajouter le ${formatCalendarDayTitle(dateKey, true)}`}
-                  className="grid size-11 place-items-center rounded-xl hover:bg-muted"
-                >
-                  <Plus className="size-3.5" />
-                </Link>
-              </div>
-              <div className="mt-2 space-y-2">
-                {dailyExceptions.map(exception => (
-                  <div
-                    key={exception.id}
-                    className={`rounded-lg px-2 py-1.5 text-[11px] leading-snug ${exception.type === 'AVAILABLE' ? 'bg-success-soft text-success-strong' : 'bg-warning-soft text-warning-strong'}`}
-                  >
-                    {exception.type === 'AVAILABLE' ? 'Ouvert' : 'Fermé'}{' '}
-                    {formatTime(exception.startsAt)}–
-                    {formatTime(exception.endsAt)}
-                  </div>
-                ))}
-                {dailyAppointments.map(appointment =>
-                  appointmentCard(appointment, dateKey),
-                )}
-              </div>
-            </section>
-          )
-        })}
       />
 
       {/* Les indicateurs et l'activité passent après la journée : ils se

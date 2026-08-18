@@ -84,7 +84,7 @@ export const resendFailedEmail = async (
     return {
       ok: false,
       message:
-        'Le rendez-vous n’a plus d’adresse e-mail. Ajoutez-en une sur sa fiche, puis réessayez.',
+        'Le rendez-vous n’a plus d’adresse e-mail. Ajoutez-en une sur son client, puis réessayez.',
     }
 
   const content = build({

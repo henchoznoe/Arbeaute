@@ -122,10 +122,10 @@ const DataManagement = async () => {
           </form>
 
           <article className="flex min-w-0 flex-col rounded-3xl border bg-card p-5 shadow-sm">
-            <h3 className="font-semibold">Fiches</h3>
+            <h3 className="font-semibold">Clients</h3>
             <ExportColumns columns={exportColumnDocumentation.customers} />
             <Button asChild className="mt-auto w-full">
-              <a href="/admin/data/export/customers">Télécharger les fiches</a>
+              <a href="/admin/data/export/customers">Télécharger les clients</a>
             </Button>
           </article>
 

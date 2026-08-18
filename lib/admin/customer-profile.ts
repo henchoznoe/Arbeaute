@@ -126,7 +126,7 @@ export const getAdminCustomerProfile = async (
           anonymizedAt: null,
           // Plus de recherche par adresse : `emailNormalized` est unique
           // depuis la v1.10, la condition ne pourrait jamais rien trouver.
-          // Deux fiches restent rapprochables par téléphone — un couple qui
+          // Deux clients restent rapprochables par téléphone — un couple qui
           // partage un numéro — ou par nom.
           OR: [
             { phoneNormalized: customer.phoneNormalized },
@@ -205,7 +205,7 @@ export const updateAdminCustomer = async (
     if (!current) throw new AdminCustomerProfileError('CUSTOMER_NOT_FOUND')
 
     // Une adresse ne peut désigner qu'une personne : la corriger vers celle
-    // d'une autre fiche demande une fusion, pas une modification.
+    // d'un autre client demande une fusion, pas une modification.
     const conflict = await transaction.customer.findFirst({
       where: {
         emailNormalized: input.email,

@@ -2,6 +2,10 @@
 
 import { z } from 'zod/v4'
 import {
+  type AdminCustomerSearchPage,
+  getAdminCustomerSearchPage,
+} from '@/lib/admin/customer-search'
+import {
   type AdminSearchInput,
   type AdminSearchPage,
   getAdminSearchPage,
@@ -53,6 +57,48 @@ export const searchAdminAppointments = async (
     return {
       ok: true,
       message: `${result.totalCount} rendez-vous trouvé${result.totalCount > 1 ? 's' : ''}.`,
+      result,
+    }
+  } catch {
+    return {
+      ok: false,
+      message:
+        'La recherche ne répond pas pour le moment. Réessayez dans un instant.',
+    }
+  }
+}
+
+const customerSearchSchema = z.object({
+  query: z.string().trim().max(100),
+  page: z.number().int().min(1).max(500),
+})
+
+export interface AdminCustomerSearchActionResult {
+  ok: boolean
+  message: string
+  result?: AdminCustomerSearchPage
+}
+
+export const searchAdminCustomerPage = async (
+  input: z.infer<typeof customerSearchSchema>,
+): Promise<AdminCustomerSearchActionResult> => {
+  if (!(await getAdminSession()) || !(await hasSameOrigin()))
+    return {
+      ok: false,
+      message: 'Votre session a expiré. Reconnectez-vous, puis recommencez.',
+    }
+  const parsed = customerSearchSchema.safeParse(input)
+  if (!parsed.success)
+    return {
+      ok: false,
+      message:
+        'Cette recherche n’est pas valable. Effacez-la, puis recommencez.',
+    }
+  try {
+    const result = await getAdminCustomerSearchPage(prisma, parsed.data)
+    return {
+      ok: true,
+      message: `${result.totalCount} client${result.totalCount > 1 ? 's' : ''} trouvé${result.totalCount > 1 ? 's' : ''}.`,
       result,
     }
   } catch {
