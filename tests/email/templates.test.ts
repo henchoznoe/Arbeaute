@@ -11,6 +11,7 @@ const base: AppointmentMailData = {
   customerLastName: 'Dupont',
   serviceLabel: 'Soins visage — Soin visage bio',
   startsAt: new Date('2026-08-17T11:30:00.000Z'),
+  endsAt: new Date('2026-08-17T12:30:00.000Z'),
   priceCents: 12_000,
 }
 
@@ -45,6 +46,43 @@ describe('buildConfirmationMail', () => {
     expect(
       buildConfirmationMail({ ...base, customerFirstName: null }).text,
     ).toContain('Bonjour Dupont,')
+  })
+
+  it('propose d’ajouter à un agenda et de déplacer, en HTML et en texte', () => {
+    // Les boutons sont des tableaux, pas des `<a>` stylés : Outlook ignore la
+    // plupart des styles posés sur un lien et rendrait un texte nu.
+    expect(mail.html).toContain('<table role="presentation"')
+    expect(mail.html).toContain('Ajouter à mon agenda')
+    expect(mail.html).toContain('Déplacer ou annuler')
+    // La version texte porte les mêmes adresses, écrites en toutes lettres.
+    expect(mail.text).toContain(
+      'Déplacer ou annuler : https://www.arbeaute-bulle.ch/mes-rendez-vous',
+    )
+    expect(mail.text).toContain(
+      'Ajouter à mon agenda : https://calendar.google.com/',
+    )
+  })
+
+  it('ne réclame plus le téléphone pour s’identifier', () => {
+    // L'identification se fait à l'adresse seule depuis la v1.10 : promettre
+    // qu'il faut aussi le numéro envoie chercher une information inutile.
+    expect(mail.text).toContain('votre adresse e-mail suffit')
+    expect(mail.text).not.toContain('numéro de téléphone utilisé')
+  })
+
+  it('dit où arrive une réponse, puisque l’expéditeur ne reçoit rien', () => {
+    expect(mail.text).toContain('info@arbeaute.ch')
+    expect(mail.html).toContain('info@arbeaute.ch')
+  })
+})
+
+describe('buildCancelledMail', () => {
+  it('invite à reprendre un rendez-vous sans joindre d’agenda', () => {
+    const mail = buildCancelledMail(base)
+    expect(mail.text).toContain(
+      'Prendre un rendez-vous : https://www.arbeaute-bulle.ch/reservation',
+    )
+    expect(mail.text).not.toContain('Ajouter à mon agenda')
   })
 })
 

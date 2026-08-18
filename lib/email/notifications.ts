@@ -1,5 +1,6 @@
 import { after } from 'next/server'
 import { isEmailConfigured } from '@/lib/core/env'
+import { createCalendarAttachment } from '@/lib/email/attachments'
 import { deliverEmail } from '@/lib/email/send'
 import {
   type AppointmentMailData,
@@ -25,6 +26,7 @@ interface NotifiableAppointment {
   serviceNameSnapshot: string
   servicePriceCents: number
   startsAt: Date
+  endsAt: Date
   categoryName?: string | null
 }
 
@@ -39,6 +41,7 @@ const toMailData = (
     appointment.categoryName ?? undefined,
   ),
   startsAt: appointment.startsAt,
+  endsAt: appointment.endsAt,
   priceCents: appointment.servicePriceCents,
   previousStartsAt,
 })
@@ -59,12 +62,17 @@ const queue = (
   if (!recipient || !isEmailConfigured) return null
 
   const content = build(toMailData(appointment, previousStartsAt))
+  // Le rendez-vous annulé n'a plus rien à mettre dans un agenda.
+  const attachment =
+    kind === 'BOOKING_CANCELLED' ? null : createCalendarAttachment(appointment)
+
   after(async () => {
     await deliverEmail({
       kind,
       to: recipient,
       appointmentId: appointment.id,
       ...content,
+      ...(attachment ? { attachments: [attachment] } : {}),
     })
   })
   return recipient

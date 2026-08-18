@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache'
 import prisma from '@/lib/core/prisma'
 import { getAdminSession } from '@/lib/core/session-cookies'
+import { createCalendarAttachment } from '@/lib/email/attachments'
 import { deliverEmail } from '@/lib/email/send'
 import {
   buildCancelledMail,
@@ -70,6 +71,7 @@ export const resendFailedEmail = async (
     select: {
       id: true,
       startsAt: true,
+      endsAt: true,
       customerEmail: true,
       customerFirstName: true,
       customerLastName: true,
@@ -93,14 +95,26 @@ export const resendFailedEmail = async (
       appointment.service.category?.name,
     ),
     startsAt: appointment.startsAt,
+    endsAt: appointment.endsAt,
     priceCents: appointment.servicePriceCents,
   })
+
+  const attachment =
+    delivery.kind === 'BOOKING_CANCELLED'
+      ? null
+      : createCalendarAttachment({
+          id: appointment.id,
+          serviceNameSnapshot: appointment.serviceNameSnapshot,
+          startsAt: appointment.startsAt,
+          endsAt: appointment.endsAt,
+        })
 
   const outcome = await deliverEmail({
     kind: delivery.kind,
     to: appointment.customerEmail,
     appointmentId: appointment.id,
     ...content,
+    ...(attachment ? { attachments: [attachment] } : {}),
   })
   revalidatePath('/admin/emails')
 

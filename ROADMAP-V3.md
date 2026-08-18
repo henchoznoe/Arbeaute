@@ -78,9 +78,9 @@ figure dans le titre et se réévalue après chaque livraison.
 
 | Statut | Éléments |
 | --- | --- |
-| ✅ Terminés | 7, 13, 14 |
+| ✅ Terminés | 5, 7, 13, 14 |
 | 🟡 En cours | Aucun |
-| ⏳ Prêt à démarrer | 1 à 6, 8 à 12 |
+| ⏳ Prêt à démarrer | 1 à 4, 6, 8 à 12 |
 | 🔒 Bloqués | Aucun |
 
 - **Priorité P0** : corrige une friction quotidienne ou prépare plusieurs autres
@@ -305,7 +305,7 @@ après un déplacement et une annulation.
 
 ## II. Les e-mails : moins nombreux, plus utiles
 
-### 5. Mettre dans l’e-mail ce que l’écran de confirmation propose déjà — ⏳
+### 5. Mettre dans l’e-mail ce que l’écran de confirmation propose déjà — ✅
 
 **Priorité : P0 · Effort : M · Nature : amélioration**
 
@@ -332,7 +332,25 @@ Trois manques précis :
   pour un institut**, dont celle à laquelle on répond spontanément est la seule
   qui n’existe pas.
 
-**Recommandation.** Enrichir les gabarits et l’enveloppe :
+**Livré.** L’adresse unique retenue est **`info@arbeaute.ch`**, celle qu’Arzu
+relève déjà — on ne lui change pas ses habitudes. L’expéditeur devient
+`noreply@arbeaute-bulle.ch`, et `reply_to` fait atterrir « Répondre » sur
+`info@arbeaute.ch` : aucun renvoi n’a eu à être monté chez l’hébergeur, l’en-tête
+suffit. Le pied de page le dit en toutes lettres, pour qui lit l’adresse
+d’expédition au lieu d’appuyer sur « Répondre ».
+
+Le `.ics` est joint à la confirmation et au déplacement, jamais à l’annulation —
+un rendez-vous annulé n’a plus rien à mettre dans un agenda.
+`createCalendarAttachment` (`lib/email/attachments.ts`) renvoie `null` plutôt que
+de propager une erreur : un message qui part sans pièce jointe vaut mieux qu’un
+message qui ne part pas.
+
+**Un défaut trouvé en chemin, et corrigé.** La confirmation demandait de se
+rendre sur « Mes rendez-vous » *« avec l’adresse e-mail et le numéro de téléphone
+utilisés lors de la réservation »* — faux depuis la v1.10, où l’adresse seule
+identifie. Le message envoyait donc chercher une information devenue inutile.
+
+**Recommandation initiale.** Enrichir les gabarits et l’enveloppe :
 
 - joindre l’`.ics` à la confirmation et au déplacement ;
 - ajouter deux boutons — « Ajouter à mon agenda » et « Déplacer ou annuler » —
