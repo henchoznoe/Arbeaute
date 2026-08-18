@@ -14,6 +14,8 @@ interface SubmitButtonProps {
   disabled?: boolean
   variant?: ComponentProps<typeof Button>['variant']
   size?: ComponentProps<typeof Button>['size']
+  /** Infobulle des boutons réduits à leur icône. */
+  title?: string
   'aria-label'?: string
 }
 
@@ -32,6 +34,7 @@ export const SubmitButton = ({
   disabled = false,
   variant,
   size,
+  title,
   'aria-label': ariaLabel,
 }: Readonly<SubmitButtonProps>) => {
   const { pending } = useFormStatus()
@@ -42,6 +45,7 @@ export const SubmitButton = ({
       variant={variant}
       size={size}
       disabled={disabled || pending}
+      title={title}
       aria-label={ariaLabel}
       aria-busy={pending}
       className={cn(pending && 'cursor-progress', className)}

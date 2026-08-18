@@ -9,6 +9,7 @@ import {
 import Link from 'next/link'
 import { notFound, redirect } from 'next/navigation'
 import { Suspense } from 'react'
+import { AdminPage } from '@/components/admin/admin-page'
 import { AdminSkeleton } from '@/components/admin/admin-skeleton'
 import { AppointmentStatusActions } from '@/components/admin/appointment-status-actions'
 import {
@@ -115,7 +116,7 @@ const CustomerAppointmentList = ({
 }
 
 const CustomerPage = ({ params }: Readonly<CustomerPageProps>) => (
-  <Suspense fallback={<AdminSkeleton variant="form" maxWidth="max-w-5xl" />}>
+  <Suspense fallback={<AdminSkeleton variant="form" />}>
     <CustomerProfile params={params} />
   </Suspense>
 )
@@ -131,7 +132,7 @@ const CustomerProfile = async ({ params }: Readonly<CustomerPageProps>) => {
     .join(' ')
 
   return (
-    <main className="mx-auto min-h-screen max-w-5xl px-4 py-5 sm:px-8 sm:py-8">
+    <AdminPage>
       <Button
         asChild
         variant="ghost"
@@ -142,7 +143,7 @@ const CustomerProfile = async ({ params }: Readonly<CustomerPageProps>) => {
           <ChevronLeft className="size-4" /> Recherche
         </Link>
       </Button>
-      <header className="mt-2 rounded-3xl border bg-card p-5 shadow-sm sm:p-6">
+      <header className="mt-1 rounded-3xl border bg-card p-5 shadow-sm sm:p-6">
         <div className="flex items-start gap-3">
           <span className="grid size-12 shrink-0 place-items-center rounded-2xl bg-primary/10 text-primary">
             <UserRound className="size-6" />
@@ -268,7 +269,7 @@ const CustomerProfile = async ({ params }: Readonly<CustomerPageProps>) => {
           </Button>
         </section>
       </div>
-    </main>
+    </AdminPage>
   )
 }
 

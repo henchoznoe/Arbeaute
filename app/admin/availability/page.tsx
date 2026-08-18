@@ -1,10 +1,9 @@
-import { ChevronLeft, Plus, Trash2 } from 'lucide-react'
-import Link from 'next/link'
+import { Clock3, Plus, Trash2 } from 'lucide-react'
 import { redirect } from 'next/navigation'
 import { Suspense } from 'react'
+import { AdminPage, AdminPageHeader } from '@/components/admin/admin-page'
 import { AdminSkeleton } from '@/components/admin/admin-skeleton'
 import { AvailabilityExceptionCalendar } from '@/components/admin/availability-exception-calendar'
-import { Button } from '@/components/ui/button'
 import { formControlClass } from '@/components/ui/form-field'
 import { SubmitButton } from '@/components/ui/submit-button'
 import {
@@ -65,7 +64,7 @@ interface AvailabilityPageProps {
 const AvailabilityPage = ({
   searchParams,
 }: Readonly<AvailabilityPageProps>) => (
-  <Suspense fallback={<AdminSkeleton variant="form" maxWidth="max-w-5xl" />}>
+  <Suspense fallback={<AdminSkeleton variant="form" />}>
     <Availability searchParams={searchParams} />
   </Suspense>
 )
@@ -119,39 +118,26 @@ const Availability = async ({
   const monthLabel = formatCalendarMonth(monthKey)
 
   return (
-    <main className="mx-auto min-h-screen max-w-5xl px-4 py-6 sm:px-8">
-      <header>
-        <Button
-          asChild
-          variant="ghost"
-          size="sm"
-          className="-ml-2 text-muted-foreground"
-        >
-          <Link href="/admin">
-            <ChevronLeft className="size-4" /> Agenda
-          </Link>
-        </Button>
-        <h1 className="mt-2 font-heading text-title font-bold">
-          Vos horaires d’ouverture
-        </h1>
-        <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
-          Les horaires de la semaine décident des heures que le site propose en
-          ligne. Pour un jour particulier — vacances, ouverture spéciale —
-          marquez-le dans le calendrier : une fermeture retire des heures, une
-          ouverture en ajoute.
-        </p>
-      </header>
+    <AdminPage>
+      <AdminPageHeader
+        backHref="/admin/settings"
+        backLabel="Réglages"
+        eyebrow="Arbeauté"
+        title="Vos horaires d’ouverture"
+        icon={Clock3}
+        description="Les horaires de la semaine décident des heures que le site propose en ligne. Pour un jour particulier — vacances, ouverture spéciale — marquez-le dans le calendrier : une fermeture retire des heures, une ouverture en ajoute."
+      />
 
       {error && errorMessages[error] ? (
         <p
           role="alert"
-          className="mt-6 rounded-xl border border-brand-line bg-brand-subtle p-4 text-sm text-brand-strong"
+          className="mt-6 rounded-2xl border border-brand-line bg-brand-subtle p-4 text-sm text-brand-strong"
         >
           {errorMessages[error]}
         </p>
       ) : null}
 
-      <div className="mt-8">
+      <div className="mt-6">
         <AvailabilityExceptionCalendar
           monthKey={monthKey}
           monthLabel={monthLabel}
@@ -168,22 +154,22 @@ const Availability = async ({
         />
       </div>
 
-      <section className="mt-6 rounded-3xl border bg-card p-5 sm:p-7">
+      <section className="mt-6 rounded-3xl border bg-card p-5 shadow-sm sm:p-7">
         <h2 className="text-xl font-semibold">Horaires hebdomadaires</h2>
         <p className="mt-1 text-sm text-muted-foreground">
           Ces horaires servent de base à chaque semaine et peuvent être copiés
           dans le calendrier ci-dessus.
         </p>
-        <div className="mt-5 divide-y rounded-2xl border">
+        <div className="mt-5 grid gap-2 lg:grid-cols-2 xl:grid-cols-3">
           {days.map(day => {
             const ranges = weekly.filter(range => range.dayOfWeek === day.value)
             return (
               <div
                 key={day.value}
-                className="grid gap-3 p-4 sm:grid-cols-[8rem_1fr]"
+                className="min-w-0 rounded-2xl border bg-background p-4"
               >
                 <p className="font-medium">{day.label}</p>
-                <div className="flex flex-wrap gap-2">
+                <div className="mt-2 flex flex-wrap gap-2">
                   {ranges.length ? (
                     ranges.map(range => (
                       <form
@@ -219,7 +205,7 @@ const Availability = async ({
 
         <form
           action={createWeeklyAvailability}
-          className="mt-5 grid gap-3 sm:grid-cols-[1.3fr_1fr_1fr_auto]"
+          className="mt-5 grid gap-3 sm:max-w-2xl sm:grid-cols-[1.3fr_1fr_1fr_auto]"
         >
           <label className="grid gap-1.5 text-sm font-medium">
             Jour
@@ -258,7 +244,7 @@ const Availability = async ({
           </SubmitButton>
         </form>
       </section>
-    </main>
+    </AdminPage>
   )
 }
 

@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation'
 import { Suspense } from 'react'
 import { ActivityOverview } from '@/components/admin/activity-overview'
 import { AdminAgendaView } from '@/components/admin/admin-agenda-view'
+import { AdminPage as AdminPageShell } from '@/components/admin/admin-page'
 import { AdminSkeleton } from '@/components/admin/admin-skeleton'
 import { DashboardMetrics } from '@/components/admin/dashboard-metrics'
 import { NextAppointmentCard } from '@/components/admin/next-appointment-card'
@@ -163,8 +164,8 @@ const AdminAgenda = async ({ searchParams }: Readonly<AdminPageProps>) => {
     : null
 
   return (
-    <main className="mx-auto min-h-screen max-w-7xl px-4 py-5 sm:px-8 sm:py-8">
-      <header className="flex items-baseline gap-2">
+    <AdminPageShell>
+      <header className="mb-2 flex items-baseline gap-2 border-b pb-5">
         <h1 className="font-heading text-title font-bold">Agenda</h1>
         <p className="text-sm font-medium text-brand">Arbeauté</p>
       </header>
@@ -218,7 +219,7 @@ const AdminAgenda = async ({ searchParams }: Readonly<AdminPageProps>) => {
       {/* Plus de `hidden md:block` : sur téléphone, Arzu ne voyait jamais les
           réservations et annulations depuis son agenda. */}
       <ActivityOverview {...activityOverview} />
-    </main>
+    </AdminPageShell>
   )
 }
 

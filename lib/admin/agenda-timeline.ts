@@ -313,6 +313,15 @@ export const assignTimelineLanes = (
   return lanes
 }
 
+/**
+ * Le pas des départs proposés au survol de l'agenda.
+ *
+ * La demi-heure interdisait de caser un rendez-vous à 10:45 juste avant un
+ * autre à 11:00 ; le quart d'heure est déjà le pas des heures saisies à la
+ * main (`isAdminAppointmentTime`), les deux gestes s'accordent enfin.
+ */
+export const QUICK_ADD_STEP_MINUTES = 15
+
 export const getFreeTimelineStarts = (day: AdminTimelineDay): number[] => {
   const closures = day.exceptions.filter(
     exception => exception.type === 'UNAVAILABLE',
@@ -327,10 +336,13 @@ export const getFreeTimelineStarts = (day: AdminTimelineDay): number[] => {
 
   for (
     let minute = day.timelineStartMinute;
-    minute + 30 <= day.timelineEndMinute;
-    minute += 30
+    minute + QUICK_ADD_STEP_MINUTES <= day.timelineEndMinute;
+    minute += QUICK_ADD_STEP_MINUTES
   ) {
-    const candidate = { startMinute: minute, endMinute: minute + 30 }
+    const candidate = {
+      startMinute: minute,
+      endMinute: minute + QUICK_ADD_STEP_MINUTES,
+    }
     const insideOpening = day.openings.some(
       opening =>
         candidate.startMinute >= opening.startMinute &&

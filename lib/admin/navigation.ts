@@ -23,6 +23,7 @@ export const getActiveAdminNavigationItem = (
     pathname.startsWith('/admin/settings') ||
     pathname.startsWith('/admin/data') ||
     pathname.startsWith('/admin/availability') ||
+    pathname.startsWith('/admin/emails') ||
     pathname.startsWith('/admin/services')
   )
     return 'settings'

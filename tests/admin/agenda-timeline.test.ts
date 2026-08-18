@@ -75,9 +75,26 @@ describe('admin daily timeline', () => {
     const freeStarts = getFreeTimelineStarts(day)
 
     expect(freeStarts).toContain(8 * 60)
-    expect(freeStarts).not.toContain(9 * 60 + 30)
+    // Le quart d'heure qui précède l'installation reste proposé, la minute où
+    // elle commence ne l'est plus.
+    expect(freeStarts).toContain(9 * 60 + 30)
+    expect(freeStarts).not.toContain(9 * 60 + 45)
+    expect(freeStarts).not.toContain(10 * 60)
     expect(freeStarts).not.toContain(12 * 60)
     expect(freeStarts).toContain(13 * 60)
+  })
+
+  it('proposes a start every quarter of an hour', () => {
+    const day = buildDay({
+      weekly: [{ dayOfWeek: 1, startMinute: 8 * 60, endMinute: 9 * 60 }],
+    })
+
+    expect(getFreeTimelineStarts(day)).toEqual([
+      8 * 60,
+      8 * 60 + 15,
+      8 * 60 + 30,
+      8 * 60 + 45,
+    ])
   })
 
   it('flags every appointment involved in a visual overlap', () => {

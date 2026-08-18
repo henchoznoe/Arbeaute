@@ -1,3 +1,4 @@
+import type { LucideIcon } from 'lucide-react'
 import {
   CalendarDays,
   Clock3,
@@ -9,133 +10,110 @@ import {
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { Suspense } from 'react'
+import { AdminPage, AdminPageHeader } from '@/components/admin/admin-page'
 import { AdminSkeleton } from '@/components/admin/admin-skeleton'
 import { getAdminSession } from '@/lib/core/session-cookies'
 
 const SettingsPage = () => (
-  <Suspense fallback={<AdminSkeleton variant="cards" maxWidth="max-w-4xl" />}>
+  <Suspense fallback={<AdminSkeleton variant="cards" />}>
     <Settings />
   </Suspense>
 )
+
+const cards: Array<{
+  href: string
+  icon: LucideIcon
+  title: string
+  description: string
+  action: string
+}> = [
+  {
+    href: '/admin/settings/booking',
+    icon: SlidersHorizontal,
+    title: 'Réservation',
+    description:
+      'Combien de temps à l’avance réserver, jusqu’à quand, et jusqu’à quand un rendez-vous peut être changé sans vous.',
+    action: 'Gérer les règles',
+  },
+  {
+    href: '/admin/settings/agenda',
+    icon: CalendarDays,
+    title: 'Agenda',
+    description:
+      'Les jours que la vue semaine affiche sur ordinateur. Le choix est enregistré ici, pas dans votre navigateur.',
+    action: 'Choisir les jours',
+  },
+  {
+    href: '/admin/availability',
+    icon: Clock3,
+    title: 'Horaires',
+    description:
+      'Vos heures d’ouverture de la semaine, vos vacances et vos ouvertures exceptionnelles.',
+    action: 'Gérer les horaires',
+  },
+  {
+    href: '/admin/emails',
+    icon: Mail,
+    title: 'E-mails',
+    description:
+      'Les messages envoyés depuis le site, ceux qui ne sont pas partis, et ce qu’il vous reste sur l’offre gratuite.',
+    action: 'Voir les e-mails',
+  },
+  {
+    href: '/admin/data',
+    icon: Database,
+    title: 'Données',
+    description:
+      'Télécharger vos données, effacer les coordonnées d’une personne qui le demande, et vérifier vos sauvegardes.',
+    action: 'Gérer les données',
+  },
+  {
+    href: '/admin/services',
+    icon: Settings2,
+    title: 'Prestations',
+    description:
+      'Vos soins, leurs prix, leurs durées et l’ordre dans lequel ils apparaissent sur le site.',
+    action: 'Gérer les prestations',
+  },
+]
 
 const Settings = async () => {
   if (!(await getAdminSession())) redirect('/admin/login')
 
   return (
-    <main className="mx-auto min-h-screen max-w-4xl px-4 py-6 sm:px-8 sm:py-8">
-      <header>
-        <p className="text-sm font-medium text-brand">Arbeauté</p>
-        <h1 className="font-heading text-title font-bold">Réglages</h1>
-        <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
-          Gérez les disponibilités de l’institut et les prestations proposées
-          sur le site.
-        </p>
-      </header>
+    <AdminPage>
+      <AdminPageHeader
+        eyebrow="Arbeauté"
+        title="Réglages"
+        description="Gérez les disponibilités de l’institut et les prestations proposées sur le site."
+      />
 
-      <div className="mt-7 grid gap-4 sm:grid-cols-2">
-        <Link
-          href="/admin/settings/booking"
-          className="group rounded-3xl border bg-card p-6 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
-        >
-          <span className="grid size-12 place-items-center rounded-2xl bg-primary/10 text-primary">
-            <SlidersHorizontal className="size-6" />
-          </span>
-          <h2 className="mt-5 text-xl font-semibold">Réservation</h2>
-          <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
-            Combien de temps à l’avance réserver, jusqu’à quand, et jusqu’à
-            quand un rendez-vous peut être changé sans vous.
-          </p>
-          <span className="mt-5 inline-flex min-h-11 items-center text-sm font-medium text-primary">
-            Gérer les règles →
-          </span>
-        </Link>
-
-        <Link
-          href="/admin/settings/agenda"
-          className="group rounded-3xl border bg-card p-6 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
-        >
-          <span className="grid size-12 place-items-center rounded-2xl bg-primary/10 text-primary">
-            <CalendarDays className="size-6" />
-          </span>
-          <h2 className="mt-5 text-xl font-semibold">Agenda</h2>
-          <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
-            Les jours que la vue semaine affiche sur ordinateur. Le choix est
-            enregistré ici, pas dans votre navigateur.
-          </p>
-          <span className="mt-5 inline-flex min-h-11 items-center text-sm font-medium text-primary">
-            Choisir les jours →
-          </span>
-        </Link>
-
-        <Link
-          href="/admin/availability"
-          className="group rounded-3xl border bg-card p-6 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
-        >
-          <span className="grid size-12 place-items-center rounded-2xl bg-primary/10 text-primary">
-            <Clock3 className="size-6" />
-          </span>
-          <h2 className="mt-5 text-xl font-semibold">Horaires</h2>
-          <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
-            Vos heures d’ouverture de la semaine, vos vacances et vos ouvertures
-            exceptionnelles.
-          </p>
-          <span className="mt-5 inline-flex min-h-11 items-center text-sm font-medium text-primary">
-            Gérer les horaires →
-          </span>
-        </Link>
-
-        <Link
-          href="/admin/emails"
-          className="group rounded-3xl border bg-card p-6 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
-        >
-          <span className="grid size-12 place-items-center rounded-2xl bg-primary/10 text-primary">
-            <Mail className="size-6" />
-          </span>
-          <h2 className="mt-5 text-xl font-semibold">E-mails</h2>
-          <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
-            Les messages envoyés depuis le site, ceux qui ne sont pas partis, et
-            ce qu’il vous reste sur l’offre gratuite.
-          </p>
-          <span className="mt-5 inline-flex min-h-11 items-center text-sm font-medium text-primary">
-            Voir les e-mails →
-          </span>
-        </Link>
-
-        <Link
-          href="/admin/data"
-          className="group rounded-3xl border bg-card p-6 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
-        >
-          <span className="grid size-12 place-items-center rounded-2xl bg-primary/10 text-primary">
-            <Database className="size-6" />
-          </span>
-          <h2 className="mt-5 text-xl font-semibold">Données</h2>
-          <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
-            Télécharger vos données, effacer les coordonnées d’une personne qui
-            le demande, et vérifier vos sauvegardes.
-          </p>
-          <span className="mt-5 inline-flex min-h-11 items-center text-sm font-medium text-primary">
-            Gérer les données →
-          </span>
-        </Link>
-
-        <Link
-          href="/admin/services"
-          className="group rounded-3xl border bg-card p-6 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
-        >
-          <span className="grid size-12 place-items-center rounded-2xl bg-primary/10 text-primary">
-            <Settings2 className="size-6" />
-          </span>
-          <h2 className="mt-5 text-xl font-semibold">Prestations</h2>
-          <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
-            Vos soins, leurs prix, leurs durées et l’ordre dans lequel ils
-            apparaissent sur le site.
-          </p>
-          <span className="mt-5 inline-flex min-h-11 items-center text-sm font-medium text-primary">
-            Gérer les prestations →
-          </span>
-        </Link>
+      {/* Six entrées, trois par ligne : sur deux colonnes, les deux dernières
+          tombaient sous la ligne de flottaison sans raison. */}
+      <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        {cards.map(card => {
+          const Icon = card.icon
+          return (
+            <Link
+              key={card.href}
+              href={card.href}
+              className="group flex flex-col rounded-3xl border bg-card p-6 shadow-sm transition hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-md"
+            >
+              <span className="grid size-12 place-items-center rounded-2xl bg-primary/10 text-primary">
+                <Icon className="size-6" />
+              </span>
+              <h2 className="mt-5 text-xl font-semibold">{card.title}</h2>
+              <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
+                {card.description}
+              </p>
+              <span className="mt-auto inline-flex min-h-11 items-center pt-4 text-sm font-medium text-primary">
+                {card.action} →
+              </span>
+            </Link>
+          )
+        })}
       </div>
-    </main>
+    </AdminPage>
   )
 }
 

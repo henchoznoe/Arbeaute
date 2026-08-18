@@ -32,7 +32,7 @@ export interface AppointmentEmailDelivery {
 export const AppointmentEmailStatus = ({
   deliveries,
 }: Readonly<{ deliveries: AppointmentEmailDelivery[] }>) => (
-  <section className="mt-6 rounded-3xl border bg-card p-5 shadow-sm sm:p-6">
+  <section className="rounded-3xl border bg-card p-5 shadow-sm sm:p-6">
     <h2 className="text-lg font-semibold">Messages envoyés</h2>
 
     {deliveries.length === 0 ? (

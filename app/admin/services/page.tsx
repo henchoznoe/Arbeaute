@@ -1,7 +1,6 @@
 import {
   Archive,
   ChevronDown,
-  ChevronLeft,
   ChevronUp,
   Copy,
   Eye,
@@ -12,28 +11,25 @@ import {
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { Suspense } from 'react'
+import { AdminPage, AdminPageHeader } from '@/components/admin/admin-page'
 import { AdminSkeleton } from '@/components/admin/admin-skeleton'
+import { ServiceCategoryPanel } from '@/components/admin/service-category-panel'
 import { ServiceDeleteButton } from '@/components/admin/service-delete-button'
 import { Button } from '@/components/ui/button'
-import { formControlClass } from '@/components/ui/form-field'
 import { SubmitButton } from '@/components/ui/submit-button'
 import {
-  createCategory,
   duplicateService,
   moveCategory,
   moveService,
   toggleCategory,
   toggleServiceArchive,
-  updateCategory,
 } from '@/lib/actions/catalog'
 import prisma from '@/lib/core/prisma'
 import { getAdminSession } from '@/lib/core/session-cookies'
 import { formatPrice } from '@/lib/utils/format'
 
-const fieldClass = formControlClass
-
 const AdminServicesPage = () => (
-  <Suspense fallback={<AdminSkeleton variant="cards" maxWidth="max-w-6xl" />}>
+  <Suspense fallback={<AdminSkeleton variant="cards" />}>
     <AdminServices />
   </Suspense>
 )
@@ -48,69 +44,29 @@ const AdminServices = async () => {
   })
 
   return (
-    <main className="mx-auto min-h-screen max-w-6xl px-4 py-6 sm:px-8">
-      <header className="flex flex-wrap items-center justify-between gap-4">
-        <div>
-          <Button
-            asChild
-            variant="ghost"
-            size="sm"
-            className="-ml-2 text-muted-foreground"
-          >
-            <Link href="/admin">
-              <ChevronLeft className="size-4" /> Agenda
-            </Link>
-          </Button>
-          <h1 className="mt-2 font-heading text-title font-bold">
-            Prestations
-          </h1>
-          <p className="mt-1 text-sm text-muted-foreground">
-            {categories.reduce(
-              (total, item) => total + item.services.length,
-              0,
-            )}{' '}
-            prestations dans {categories.length} groupes
-          </p>
-        </div>
-        <Button asChild>
-          <Link href="/admin/services/new">
-            <Plus className="size-4" />
-            Nouvelle prestation
-          </Link>
-        </Button>
-      </header>
-
-      <details className="mt-8 rounded-2xl border bg-card p-5">
-        <summary className="cursor-pointer font-semibold">
-          Nouveau groupe
-        </summary>
-        <form
-          action={createCategory}
-          className="mt-5 grid gap-3 md:grid-cols-4"
-        >
-          <input
-            name="name"
-            required
-            placeholder="Nom"
-            className={fieldClass}
-          />
-          <input
-            name="description"
-            placeholder="Description"
-            className={`${fieldClass} md:col-span-2`}
-          />
-          <div className="flex gap-2">
-            <input
-              name="color"
-              type="color"
-              defaultValue="#927b59"
-              required
-              className={`${fieldClass} min-w-0 flex-1`}
-            />
-            <SubmitButton pendingLabel="Ajout…">Ajouter</SubmitButton>
-          </div>
-        </form>
-      </details>
+    <AdminPage>
+      <AdminPageHeader
+        backHref="/admin/settings"
+        backLabel="Réglages"
+        eyebrow="Arbeauté"
+        title="Prestations"
+        icon={Settings2}
+        description={`${categories.reduce(
+          (total, item) => total + item.services.length,
+          0,
+        )} prestations dans ${categories.length} groupes`}
+        actions={
+          <>
+            <ServiceCategoryPanel />
+            <Button asChild>
+              <Link href="/admin/services/new">
+                <Plus className="size-4" />
+                Nouvelle prestation
+              </Link>
+            </Button>
+          </>
+        }
+      />
 
       <div className="mt-6 space-y-6">
         {categories.map((category, categoryIndex) => (
@@ -118,11 +74,32 @@ const AdminServices = async () => {
             key={category.id}
             className="overflow-hidden rounded-2xl border bg-card"
           >
-            <div className="flex items-center justify-between gap-2 border-b bg-muted/30 px-4 py-2">
-              <span className="text-xs font-medium text-muted-foreground">
-                Ordre du groupe
-              </span>
-              <div className="flex gap-1">
+            <div className="flex flex-wrap items-center justify-between gap-3 border-b bg-muted/30 px-4 py-3">
+              <div className="flex min-w-0 items-center gap-3">
+                <span
+                  className="size-4 shrink-0 rounded-full"
+                  style={{ backgroundColor: category.color }}
+                />
+                <div className="min-w-0">
+                  <h2 className="truncate text-lg font-semibold">
+                    {category.name}
+                  </h2>
+                  {category.description ? (
+                    <p className="truncate text-xs text-muted-foreground">
+                      {category.description}
+                    </p>
+                  ) : null}
+                </div>
+              </div>
+              <div className="flex items-center gap-1">
+                <ServiceCategoryPanel
+                  category={{
+                    id: category.id,
+                    name: category.name,
+                    description: category.description,
+                    color: category.color,
+                  }}
+                />
                 <form action={moveCategory}>
                   <input type="hidden" name="id" value={category.id} />
                   <input type="hidden" name="direction" value="up" />
@@ -149,35 +126,6 @@ const AdminServices = async () => {
                 </form>
               </div>
             </div>
-
-            <form
-              action={updateCategory}
-              className="grid gap-3 border-b p-4 md:grid-cols-[1fr_2fr_auto_auto]"
-            >
-              <input type="hidden" name="id" value={category.id} />
-              <input
-                name="name"
-                required
-                defaultValue={category.name}
-                className={fieldClass}
-              />
-              <input
-                name="description"
-                defaultValue={category.description ?? ''}
-                className={fieldClass}
-              />
-              <input
-                name="color"
-                type="color"
-                required
-                defaultValue={category.color}
-                className="h-11 w-12 rounded-xl border bg-background p-1"
-              />
-              <SubmitButton pendingLabel="Enregistrement…" variant="outline">
-                <Settings2 className="size-4" />
-                Enregistrer
-              </SubmitButton>
-            </form>
 
             <div className="divide-y">
               {category.services.map((service, serviceIndex) => (
@@ -278,7 +226,7 @@ const AdminServices = async () => {
           </section>
         ))}
       </div>
-    </main>
+    </AdminPage>
   )
 }
 

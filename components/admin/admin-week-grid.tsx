@@ -6,6 +6,7 @@ import {
   formatTimelineMinute,
   getFreeTimelineStarts,
   getWeekTimelineBounds,
+  QUICK_ADD_STEP_MINUTES,
 } from '@/lib/admin/agenda-timeline'
 import { capitalizeFirst } from '@/lib/utils/format'
 
@@ -144,10 +145,10 @@ export const AdminWeekGrid = ({
                       key={minute}
                       href={`/admin/appointments/new?date=${day.dateKey}&time=${formatTimelineMinute(minute)}`}
                       aria-label={`Ajouter un rendez-vous le ${day.label} à ${formatTimelineMinute(minute)}`}
-                      className="group absolute inset-x-0.5 z-10 flex items-center justify-center rounded-md border border-dashed border-transparent text-2xs font-medium text-success-strong transition hover:border-success-accent hover:bg-success-soft/80 focus:border-success focus:bg-success-soft focus:outline-none"
+                      className="group absolute inset-x-0.5 z-10 flex items-center justify-center overflow-hidden rounded-md border border-dashed border-transparent text-2xs font-medium leading-none text-success-strong transition hover:border-success-accent hover:bg-success-soft/80 focus:border-success focus:bg-success-soft focus:outline-none"
                       style={{
                         top: offset(minute),
-                        height: 30 * PIXELS_PER_MINUTE,
+                        height: QUICK_ADD_STEP_MINUTES * PIXELS_PER_MINUTE,
                       }}
                     >
                       <span className="inline-flex items-center gap-0.5 opacity-0 transition group-hover:opacity-100 group-focus:opacity-100">

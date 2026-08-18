@@ -11,6 +11,7 @@ import {
   type AdminTimelineDay,
   formatTimelineMinute,
   getFreeTimelineStarts,
+  QUICK_ADD_STEP_MINUTES,
   type TimelineInterval,
 } from '@/lib/admin/agenda-timeline'
 
@@ -205,13 +206,16 @@ export const AdminDayTimeline = ({
                   key={minute}
                   href={`/admin/appointments/new?date=${day.dateKey}&time=${formatTimelineMinute(minute)}`}
                   aria-label={`Ajouter un rendez-vous à ${formatTimelineMinute(minute)}`}
-                  className="group absolute left-12 right-1 z-10 flex items-center justify-end rounded-lg border border-dashed border-transparent px-2 text-2xs font-medium text-success-strong transition hover:border-success-accent hover:bg-success-soft/90 focus:border-success focus:bg-success-soft focus:outline-none"
+                  className="group absolute left-12 right-1 z-10 flex items-center justify-end overflow-hidden rounded-lg border border-dashed border-transparent px-2 text-2xs font-medium leading-none text-success-strong transition hover:border-success-accent hover:bg-success-soft/90 focus:border-success focus:bg-success-soft focus:outline-none"
                   style={positionStyle(
-                    { startMinute: minute, endMinute: minute + 30 },
+                    {
+                      startMinute: minute,
+                      endMinute: minute + QUICK_ADD_STEP_MINUTES,
+                    },
                     day.timelineStartMinute,
                   )}
                 >
-                  <span className="inline-flex items-center gap-1 rounded-full bg-success-soft/80 px-2 py-1 opacity-70 group-hover:opacity-100 group-focus:opacity-100">
+                  <span className="inline-flex items-center gap-1 rounded-full bg-success-soft/80 px-2 py-0.5 opacity-70 group-hover:opacity-100 group-focus:opacity-100">
                     <Plus className="size-3" /> {formatTimelineMinute(minute)}
                   </span>
                 </Link>

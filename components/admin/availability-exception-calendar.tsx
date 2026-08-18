@@ -10,15 +10,14 @@ import {
   Palmtree,
   Plus,
   Trash2,
-  X,
 } from 'lucide-react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { Dialog } from 'radix-ui'
 import { type FormEvent, useMemo, useState, useTransition } from 'react'
 import { Button } from '@/components/ui/button'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import { formControlClass } from '@/components/ui/form-field'
+import { SidePanel } from '@/components/ui/side-panel'
 import {
   createAvailabilityException,
   deleteAvailabilityExceptionGroup,
@@ -135,7 +134,9 @@ export const AvailabilityExceptionCalendar = ({
 
   const selectDate = (dateKey: string) => {
     setSelectedDate(dateKey)
-    setEndDate('')
+    // Un jour particulier a toujours une fin, même quand elle tombe le jour
+    // même : une case vide laissait croire à une période sans terme.
+    setEndDate(dateKey)
     setShortcut('CUSTOM')
     setType('UNAVAILABLE')
     setLabel('')
@@ -157,10 +158,10 @@ export const AvailabilityExceptionCalendar = ({
       setLabel('Vacances')
     } else if (value === 'COPY_WEEKLY') {
       setType('AVAILABLE')
-      setEndDate('')
+      setEndDate(selectedDate)
       if (label === 'Vacances') setLabel('')
     } else {
-      if (leavesVacation) setEndDate('')
+      if (leavesVacation) setEndDate(selectedDate)
       if (label === 'Vacances') setLabel('')
     }
   }
@@ -199,6 +200,7 @@ export const AvailabilityExceptionCalendar = ({
     segments,
   )
   const invalidRange = Boolean(endDate && endDate < selectedDate)
+  const missingEndDate = shortcut !== 'COPY_WEEKLY' && !endDate
   const tooLongRange =
     new Set(proposedSegments.map(segment => segment.dateKey)).size > 180
   const missingCopiedHours =
@@ -209,6 +211,7 @@ export const AvailabilityExceptionCalendar = ({
     if (
       hasConflict ||
       invalidRange ||
+      missingEndDate ||
       tooLongRange ||
       missingCopiedHours ||
       !proposedSegments.length
@@ -232,7 +235,7 @@ export const AvailabilityExceptionCalendar = ({
   }
 
   return (
-    <>
+    <div className="grid items-start gap-5 lg:grid-cols-[minmax(0,1.35fr)_minmax(0,1fr)]">
       <section className="rounded-3xl border bg-card p-4 shadow-sm sm:p-6">
         <div className="flex items-center justify-between gap-3">
           <Button asChild variant="outline" size="icon">
@@ -325,7 +328,7 @@ export const AvailabilityExceptionCalendar = ({
         </Button>
       </section>
 
-      <section className="mt-5 rounded-3xl border bg-card p-4 shadow-sm sm:p-6">
+      <section className="rounded-3xl border bg-card p-4 shadow-sm sm:p-6">
         <h2 className="text-xl font-semibold">Périodes enregistrées</h2>
         <p className="mt-1 text-sm text-muted-foreground">
           Une suppression retire tout le groupe créé en une seule saisie.
@@ -403,260 +406,234 @@ export const AvailabilityExceptionCalendar = ({
         )}
       </section>
 
-      <Dialog.Root open={open} onOpenChange={setOpen}>
-        <Dialog.Portal>
-          <Dialog.Overlay className="fixed inset-0 z-[70] bg-black/45 backdrop-blur-[2px] data-[state=closed]:animate-out data-[state=open]:animate-in data-[state=closed]:fade-out data-[state=open]:fade-in motion-reduce:animate-none" />
-          <Dialog.Content className="fixed inset-x-0 bottom-0 z-[80] max-h-[calc(100dvh-1rem)] overflow-y-auto rounded-t-3xl border bg-background p-5 pb-[calc(1.25rem+env(safe-area-inset-bottom))] shadow-2xl outline-none sm:inset-y-4 sm:right-4 sm:left-auto sm:w-[30rem] sm:rounded-3xl sm:p-7">
-            <div className="flex items-start justify-between gap-3">
-              <div>
-                <p className="text-xs font-semibold uppercase tracking-wide text-brand">
-                  Jour particulier
-                </p>
-                <Dialog.Title className="mt-1 font-heading text-2xl font-bold">
-                  {capitalizeFirst(formatDate(selectedDate))}
-                </Dialog.Title>
-                <Dialog.Description className="mt-1 text-sm text-muted-foreground">
-                  Fermez l’institut sur ce jour, ou ouvrez des heures en plus de
-                  vos horaires habituels.
-                </Dialog.Description>
-              </div>
-              <Dialog.Close asChild>
-                <Button
+      <SidePanel
+        open={open}
+        onOpenChange={setOpen}
+        eyebrow="Jour particulier"
+        title={capitalizeFirst(formatDate(selectedDate))}
+        description="Fermez l’institut sur ce jour, ou ouvrez des heures en plus de vos horaires habituels."
+      >
+        <form onSubmit={submit} className="space-y-5">
+          <input type="hidden" name="shortcut" value={shortcut} />
+          <div className="grid grid-cols-2 gap-2">
+            {shortcutButtons.map(option => {
+              const Icon = option.icon
+              return (
+                <button
+                  key={option.value}
                   type="button"
-                  variant="outline"
-                  size="icon"
-                  aria-label="Fermer le panneau"
+                  onClick={() => chooseShortcut(option.value)}
+                  aria-pressed={shortcut === option.value}
+                  className={`flex min-h-12 items-center justify-center gap-2 rounded-xl border px-2 text-xs font-semibold transition ${
+                    shortcut === option.value
+                      ? 'border-primary bg-primary/10 text-primary'
+                      : 'hover:bg-muted'
+                  }`}
                 >
-                  <X className="size-5" />
-                </Button>
-              </Dialog.Close>
-            </div>
+                  <Icon className="size-4" /> {option.label}
+                </button>
+              )
+            })}
+          </div>
 
-            <form onSubmit={submit} className="mt-5 space-y-5">
-              <input type="hidden" name="shortcut" value={shortcut} />
-              <div className="grid grid-cols-2 gap-2">
-                {shortcutButtons.map(option => {
-                  const Icon = option.icon
-                  return (
-                    <button
-                      key={option.value}
-                      type="button"
-                      onClick={() => chooseShortcut(option.value)}
-                      aria-pressed={shortcut === option.value}
-                      className={`flex min-h-12 items-center justify-center gap-2 rounded-xl border px-2 text-xs font-semibold transition ${
-                        shortcut === option.value
-                          ? 'border-primary bg-primary/10 text-primary'
-                          : 'hover:bg-muted'
-                      }`}
-                    >
-                      <Icon className="size-4" /> {option.label}
-                    </button>
-                  )
-                })}
-              </div>
-
-              <div className="grid gap-4 sm:grid-cols-2">
-                <label className="grid gap-1.5 text-sm font-medium">
-                  Date
-                  <input
-                    name="date"
-                    type="date"
-                    required
-                    min={days[0]?.dateKey}
-                    max={days.at(-1)?.dateKey}
-                    value={selectedDate}
-                    onChange={event => {
-                      const dateKey = event.target.value
-                      setSelectedDate(dateKey)
-                      if (shortcut === 'VACATION')
-                        setEndDate(addDays(dateKey, 6))
-                    }}
-                    className={formControlClass}
-                  />
-                </label>
-                {shortcut !== 'COPY_WEEKLY' ? (
-                  <label className="grid gap-1.5 text-sm font-medium">
-                    Jusqu’au{' '}
-                    <span className="font-normal text-muted-foreground">
-                      (optionnel)
-                    </span>
-                    <input
-                      name="endDate"
-                      type="date"
-                      min={selectedDate}
-                      max={addDays(selectedDate, 179)}
-                      value={endDate}
-                      onChange={event => setEndDate(event.target.value)}
-                      className={formControlClass}
-                    />
-                  </label>
-                ) : (
-                  <input type="hidden" name="endDate" value="" />
-                )}
-              </div>
-
-              {shortcut === 'COPY_WEEKLY' ? (
-                <label className="grid gap-1.5 text-sm font-medium">
-                  Horaire modèle
-                  <select
-                    name="copyDayOfWeek"
-                    value={copyDayOfWeek}
-                    onChange={event =>
-                      setCopyDayOfWeek(Number(event.target.value))
-                    }
-                    className={formControlClass}
-                  >
-                    {[1, 2, 3, 4, 5, 6, 0].map(dayOfWeek => {
-                      const ranges = weekly.filter(
-                        range => range.dayOfWeek === dayOfWeek,
-                      )
-                      return (
-                        <option
-                          key={dayOfWeek}
-                          value={dayOfWeek}
-                          disabled={!ranges.length}
-                        >
-                          {DAY_LABELS[dayOfWeek]} —{' '}
-                          {ranges.length
-                            ? ranges
-                                .map(
-                                  range =>
-                                    `${minuteLabel(range.startMinute)}–${minuteLabel(range.endMinute)}`,
-                                )
-                                .join(', ')
-                            : 'fermé'}
-                        </option>
-                      )
-                    })}
-                  </select>
-                </label>
-              ) : null}
-
-              {shortcut === 'COPY_WEEKLY' || shortcut === 'VACATION' ? (
-                <div className="grid gap-1.5 text-sm font-medium">
-                  Type
-                  <input
-                    type="hidden"
-                    name="type"
-                    value={
-                      shortcut === 'COPY_WEEKLY' ? 'AVAILABLE' : 'UNAVAILABLE'
-                    }
-                  />
-                  <p className="flex min-h-11 items-center rounded-xl border bg-muted px-3 font-normal">
-                    {shortcut === 'COPY_WEEKLY' ? 'Ouverture' : 'Fermeture'}
-                  </p>
-                </div>
-              ) : (
-                <label className="grid gap-1.5 text-sm font-medium">
-                  Type
-                  <select
-                    name="type"
-                    value={type}
-                    onChange={event =>
-                      setType(event.target.value as typeof type)
-                    }
-                    className={formControlClass}
-                  >
-                    <option value="UNAVAILABLE">Fermeture</option>
-                    <option value="AVAILABLE">Ouverture</option>
-                  </select>
-                </label>
-              )}
-
-              {shortcut === 'CUSTOM' ? (
-                <div className="grid grid-cols-2 gap-4">
-                  <label className="grid gap-1.5 text-sm font-medium">
-                    Début
-                    <input
-                      name="startTime"
-                      type="time"
-                      step={900}
-                      required
-                      value={startTime}
-                      onChange={event => setStartTime(event.target.value)}
-                      className={formControlClass}
-                    />
-                  </label>
-                  <label className="grid gap-1.5 text-sm font-medium">
-                    Fin
-                    <input
-                      name="endTime"
-                      type="time"
-                      step={900}
-                      required
-                      value={endTime}
-                      onChange={event => setEndTime(event.target.value)}
-                      className={formControlClass}
-                    />
-                  </label>
-                </div>
-              ) : (
-                <>
-                  <input type="hidden" name="startTime" value="" />
-                  <input type="hidden" name="endTime" value="" />
-                </>
-              )}
-
+          <div className="grid gap-4 sm:grid-cols-2">
+            <label className="grid gap-1.5 text-sm font-medium">
+              Date
+              <input
+                name="date"
+                type="date"
+                required
+                min={days[0]?.dateKey}
+                max={days.at(-1)?.dateKey}
+                value={selectedDate}
+                onChange={event => {
+                  const dateKey = event.target.value
+                  setSelectedDate(dateKey)
+                  if (shortcut === 'VACATION') setEndDate(addDays(dateKey, 6))
+                  else if (!endDate || endDate < dateKey) setEndDate(dateKey)
+                }}
+                className={formControlClass}
+              />
+            </label>
+            {shortcut !== 'COPY_WEEKLY' ? (
               <label className="grid gap-1.5 text-sm font-medium">
-                Motif{' '}
-                <span className="font-normal text-muted-foreground">
-                  (optionnel)
-                </span>
+                Jusqu’au
                 <input
-                  name="label"
-                  maxLength={120}
-                  value={label}
-                  onChange={event => setLabel(event.target.value)}
-                  placeholder="Vacances, formation, ouverture…"
+                  name="endDate"
+                  type="date"
+                  required
+                  min={selectedDate}
+                  max={addDays(selectedDate, 179)}
+                  value={endDate}
+                  onChange={event => setEndDate(event.target.value)}
                   className={formControlClass}
                 />
               </label>
+            ) : (
+              <input type="hidden" name="endDate" value={selectedDate} />
+            )}
+          </div>
 
-              {tooLongRange ? (
-                <p role="alert" className="text-sm text-destructive">
-                  Cette période dépasse la limite de 180 jours.
-                </p>
-              ) : hasConflict ? (
-                <p
-                  role="alert"
-                  className="rounded-xl border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive"
-                >
-                  Cette plage se superpose à une ouverture ou à une fermeture
-                  déjà enregistrée. Modifiez-la avant l’envoi.
-                </p>
-              ) : invalidRange ? (
-                <p role="alert" className="text-sm text-destructive">
-                  La date de fin doit suivre la date de début.
-                </p>
-              ) : missingCopiedHours ? (
-                <p role="alert" className="text-sm text-destructive">
-                  Ce jour modèle ne contient aucun horaire à copier.
-                </p>
-              ) : null}
-
-              <Button
-                type="submit"
-                disabled={
-                  pending ||
-                  hasConflict ||
-                  invalidRange ||
-                  tooLongRange ||
-                  missingCopiedHours ||
-                  !proposedSegments.length
-                }
-                className="w-full"
+          {shortcut === 'COPY_WEEKLY' ? (
+            <label className="grid gap-1.5 text-sm font-medium">
+              Horaire modèle
+              <select
+                name="copyDayOfWeek"
+                value={copyDayOfWeek}
+                onChange={event => setCopyDayOfWeek(Number(event.target.value))}
+                className={formControlClass}
               >
-                {pending ? (
-                  <LoaderCircle className="size-4 animate-spin" />
-                ) : (
-                  <Plus className="size-4" />
-                )}
-                Enregistrer ce jour particulier
-              </Button>
-            </form>
-          </Dialog.Content>
-        </Dialog.Portal>
-      </Dialog.Root>
-    </>
+                {[1, 2, 3, 4, 5, 6, 0].map(dayOfWeek => {
+                  const ranges = weekly.filter(
+                    range => range.dayOfWeek === dayOfWeek,
+                  )
+                  return (
+                    <option
+                      key={dayOfWeek}
+                      value={dayOfWeek}
+                      disabled={!ranges.length}
+                    >
+                      {DAY_LABELS[dayOfWeek]} —{' '}
+                      {ranges.length
+                        ? ranges
+                            .map(
+                              range =>
+                                `${minuteLabel(range.startMinute)}–${minuteLabel(range.endMinute)}`,
+                            )
+                            .join(', ')
+                        : 'fermé'}
+                    </option>
+                  )
+                })}
+              </select>
+            </label>
+          ) : null}
+
+          {shortcut === 'COPY_WEEKLY' || shortcut === 'VACATION' ? (
+            <div className="grid gap-1.5 text-sm font-medium">
+              Type
+              <input
+                type="hidden"
+                name="type"
+                value={shortcut === 'COPY_WEEKLY' ? 'AVAILABLE' : 'UNAVAILABLE'}
+              />
+              <p className="flex min-h-11 items-center rounded-xl border bg-muted px-3 font-normal">
+                {shortcut === 'COPY_WEEKLY' ? 'Ouverture' : 'Fermeture'}
+              </p>
+            </div>
+          ) : (
+            <label className="grid gap-1.5 text-sm font-medium">
+              Type
+              <select
+                name="type"
+                value={type}
+                onChange={event => setType(event.target.value as typeof type)}
+                className={formControlClass}
+              >
+                <option value="UNAVAILABLE">Fermeture</option>
+                <option value="AVAILABLE">Ouverture</option>
+              </select>
+            </label>
+          )}
+
+          {shortcut === 'CUSTOM' ? (
+            <div className="grid grid-cols-2 gap-4">
+              <label className="grid gap-1.5 text-sm font-medium">
+                Début
+                <input
+                  name="startTime"
+                  type="time"
+                  step={900}
+                  required
+                  value={startTime}
+                  onChange={event => setStartTime(event.target.value)}
+                  className={formControlClass}
+                />
+              </label>
+              <label className="grid gap-1.5 text-sm font-medium">
+                Fin
+                <input
+                  name="endTime"
+                  type="time"
+                  step={900}
+                  required
+                  value={endTime}
+                  onChange={event => setEndTime(event.target.value)}
+                  className={formControlClass}
+                />
+              </label>
+            </div>
+          ) : (
+            <>
+              <input type="hidden" name="startTime" value="" />
+              <input type="hidden" name="endTime" value="" />
+            </>
+          )}
+
+          <label className="grid gap-1.5 text-sm font-medium">
+            Motif{' '}
+            <span className="font-normal text-muted-foreground">
+              (optionnel)
+            </span>
+            <input
+              name="label"
+              maxLength={120}
+              value={label}
+              onChange={event => setLabel(event.target.value)}
+              placeholder="Vacances, formation, ouverture…"
+              className={formControlClass}
+            />
+          </label>
+
+          {tooLongRange ? (
+            <p role="alert" className="text-sm text-destructive">
+              Cette période dépasse la limite de 180 jours.
+            </p>
+          ) : hasConflict ? (
+            <p
+              role="alert"
+              className="rounded-xl border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive"
+            >
+              Cette plage se superpose à une ouverture ou à une fermeture déjà
+              enregistrée. Modifiez-la avant l’envoi.
+            </p>
+          ) : invalidRange ? (
+            <p role="alert" className="text-sm text-destructive">
+              La date de fin doit suivre la date de début.
+            </p>
+          ) : missingEndDate ? (
+            <p role="alert" className="text-sm text-destructive">
+              Indiquez jusqu’à quand la période s’étend — le jour même si elle
+              ne dure qu’une journée.
+            </p>
+          ) : missingCopiedHours ? (
+            <p role="alert" className="text-sm text-destructive">
+              Ce jour modèle ne contient aucun horaire à copier.
+            </p>
+          ) : null}
+
+          <Button
+            type="submit"
+            disabled={
+              pending ||
+              hasConflict ||
+              invalidRange ||
+              missingEndDate ||
+              tooLongRange ||
+              missingCopiedHours ||
+              !proposedSegments.length
+            }
+            className="w-full"
+          >
+            {pending ? (
+              <LoaderCircle className="size-4 animate-spin" />
+            ) : (
+              <Plus className="size-4" />
+            )}
+            Enregistrer ce jour particulier
+          </Button>
+        </form>
+      </SidePanel>
+    </div>
   )
 }

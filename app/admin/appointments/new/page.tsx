@@ -1,11 +1,10 @@
 import { formatInTimeZone } from 'date-fns-tz'
-import { ChevronLeft } from 'lucide-react'
-import Link from 'next/link'
+import { CalendarPlus } from 'lucide-react'
 import { redirect } from 'next/navigation'
 import { Suspense } from 'react'
+import { AdminPage, AdminPageHeader } from '@/components/admin/admin-page'
 import { AdminSkeleton } from '@/components/admin/admin-skeleton'
 import { AppointmentForm } from '@/components/admin/appointment-form'
-import { Button } from '@/components/ui/button'
 import { isAdminAppointmentTime } from '@/lib/admin/agenda-timeline'
 import prisma from '@/lib/core/prisma'
 import { getAdminSession } from '@/lib/core/session-cookies'
@@ -24,7 +23,7 @@ interface NewAppointmentPageProps {
 const NewAppointmentPage = ({
   searchParams,
 }: Readonly<NewAppointmentPageProps>) => (
-  <Suspense fallback={<AdminSkeleton variant="form" maxWidth="max-w-3xl" />}>
+  <Suspense fallback={<AdminSkeleton variant="form" />}>
     <NewAppointment searchParams={searchParams} />
   </Suspense>
 )
@@ -104,28 +103,22 @@ const NewAppointment = async ({
     : customer
 
   return (
-    <main className="mx-auto min-h-screen max-w-3xl px-4 py-6 sm:px-8">
-      <Button
-        asChild
-        variant="ghost"
-        size="sm"
-        className="-ml-2 text-muted-foreground"
-      >
-        <Link href={`/admin?date=${date}`}>
-          <ChevronLeft className="size-4" /> Agenda
-        </Link>
-      </Button>
-      <h1 className="mt-2 font-heading text-title font-bold">
-        Nouveau rendez-vous
-      </h1>
-      <p className="mt-2 text-sm text-muted-foreground">
-        {duplicate
-          ? 'Le soin et les coordonnées ont été repris. Choisissez un nouveau créneau avant de créer le rendez-vous.'
-          : customer
-            ? 'Les coordonnées ont été reprises. Choisissez le soin et le créneau.'
-            : 'Nom, e-mail et téléphone sont nécessaires. Les heures hors ouverture sont possibles après confirmation.'}
-      </p>
-      <div className="mt-7">
+    <AdminPage>
+      <AdminPageHeader
+        backHref={`/admin?date=${date}`}
+        backLabel="Agenda"
+        eyebrow="Arbeauté"
+        title="Nouveau rendez-vous"
+        icon={CalendarPlus}
+        description={
+          duplicate
+            ? 'Le soin et les coordonnées ont été repris. Choisissez un nouveau créneau avant de créer le rendez-vous.'
+            : customer
+              ? 'Les coordonnées ont été reprises. Choisissez le soin et le créneau.'
+              : 'Nom, e-mail et téléphone sont nécessaires. Les heures hors ouverture sont possibles après confirmation.'
+        }
+      />
+      <div className="mt-6">
         <AppointmentForm
           key={`new-${duplicateId ?? customerId ?? 'empty'}-${date}-${time}`}
           services={services}
@@ -140,7 +133,7 @@ const NewAppointment = async ({
           }}
         />
       </div>
-    </main>
+    </AdminPage>
   )
 }
 
