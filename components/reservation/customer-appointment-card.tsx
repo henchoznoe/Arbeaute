@@ -17,9 +17,11 @@ import {
 import type { DayAvailability } from '@/lib/reservation/availability'
 import {
   availabilityStateLabels,
+  clampDateKey,
   formatCalendarDate,
   formatCalendarPeriod,
 } from '@/lib/reservation/calendar-view'
+import { describeConfirmationDelivery } from '@/lib/reservation/confirmation-wording'
 import { addLocalDays } from '@/lib/reservation/time'
 import { capitalizeFirst } from '@/lib/utils/format'
 import { openCalendar } from './calendar-download'
@@ -32,6 +34,8 @@ interface CustomerAppointmentCardProps {
   changeDeadlineLabel: string
   customerChangeCutoffLabel: string
   dateLabel: string
+  /** Jour du rendez-vous en cours : le calendrier s'y ouvre. */
+  dateKey: string
   id: string
   maxDate: string
   minDate: string
@@ -49,6 +53,7 @@ export const CustomerAppointmentCard = ({
   changeDeadlineLabel,
   customerChangeCutoffLabel,
   dateLabel,
+  dateKey,
   id,
   maxDate,
   minDate,
@@ -96,9 +101,18 @@ export const CustomerAppointmentCard = ({
     })
   }, [id, moving, viewStart])
 
+  const deliveryNotice = result?.ok
+    ? describeConfirmationDelivery(result.notifiedEmail)
+    : null
+
   const openMoveCalendar = () => {
-    setDate(minDate)
-    setViewStart(minDate)
+    // Le calendrier s'ouvrait sur la première date réservable : quelqu'un dont
+    // le rendez-vous est dans trois semaines devait parcourir trois semaines à
+    // la main pour retrouver le sien. Il s'ouvre désormais sur sa semaine, et
+    // décaler d'un jour ne demande plus aucun changement de semaine.
+    const anchor = clampDateKey(dateKey, minDate, maxViewStart)
+    setDate(anchor)
+    setViewStart(anchor)
     setStartsAt('')
     setResult(null)
     setNextSlotNotice(null)
@@ -106,13 +120,11 @@ export const CustomerAppointmentCard = ({
   }
 
   const changeWeek = (amount: number) => {
-    const candidate = addLocalDays(viewStart, amount)
-    const next =
-      candidate < minDate
-        ? minDate
-        : candidate > maxViewStart
-          ? maxViewStart
-          : candidate
+    const next = clampDateKey(
+      addLocalDays(viewStart, amount),
+      minDate,
+      maxViewStart,
+    )
     setViewStart(next)
     setDate(next)
     setStartsAt('')
@@ -311,7 +323,7 @@ export const CustomerAppointmentCard = ({
       />
 
       {result ? (
-        <p
+        <div
           className={
             result.ok
               ? 'mt-4 rounded-xl bg-success-subtle p-3 text-sm text-success-strong'
@@ -319,8 +331,13 @@ export const CustomerAppointmentCard = ({
           }
           role={result.ok ? 'status' : 'alert'}
         >
-          {result.message}
-        </p>
+          <p>{result.message}</p>
+          {/* Le même traitement que l'écran de confirmation : on annonce
+              l'adresse à laquelle le message part, et rien quand rien ne part. */}
+          {deliveryNotice ? (
+            <p className="mt-1">{deliveryNotice.title}</p>
+          ) : null}
+        </div>
       ) : null}
     </article>
   )

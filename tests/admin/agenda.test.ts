@@ -142,55 +142,73 @@ describe('multi-day availability exceptions', () => {
 })
 
 describe('manual admin appointments', () => {
-  it('does not create a customer activity', async () => {
-    const createActivity = vi.fn()
-    const created = {
-      id: 'appointment-admin',
-      serviceId: 'service',
-      serviceNameSnapshot: 'Soin',
-      startsAt: new Date('2099-08-10T12:00:00.000Z'),
-      source: 'ADMIN',
-      status: 'CONFIRMED',
-    }
-    const transaction = {
-      appointment: {
-        findFirst: vi.fn().mockResolvedValue(null),
-        create: vi.fn().mockResolvedValue(created),
-      },
-      service: {
-        findUnique: vi.fn().mockResolvedValue({
-          id: 'service',
-          name: 'Soin',
-          priceCents: 10_000,
-          durationMinutes: 60,
-          preparationMinutes: 0,
-          cleanupMinutes: 0,
-          isArchived: false,
-        }),
-      },
-      appointmentActivity: { create: createActivity },
-      customer: {
-        findUnique: vi.fn().mockResolvedValue(null),
-        upsert: vi.fn().mockResolvedValue({ id: 'customer-manual' }),
-      },
-      auditEvent: { create: vi.fn().mockResolvedValue({ id: 'audit-event' }) },
-    }
-    const database = {
-      $transaction: vi.fn(async callback => callback(transaction)),
-    } as unknown as PrismaClient
+  const startsAt = new Date('2099-08-10T12:00:00.000Z')
+  const created = {
+    id: 'appointment-admin',
+    serviceId: 'service',
+    serviceNameSnapshot: 'Soin',
+    startsAt,
+    source: 'ADMIN',
+    status: 'CONFIRMED',
+    allowsOverlap: false,
+  }
 
-    await expect(
-      saveAdminAppointmentSerializable(database, {
-        serviceId: 'service',
-        startsAt: new Date('2099-08-10T12:00:00.000Z'),
-        firstName: 'Arzu',
-        lastName: 'Test',
-        email: 'arzu@example.com',
-        phone: '+41791234567',
-        comment: null,
+  const buildTransaction = (
+    conflict: { id: string; startsAt: Date } | null = null,
+  ) => ({
+    appointment: {
+      findFirst: vi.fn().mockResolvedValue(conflict),
+      create: vi
+        .fn()
+        .mockImplementation(async ({ data }) => ({ ...created, ...data })),
+    },
+    service: {
+      findUnique: vi.fn().mockResolvedValue({
+        id: 'service',
+        name: 'Soin',
+        priceCents: 10_000,
+        durationMinutes: 60,
+        preparationMinutes: 0,
+        cleanupMinutes: 0,
+        isArchived: false,
       }),
-    ).resolves.toBe(created)
-    expect(createActivity).not.toHaveBeenCalled()
+    },
+    appointmentActivity: { create: vi.fn() },
+    customer: {
+      findUnique: vi.fn().mockResolvedValue(null),
+      upsert: vi.fn().mockResolvedValue({ id: 'customer-manual' }),
+    },
+    auditEvent: { create: vi.fn().mockResolvedValue({ id: 'audit-event' }) },
+  })
+
+  const asDatabase = (transaction: ReturnType<typeof buildTransaction>) =>
+    ({
+      $transaction: vi.fn(async callback => callback(transaction)),
+    }) as unknown as PrismaClient
+
+  const input = {
+    serviceId: 'service',
+    startsAt,
+    firstName: 'Arzu',
+    lastName: 'Test',
+    email: 'arzu@example.com',
+    phone: '+41791234567',
+    comment: null,
+  }
+
+  it('does not create a customer activity', async () => {
+    const transaction = buildTransaction()
+
+    const result = await saveAdminAppointmentSerializable(
+      asDatabase(transaction),
+      input,
+    )
+
+    // Une création ne rapporte aucun état précédent : c'est ce `null` qui
+    // dit à l'action d'envoyer une confirmation plutôt qu'un déplacement.
+    expect(result.previous).toBeNull()
+    expect(result.appointment.id).toBe('appointment-admin')
+    expect(transaction.appointmentActivity.create).not.toHaveBeenCalled()
     expect(transaction.auditEvent.create).toHaveBeenCalledWith({
       data: expect.objectContaining({
         actorType: 'ADMIN',
@@ -199,6 +217,58 @@ describe('manual admin appointments', () => {
         entityId: created.id,
         action: 'CREATED',
       }),
+    })
+  })
+
+  it('refuse une superposition non confirmée, en nommant l’heure occupée', async () => {
+    const transaction = buildTransaction({
+      id: 'appointment-existant',
+      startsAt: new Date('2099-08-10T12:00:00.000Z'),
+    })
+
+    await expect(
+      saveAdminAppointmentSerializable(asDatabase(transaction), input),
+    ).rejects.toMatchObject({ code: 'OVERLAP', conflictTime: '14:00' })
+    expect(transaction.appointment.create).not.toHaveBeenCalled()
+  })
+
+  it('marque le rendez-vous quand Arzu confirme la superposition', async () => {
+    const transaction = buildTransaction({
+      id: 'appointment-existant',
+      startsAt: new Date('2099-08-10T12:00:00.000Z'),
+    })
+
+    await saveAdminAppointmentSerializable(asDatabase(transaction), {
+      ...input,
+      acknowledgeOverlap: true,
+    })
+
+    expect(transaction.appointment.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({ allowsOverlap: true }),
+    })
+    // La marque se relit dans l'historique : c'est une décision, pas un
+    // accident.
+    expect(transaction.auditEvent.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        changes: expect.objectContaining({
+          after: expect.objectContaining({ allowsOverlap: true }),
+        }),
+      }),
+    })
+  })
+
+  it('n’écrit la marque que si une superposition existe vraiment', async () => {
+    // Le drapeau vient du conflit constaté, pas de la case cochée : déplacer
+    // le rendez-vous sur une heure libre le rend à la contrainte.
+    const transaction = buildTransaction()
+
+    await saveAdminAppointmentSerializable(asDatabase(transaction), {
+      ...input,
+      acknowledgeOverlap: true,
+    })
+
+    expect(transaction.appointment.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({ allowsOverlap: false }),
     })
   })
 })

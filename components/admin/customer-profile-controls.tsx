@@ -24,7 +24,7 @@ import type {
   AdminCustomer,
   AdminCustomerDuplicate,
 } from '@/lib/admin/customer-profile'
-import { RESERVATION_TIME_ZONE } from '@/lib/reservation/constants'
+import { formatDayDate } from '@/lib/reservation/time'
 
 export const CustomerQuickActions = ({
   customerId,
@@ -218,12 +218,12 @@ export const CustomerProfileForm = ({
         ) : (
           <Save className="size-4" />
         )}
-        Enregistrer la fiche
+        Enregistrer le client
       </Button>
       <AppToast
         open={toastOpen}
         onOpenChange={setToastOpen}
-        title={isError ? 'Enregistrement impossible' : 'Fiche enregistrée'}
+        title={isError ? 'Enregistrement impossible' : 'Client enregistré'}
         description={message ?? undefined}
         variant={isError ? 'danger' : 'success'}
       />
@@ -231,11 +231,7 @@ export const CustomerProfileForm = ({
   )
 }
 
-const formatLastSeen = (date: Date): string =>
-  new Intl.DateTimeFormat('fr-CH', {
-    timeZone: RESERVATION_TIME_ZONE,
-    dateStyle: 'medium',
-  }).format(new Date(date))
+const formatLastSeen = (date: Date): string => formatDayDate(new Date(date))
 
 export const CustomerDuplicateList = ({
   targetId,
@@ -292,8 +288,8 @@ export const CustomerDuplicateList = ({
               </p>
               <ConfirmDialog
                 title={`Fusionner ${name} ?`}
-                description={`Les ${duplicate._count.appointments} rendez-vous seront rattachés à cette fiche ; chacun garde le nom et le prix qu’il avait. L’autre fiche sera supprimée, et le changement inscrit dans l’historique des modifications.`}
-                confirmLabel="Fusionner les fiches"
+                description={`Les ${duplicate._count.appointments} rendez-vous seront rattachés à ce client ; chacun garde le nom et le prix qu’il avait. L’autre client sera supprimé, et le changement inscrit dans l’historique des modifications.`}
+                confirmLabel="Fusionner les deux clients"
                 onConfirm={() => merge(duplicate.id)}
                 pending={pending}
                 trigger={
@@ -314,7 +310,7 @@ export const CustomerDuplicateList = ({
       <AppToast
         open={toastOpen}
         onOpenChange={setToastOpen}
-        title={isError ? 'Fusion impossible' : 'Fiches fusionnées'}
+        title={isError ? 'Fusion impossible' : 'Clients fusionnés'}
         description={message ?? undefined}
         variant={isError ? 'danger' : 'success'}
       />

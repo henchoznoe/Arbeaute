@@ -152,7 +152,13 @@ Le détail est documenté dans [`AGENTS.md`](AGENTS.md). Les points structurants
   créneau sur trois mois coûte le même nombre de requêtes qu'un seul jour.
 - **Réservation concurrente** — transactions `Serializable` avec reprise, doublées
   d'une contrainte d'exclusion GIST sur l'intervalle occupé (préparation et
-  nettoyage inclus) comme garde-fou final.
+  nettoyage inclus) comme garde-fou final. Seule exception : un rendez-vous
+  qu'Arzu a volontairement superposé à un autre depuis l'agenda porte
+  `allowsOverlap`, ce qui le sort de la contrainte — sans quoi il serait
+  impossible à écrire. Deux rendez-vous ordinaires restent inconciliables, et
+  une réservation venue du site reste protégée par le recalcul des créneaux
+  dans la transaction, qui soustrait tous les rendez-vous confirmés, marqués ou
+  non.
 - **Fuseau horaire** — tout est ancré sur `Europe/Zurich`, jamais sur celui du
   visiteur ; les dates circulent sous forme de clés `YYYY-MM-DD`.
 
@@ -160,18 +166,23 @@ Le détail est documenté dans [`AGENTS.md`](AGENTS.md). Les points structurants
 
 Déploiement sur Vercel depuis `main`. `develop` est la branche de travail.
 
-**Seule la production migre la base.** Le build est partagé par tous les
-déploiements ; `scripts/migrate-production.ts` n'exécute `prisma migrate deploy`
-que lorsque `VERCEL_ENV` vaut `production`. Sans ce filtre, chaque preview de
-`develop` appliquerait ses migrations à la base de production, qui prendrait de
-l'avance sur le code servi depuis `main` — une colonne `NOT NULL` non publiée
-suffit à casser toute réservation.
+**Une base par environnement.** La branche Neon `main` est réservée à la portée
+*Production* de Vercel ; une base Neon distincte sert la portée *Preview*. Chaque
+déploiement migre donc la sienne, et le build est redevenu ordinaire :
+`prisma generate && prisma migrate deploy && next build`.
 
-Ce filtre ne dispense pas de cloisonner les données : tant que les previews
-partagent `DATABASE_URL` avec la production, elles lisent et écrivent les vraies
-données de la clientèle. Donner aux previews leur propre base (branche Neon)
-reste la
-protection de fond.
+C'est le cloisonnement des données qui rend cette simplicité possible. Tant que
+les previews partageaient `DATABASE_URL` avec la production, elles lisaient et
+écrivaient les vraies données de la clientèle, et deux contournements étaient
+nécessaires pour limiter la casse ; les deux ont disparu avec le partage.
+
+**Le seed ne fait pas partie du build**, et ne doit pas y entrer : ses `upsert`
+portent un `update` complet, qui réécrirait sur la production les prix et
+descriptions modifiés depuis l'administration. Une base de preview neuve se
+peuple à la main — voir [docs/data-operations.md](docs/data-operations.md).
+
+La règle des migrations destructives en deux temps reste en vigueur : la
+production migre toujours **avant** que le nouveau code serve le trafic.
 
 **Variables à définir dans le projet Vercel :**
 

@@ -1,12 +1,11 @@
-import { ChevronLeft } from 'lucide-react'
-import Link from 'next/link'
 import { notFound, redirect } from 'next/navigation'
 import { Suspense } from 'react'
+import { AdminPage, AdminPageHeader } from '@/components/admin/admin-page'
 import { AdminSkeleton } from '@/components/admin/admin-skeleton'
 import { ServiceConsentUpload } from '@/components/admin/service-consent-upload'
 import { ServiceForm } from '@/components/admin/service-form'
 import { ServiceImageUpload } from '@/components/admin/service-image-upload'
-import { Button } from '@/components/ui/button'
+import { StatusBadge } from '@/components/ui/status-badge'
 import { updateService } from '@/lib/actions/catalog'
 import prisma from '@/lib/core/prisma'
 import { getAdminSession } from '@/lib/core/session-cookies'
@@ -20,7 +19,7 @@ const EditServicePage = ({
   params,
   searchParams,
 }: Readonly<EditServicePageProps>) => (
-  <Suspense fallback={<AdminSkeleton variant="form" maxWidth="max-w-5xl" />}>
+  <Suspense fallback={<AdminSkeleton variant="form" />}>
     <EditService params={params} searchParams={searchParams} />
   </Suspense>
 )
@@ -42,42 +41,39 @@ const EditService = async ({
   if (!service) notFound()
 
   return (
-    <main className="mx-auto min-h-screen max-w-5xl px-4 py-6 sm:px-8">
-      <Button
-        asChild
-        variant="ghost"
-        size="sm"
-        className="-ml-2 text-muted-foreground"
-      >
-        <Link href="/admin/services">
-          <ChevronLeft className="size-4" /> Prestations
-        </Link>
-      </Button>
-      <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
-        <h1 className="font-heading text-title font-bold">{service.name}</h1>
-        {saved ? (
-          <p className="rounded-full bg-success-subtle px-3 py-1 text-sm text-success">
-            Modifications enregistrées
-          </p>
-        ) : null}
-      </div>
-      <div className="mt-8 space-y-6">
+    <AdminPage>
+      <AdminPageHeader
+        backHref="/admin/services"
+        backLabel="Prestations"
+        eyebrow="Arbeauté"
+        title={service.name}
+        aside={
+          saved ? (
+            <StatusBadge variant="success">
+              Modifications enregistrées
+            </StatusBadge>
+          ) : null
+        }
+      />
+      <div className="mt-6 grid items-start gap-6 xl:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)]">
         <ServiceForm
           action={updateService}
           categories={categories}
           service={service}
           submitLabel="Enregistrer"
         />
-        <ServiceImageUpload
-          serviceId={service.id}
-          imageUrl={service.imageUrl}
-        />
-        <ServiceConsentUpload
-          serviceId={service.id}
-          consentFormUrl={service.consentFormUrl}
-        />
+        <div className="min-w-0 space-y-6">
+          <ServiceImageUpload
+            serviceId={service.id}
+            imageUrl={service.imageUrl}
+          />
+          <ServiceConsentUpload
+            serviceId={service.id}
+            consentFormUrl={service.consentFormUrl}
+          />
+        </div>
       </div>
-    </main>
+    </AdminPage>
   )
 }
 

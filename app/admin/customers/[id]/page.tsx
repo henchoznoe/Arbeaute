@@ -9,6 +9,7 @@ import {
 import Link from 'next/link'
 import { notFound, redirect } from 'next/navigation'
 import { Suspense } from 'react'
+import { AdminPage } from '@/components/admin/admin-page'
 import { AdminSkeleton } from '@/components/admin/admin-skeleton'
 import { AppointmentStatusActions } from '@/components/admin/appointment-status-actions'
 import {
@@ -25,10 +26,9 @@ import {
 } from '@/lib/admin/customer-profile'
 import prisma from '@/lib/core/prisma'
 import { getAdminSession } from '@/lib/core/session-cookies'
-import { RESERVATION_TIME_ZONE } from '@/lib/reservation/constants'
 import { formatServiceLabel } from '@/lib/reservation/service-label'
-import { formatCompactMoment } from '@/lib/reservation/time'
-import { capitalizeFirst } from '@/lib/utils/format'
+import { formatCompactMoment, formatDayDate } from '@/lib/reservation/time'
+import { capitalizeFirst, formatPrice } from '@/lib/utils/format'
 import type { AppointmentStatus } from '@/prisma/generated/prisma/enums'
 
 interface CustomerPageProps {
@@ -48,14 +48,6 @@ const statusVariants = {
   CANCELLED: 'neutral',
   NO_SHOW: 'danger',
 } as const
-
-const formatMoment = (date: Date): string => formatCompactMoment(date)
-
-const formatDate = (date: Date): string =>
-  new Intl.DateTimeFormat('fr-CH', {
-    timeZone: RESERVATION_TIME_ZONE,
-    dateStyle: 'long',
-  }).format(date)
 
 const CustomerAppointmentList = ({
   appointments,
@@ -85,23 +77,26 @@ const CustomerAppointmentList = ({
             >
               <span className="min-w-0 flex-1">
                 <span className="block text-sm font-semibold">
-                  {capitalizeFirst(formatMoment(appointment.startsAt))}
+                  {capitalizeFirst(formatCompactMoment(appointment.startsAt))}
                 </span>
                 <span className="mt-1 block truncate text-xs text-muted-foreground">
                   {formatServiceLabel(
                     appointment.serviceNameSnapshot,
                     appointment.service.category?.name,
                   )}{' '}
-                  ·{' '}
-                  {(appointment.servicePriceCents / 100).toLocaleString(
-                    'fr-CH',
-                  )}{' '}
-                  CHF
+                  · {formatPrice(appointment.servicePriceCents)}
                 </span>
                 <span className="mt-2 block">
                   <StatusBadge variant={statusVariants[appointment.status]}>
                     {statusLabels[appointment.status]}
                   </StatusBadge>
+                  {/* Un rendez-vous ancien, saisi avant que l'adresse ne
+                      devienne obligatoire : aucun message ne peut l'atteindre. */}
+                  {appointment.customerEmail ? null : (
+                    <span className="ml-2 text-xs text-muted-foreground">
+                      Sans adresse e-mail
+                    </span>
+                  )}
                 </span>
               </span>
               <ChevronRight className="mt-2 size-4 shrink-0 text-muted-foreground" />
@@ -121,7 +116,7 @@ const CustomerAppointmentList = ({
 }
 
 const CustomerPage = ({ params }: Readonly<CustomerPageProps>) => (
-  <Suspense fallback={<AdminSkeleton variant="form" maxWidth="max-w-5xl" />}>
+  <Suspense fallback={<AdminSkeleton variant="form" />}>
     <CustomerProfile params={params} />
   </Suspense>
 )
@@ -137,7 +132,7 @@ const CustomerProfile = async ({ params }: Readonly<CustomerPageProps>) => {
     .join(' ')
 
   return (
-    <main className="mx-auto min-h-screen max-w-5xl px-4 py-5 sm:px-8 sm:py-8">
+    <AdminPage>
       <Button
         asChild
         variant="ghost"
@@ -148,42 +143,64 @@ const CustomerProfile = async ({ params }: Readonly<CustomerPageProps>) => {
           <ChevronLeft className="size-4" /> Recherche
         </Link>
       </Button>
-      <header className="mt-2 rounded-3xl border bg-card p-5 shadow-sm sm:p-6">
+      <header className="mt-1 rounded-3xl border bg-card p-5 shadow-sm sm:p-6">
         <div className="flex items-start gap-3">
           <span className="grid size-12 shrink-0 place-items-center rounded-2xl bg-primary/10 text-primary">
             <UserRound className="size-6" />
           </span>
           <div className="min-w-0">
-            <p className="text-sm font-medium text-brand">Fiche</p>
+            <p className="text-sm font-medium text-brand">Client</p>
             <h1 className="break-words font-heading text-title font-bold">
               {customerName}
             </h1>
             <p className="mt-1 text-xs text-muted-foreground">
-              Connue depuis le {formatDate(customer.firstSeenAt)} · dernière
-              activité le {formatDate(customer.lastSeenAt)}
+              Connue depuis le {formatDayDate(customer.firstSeenAt)} · dernière
+              activité le {formatDayDate(customer.lastSeenAt)}
             </p>
           </div>
         </div>
         <CustomerQuickActions customerId={customer.id} phone={customer.phone} />
       </header>
 
+      {/* Quatre réponses aux questions qu'Arzu se pose en ouvrant un client,
+          à la place de l'énumération des statuts de la base. Les comptages
+          détaillés n'ont pas disparu : ils sont descendus avec l'historique,
+          où ils sont à leur place. */}
       <section
-        className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-5"
-        aria-label="Indicateurs de la fiche"
+        className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-4"
+        aria-label="L’essentiel de ce client"
       >
-        {Object.entries(statusLabels).map(([status, label]) => (
-          <article key={status} className="rounded-2xl border bg-card p-4">
-            <p className="text-2xl font-bold tabular-nums">
-              {profile.statusCounts[status as AppointmentStatus]}
-            </p>
-            <p className="text-xs text-muted-foreground">{label}</p>
-          </article>
-        ))}
-        <article className="col-span-2 rounded-2xl border bg-primary/5 p-4 sm:col-span-1">
+        <article className="rounded-2xl border bg-primary/5 p-4">
           <p className="text-2xl font-bold tabular-nums">
             {profile.totalVisits}
           </p>
-          <p className="text-xs text-muted-foreground">Visites réalisées</p>
+          <p className="text-xs text-muted-foreground">
+            {profile.totalVisits > 1 ? 'visites' : 'visite'}
+          </p>
+        </article>
+        <article className="rounded-2xl border bg-card p-4">
+          <p className="text-base font-semibold">
+            {profile.lastVisitAt
+              ? capitalizeFirst(formatDayDate(profile.lastVisitAt))
+              : 'Jamais encore'}
+          </p>
+          <p className="mt-1 text-xs text-muted-foreground">Dernière venue</p>
+        </article>
+        <article className="rounded-2xl border bg-card p-4">
+          <p className="text-base font-semibold break-words">
+            {profile.usualServiceLabel ?? 'Rien d’habituel'}
+          </p>
+          <p className="mt-1 text-xs text-muted-foreground">Soin habituel</p>
+        </article>
+        <article className="rounded-2xl border bg-card p-4">
+          <p className="text-base font-semibold">
+            {profile.upcoming[0]
+              ? capitalizeFirst(
+                  formatCompactMoment(profile.upcoming[0].startsAt),
+                )
+              : 'Rien de prévu'}
+          </p>
+          <p className="mt-1 text-xs text-muted-foreground">Revient</p>
         </article>
       </section>
 
@@ -206,6 +223,17 @@ const CustomerProfile = async ({ params }: Readonly<CustomerPageProps>) => {
               <History className="size-5 text-primary" />
               <h2 className="text-xl font-semibold">Historique récent</h2>
             </div>
+            {/* Les comptages détaillés vivent ici, au contact de ce qu'ils
+                comptent. Les absences ne s'affichent que s'il y en a : un
+                « 0 » mis en avant est une accusation gratuite. */}
+            <p className="mt-2 text-xs text-muted-foreground">
+              {profile.totalAppointments} rendez-vous au total ·{' '}
+              {profile.statusCounts.CANCELLED} annulé
+              {profile.statusCounts.CANCELLED > 1 ? 's' : ''}
+              {profile.statusCounts.NO_SHOW > 0
+                ? ` · ${profile.statusCounts.NO_SHOW} absence${profile.statusCounts.NO_SHOW > 1 ? 's' : ''}`
+                : ''}
+            </p>
             <CustomerAppointmentList
               appointments={profile.history}
               emptyTitle="Aucun historique"
@@ -241,7 +269,7 @@ const CustomerProfile = async ({ params }: Readonly<CustomerPageProps>) => {
           </Button>
         </section>
       </div>
-    </main>
+    </AdminPage>
   )
 }
 

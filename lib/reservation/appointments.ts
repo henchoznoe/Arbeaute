@@ -23,7 +23,8 @@ export class ReservationError extends Error {
 interface PublicAppointmentInput {
   serviceId: string
   startsAt: Date
-  firstName: string
+  /** Facultatif : le client peut n'avoir jamais porté de prénom. */
+  firstName: string | null
   lastName: string
   email: string
   phone: string
@@ -132,7 +133,7 @@ export const createAppointmentSerializable = async (
               status: appointment.status,
             },
           })
-          return appointment
+          return { appointment, customer }
         },
         { isolationLevel: 'Serializable' },
       )

@@ -182,10 +182,18 @@ the row and audit event in one transaction, then invalidates every public view.
   build runs `prisma migrate deploy` *before* the new code serves traffic, so a
   migration that drops a column the live code still writes breaks bookings for
   the length of the deployment. Add and backfill in one release, remove in the
-  next — see the record in `docs/data-operations.md`. Previews never migrate
-  (`scripts/migrate-production.ts`) yet read the production database, so a
-  release that adds a table must tolerate its absence — see
-  `getAgendaSettings()`.
+  next — see the record in `docs/data-operations.md`. This rule survives the
+  database split below: production still migrates itself before serving.
+- **One database per environment.** The Neon `main` branch is scoped to
+  *Production* in Vercel; a separate Neon database is scoped to *Preview*. Every
+  deployment migrates its own database, which is why `build` is an ordinary
+  `prisma generate && prisma migrate deploy && next build` again — a preview can
+  no longer touch real bookings, and no code has to tolerate a missing table.
+  **The seed is deliberately not part of `build`**, unlike some sibling
+  projects: `prisma/seed.ts` upserts with a full `update`, so running it on
+  production would overwrite edited prices and descriptions, force
+  `preparationMinutes`/`cleanupMinutes` back to 0 and un-archive archived
+  services. Seed a fresh preview database once, by hand.
 - `proxy.ts` (Next middleware) gates every `/admin/*` path except those listed in
   `PUBLIC_ADMIN_PATHS` — currently the login page and the admin PWA manifest,
   which browsers fetch without cookies.
@@ -205,21 +213,35 @@ counts its kilobytes. The layering matters:
 - `notifications.ts` queues the send with `after()`, so a booking never waits
   on Resend and a Resend outage cannot fail a reservation.
 
-`RESEND_API_KEY`, `RESEND_FROM`, `ADMIN_NOTIFICATION_EMAIL` and `CRON_SECRET`
-are **optional** in `lib/core/env.ts`: without them the app behaves exactly as
-before, silently sending nothing. Free-tier limits (100/day, 3000/month) are
+`RESEND_API_KEY`, `RESEND_FROM` and `ADMIN_NOTIFICATION_EMAIL` are **optional**
+in `lib/core/env.ts`: without them the app behaves exactly as before, silently
+sending nothing. Free-tier limits (100/day, 3000/month) are
 counted from successful sends and surfaced at `/admin/emails`, where a failed
 message can be resent — its body is rebuilt from the appointment rather than
 stored.
 
-Reminders and Arzu's evening digest share the single daily cron declared in
-`vercel.json`, which is all the Vercel Hobby plan allows.
+**Four messages exist.** Three are triggered by a booking — confirmation,
+reschedule, cancellation — and one by the clock: Arzu's weekly summary, sent
+Sunday evening by the single cron in `vercel.json`. The day-before reminder and
+the nightly digest were removed in v3: the owner does not want a daily message.
+`APPOINTMENT_REMINDER` and `DAILY_DIGEST` remain in the `EmailKind` enum because
+past `EmailDelivery` rows carry them and dropping an enum value would be a
+destructive migration; `emailKindLabels` still translates them so the history
+reads in French, but `isResendableKind` excludes them — no template can rebuild
+them any more.
 
-**Cron schedules are UTC and ignore daylight saving.** `0 18 * * *` fires at
-20:00 in Bulle in summer and 19:00 in winter. Hobby triggers within the hour,
-not to the minute, so nothing in the job may depend on an exact time. Vercel
-sends `Authorization: Bearer $CRON_SECRET`; without that variable the route
-answers 503 rather than running unauthenticated.
+**Cron schedules are UTC and ignore daylight saving.** `0 18 * * 0` fires at
+20:00 in Bulle in summer and 19:00 in winter, and Hobby triggers within the hour
+rather than to the minute — so nothing in `runWeeklyDigest` depends on an exact
+time: the covered week comes from local date keys, never from "the last 168
+hours". Vercel injects `CRON_SECRET` only while a cron is declared in
+`vercel.json`; without it the route answers 503 rather than running
+unauthenticated.
+
+**A blank optional env var means "absent".** `lib/core/env.ts` wraps optional
+variables in a helper mapping `''` to `undefined`: `.optional()` alone only
+covers a *missing* variable, so `CRON_SECRET=""` in a `.env.local` used to fail
+`.min(16)` and break the build.
 
 ### PWA
 

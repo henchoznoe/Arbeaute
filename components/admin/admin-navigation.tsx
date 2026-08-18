@@ -4,17 +4,17 @@ import {
   Activity,
   CalendarDays,
   CirclePlus,
+  House,
   LogOut,
-  Menu,
   Search,
   Settings2,
 } from 'lucide-react'
 import Link from 'next/link'
 import { usePathname, useSearchParams } from 'next/navigation'
 import { useEffect, useState } from 'react'
-import { InstallAppButton } from '@/components/pwa/install-app-button'
 import { Button } from '@/components/ui/button'
 import { navigationItemBaseClass } from '@/components/ui/navigation'
+import { SubmitButton } from '@/components/ui/submit-button'
 import { logoutAdmin } from '@/lib/actions/admin-auth'
 import {
   ADMIN_AGENDA_DATE_EVENT,
@@ -45,11 +45,17 @@ export const AdminContent = ({
   )
 }
 
-const activityBadge = (count: number) => {
+/**
+ * La pastille se pose sur le coin du bouton, pas sur l'icône : accrochée à
+ * l'icône, elle en recouvrait le dessin et se lisait comme une rature.
+ */
+const activityBadge = (count: number, className: string) => {
   if (count <= 0) return null
   const label = count > 99 ? '99+' : count.toString()
   return (
-    <span className="absolute -right-1 -top-1 grid min-h-4 min-w-4 place-items-center rounded-full bg-brand-strong px-1 text-2xs font-bold leading-none text-white ring-2 ring-background">
+    <span
+      className={`absolute grid min-h-4 min-w-4 place-items-center rounded-full bg-brand-strong px-1 text-2xs font-bold leading-none text-white ring-2 ring-background ${className}`}
+    >
       <span aria-hidden="true">{label}</span>
       <span className="sr-only">
         {count} activité{count > 1 ? 's' : ''} non lue
@@ -130,48 +136,44 @@ export const AdminNavigation = ({
                   key={item.key}
                   href={item.href}
                   aria-current={isActive ? 'page' : undefined}
-                  className={`${navigationItemBaseClass} gap-2 px-3 ${
+                  className={`${navigationItemBaseClass} relative gap-2 px-3 ${
                     isActive
                       ? 'bg-primary text-primary-foreground shadow-sm'
                       : 'text-muted-foreground hover:bg-muted hover:text-foreground'
                   }`}
                 >
-                  <span className="relative">
-                    <Icon className="size-4" />
-                    {item.key === 'activity'
-                      ? activityBadge(unreadActivityCount)
-                      : null}
-                  </span>
+                  <Icon className="size-4" />
                   {item.label}
+                  {item.key === 'activity'
+                    ? activityBadge(unreadActivityCount, '-right-1.5 -top-1')
+                    : null}
                 </Link>
               )
             })}
           </nav>
 
-          <details className="group relative">
-            <summary className="grid size-11 cursor-pointer list-none place-items-center rounded-xl border text-muted-foreground transition hover:bg-muted hover:text-foreground [&::-webkit-details-marker]:hidden">
-              <Menu className="size-5" />
-              <span className="sr-only">Menu secondaire</span>
-            </summary>
-            <div className="absolute right-0 top-[calc(100%+0.5rem)] z-50 w-56 rounded-2xl border bg-popover p-2 text-popover-foreground shadow-xl">
-              <p className="px-3 pb-2 pt-1 text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                Application admin
-              </p>
-              <InstallAppButton
-                label="Installer l’application"
-                className="flex min-h-11 w-full items-center rounded-xl px-3 text-left text-sm font-medium no-underline hover:bg-muted"
-              />
-              <form action={logoutAdmin}>
-                <Button
-                  type="submit"
-                  variant="destructive"
-                  className="w-full justify-start gap-3 bg-transparent"
-                >
-                  <LogOut className="size-4" /> Se déconnecter
-                </Button>
-              </form>
-            </div>
-          </details>
+          {/* Deux gestes fréquents, deux boutons : le menu déroulant n'abritait
+              qu'une déconnexion, et revenir au site public demandait de retaper
+              l'adresse. */}
+          <div className="flex items-center gap-2">
+            <Button asChild variant="outline" size="icon" title="Voir le site">
+              <Link href="/">
+                <House className="size-5" />
+                <span className="sr-only">Voir le site</span>
+              </Link>
+            </Button>
+            <form action={logoutAdmin}>
+              <SubmitButton
+                variant="outline"
+                size="icon"
+                title="Se déconnecter"
+                aria-label="Se déconnecter"
+                className="text-destructive hover:bg-destructive/10 hover:text-destructive"
+              >
+                <LogOut className="size-5" />
+              </SubmitButton>
+            </form>
+          </div>
         </div>
       </header>
 
@@ -197,7 +199,7 @@ export const AdminNavigation = ({
                 >
                   <Icon className="size-5" />
                   {item.key === 'activity'
-                    ? activityBadge(unreadActivityCount)
+                    ? activityBadge(unreadActivityCount, '-right-1 -top-1')
                     : null}
                 </span>
                 {item.label}

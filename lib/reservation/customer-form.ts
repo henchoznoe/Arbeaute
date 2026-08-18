@@ -73,15 +73,27 @@ export const validateCustomerField = (
   return null
 }
 
-export const validateCustomerForm = (
+/**
+ * Ne valide que les champs demandés.
+ *
+ * Le tunnel pose l'adresse seule, puis le nom et le téléphone à qui n'a pas
+ * encore client : valider tout le formulaire à chaque étape signalerait des
+ * champs que l'écran n'a jamais montrés.
+ */
+export const validateCustomerFields = (
   values: CustomerFormValues,
+  fields: CustomerFormField[],
 ): CustomerFormErrors =>
   Object.fromEntries(
-    customerFieldOrder.flatMap(field => {
+    fields.flatMap(field => {
       const error = validateCustomerField(field, values)
       return error ? [[field, error]] : []
     }),
   )
+
+export const validateCustomerForm = (
+  values: CustomerFormValues,
+): CustomerFormErrors => validateCustomerFields(values, customerFieldOrder)
 
 export const normalizeCustomerFormDisplay = (
   values: CustomerFormValues,

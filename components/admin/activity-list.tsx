@@ -8,10 +8,9 @@ import Link from 'next/link'
 import { EmptyState } from '@/components/ui/empty-state'
 import {
   type AppointmentActivityItem,
-  formatActivityCreatedAt,
   formatActivityMessage,
 } from '@/lib/admin/activity'
-import { getLocalDateKey } from '@/lib/reservation/time'
+import { formatShortMoment, getLocalDateKey } from '@/lib/reservation/time'
 
 const ActivityIcon = ({
   type,
@@ -71,7 +70,7 @@ export const ActivityList = ({
                     dateTime={activity.createdAt.toISOString()}
                     className="text-xs text-muted-foreground"
                   >
-                    Action le {formatActivityCreatedAt(activity.createdAt)}
+                    Action le {formatShortMoment(activity.createdAt)}
                   </time>
                   {canOpenAppointment ? (
                     <Link

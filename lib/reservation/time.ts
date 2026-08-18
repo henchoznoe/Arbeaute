@@ -162,6 +162,10 @@ const longDateParts = {
 
 const timeParts = { hour: '2-digit', minute: '2-digit' } as const
 
+/** « 17 août 2026 » — quand le jour de la semaine n'apporte rien. */
+export const formatDayDate = (date: Date): string =>
+  new Intl.DateTimeFormat('fr-CH', longDateParts).format(date)
+
 /** « lundi 17 août 2026 » — partout où la place ne manque pas. */
 export const formatLongDate = (date: Date): string =>
   normalizeFrenchDate(
@@ -191,6 +195,23 @@ export const formatCompactMoment = (date: Date): string =>
       ...timeParts,
     }).format(date),
   )
+
+/**
+ * « 17.08.26 13:30 » — l'horodatage des journaux de l'administration.
+ *
+ * Écrit en parts explicites plutôt qu'avec `dateStyle`/`timeStyle` : les
+ * raccourcis d'ICU rendent la même chose ici, mais imposent leur ponctuation
+ * ailleurs, et c'est ainsi qu'une même date finissait par s'écrire de quatre
+ * façons selon l'écran.
+ */
+export const formatShortMoment = (date: Date): string =>
+  new Intl.DateTimeFormat('fr-CH', {
+    timeZone: RESERVATION_TIME_ZONE,
+    day: '2-digit',
+    month: '2-digit',
+    year: '2-digit',
+    ...timeParts,
+  }).format(date)
 
 export const formatSlotTime = (date: Date): string =>
   formatInTimeZone(date, RESERVATION_TIME_ZONE, 'HH:mm')

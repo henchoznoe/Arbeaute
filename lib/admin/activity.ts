@@ -74,13 +74,6 @@ const formatAppointmentMoment = (date: Date): string =>
     minute: '2-digit',
   }).format(date)
 
-export const formatActivityCreatedAt = (date: Date): string =>
-  new Intl.DateTimeFormat('fr-CH', {
-    timeZone: RESERVATION_TIME_ZONE,
-    dateStyle: 'short',
-    timeStyle: 'short',
-  }).format(date)
-
 export const formatActivityMessage = (
   activity: Pick<
     AppointmentActivityItem,

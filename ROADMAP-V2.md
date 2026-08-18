@@ -1,5 +1,8 @@
 # Roadmap V2 — finition, UX mobile et clarté
 
+> **Backlog clos.** Ses 13 éléments sont livrés ; ce document est conservé comme
+> archive. La suite se pilote dans [ROADMAP-V3.md](ROADMAP-V3.md).
+
 ## Objectif
 
 La [roadmap v1](ROADMAP.md) est close : ses 24 éléments ont construit les

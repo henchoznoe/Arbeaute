@@ -11,22 +11,32 @@ import {
   buildAvailabilityExceptionRows,
   cancelAdminAppointmentSerializable,
   createAdminAppointmentSeriesSerializable,
-  isAdminAppointmentInsidePublicHours,
+  inspectAdminAppointmentPlacement,
   MAX_APPOINTMENT_SERIES_INTERVAL_WEEKS,
   MAX_APPOINTMENT_SERIES_OCCURRENCES,
   previewAdminAppointmentSeries as previewAppointmentSeries,
   saveAdminAppointmentSerializable,
 } from '@/lib/admin/agenda'
+import {
+  describeAdminAppointmentChange,
+  describeAdminNotification,
+} from '@/lib/admin/appointment-notification'
 import { runAuditedMutation } from '@/lib/admin/audit'
 import {
   AdminAvailabilityExceptionError,
   createAvailabilityExceptionGroupSerializable,
   deleteAvailabilityExceptionGroupAudited,
 } from '@/lib/admin/availability-exceptions'
+import { buildCustomerSearchWhere } from '@/lib/admin/customer-search'
 import prisma from '@/lib/core/prisma'
 import { getAdminSession } from '@/lib/core/session-cookies'
+import {
+  notifyAppointmentCancelled,
+  notifyAppointmentConfirmed,
+  notifyAppointmentRescheduled,
+  notifyAppointmentSeriesConfirmed,
+} from '@/lib/email/notifications'
 import { MAX_AVAILABILITY_EXCEPTION_RANGE_DAYS } from '@/lib/reservation/constants'
-import { normalizeCustomerSearchName } from '@/lib/reservation/customers'
 import { normalizeEmail, normalizePhone } from '@/lib/reservation/identity'
 import { OPENING_HOURS_TAG } from '@/lib/reservation/opening-hours'
 import { isDateKey, localDateMinuteToUtc } from '@/lib/reservation/time'
@@ -47,10 +57,13 @@ const appointmentSchema = z.object({
   phone: z.string().trim().min(1).max(40),
   comment: z.string().trim().max(1000).optional(),
   acknowledgeOutsideHours: z.boolean().optional(),
+  acknowledgeOverlap: z.boolean().optional(),
 })
 
+// Superposer volontairement reste un geste à l'unité : une répétition qui
+// tombe sur un rendez-vous existant continue d'être refusée en bloc.
 const appointmentSeriesSchema = appointmentSchema
-  .omit({ appointmentId: true })
+  .omit({ appointmentId: true, acknowledgeOverlap: true })
   .extend({
     occurrenceCount: z
       .number()
@@ -90,6 +103,7 @@ export interface AdminAppointmentFormInput {
   phone: string
   comment?: string
   acknowledgeOutsideHours?: boolean
+  acknowledgeOverlap?: boolean
 }
 
 export interface AdminAppointmentResult {
@@ -97,6 +111,7 @@ export interface AdminAppointmentResult {
   message: string
   appointmentId?: string
   needsOutsideHoursConfirmation?: boolean
+  needsOverlapConfirmation?: boolean
 }
 
 export interface AdminAppointmentSeriesFormInput
@@ -172,24 +187,11 @@ export const searchAdminCustomers = async (
       message: 'Saisissez au moins deux lettres pour lancer la recherche.',
       customers: [],
     }
-  const query = parsed.data
-  const phoneDigits = query.replace(/\D/g, '')
   try {
     const customers = await prisma.customer.findMany({
-      where: {
-        anonymizedAt: null,
-        OR: [
-          {
-            searchName: {
-              contains: normalizeCustomerSearchName(null, query),
-            },
-          },
-          { emailNormalized: { contains: query.toLowerCase() } },
-          ...(phoneDigits.length >= 2
-            ? [{ phoneNormalized: { contains: phoneDigits } }]
-            : []),
-        ],
-      },
+      // Le même filtre que la recherche de clients : deux recherches qui ne
+      // trouveraient pas les mêmes personnes seraient un piège.
+      where: buildCustomerSearchWhere(parsed.data),
       orderBy: [{ lastSeenAt: 'desc' }, { id: 'asc' }],
       take: 8,
       select: {
@@ -203,8 +205,8 @@ export const searchAdminCustomers = async (
     return {
       ok: true,
       message: customers.length
-        ? `${customers.length} fiche${customers.length > 1 ? 's' : ''} trouvée${customers.length > 1 ? 's' : ''}.`
-        : 'Aucune fiche trouvée.',
+        ? `${customers.length} client${customers.length > 1 ? 's' : ''} trouvé${customers.length > 1 ? 's' : ''}.`
+        : 'Aucun client trouvé.',
       customers,
     }
   } catch {
@@ -287,9 +289,10 @@ export const createAdminAppointmentSeries = async (
     )
     revalidatePath('/admin')
     revalidatePath('/mes-rendez-vous')
+    const recipient = notifyAppointmentSeriesConfirmed(appointments)
     return {
       ok: true,
-      message: `${appointments.length} rendez-vous ont été créés.`,
+      message: `${appointments.length} rendez-vous ont été créés.${describeAdminNotification(recipient, true)}`,
     }
   } catch (error) {
     if (error instanceof AdminAppointmentSeriesError)
@@ -350,44 +353,80 @@ export const saveAdminAppointment = async (
 
   try {
     const startsAt = localDateMinuteToUtc(parsed.data.date, minute)
-    const insidePublicHours = await isAdminAppointmentInsidePublicHours(
-      prisma,
-      parsed.data.serviceId,
-      startsAt,
-    )
-    if (!insidePublicHours && !parsed.data.acknowledgeOutsideHours)
-      return {
-        ok: false,
-        message:
-          'Ce rendez-vous tombe hors ouverture, ou se superpose à une fermeture. Choisissez une autre heure, ou ouvrez ce jour dans « Jours particuliers ».',
-        needsOutsideHoursConfirmation: true,
-      }
-
-    const appointment = await saveAdminAppointmentSerializable(prisma, {
-      appointmentId: parsed.data.appointmentId,
+    const placement = await inspectAdminAppointmentPlacement(prisma, {
       serviceId: parsed.data.serviceId,
       startsAt,
-      firstName: parsed.data.firstName || null,
-      lastName: parsed.data.lastName,
-      email,
-      phone,
-      comment: parsed.data.comment || null,
+      appointmentId: parsed.data.appointmentId,
     })
+    const needsOutsideHoursConfirmation =
+      !placement.insidePublicHours && !parsed.data.acknowledgeOutsideHours
+    const needsOverlapConfirmation =
+      placement.conflictTime !== null && !parsed.data.acknowledgeOverlap
+    // Les deux réserves sont annoncées ensemble : Arzu confirme une fois, pas
+    // une fois par motif.
+    if (needsOutsideHoursConfirmation || needsOverlapConfirmation)
+      return {
+        ok: false,
+        message: [
+          needsOutsideHoursConfirmation
+            ? 'Ce rendez-vous tombe hors ouverture, ou se superpose à une fermeture.'
+            : null,
+          needsOverlapConfirmation
+            ? `Il se superpose au rendez-vous de ${placement.conflictTime}, temps d’installation et de rangement compris.`
+            : null,
+        ]
+          .filter(Boolean)
+          .join(' '),
+        needsOutsideHoursConfirmation,
+        needsOverlapConfirmation,
+      }
+
+    const { appointment, previous } = await saveAdminAppointmentSerializable(
+      prisma,
+      {
+        appointmentId: parsed.data.appointmentId,
+        serviceId: parsed.data.serviceId,
+        startsAt,
+        firstName: parsed.data.firstName || null,
+        lastName: parsed.data.lastName,
+        email,
+        phone,
+        comment: parsed.data.comment || null,
+        acknowledgeOverlap: parsed.data.acknowledgeOverlap,
+      },
+    )
     revalidatePath('/admin')
     revalidatePath('/mes-rendez-vous')
+
+    // Rectifier une orthographe ne déplace rien : seul un changement d'horaire
+    // ou de soin justifie d'écrire à la personne.
+    const change = describeAdminAppointmentChange(previous, appointment)
+    const recipient =
+      change === 'created'
+        ? notifyAppointmentConfirmed(appointment)
+        : change === 'rescheduled' && previous
+          ? notifyAppointmentRescheduled(appointment, previous.startsAt)
+          : null
+
     return {
       ok: true,
-      message: parsed.data.appointmentId
-        ? 'Le rendez-vous a été mis à jour.'
-        : 'Le rendez-vous a été créé.',
+      message: `${
+        parsed.data.appointmentId
+          ? 'Le rendez-vous a été mis à jour.'
+          : 'Le rendez-vous a été créé.'
+      }${describeAdminNotification(recipient, change !== 'unchanged')}`,
       appointmentId: appointment.id,
     }
   } catch (error) {
+    // Se superposer est permis à Arzu, à condition qu'elle le veuille : on
+    // nomme le rendez-vous déjà en place et on attend un second appui.
     if (error instanceof AdminAgendaError && error.code === 'OVERLAP')
       return {
         ok: false,
-        message:
-          'Cette heure est déjà prise, temps d’installation et de rangement compris. Choisissez une autre heure.',
+        message: error.conflictTime
+          ? `Cette heure se superpose au rendez-vous de ${error.conflictTime}, temps d’installation et de rangement compris.`
+          : 'Cette heure vient d’être prise par quelqu’un d’autre. Rafraîchissez la page pour voir l’agenda à jour.',
+        needsOverlapConfirmation: Boolean(error.conflictTime),
       }
     return {
       ok: false,
@@ -413,10 +452,17 @@ export const cancelAdminAppointment = async (
         'Ce rendez-vous n’existe plus. Revenez à l’agenda et rouvrez-le.',
     }
   try {
-    await cancelAdminAppointmentSerializable(prisma, parsedId.data)
+    const cancelled = await cancelAdminAppointmentSerializable(
+      prisma,
+      parsedId.data,
+    )
     revalidatePath('/admin')
     revalidatePath('/mes-rendez-vous')
-    return { ok: true, message: 'Le rendez-vous a été annulé.' }
+    const recipient = notifyAppointmentCancelled(cancelled)
+    return {
+      ok: true,
+      message: `Le rendez-vous a été annulé.${describeAdminNotification(recipient, true)}`,
+    }
   } catch {
     return {
       ok: false,

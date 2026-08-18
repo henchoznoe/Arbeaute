@@ -1,6 +1,6 @@
 import { Banknote, CalendarCheck2, Gauge, UserX } from 'lucide-react'
 import type { DashboardMetrics as DashboardMetricsValues } from '@/lib/admin/dashboard-metrics'
-import { formatPrice } from '@/lib/utils/format'
+import { formatCount, formatPrice } from '@/lib/utils/format'
 
 const formatDuration = (minutes: number): string => {
   const hours = Math.floor(minutes / 60)
@@ -26,7 +26,7 @@ export const DashboardMetrics = ({
   const cards = [
     {
       label: 'Rendez-vous',
-      value: metrics.selectedDayCount.toLocaleString('fr-CH'),
+      value: formatCount(metrics.selectedDayCount),
       scope: selectedDayLabel,
       icon: CalendarCheck2,
     },
@@ -48,7 +48,7 @@ export const DashboardMetrics = ({
     },
     {
       label: 'Rendez-vous non honorés',
-      value: metrics.noShowCount.toLocaleString('fr-CH'),
+      value: formatCount(metrics.noShowCount),
       scope: 'Comptés à part, ils n’entrent pas dans la recette attendue',
       icon: UserX,
     },

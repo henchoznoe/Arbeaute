@@ -1,8 +1,10 @@
 import { describe, expect, it } from 'vitest'
 import {
+  assignTimelineLanes,
   buildAdminTimelineDay,
   formatTimelineMinute,
   getFreeTimelineStarts,
+  getWeekTimelineBounds,
   isAdminAppointmentTime,
 } from '@/lib/admin/agenda-timeline'
 
@@ -62,6 +64,7 @@ describe('admin daily timeline', () => {
           cleanupMinutes: 15,
           customerName: 'Arzu Test',
           customerPhone: null,
+          customerId: null,
           serviceLabel: 'Soin visage',
           serviceColor: '#d99086',
           source: 'ADMIN',
@@ -72,9 +75,26 @@ describe('admin daily timeline', () => {
     const freeStarts = getFreeTimelineStarts(day)
 
     expect(freeStarts).toContain(8 * 60)
-    expect(freeStarts).not.toContain(9 * 60 + 30)
+    // Le quart d'heure qui précède l'installation reste proposé, la minute où
+    // elle commence ne l'est plus.
+    expect(freeStarts).toContain(9 * 60 + 30)
+    expect(freeStarts).not.toContain(9 * 60 + 45)
+    expect(freeStarts).not.toContain(10 * 60)
     expect(freeStarts).not.toContain(12 * 60)
     expect(freeStarts).toContain(13 * 60)
+  })
+
+  it('proposes a start every quarter of an hour', () => {
+    const day = buildDay({
+      weekly: [{ dayOfWeek: 1, startMinute: 8 * 60, endMinute: 9 * 60 }],
+    })
+
+    expect(getFreeTimelineStarts(day)).toEqual([
+      8 * 60,
+      8 * 60 + 15,
+      8 * 60 + 30,
+      8 * 60 + 45,
+    ])
   })
 
   it('flags every appointment involved in a visual overlap', () => {
@@ -82,6 +102,7 @@ describe('admin daily timeline', () => {
       preparationMinutes: 0,
       cleanupMinutes: 0,
       customerPhone: null,
+      customerId: null,
       serviceLabel: 'Soin',
       serviceColor: '#d99086',
       source: 'PUBLIC' as const,
@@ -129,6 +150,7 @@ describe('admin daily timeline', () => {
           cleanupMinutes: 15,
           customerName: 'Cliente tardive',
           customerPhone: null,
+          customerId: null,
           serviceLabel: 'Soin',
           serviceColor: '#d99086',
           source: 'PUBLIC',
@@ -162,6 +184,7 @@ describe('admin daily timeline', () => {
           cleanupMinutes: 0,
           customerName: 'Cliente terminée',
           customerPhone: null,
+          customerId: null,
           serviceLabel: 'Soin',
           serviceColor: '#d99086',
           source: 'PUBLIC',
@@ -172,5 +195,94 @@ describe('admin daily timeline', () => {
 
     expect(day.appointments[0]?.status).toBe('COMPLETED')
     expect(getFreeTimelineStarts(day)).toContain(10 * 60)
+  })
+})
+
+describe('grille hebdomadaire de bureau', () => {
+  const day = (
+    startMinute: number,
+    endMinute: number,
+  ): Parameters<typeof getWeekTimelineBounds>[0][number] =>
+    ({
+      timelineStartMinute: startMinute,
+      timelineEndMinute: endMinute,
+    }) as Parameters<typeof getWeekTimelineBounds>[0][number]
+
+  it('donne une échelle commune, même quand une journée est vide', () => {
+    // Sans bornes communes, 10:00 ne serait pas à la même hauteur d'une
+    // colonne à l'autre et la grille ne se lirait plus en travers.
+    expect(
+      getWeekTimelineBounds([
+        day(8 * 60, 18 * 60),
+        day(7 * 60, 12 * 60),
+        day(9 * 60, 20 * 60),
+      ]),
+    ).toEqual({ startMinute: 7 * 60, endMinute: 20 * 60 })
+  })
+
+  it('retombe sur la journée par défaut quand rien n’est affiché', () => {
+    expect(getWeekTimelineBounds([])).toEqual({
+      startMinute: 8 * 60,
+      endMinute: 18 * 60,
+    })
+  })
+
+  it('laisse une colonne entière aux rendez-vous qui ne se croisent pas', () => {
+    expect(
+      assignTimelineLanes([
+        { startMinute: 540, endMinute: 600 },
+        { startMinute: 600, endMinute: 660 },
+      ]),
+    ).toEqual([
+      { lane: 0, laneCount: 1 },
+      { lane: 0, laneCount: 1 },
+    ])
+  })
+
+  it('partage la largeur entre deux rendez-vous superposés', () => {
+    expect(
+      assignTimelineLanes([
+        { startMinute: 540, endMinute: 660 },
+        { startMinute: 600, endMinute: 720 },
+      ]),
+    ).toEqual([
+      { lane: 0, laneCount: 2 },
+      { lane: 1, laneCount: 2 },
+    ])
+  })
+
+  it('donne la même largeur à toute une grappe de superpositions', () => {
+    // Les trois se recouvrent de proche en proche : leur donner des largeurs
+    // différentes désalignerait les blocs au sein d'une même tranche.
+    const lanes = assignTimelineLanes([
+      { startMinute: 540, endMinute: 660 },
+      { startMinute: 570, endMinute: 690 },
+      { startMinute: 600, endMinute: 720 },
+    ])
+    expect(lanes.map(entry => entry.lane)).toEqual([0, 1, 2])
+    expect(lanes.every(entry => entry.laneCount === 3)).toBe(true)
+  })
+
+  it('rend son rang à un créneau libéré au sein d’une grappe', () => {
+    // Le troisième commence après la fin du premier : il reprend sa colonne
+    // plutôt que d'en ouvrir une nouvelle.
+    const lanes = assignTimelineLanes([
+      { startMinute: 540, endMinute: 600 },
+      { startMinute: 570, endMinute: 720 },
+      { startMinute: 600, endMinute: 660 },
+    ])
+    expect(lanes.map(entry => entry.lane)).toEqual([0, 1, 0])
+    expect(lanes.every(entry => entry.laneCount === 2)).toBe(true)
+  })
+
+  it('conserve l’ordre d’entrée quel que soit l’ordre chronologique', () => {
+    const lanes = assignTimelineLanes([
+      { startMinute: 600, endMinute: 720 },
+      { startMinute: 540, endMinute: 660 },
+    ])
+    expect(lanes).toEqual([
+      { lane: 1, laneCount: 2 },
+      { lane: 0, laneCount: 2 },
+    ])
   })
 })

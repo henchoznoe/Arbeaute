@@ -39,3 +39,14 @@ const withCentimes = new Intl.NumberFormat('fr-CH', {
 
 export const formatPrice = (priceCents: number): string =>
   (priceCents % 100 === 0 ? wholeFrancs : withCentimes).format(priceCents / 100)
+
+/**
+ * « 3 » ,« 3 000 » — un décompte, jamais une somme.
+ *
+ * Existe pour que les écrans n'aient aucune raison d'appeler `toLocaleString`
+ * eux-mêmes : c'est cet appel-là qui avait fini par mettre en forme des prix
+ * avec le formateur numérique, et donc à écrire « 75,5 CHF ».
+ */
+const counts = new Intl.NumberFormat('fr-CH')
+
+export const formatCount = (value: number): string => counts.format(value)

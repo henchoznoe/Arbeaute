@@ -1,11 +1,11 @@
-import { ArchiveRestore, ChevronLeft, Download } from 'lucide-react'
-import Link from 'next/link'
+import { ArchiveRestore, Database, Download } from 'lucide-react'
 import { redirect } from 'next/navigation'
 import { Suspense } from 'react'
+import { AdminPage, AdminPageHeader } from '@/components/admin/admin-page'
 import { AdminSkeleton } from '@/components/admin/admin-skeleton'
 import { CustomerAnonymization } from '@/components/admin/customer-anonymization'
+import { DataExportPanel } from '@/components/admin/data-export-panel'
 import { Button } from '@/components/ui/button'
-import { formControlClass } from '@/components/ui/form-field'
 import { exportColumnDocumentation } from '@/lib/admin/data-management'
 import { getAdminSession } from '@/lib/core/session-cookies'
 import { AppointmentStatus } from '@/prisma/generated/prisma/enums'
@@ -18,7 +18,7 @@ const statusLabels = {
 } as const
 
 const DataPage = () => (
-  <Suspense fallback={<AdminSkeleton variant="list" maxWidth="max-w-5xl" />}>
+  <Suspense fallback={<AdminSkeleton variant="list" />}>
     <DataManagement />
   </Suspense>
 )
@@ -39,31 +39,17 @@ const DataManagement = async () => {
   if (!(await getAdminSession())) redirect('/admin/login')
 
   return (
-    <main className="mx-auto min-h-screen w-full min-w-0 max-w-5xl overflow-x-hidden px-4 py-5 sm:px-8 sm:py-8">
-      <Button
-        asChild
-        variant="ghost"
-        size="sm"
-        className="-ml-2 text-muted-foreground"
-      >
-        <Link href="/admin/settings">
-          <ChevronLeft className="size-4" /> Réglages
-        </Link>
-      </Button>
+    <AdminPage className="overflow-x-hidden">
+      <AdminPageHeader
+        backHref="/admin/settings"
+        backLabel="Réglages"
+        eyebrow="Arbeauté"
+        title="Données et confidentialité"
+        icon={Database}
+        description="Téléchargez vos données sur votre appareil, effacez les coordonnées d’une personne qui le demande, ou consultez la marche à suivre pour sauvegarder. Rien n’est stocké en ligne au passage."
+      />
 
-      <header className="mt-2">
-        <p className="text-sm font-medium text-brand">Arbeauté</p>
-        <h1 className="break-words font-heading text-title font-bold">
-          Données et confidentialité
-        </h1>
-        <p className="mt-2 max-w-3xl text-sm leading-relaxed text-muted-foreground">
-          Téléchargez vos données sur votre appareil, effacez les coordonnées
-          d’une personne qui le demande, ou consultez la marche à suivre pour
-          sauvegarder. Rien n’est stocké en ligne au passage.
-        </p>
-      </header>
-
-      <section className="mt-7" aria-labelledby="exports-title">
+      <section className="mt-6" aria-labelledby="exports-title">
         <div className="flex items-center gap-3">
           <span className="grid size-11 place-items-center rounded-2xl bg-primary/10 text-primary">
             <Download className="size-5" />
@@ -80,52 +66,29 @@ const DataManagement = async () => {
         </div>
 
         <div className="mt-5 grid gap-4 lg:grid-cols-3">
-          <form
-            action="/admin/data/export/appointments"
-            method="get"
-            className="min-w-0 rounded-3xl border bg-card p-5 shadow-sm"
-          >
+          <article className="flex min-w-0 flex-col rounded-3xl border bg-card p-5 shadow-sm">
             <h3 className="font-semibold">Rendez-vous</h3>
             <ExportColumns columns={exportColumnDocumentation.appointments} />
-            <div className="mt-4 grid gap-3">
-              <label className="text-xs font-medium text-muted-foreground">
-                Du
-                <input
-                  name="from"
-                  type="date"
-                  className={`mt-1 ${formControlClass}`}
-                />
-              </label>
-              <label className="text-xs font-medium text-muted-foreground">
-                Au
-                <input
-                  name="to"
-                  type="date"
-                  className={`mt-1 ${formControlClass}`}
-                />
-              </label>
-              <label className="text-xs font-medium text-muted-foreground">
-                Statut
-                <select name="status" className={`mt-1 ${formControlClass}`}>
-                  <option value="">Tous</option>
-                  {Object.values(AppointmentStatus).map(status => (
-                    <option key={status} value={status}>
-                      {statusLabels[status]}
-                    </option>
-                  ))}
-                </select>
-              </label>
+            <div className="mt-auto grid gap-2 pt-4">
+              <Button asChild>
+                <a href="/admin/data/export/appointments">
+                  Télécharger les rendez-vous
+                </a>
+              </Button>
+              <DataExportPanel
+                statusOptions={Object.values(AppointmentStatus).map(status => ({
+                  value: status,
+                  label: statusLabels[status],
+                }))}
+              />
             </div>
-            <Button type="submit" className="mt-4 w-full">
-              Télécharger les rendez-vous
-            </Button>
-          </form>
+          </article>
 
           <article className="flex min-w-0 flex-col rounded-3xl border bg-card p-5 shadow-sm">
-            <h3 className="font-semibold">Fiches</h3>
+            <h3 className="font-semibold">Clients</h3>
             <ExportColumns columns={exportColumnDocumentation.customers} />
             <Button asChild className="mt-auto w-full">
-              <a href="/admin/data/export/customers">Télécharger les fiches</a>
+              <a href="/admin/data/export/customers">Télécharger les clients</a>
             </Button>
           </article>
 
@@ -139,7 +102,7 @@ const DataManagement = async () => {
         </div>
       </section>
 
-      <div className="mt-7 grid gap-5 lg:grid-cols-[1.4fr_0.6fr]">
+      <div className="mt-6 grid gap-5 lg:grid-cols-[1.4fr_0.6fr]">
         <CustomerAnonymization />
         <section className="rounded-3xl border bg-card p-5 shadow-sm sm:p-6">
           <span className="grid size-11 place-items-center rounded-2xl bg-primary/10 text-primary">
@@ -162,7 +125,7 @@ const DataManagement = async () => {
           </p>
         </section>
       </div>
-    </main>
+    </AdminPage>
   )
 }
 

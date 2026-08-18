@@ -40,14 +40,42 @@ n’accepte pas de chaîne de connexion externe.
 Cette vérification prouve que l’archive est lisible ; elle ne remplace pas une
 politique de stockage chiffré et de rotation des sauvegardes de production.
 
+## Une base par environnement
+
+La branche Neon `main` est réservée à la portée *Production* de Vercel ; une base
+Neon distincte sert la portée *Preview*. Chaque déploiement migre donc la sienne,
+et le script `build` est redevenu ordinaire :
+
+```
+prisma generate && prisma migrate deploy && next build && verify-build-quality
+```
+
+Avant cette séparation, les previews lisaient et écrivaient la base de
+production. Deux contournements existaient pour l’amortir — un script qui
+neutralisait `prisma migrate deploy` hors production, et une lecture qui absorbait
+l’absence d’une table dans `getAgendaSettings()`. Les deux ont été supprimés.
+
+**Le seed ne fait volontairement pas partie du build.** `prisma/seed.ts` est
+idempotent, mais ses `upsert` portent un `update` complet : le rejouer sur la
+production réécrirait les prix et descriptions modifiés depuis l’administration,
+remettrait `preparationMinutes` et `cleanupMinutes` à zéro et sortirait de
+l’archive les prestations archivées. Une base de preview neuve se peuple donc à
+la main, une fois :
+
+```bash
+DATABASE_URL="<chaîne de la base de preview>" pnpm db:seed
+```
+
 ## Identification par e-mail seul : livrée en deux temps
 
-Pour mémoire, parce que la règle vaut pour toute suppression future.
+Pour mémoire, parce que la règle vaut pour toute suppression future — **elle
+survit à la séparation des bases**, puisque la production migre toujours avant
+de servir.
 
 Le build Vercel applique les migrations **avant** que le nouveau code serve le
-trafic (`scripts/migrate-production.ts`). Une migration qui retire une colonne
-encore écrite par le code en ligne casse donc les réservations pendant la fenêtre
-de déploiement. La bascule a été découpée en conséquence :
+trafic. Une migration qui retire une colonne encore écrite par le code en ligne
+casse donc les réservations pendant la fenêtre de déploiement. La bascule a été
+découpée en conséquence :
 
 1. **v1.10.0** — le code cesse de lire les condensés, continue d’écrire
    `customer.identityDigest` à la création, et cherche les fiches sans dépendre

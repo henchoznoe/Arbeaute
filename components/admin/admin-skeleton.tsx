@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react'
+import { ADMIN_PAGE_WIDTH } from '@/components/admin/admin-page'
 import { Skeleton, skeletonKeys } from '@/components/ui/skeleton'
 
 /**
@@ -95,8 +96,8 @@ const ListShape = () => (
 const CardsShape = () => (
   <>
     <PageHeading />
-    <div className="mt-7 grid gap-4 sm:grid-cols-2">
-      {skeletonKeys(4).map(key => (
+    <div className="mt-7 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      {skeletonKeys(6).map(key => (
         <Skeleton key={key} className="h-56 rounded-3xl" />
       ))}
     </div>
@@ -112,8 +113,7 @@ const shapes: Record<Exclude<AdminSkeletonVariant, 'card'>, () => ReactNode> = {
 
 export const AdminSkeleton = ({
   variant = 'list',
-  maxWidth = 'max-w-7xl',
-}: Readonly<{ variant?: AdminSkeletonVariant; maxWidth?: string }>) => {
+}: Readonly<{ variant?: AdminSkeletonVariant }>) => {
   if (variant === 'card')
     return (
       <main className="flex min-h-screen items-center justify-center px-6 py-16">
@@ -126,7 +126,9 @@ export const AdminSkeleton = ({
 
   const Shape = shapes[variant]
   return (
-    <main className={`mx-auto min-h-screen ${maxWidth} px-4 py-6 sm:px-8`}>
+    <main
+      className={`mx-auto min-h-screen w-full min-w-0 ${ADMIN_PAGE_WIDTH} px-4 py-5 sm:px-8 sm:py-8`}
+    >
       <p role="status" className="sr-only">
         Chargement…
       </p>

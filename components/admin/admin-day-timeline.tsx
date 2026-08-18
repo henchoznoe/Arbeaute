@@ -1,6 +1,6 @@
 'use client'
 
-import { AlertTriangle, ChevronDown, Plus } from 'lucide-react'
+import { AlertTriangle, ChevronDown, Plus, UserRound } from 'lucide-react'
 import Link from 'next/link'
 import { AppointmentStatusActions } from '@/components/admin/appointment-status-actions'
 import { CustomerCallButton } from '@/components/admin/customer-call-button'
@@ -11,6 +11,7 @@ import {
   type AdminTimelineDay,
   formatTimelineMinute,
   getFreeTimelineStarts,
+  QUICK_ADD_STEP_MINUTES,
   type TimelineInterval,
 } from '@/lib/admin/agenda-timeline'
 
@@ -118,11 +119,23 @@ export const AdminDayTimeline = ({
                     {statusLabels[appointment.status]}
                   </StatusBadge>
                 </Link>
-                <CustomerCallButton
-                  phone={appointment.customerPhone}
-                  customerName={appointment.customerName}
-                  className="mt-2 w-full"
-                />
+                {/* Appeler et ouvrir le client côte à côte : les deux gestes
+                    qu'Arzu fait en regardant un nom. Un rendez-vous ancien
+                    rattaché à personne n'affiche pas de lien mort. */}
+                <div className="mt-2 grid gap-2 sm:grid-cols-2">
+                  <CustomerCallButton
+                    phone={appointment.customerPhone}
+                    customerName={appointment.customerName}
+                    className="w-full"
+                  />
+                  {appointment.customerId ? (
+                    <Button asChild variant="outline" className="w-full">
+                      <Link href={`/admin/customers/${appointment.customerId}`}>
+                        <UserRound className="size-4" /> Voir le client
+                      </Link>
+                    </Button>
+                  ) : null}
+                </div>
                 <AppointmentStatusActions
                   appointmentId={appointment.id}
                   status={appointment.status}
@@ -193,13 +206,16 @@ export const AdminDayTimeline = ({
                   key={minute}
                   href={`/admin/appointments/new?date=${day.dateKey}&time=${formatTimelineMinute(minute)}`}
                   aria-label={`Ajouter un rendez-vous à ${formatTimelineMinute(minute)}`}
-                  className="group absolute left-12 right-1 z-10 flex items-center justify-end rounded-lg border border-dashed border-transparent px-2 text-2xs font-medium text-success-strong transition hover:border-success-accent hover:bg-success-soft/90 focus:border-success focus:bg-success-soft focus:outline-none"
+                  className="group absolute left-12 right-1 z-10 flex items-center justify-end overflow-hidden rounded-lg border border-dashed border-transparent px-2 text-2xs font-medium leading-none text-success-strong transition hover:border-success-accent hover:bg-success-soft/90 focus:border-success focus:bg-success-soft focus:outline-none"
                   style={positionStyle(
-                    { startMinute: minute, endMinute: minute + 30 },
+                    {
+                      startMinute: minute,
+                      endMinute: minute + QUICK_ADD_STEP_MINUTES,
+                    },
                     day.timelineStartMinute,
                   )}
                 >
-                  <span className="inline-flex items-center gap-1 rounded-full bg-success-soft/80 px-2 py-1 opacity-70 group-hover:opacity-100 group-focus:opacity-100">
+                  <span className="inline-flex items-center gap-1 rounded-full bg-success-soft/80 px-2 py-0.5 opacity-70 group-hover:opacity-100 group-focus:opacity-100">
                     <Plus className="size-3" /> {formatTimelineMinute(minute)}
                   </span>
                 </Link>

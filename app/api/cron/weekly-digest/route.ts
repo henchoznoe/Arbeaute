@@ -1,25 +1,25 @@
 import { after } from 'next/server'
 import { env } from '@/lib/core/env'
-import { runDailyEmails } from '@/lib/email/daily-run'
+import { runWeeklyDigest } from '@/lib/email/weekly-run'
 
 /**
- * Tâche quotidienne des e-mails, déclenchée par le cron Vercel.
+ * Bilan hebdomadaire, déclenché par le cron Vercel du dimanche soir.
  *
  * Vercel envoie `Authorization: Bearer $CRON_SECRET` sur les routes déclarées
  * dans `vercel.json`. Sans secret configuré, la route refuse tout : mieux vaut
- * un cron muet qu'un point d'entrée ouvert.
+ * une tâche muette qu'un point d'entrée ouvert.
  *
- * Le travail passe par `after()` pour répondre tout de suite : un cron qui
- * expire côté plateforme ne doit pas relancer les envois une seconde fois.
+ * Le travail passe par `after()` pour répondre tout de suite : une tâche qui
+ * expire côté plateforme ne doit pas relancer l'envoi une seconde fois.
  */
 export const GET = async (request: Request): Promise<Response> => {
   const secret = env.CRON_SECRET
-  if (!secret) return new Response('Cron non configuré.', { status: 503 })
+  if (!secret) return new Response('Tâche non configurée.', { status: 503 })
   if (request.headers.get('authorization') !== `Bearer ${secret}`)
     return new Response('Non autorisé.', { status: 401 })
 
   after(async () => {
-    await runDailyEmails()
+    await runWeeklyDigest()
   })
 
   return Response.json({ accepted: true })

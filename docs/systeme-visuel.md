@@ -69,6 +69,16 @@ saturée.
 Le mode sombre n’est pas activé : aucune classe `dark:` ne doit être ajoutée
 tant qu’un jeu de jetons `.dark` n’existe pas dans `app/globals.css`.
 
+### La seule exception : les gabarits d’e-mail
+
+`lib/email/templates.ts` écrit ses couleurs en dur (`#9c5566`, `#241c19`,
+`#faf7f5`, `#ece5e1`, `#6d605b`). **Ce n’est pas un oubli**, et il ne faut pas le
+« corriger » : les variables CSS ne fonctionnent dans aucun client de messagerie,
+et une feuille de style externe encore moins. Les valeurs reprennent celles des
+jetons `brand` ; si la marque change de teinte, ces cinq constantes changent à la
+main. La règle ci-dessus reste entière pour `app/` et `components/`, qui sont les
+seuls répertoires concernés.
+
 ## Rayons
 
 Les rayons proviennent tous des jetons `--radius-*`. Aucune valeur arbitraire

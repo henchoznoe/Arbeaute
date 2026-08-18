@@ -1,7 +1,8 @@
 # Roadmap produit et UX — Arbeauté
 
 > **Backlog clos.** Ses 24 éléments sont livrés ; ce document est conservé comme
-> archive. La suite se pilote dans [ROADMAP-V2.md](ROADMAP-V2.md).
+> archive. Il a été suivi de [ROADMAP-V2.md](ROADMAP-V2.md), close elle aussi ;
+> la suite se pilote dans [ROADMAP-V3.md](ROADMAP-V3.md).
 
 ## Objectif
 

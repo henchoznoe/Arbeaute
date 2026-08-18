@@ -4,6 +4,18 @@ const clientSchema = z.object({
   NEXT_PUBLIC_APP_URL: z.url(),
 })
 
+/**
+ * Une variable facultative laissée vide vaut « absente ».
+ *
+ * `.optional()` ne rattrape que la variable *manquante* : `CRON_SECRET=""` dans
+ * un `.env.local` reste une chaîne vide, échoue sur `.min()`, et fait échouer
+ * le démarrage — pour une variable dont l'absence était pourtant prévue. Le
+ * piège s'est refermé deux fois pendant la v3 ; il est traité une bonne fois
+ * ici plutôt qu'à chaque ligne.
+ */
+const optional = <Schema extends z.ZodType>(schema: Schema) =>
+  z.preprocess(value => (value === '' ? undefined : value), schema.optional())
+
 const serverSchema = z.object({
   NODE_ENV: z
     .enum(['development', 'production', 'test'])
@@ -19,10 +31,11 @@ const serverSchema = z.object({
   // d'expéditeur mal formée doit désactiver les e-mails, jamais empêcher le
   // site de démarrer. `RESEND_FROM` accepte la forme « Nom <adresse> », qui
   // est celle qu'attend Resend.
-  RESEND_API_KEY: z.string().min(1).optional(),
-  RESEND_FROM: z.string().min(3).optional(),
-  ADMIN_NOTIFICATION_EMAIL: z.string().min(3).optional(),
-  CRON_SECRET: z.string().min(16).optional(),
+  RESEND_API_KEY: optional(z.string().min(1)),
+  RESEND_FROM: optional(z.string().min(3)),
+  ADMIN_NOTIFICATION_EMAIL: optional(z.string().min(3)),
+  // Injectée par Vercel dès qu'un cron est déclaré dans `vercel.json`.
+  CRON_SECRET: optional(z.string().min(16)),
   VERCEL_ENV: z.enum(['development', 'preview', 'production']).optional(),
   VERCEL_PROJECT_PRODUCTION_URL: z.string().optional(),
   VERCEL_GIT_COMMIT_SHA: z.string().optional(),

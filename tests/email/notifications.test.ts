@@ -37,6 +37,7 @@ const appointment = {
   serviceNameSnapshot: 'Épilation sourcils',
   servicePriceCents: 3500,
   startsAt: new Date('2026-09-14T08:00:00.000Z'),
+  endsAt: new Date('2026-09-14T08:30:00.000Z'),
 }
 
 describe('notifyAppointmentConfirmed', () => {

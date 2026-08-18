@@ -75,8 +75,8 @@ export const saveAdminCustomerProfile = async (
     return {
       ok: true,
       message: parsed.data.propagateFuture
-        ? `Fiche enregistrée et ${result.propagatedAppointments} rendez-vous futur${result.propagatedAppointments > 1 ? 's' : ''} actualisé${result.propagatedAppointments > 1 ? 's' : ''}.`
-        : 'Fiche enregistrée. Les rendez-vous déjà pris gardent le nom et le prix d’alors.',
+        ? `Client enregistré et ${result.propagatedAppointments} rendez-vous futur${result.propagatedAppointments > 1 ? 's' : ''} actualisé${result.propagatedAppointments > 1 ? 's' : ''}.`
+        : 'Client enregistré. Les rendez-vous déjà pris gardent le nom et le prix d’alors.',
     }
   } catch (error) {
     if (
@@ -86,12 +86,12 @@ export const saveAdminCustomerProfile = async (
       return {
         ok: false,
         message:
-          'Ces coordonnées appartiennent déjà à une autre fiche. Utilisez la fusion de doublons.',
+          'Ces coordonnées appartiennent déjà à un autre client. Utilisez la fusion de doublons.',
       }
     return {
       ok: false,
       message:
-        'La fiche n’a pas pu être enregistrée. Réessayez ; si cela recommence, notez l’heure et prévenez Noé.',
+        'Le client n’a pas pu être enregistré. Réessayez ; si cela recommence, notez l’heure et prévenez Noé.',
     }
   }
 }
@@ -120,13 +120,13 @@ export const mergeAdminCustomerProfiles = async (
     refreshCustomerViews(parsed.data.targetId)
     return {
       ok: true,
-      message: `Doublon fusionné. ${result.movedAppointments} rendez-vous rattaché${result.movedAppointments > 1 ? 's' : ''} à cette fiche.`,
+      message: `Doublon fusionné. ${result.movedAppointments} rendez-vous rattaché${result.movedAppointments > 1 ? 's' : ''} à ce client.`,
     }
   } catch {
     return {
       ok: false,
       message:
-        'Ces deux fiches ne peuvent plus être fusionnées : l’une d’elles a changé. Rafraîchissez la page.',
+        'Ces deux clients ne peuvent plus être fusionnés : l’un d’eux a changé. Rafraîchissez la page.',
     }
   }
 }

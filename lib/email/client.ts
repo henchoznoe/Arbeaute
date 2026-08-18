@@ -1,3 +1,4 @@
+import { contact } from '@/lib/constants/contact'
 import { env } from '@/lib/core/env'
 
 /**
@@ -11,11 +12,18 @@ import { env } from '@/lib/core/env'
 const RESEND_ENDPOINT = 'https://api.resend.com/emails'
 const REQUEST_TIMEOUT_MS = 10_000
 
+export interface MailAttachment {
+  filename: string
+  /** Contenu encodé en base64, comme l'attend l'API Resend. */
+  content: string
+}
+
 export interface MailEnvelope {
   to: string
   subject: string
   text: string
   html: string
+  attachments?: MailAttachment[]
 }
 
 export type MailResult =
@@ -43,9 +51,16 @@ export const sendMailThroughResend = async (
       body: JSON.stringify({
         from,
         to: [envelope.to],
+        // L'expéditeur est `noreply@arbeaute-bulle.ch`, qui ne reçoit rien.
+        // `reply_to` fait atterrir « Répondre » sur la boîte qu'Arzu relève
+        // réellement, sans qu'aucun renvoi n'ait à être monté chez l'hébergeur.
+        reply_to: contact.email,
         subject: envelope.subject,
         text: envelope.text,
         html: envelope.html,
+        ...(envelope.attachments?.length
+          ? { attachments: envelope.attachments }
+          : {}),
       }),
       signal: controller.signal,
     })

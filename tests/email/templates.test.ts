@@ -3,9 +3,9 @@ import {
   type AppointmentMailData,
   buildCancelledMail,
   buildConfirmationMail,
-  buildDailyDigestMail,
-  buildReminderMail,
   buildRescheduledMail,
+  buildSeriesConfirmationMail,
+  buildWeeklyDigestMail,
 } from '@/lib/email/templates'
 
 const base: AppointmentMailData = {
@@ -13,6 +13,7 @@ const base: AppointmentMailData = {
   customerLastName: 'Dupont',
   serviceLabel: 'Soins visage — Soin visage bio',
   startsAt: new Date('2026-08-17T11:30:00.000Z'),
+  endsAt: new Date('2026-08-17T12:30:00.000Z'),
   priceCents: 12_000,
 }
 
@@ -48,6 +49,33 @@ describe('buildConfirmationMail', () => {
       buildConfirmationMail({ ...base, customerFirstName: null }).text,
     ).toContain('Bonjour Dupont,')
   })
+
+  it('propose d’ajouter à un agenda et de déplacer, en HTML et en texte', () => {
+    // Les boutons sont des tableaux, pas des `<a>` stylés : Outlook ignore la
+    // plupart des styles posés sur un lien et rendrait un texte nu.
+    expect(mail.html).toContain('<table role="presentation"')
+    expect(mail.html).toContain('Ajouter à mon agenda')
+    expect(mail.html).toContain('Déplacer ou annuler')
+    // La version texte porte les mêmes adresses, écrites en toutes lettres.
+    expect(mail.text).toContain(
+      'Déplacer ou annuler : https://www.arbeaute-bulle.ch/mes-rendez-vous',
+    )
+    expect(mail.text).toContain(
+      'Ajouter à mon agenda : https://calendar.google.com/',
+    )
+  })
+
+  it('ne réclame plus le téléphone pour s’identifier', () => {
+    // L'identification se fait à l'adresse seule depuis la v1.10 : promettre
+    // qu'il faut aussi le numéro envoie chercher une information inutile.
+    expect(mail.text).toContain('votre adresse e-mail suffit')
+    expect(mail.text).not.toContain('numéro de téléphone utilisé')
+  })
+
+  it('dit où arrive une réponse, puisque l’expéditeur ne reçoit rien', () => {
+    expect(mail.text).toContain('info@arbeaute.ch')
+    expect(mail.html).toContain('info@arbeaute.ch')
+  })
 })
 
 describe('échappement HTML', () => {
@@ -78,48 +106,95 @@ describe('buildRescheduledMail', () => {
 })
 
 describe('buildCancelledMail', () => {
+  const mail = buildCancelledMail(base)
+
   it('emploie le passé et invite à reprendre rendez-vous', () => {
-    const mail = buildCancelledMail(base)
     expect(mail.subject).toContain('Rendez-vous annulé')
     expect(mail.text).toContain('Était prévu le : lundi 17 août 2026 à 13:30')
-    expect(mail.text).toContain('/reservation')
-  })
-})
-
-describe('buildReminderMail', () => {
-  it('annonce le rendez-vous du lendemain', () => {
-    const mail = buildReminderMail(base)
-    expect(mail.subject).toBe('Rappel — rendez-vous demain à 13:30')
-    expect(mail.text).toContain('nous vous attendons demain')
-  })
-})
-
-describe('buildDailyDigestMail', () => {
-  it('liste les rendez-vous avec heure, cliente, soin et téléphone', () => {
-    const mail = buildDailyDigestMail('lundi 17 août 2026', [
-      {
-        time: '09:00',
-        customerName: 'Marie Dupont',
-        serviceLabel: 'Soin visage bio',
-        phone: '+41 79 123 45 67',
-      },
-      {
-        time: '14:00',
-        customerName: 'Sans Numéro',
-        serviceLabel: 'Épilation',
-        phone: null,
-      },
-    ])
-    expect(mail.subject).toBe('2 rendez-vous lundi 17 août 2026')
     expect(mail.text).toContain(
-      '09:00 — Marie Dupont — Soin visage bio — +41 79 123 45 67',
+      'Prendre un rendez-vous : https://www.arbeaute-bulle.ch/reservation',
     )
-    expect(mail.text).toContain('14:00 — Sans Numéro — Épilation')
   })
 
-  it('le dit clairement quand la journée est vide', () => {
-    const mail = buildDailyDigestMail('dimanche 16 août 2026', [])
-    expect(mail.subject).toBe('Aucun rendez-vous dimanche 16 août 2026')
-    expect(mail.text).toContain('Aucun rendez-vous n’est prévu')
+  it('ne propose pas d’ajouter à un agenda un rendez-vous annulé', () => {
+    expect(mail.text).not.toContain('Ajouter à mon agenda')
+  })
+})
+
+describe('buildSeriesConfirmationMail', () => {
+  const occurrences = [
+    new Date('2026-08-17T11:30:00.000Z'),
+    new Date('2026-08-31T11:30:00.000Z'),
+    new Date('2026-09-14T11:30:00.000Z'),
+  ]
+  const mail = buildSeriesConfirmationMail(base, occurrences)
+
+  it('annonce le nombre de rendez-vous et la première date', () => {
+    expect(mail.subject).toBe(
+      '3 rendez-vous confirmés — à partir du lundi 17 août 2026',
+    )
+  })
+
+  it('liste chaque occurrence, en texte comme en HTML', () => {
+    for (const label of [
+      'lundi 17 août 2026 à 13:30',
+      'lundi 31 août 2026 à 13:30',
+      'lundi 14 septembre 2026 à 13:30',
+    ]) {
+      expect(mail.text).toContain(label)
+      expect(mail.html).toContain(label)
+    }
+  })
+
+  it('donne le prix par séance, pas un total trompeur', () => {
+    expect(mail.text.replace(/\u00a0/g, ' ')).toContain(
+      'Prix par séance : 120 CHF',
+    )
+  })
+})
+
+describe('buildWeeklyDigestMail', () => {
+  const base = {
+    periodLabel: 'du 10 août 2026 au 16 août 2026',
+    visitCount: 12,
+    workedLabel: '9 h 30',
+    revenueCents: 96_000,
+    noShowCount: 0,
+    topServiceLabel: 'Soin visage bio',
+    upcomingCount: 8,
+  }
+
+  it('répond aux quatre questions du bilan', () => {
+    const mail = buildWeeklyDigestMail(base)
+
+    expect(mail.subject).toBe(
+      '12 personnes reçues du 10 août 2026 au 16 août 2026',
+    )
+    expect(mail.text).toContain('Personnes reçues : 12')
+    expect(mail.text).toContain('Temps de soin : 9 h 30')
+    expect(mail.text.replace(/\u00a0/g, ' ')).toContain(
+      'Montant réalisé : 960 CHF',
+    )
+    expect(mail.text).toContain('Semaine qui commence : 8 rendez-vous')
+  })
+
+  it('ne met pas un « 0 absence » en avant', () => {
+    expect(buildWeeklyDigestMail(base).text).not.toContain('Absences')
+    expect(buildWeeklyDigestMail({ ...base, noShowCount: 2 }).text).toContain(
+      'Absences notées : 2',
+    )
+  })
+
+  it('reste court et sans alarme sur une semaine vide', () => {
+    const mail = buildWeeklyDigestMail({
+      ...base,
+      visitCount: 0,
+      revenueCents: 0,
+      topServiceLabel: null,
+    })
+
+    expect(mail.subject).toContain('Semaine calme')
+    expect(mail.text).toContain('Aucun rendez-vous honoré')
+    expect(mail.text).toContain('La semaine qui commence en compte 8.')
   })
 })

@@ -30,6 +30,7 @@ import {
   saveAdminAppointment,
 } from '@/lib/actions/admin-agenda'
 import type { AdminAppointmentSeriesPreview } from '@/lib/admin/agenda'
+import { formatCalendarShortDate } from '@/lib/reservation/calendar-view'
 import { capitalizeFirst } from '@/lib/utils/format'
 
 interface AppointmentValues {
@@ -49,13 +50,7 @@ interface AppointmentFormProps {
   appointment: AppointmentValues
 }
 
-const formatSeriesDate = (date: string): string =>
-  new Intl.DateTimeFormat('fr-CH', {
-    weekday: 'short',
-    day: 'numeric',
-    month: 'short',
-    year: 'numeric',
-  }).format(new Date(`${date}T12:00:00`))
+const formatSeriesDate = (date: string): string => formatCalendarShortDate(date)
 
 export const AppointmentForm = ({
   services,
@@ -65,7 +60,14 @@ export const AppointmentForm = ({
   const formRef = useRef<HTMLFormElement>(null)
   const [pending, startTransition] = useTransition()
   const [message, setMessage] = useState<string | null>(null)
-  const [outsideWarning, setOutsideWarning] = useState(false)
+  /**
+   * Les réserves que le serveur a soulevées et qu'Arzu peut lever d'un second
+   * appui : hors ouverture, superposition, ou les deux à la fois.
+   */
+  const [override, setOverride] = useState<{
+    outsideHours: boolean
+    overlap: boolean
+  } | null>(null)
   const [toastOpen, setToastOpen] = useState(false)
   const [seriesEnabled, setSeriesEnabled] = useState(false)
   const [seriesPreview, setSeriesPreview] =
@@ -79,7 +81,7 @@ export const AppointmentForm = ({
   const [comment, setComment] = useState(appointment.comment ?? '')
 
   const resetWarning = () => {
-    setOutsideWarning(false)
+    setOverride(null)
     setMessage(null)
     setToastOpen(false)
     setSeriesPreview(null)
@@ -115,11 +117,18 @@ export const AppointmentForm = ({
         email: String(formData.get('email') ?? ''),
         phone: String(formData.get('phone') ?? ''),
         comment: String(formData.get('comment') ?? ''),
-        acknowledgeOutsideHours: outsideWarning,
+        acknowledgeOutsideHours: override?.outsideHours,
+        acknowledgeOverlap: override?.overlap,
       })
       setMessage(result.message)
-      if (result.needsOutsideHoursConfirmation) {
-        setOutsideWarning(true)
+      if (
+        result.needsOutsideHoursConfirmation ||
+        result.needsOverlapConfirmation
+      ) {
+        setOverride({
+          outsideHours: Boolean(result.needsOutsideHoursConfirmation),
+          overlap: Boolean(result.needsOverlapConfirmation),
+        })
         return
       }
       if (!result.ok) setToastOpen(true)
@@ -447,7 +456,7 @@ export const AppointmentForm = ({
         </section>
       ) : null}
 
-      {message && outsideWarning ? (
+      {message && override ? (
         <div
           role="status"
           className="rounded-xl border border-warning-accent bg-warning-subtle p-4 text-sm text-warning-strong"
@@ -456,6 +465,11 @@ export const AppointmentForm = ({
             <AlertTriangle className="mt-0.5 size-4 shrink-0" />
             <span>{message}</span>
           </div>
+          {override.outsideHours ? (
+            <p className="mt-2">
+              Vous pouvez aussi ouvrir ce jour dans « Jours particuliers ».
+            </p>
+          ) : null}
           <p className="mt-2 font-medium">
             Appuyez une seconde fois pour confirmer cette exception.
           </p>
@@ -516,17 +530,19 @@ export const AppointmentForm = ({
           <Button
             type="submit"
             disabled={pending}
-            className={outsideWarning ? 'bg-warning text-white' : undefined}
+            className={override ? 'bg-warning text-white' : undefined}
           >
             {pending ? (
               <LoaderCircle className="size-4 animate-spin" />
-            ) : outsideWarning ? (
+            ) : override ? (
               <AlertTriangle className="size-4" />
             ) : (
               <Save className="size-4" />
             )}
-            {outsideWarning
-              ? 'Confirmer malgré l’horaire'
+            {override
+              ? override.overlap && !override.outsideHours
+                ? 'Confirmer la superposition'
+                : 'Confirmer malgré l’horaire'
               : appointment.id
                 ? 'Enregistrer les modifications'
                 : 'Créer le rendez-vous'}

@@ -1,11 +1,13 @@
 import { after } from 'next/server'
 import { isEmailConfigured } from '@/lib/core/env'
+import { createCalendarAttachment } from '@/lib/email/attachments'
 import { deliverEmail } from '@/lib/email/send'
 import {
   type AppointmentMailData,
   buildCancelledMail,
   buildConfirmationMail,
   buildRescheduledMail,
+  buildSeriesConfirmationMail,
 } from '@/lib/email/templates'
 import { formatServiceLabel } from '@/lib/reservation/service-label'
 
@@ -25,6 +27,7 @@ interface NotifiableAppointment {
   serviceNameSnapshot: string
   servicePriceCents: number
   startsAt: Date
+  endsAt: Date
   categoryName?: string | null
 }
 
@@ -39,6 +42,7 @@ const toMailData = (
     appointment.categoryName ?? undefined,
   ),
   startsAt: appointment.startsAt,
+  endsAt: appointment.endsAt,
   priceCents: appointment.servicePriceCents,
   previousStartsAt,
 })
@@ -52,6 +56,7 @@ const queue = (
     html: string
   },
   previousStartsAt?: Date,
+  withCalendar = true,
 ): string | null => {
   const recipient = appointment.customerEmail
   // Sans envoi configuré, rien n'est mis en file : l'écran de confirmation
@@ -59,12 +64,20 @@ const queue = (
   if (!recipient || !isEmailConfigured) return null
 
   const content = build(toMailData(appointment, previousStartsAt))
+  // Le rendez-vous annulé n'a plus rien à mettre dans un agenda, et une série
+  // ne peut pas en joindre une seule occurrence sans induire en erreur.
+  const attachment =
+    !withCalendar || kind === 'BOOKING_CANCELLED'
+      ? null
+      : createCalendarAttachment(appointment)
+
   after(async () => {
     await deliverEmail({
       kind,
       to: recipient,
       appointmentId: appointment.id,
       ...content,
+      ...(attachment ? { attachments: [attachment] } : {}),
     })
   })
   return recipient
@@ -76,20 +89,46 @@ export const notifyAppointmentConfirmed = (
 ): string | null =>
   queue(appointment, 'BOOKING_CONFIRMATION', buildConfirmationMail)
 
+/** Renvoie l'adresse prévenue, ou `null` si personne ne l'a été. */
 export const notifyAppointmentRescheduled = (
   appointment: NotifiableAppointment,
   previousStartsAt: Date,
-): void => {
+): string | null =>
   queue(
     appointment,
     'BOOKING_RESCHEDULED',
     buildRescheduledMail,
     previousStartsAt,
   )
-}
 
+/** Renvoie l'adresse prévenue, ou `null` si personne ne l'a été. */
 export const notifyAppointmentCancelled = (
   appointment: NotifiableAppointment,
-): void => {
-  queue(appointment, 'BOOKING_CANCELLED', buildCancelledMail)
+): string | null => queue(appointment, 'BOOKING_CANCELLED', buildCancelledMail)
+
+/**
+ * Une série : un seul message, qui liste les occurrences.
+ *
+ * La trace est rattachée au premier rendez-vous. Un renvoi depuis
+ * `/admin/emails` reconstruira donc la confirmation de celui-là seul — moins
+ * complet que l'original, mais jamais faux.
+ */
+export const notifyAppointmentSeriesConfirmed = (
+  appointments: NotifiableAppointment[],
+): string | null => {
+  const [first] = appointments
+  if (!first) return null
+  if (appointments.length === 1) return notifyAppointmentConfirmed(first)
+
+  return queue(
+    first,
+    'BOOKING_CONFIRMATION',
+    data =>
+      buildSeriesConfirmationMail(
+        data,
+        appointments.map(appointment => appointment.startsAt),
+      ),
+    undefined,
+    false,
+  )
 }

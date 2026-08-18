@@ -3,11 +3,11 @@
 import { revalidatePath } from 'next/cache'
 import prisma from '@/lib/core/prisma'
 import { getAdminSession } from '@/lib/core/session-cookies'
+import { createCalendarAttachment } from '@/lib/email/attachments'
 import { deliverEmail } from '@/lib/email/send'
 import {
   buildCancelledMail,
   buildConfirmationMail,
-  buildReminderMail,
   buildRescheduledMail,
 } from '@/lib/email/templates'
 import { formatServiceLabel } from '@/lib/reservation/service-label'
@@ -23,7 +23,6 @@ const builders = {
   BOOKING_CONFIRMATION: buildConfirmationMail,
   BOOKING_RESCHEDULED: buildRescheduledMail,
   BOOKING_CANCELLED: buildCancelledMail,
-  APPOINTMENT_REMINDER: buildReminderMail,
 } as const satisfies Partial<Record<EmailKind, unknown>>
 
 /**
@@ -64,7 +63,7 @@ export const resendFailedEmail = async (
     return {
       ok: false,
       message:
-        'Ce message ne peut pas être reconstruit. Le récapitulatif du soir repartira de lui-même demain.',
+        'Ce message ne peut plus être reconstruit. Seules les confirmations, les déplacements et les annulations peuvent repartir.',
     }
 
   const appointment = await prisma.appointment.findUnique({
@@ -72,6 +71,7 @@ export const resendFailedEmail = async (
     select: {
       id: true,
       startsAt: true,
+      endsAt: true,
       customerEmail: true,
       customerFirstName: true,
       customerLastName: true,
@@ -84,7 +84,7 @@ export const resendFailedEmail = async (
     return {
       ok: false,
       message:
-        'Le rendez-vous n’a plus d’adresse e-mail. Ajoutez-en une sur sa fiche, puis réessayez.',
+        'Le rendez-vous n’a plus d’adresse e-mail. Ajoutez-en une sur son client, puis réessayez.',
     }
 
   const content = build({
@@ -95,14 +95,26 @@ export const resendFailedEmail = async (
       appointment.service.category?.name,
     ),
     startsAt: appointment.startsAt,
+    endsAt: appointment.endsAt,
     priceCents: appointment.servicePriceCents,
   })
+
+  const attachment =
+    delivery.kind === 'BOOKING_CANCELLED'
+      ? null
+      : createCalendarAttachment({
+          id: appointment.id,
+          serviceNameSnapshot: appointment.serviceNameSnapshot,
+          startsAt: appointment.startsAt,
+          endsAt: appointment.endsAt,
+        })
 
   const outcome = await deliverEmail({
     kind: delivery.kind,
     to: appointment.customerEmail,
     appointmentId: appointment.id,
     ...content,
+    ...(attachment ? { attachments: [attachment] } : {}),
   })
   revalidatePath('/admin/emails')
 

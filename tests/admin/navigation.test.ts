@@ -15,6 +15,7 @@ describe('admin navigation', () => {
     ['/admin/appointments/new', 'create'],
     ['/admin/settings', 'settings'],
     ['/admin/availability', 'settings'],
+    ['/admin/emails', 'settings'],
     ['/admin/services/service-1', 'settings'],
   ])('identifies %s as %s', (pathname, expected) => {
     expect(getActiveAdminNavigationItem(pathname)).toBe(expected)
