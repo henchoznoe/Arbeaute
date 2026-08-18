@@ -78,9 +78,9 @@ figure dans le titre et se réévalue après chaque livraison.
 
 | Statut | Éléments |
 | --- | --- |
-| ✅ Terminés | 5, 7, 13, 14 |
+| ✅ Terminés | 5, 6, 7, 13, 14 |
 | 🟡 En cours | Aucun |
-| ⏳ Prêt à démarrer | 1 à 4, 6, 8 à 12 |
+| ⏳ Prêt à démarrer | 1 à 4, 8 à 12 |
 | 🔒 Bloqués | Aucun |
 
 - **Priorité P0** : corrige une friction quotidienne ou prépare plusieurs autres
@@ -383,7 +383,7 @@ prendra pour un oubli.
 **Dépendances :** élément 7, livré avant, pour ne pas enrichir un gabarit qui
 va disparaître. Débloque les éléments 6 et 8.
 
-### 6. Prévenir la personne à chaque changement décidé par Arzu — ⏳
+### 6. Prévenir la personne à chaque changement décidé par Arzu — ✅
 
 **Priorité : P0 · Effort : M · Nature : amélioration**
 
@@ -403,7 +403,26 @@ la v2 devait supprimer. Le formulaire admin promet d’ailleurs déjà ce qu’i
 tient pas : son message d’erreur annonce que l’e-mail et le téléphone « servent
 à envoyer la confirmation ».
 
-**Recommandation.** Câbler les trois mutations admin sur les fonctions de
+**Livré.** Les trois mutations écrivent désormais à la personne concernée.
+`saveAdminAppointmentSerializable` remonte l’état précédent
+(`{ appointment, previous }`), et `describeAdminAppointmentChange`
+(`lib/admin/appointment-notification.ts`) tranche en fonction pure : création,
+déplacement, ou rien du tout quand seuls le nom, le téléphone ou le commentaire
+ont bougé.
+
+Deux écarts par rapport au texte ci-dessous, tous deux assumés :
+
+- **L’absence d’adresse se dit après l’enregistrement, pas avant.** Le schéma
+  admin exige déjà une adresse à la saisie (`lib/actions/admin-agenda.ts:46`) :
+  le cas « avant » n’existe donc qu’à l’annulation d’un rendez-vous ancien. Le
+  message de résultat le nomme dans tous les cas — « Personne n’a été prévenu :
+  ce rendez-vous n’a pas d’adresse e-mail » — ce qui couvre la situation réelle
+  au lieu d’une situation théorique.
+- **Le message de série ne joint pas de `.ics`.** Y attacher l’agenda d’une seule
+  occurrence sur douze induirait en erreur ; un fichier multi-occurrences est un
+  travail à part, qui n’a pas été fait.
+
+**Recommandation initiale.** Câbler les trois mutations admin sur les fonctions de
 `lib/email/notifications.ts`, qui existent et sont déjà éprouvées. Pas de case à
 cocher : l’envoi est systématique dès qu’une adresse est enregistrée. Quatre
 nuances, chacune pour une raison :

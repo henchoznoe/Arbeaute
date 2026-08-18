@@ -17,6 +17,10 @@ import {
   previewAdminAppointmentSeries as previewAppointmentSeries,
   saveAdminAppointmentSerializable,
 } from '@/lib/admin/agenda'
+import {
+  describeAdminAppointmentChange,
+  describeAdminNotification,
+} from '@/lib/admin/appointment-notification'
 import { runAuditedMutation } from '@/lib/admin/audit'
 import {
   AdminAvailabilityExceptionError,
@@ -25,6 +29,12 @@ import {
 } from '@/lib/admin/availability-exceptions'
 import prisma from '@/lib/core/prisma'
 import { getAdminSession } from '@/lib/core/session-cookies'
+import {
+  notifyAppointmentCancelled,
+  notifyAppointmentConfirmed,
+  notifyAppointmentRescheduled,
+  notifyAppointmentSeriesConfirmed,
+} from '@/lib/email/notifications'
 import { MAX_AVAILABILITY_EXCEPTION_RANGE_DAYS } from '@/lib/reservation/constants'
 import { normalizeCustomerSearchName } from '@/lib/reservation/customers'
 import { normalizeEmail, normalizePhone } from '@/lib/reservation/identity'
@@ -287,9 +297,10 @@ export const createAdminAppointmentSeries = async (
     )
     revalidatePath('/admin')
     revalidatePath('/mes-rendez-vous')
+    const recipient = notifyAppointmentSeriesConfirmed(appointments)
     return {
       ok: true,
-      message: `${appointments.length} rendez-vous ont été créés.`,
+      message: `${appointments.length} rendez-vous ont été créés.${describeAdminNotification(recipient, true)}`,
     }
   } catch (error) {
     if (error instanceof AdminAppointmentSeriesError)
@@ -363,23 +374,39 @@ export const saveAdminAppointment = async (
         needsOutsideHoursConfirmation: true,
       }
 
-    const appointment = await saveAdminAppointmentSerializable(prisma, {
-      appointmentId: parsed.data.appointmentId,
-      serviceId: parsed.data.serviceId,
-      startsAt,
-      firstName: parsed.data.firstName || null,
-      lastName: parsed.data.lastName,
-      email,
-      phone,
-      comment: parsed.data.comment || null,
-    })
+    const { appointment, previous } = await saveAdminAppointmentSerializable(
+      prisma,
+      {
+        appointmentId: parsed.data.appointmentId,
+        serviceId: parsed.data.serviceId,
+        startsAt,
+        firstName: parsed.data.firstName || null,
+        lastName: parsed.data.lastName,
+        email,
+        phone,
+        comment: parsed.data.comment || null,
+      },
+    )
     revalidatePath('/admin')
     revalidatePath('/mes-rendez-vous')
+
+    // Rectifier une orthographe ne déplace rien : seul un changement d'horaire
+    // ou de soin justifie d'écrire à la personne.
+    const change = describeAdminAppointmentChange(previous, appointment)
+    const recipient =
+      change === 'created'
+        ? notifyAppointmentConfirmed(appointment)
+        : change === 'rescheduled' && previous
+          ? notifyAppointmentRescheduled(appointment, previous.startsAt)
+          : null
+
     return {
       ok: true,
-      message: parsed.data.appointmentId
-        ? 'Le rendez-vous a été mis à jour.'
-        : 'Le rendez-vous a été créé.',
+      message: `${
+        parsed.data.appointmentId
+          ? 'Le rendez-vous a été mis à jour.'
+          : 'Le rendez-vous a été créé.'
+      }${describeAdminNotification(recipient, change !== 'unchanged')}`,
       appointmentId: appointment.id,
     }
   } catch (error) {
@@ -413,10 +440,17 @@ export const cancelAdminAppointment = async (
         'Ce rendez-vous n’existe plus. Revenez à l’agenda et rouvrez-le.',
     }
   try {
-    await cancelAdminAppointmentSerializable(prisma, parsedId.data)
+    const cancelled = await cancelAdminAppointmentSerializable(
+      prisma,
+      parsedId.data,
+    )
     revalidatePath('/admin')
     revalidatePath('/mes-rendez-vous')
-    return { ok: true, message: 'Le rendez-vous a été annulé.' }
+    const recipient = notifyAppointmentCancelled(cancelled)
+    return {
+      ok: true,
+      message: `Le rendez-vous a été annulé.${describeAdminNotification(recipient, true)}`,
+    }
   } catch {
     return {
       ok: false,

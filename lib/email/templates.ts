@@ -258,3 +258,57 @@ export const buildCancelledMail = (data: AppointmentMailData): MailContent => {
     ),
   }
 }
+
+/**
+ * Une série de rendez-vous, en **un** message.
+ *
+ * `createAdminAppointmentSeries` peut créer douze rendez-vous d'un coup. Douze
+ * e-mails à la même personne épuiseraient le quota gratuit et seraient pénibles
+ * à recevoir ; les occurrences tiennent dans une liste.
+ */
+export const buildSeriesConfirmationMail = (
+  data: AppointmentMailData,
+  occurrences: Date[],
+): MailContent => {
+  const title = `Vos ${occurrences.length} rendez-vous sont confirmés`
+  const intro = `Bonjour ${greetingName(data)}, vos ${occurrences.length} rendez-vous sont bien enregistrés.`
+  const closing =
+    'Pour en déplacer un ou l’annuler, votre adresse e-mail suffit.'
+  const actions = [manageAction]
+  const lines = occurrences.map(
+    occurrence =>
+      `${formatMailDate(occurrence)} à ${formatMailTime(occurrence)}`,
+  )
+
+  return {
+    subject: `${occurrences.length} rendez-vous confirmés — à partir du ${formatMailDate(occurrences[0] ?? data.startsAt)}`,
+    text: [
+      intro,
+      '',
+      `Soin : ${data.serviceLabel}`,
+      `Prix par séance : ${formatPrice(data.priceCents)}`,
+      `Adresse : ${contact.address}`,
+      '',
+      ...lines,
+      '',
+      closing,
+      ...actionsText(actions),
+      '',
+      ...textFooter,
+    ].join('\n'),
+    html: wrapHtml(
+      title,
+      [
+        escapeHtml(intro),
+        `<strong>Soin :</strong> ${escapeHtml(data.serviceLabel)}`,
+        `<strong>Prix par séance :</strong> ${escapeHtml(formatPrice(data.priceCents))}`,
+        `<strong>Adresse :</strong> ${escapeHtml(contact.address)}`,
+        `<ul style="margin:0 0 12px;padding-left:20px">${lines
+          .map(line => `<li>${escapeHtml(line)}</li>`)
+          .join('')}</ul>`,
+        escapeHtml(closing),
+      ],
+      actions,
+    ),
+  }
+}

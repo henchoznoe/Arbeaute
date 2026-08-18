@@ -473,7 +473,7 @@ export const saveAdminAppointmentSerializable = async (
                 status: created.status,
               },
             })
-            return created
+            return { appointment: created, previous: null }
           }
 
           const updated = await transaction.appointment.update({
@@ -496,7 +496,13 @@ export const saveAdminAppointmentSerializable = async (
               startsAt: updated.startsAt.toISOString(),
             },
           })
-          return updated
+          return {
+            appointment: updated,
+            previous: {
+              startsAt: current.startsAt,
+              serviceId: current.serviceId,
+            },
+          }
         },
         { isolationLevel: 'Serializable' },
       )

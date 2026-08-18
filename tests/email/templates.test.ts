@@ -4,6 +4,7 @@ import {
   buildCancelledMail,
   buildConfirmationMail,
   buildRescheduledMail,
+  buildSeriesConfirmationMail,
 } from '@/lib/email/templates'
 
 const base: AppointmentMailData = {
@@ -76,16 +77,6 @@ describe('buildConfirmationMail', () => {
   })
 })
 
-describe('buildCancelledMail', () => {
-  it('invite à reprendre un rendez-vous sans joindre d’agenda', () => {
-    const mail = buildCancelledMail(base)
-    expect(mail.text).toContain(
-      'Prendre un rendez-vous : https://www.arbeaute-bulle.ch/reservation',
-    )
-    expect(mail.text).not.toContain('Ajouter à mon agenda')
-  })
-})
-
 describe('échappement HTML', () => {
   it('neutralise le HTML saisi dans un nom', () => {
     const mail = buildConfirmationMail({
@@ -114,10 +105,49 @@ describe('buildRescheduledMail', () => {
 })
 
 describe('buildCancelledMail', () => {
+  const mail = buildCancelledMail(base)
+
   it('emploie le passé et invite à reprendre rendez-vous', () => {
-    const mail = buildCancelledMail(base)
     expect(mail.subject).toContain('Rendez-vous annulé')
     expect(mail.text).toContain('Était prévu le : lundi 17 août 2026 à 13:30')
-    expect(mail.text).toContain('/reservation')
+    expect(mail.text).toContain(
+      'Prendre un rendez-vous : https://www.arbeaute-bulle.ch/reservation',
+    )
+  })
+
+  it('ne propose pas d’ajouter à un agenda un rendez-vous annulé', () => {
+    expect(mail.text).not.toContain('Ajouter à mon agenda')
+  })
+})
+
+describe('buildSeriesConfirmationMail', () => {
+  const occurrences = [
+    new Date('2026-08-17T11:30:00.000Z'),
+    new Date('2026-08-31T11:30:00.000Z'),
+    new Date('2026-09-14T11:30:00.000Z'),
+  ]
+  const mail = buildSeriesConfirmationMail(base, occurrences)
+
+  it('annonce le nombre de rendez-vous et la première date', () => {
+    expect(mail.subject).toBe(
+      '3 rendez-vous confirmés — à partir du lundi 17 août 2026',
+    )
+  })
+
+  it('liste chaque occurrence, en texte comme en HTML', () => {
+    for (const label of [
+      'lundi 17 août 2026 à 13:30',
+      'lundi 31 août 2026 à 13:30',
+      'lundi 14 septembre 2026 à 13:30',
+    ]) {
+      expect(mail.text).toContain(label)
+      expect(mail.html).toContain(label)
+    }
+  })
+
+  it('donne le prix par séance, pas un total trompeur', () => {
+    expect(mail.text.replace(/\u00a0/g, ' ')).toContain(
+      'Prix par séance : 120 CHF',
+    )
   })
 })

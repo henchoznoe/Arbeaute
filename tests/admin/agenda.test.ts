@@ -189,7 +189,9 @@ describe('manual admin appointments', () => {
         phone: '+41791234567',
         comment: null,
       }),
-    ).resolves.toBe(created)
+      // Une création ne rapporte aucun état précédent : c'est ce `null` qui
+      // dit à l'action d'envoyer une confirmation plutôt qu'un déplacement.
+    ).resolves.toEqual({ appointment: created, previous: null })
     expect(createActivity).not.toHaveBeenCalled()
     expect(transaction.auditEvent.create).toHaveBeenCalledWith({
       data: expect.objectContaining({
