@@ -161,23 +161,45 @@ const CustomerProfile = async ({ params }: Readonly<CustomerPageProps>) => {
         <CustomerQuickActions customerId={customer.id} phone={customer.phone} />
       </header>
 
+      {/* Quatre réponses aux questions qu'Arzu se pose en ouvrant une fiche,
+          à la place de l'énumération des statuts de la base. Les comptages
+          détaillés n'ont pas disparu : ils sont descendus avec l'historique,
+          où ils sont à leur place. */}
       <section
-        className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-5"
-        aria-label="Indicateurs de la fiche"
+        className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-4"
+        aria-label="L’essentiel de cette fiche"
       >
-        {Object.entries(statusLabels).map(([status, label]) => (
-          <article key={status} className="rounded-2xl border bg-card p-4">
-            <p className="text-2xl font-bold tabular-nums">
-              {profile.statusCounts[status as AppointmentStatus]}
-            </p>
-            <p className="text-xs text-muted-foreground">{label}</p>
-          </article>
-        ))}
-        <article className="col-span-2 rounded-2xl border bg-primary/5 p-4 sm:col-span-1">
+        <article className="rounded-2xl border bg-primary/5 p-4">
           <p className="text-2xl font-bold tabular-nums">
             {profile.totalVisits}
           </p>
-          <p className="text-xs text-muted-foreground">Visites réalisées</p>
+          <p className="text-xs text-muted-foreground">
+            {profile.totalVisits > 1 ? 'visites' : 'visite'}
+          </p>
+        </article>
+        <article className="rounded-2xl border bg-card p-4">
+          <p className="text-base font-semibold">
+            {profile.lastVisitAt
+              ? capitalizeFirst(formatDayDate(profile.lastVisitAt))
+              : 'Jamais encore'}
+          </p>
+          <p className="mt-1 text-xs text-muted-foreground">Dernière venue</p>
+        </article>
+        <article className="rounded-2xl border bg-card p-4">
+          <p className="text-base font-semibold break-words">
+            {profile.usualServiceLabel ?? 'Rien d’habituel'}
+          </p>
+          <p className="mt-1 text-xs text-muted-foreground">Soin habituel</p>
+        </article>
+        <article className="rounded-2xl border bg-card p-4">
+          <p className="text-base font-semibold">
+            {profile.upcoming[0]
+              ? capitalizeFirst(
+                  formatCompactMoment(profile.upcoming[0].startsAt),
+                )
+              : 'Rien de prévu'}
+          </p>
+          <p className="mt-1 text-xs text-muted-foreground">Revient</p>
         </article>
       </section>
 
@@ -200,6 +222,17 @@ const CustomerProfile = async ({ params }: Readonly<CustomerPageProps>) => {
               <History className="size-5 text-primary" />
               <h2 className="text-xl font-semibold">Historique récent</h2>
             </div>
+            {/* Les comptages détaillés vivent ici, au contact de ce qu'ils
+                comptent. Les absences ne s'affichent que s'il y en a : un
+                « 0 » mis en avant est une accusation gratuite. */}
+            <p className="mt-2 text-xs text-muted-foreground">
+              {profile.totalAppointments} rendez-vous au total ·{' '}
+              {profile.statusCounts.CANCELLED} annulé
+              {profile.statusCounts.CANCELLED > 1 ? 's' : ''}
+              {profile.statusCounts.NO_SHOW > 0
+                ? ` · ${profile.statusCounts.NO_SHOW} absence${profile.statusCounts.NO_SHOW > 1 ? 's' : ''}`
+                : ''}
+            </p>
             <CustomerAppointmentList
               appointments={profile.history}
               emptyTitle="Aucun historique"

@@ -312,3 +312,94 @@ export const buildSeriesConfirmationMail = (
     ),
   }
 }
+
+export interface WeeklyDigestData {
+  /** « du lundi 10 au dimanche 16 août 2026 ». */
+  periodLabel: string
+  visitCount: number
+  workedLabel: string
+  revenueCents: number
+  noShowCount: number
+  topServiceLabel: string | null
+  /** Rendez-vous confirmés de la semaine qui commence. */
+  upcomingCount: number
+}
+
+/**
+ * Le bilan du dimanche soir — le seul message qu'Arzu reçoit.
+ *
+ * Quatre réponses, pas davantage : combien de personnes, combien d'heures, quel
+ * montant, et ce que contient la semaine qui vient. L'élément 12 de cette même
+ * roadmap consiste précisément à retirer cinq compteurs d'un écran parce qu'ils
+ * ne répondaient à aucune question ; ce message ne refait pas l'erreur.
+ *
+ * Les absences ne s'affichent que s'il y en a : un « 0 » mis en avant est une
+ * accusation gratuite.
+ */
+export const buildWeeklyDigestMail = (data: WeeklyDigestData): MailContent => {
+  const title = `Votre semaine ${data.periodLabel}`
+
+  if (data.visitCount === 0)
+    return {
+      subject: `Semaine calme ${data.periodLabel}`,
+      text: [
+        'Bonjour Arzu,',
+        '',
+        `Aucun rendez-vous honoré ${data.periodLabel}.`,
+        data.upcomingCount > 0
+          ? `La semaine qui commence en compte ${data.upcomingCount}.`
+          : 'Aucun rendez-vous n’est encore pris pour la semaine qui commence.',
+        '',
+        contact.name,
+      ].join('\n'),
+      html: wrapHtml(title, [
+        `Aucun rendez-vous honoré ${escapeHtml(data.periodLabel)}.`,
+        escapeHtml(
+          data.upcomingCount > 0
+            ? `La semaine qui commence en compte ${data.upcomingCount}.`
+            : 'Aucun rendez-vous n’est encore pris pour la semaine qui commence.',
+        ),
+      ]),
+    }
+
+  const lines = [
+    `Personnes reçues : ${data.visitCount}`,
+    `Temps de soin : ${data.workedLabel}`,
+    `Montant réalisé : ${formatPrice(data.revenueCents)}`,
+    ...(data.topServiceLabel
+      ? [`Soin le plus donné : ${data.topServiceLabel}`]
+      : []),
+    ...(data.noShowCount > 0 ? [`Absences notées : ${data.noShowCount}`] : []),
+    `Semaine qui commence : ${data.upcomingCount} rendez-vous`,
+  ]
+
+  const actions = [
+    { label: 'Ouvrir mon agenda', url: `${contact.website}/admin` },
+  ]
+
+  return {
+    subject: `${data.visitCount} personnes reçues ${data.periodLabel}`,
+    text: [
+      'Bonjour Arzu,',
+      '',
+      `Voici votre semaine ${data.periodLabel}.`,
+      '',
+      ...lines,
+      '',
+      ...actionsText(actions),
+      '',
+      contact.name,
+    ].join('\n'),
+    html: wrapHtml(
+      title,
+      [
+        `Voici votre semaine ${escapeHtml(data.periodLabel)}.`,
+        ...lines.map(line => {
+          const [label, ...rest] = line.split(' : ')
+          return `<strong>${escapeHtml(label)} :</strong> ${escapeHtml(rest.join(' : '))}`
+        }),
+      ],
+      actions,
+    ),
+  }
+}

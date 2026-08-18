@@ -16,6 +16,7 @@ export const emailKindLabels: Record<EmailKind, string> = {
   BOOKING_CANCELLED: 'Rendez-vous annulé',
   APPOINTMENT_REMINDER: 'Rappel de la veille',
   DAILY_DIGEST: 'Votre récapitulatif du soir',
+  WEEKLY_DIGEST: 'Votre bilan de la semaine',
 }
 
 /**

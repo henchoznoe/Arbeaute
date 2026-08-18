@@ -61,6 +61,10 @@ export interface AdminCustomerProfile {
   statusCounts: Record<AppointmentStatus, number>
   totalAppointments: number
   totalVisits: number
+  /** Dernier passage honoré, ou `null` pour une première venue. */
+  lastVisitAt: Date | null
+  /** Le soin le plus souvent pris, sur l'historique récent. */
+  usualServiceLabel: string | null
 }
 
 export class AdminCustomerProfileError extends Error {
@@ -142,6 +146,22 @@ export const getAdminCustomerProfile = async (
     (total, count) => total + count,
     0,
   )
+  // Dérivé de l'historique déjà chargé : aucune requête de plus. Une visite
+  // honorée est un rendez-vous confirmé dont l'heure est passée — `COMPLETED`
+  // n'est plus écrit depuis la v2, mais les lignes anciennes le portent encore.
+  const honoured = history.filter(
+    appointment =>
+      (appointment.status === 'CONFIRMED' ||
+        appointment.status === 'COMPLETED') &&
+      appointment.endsAt <= now,
+  )
+  const serviceCounts = new Map<string, number>()
+  for (const appointment of honoured)
+    serviceCounts.set(
+      appointment.serviceNameSnapshot,
+      (serviceCounts.get(appointment.serviceNameSnapshot) ?? 0) + 1,
+    )
+
   return {
     customer,
     upcoming,
@@ -152,6 +172,12 @@ export const getAdminCustomerProfile = async (
     // `COMPLETED` ne compte plus que les rendez-vous marqués par l'ancienne
     // interface, quand le statut se posait encore à la main.
     totalVisits: statusCounts.COMPLETED + pastConfirmedCount,
+    lastVisitAt: honoured[0]?.startsAt ?? null,
+    usualServiceLabel:
+      [...serviceCounts.entries()].sort(
+        (first, second) =>
+          second[1] - first[1] || first[0].localeCompare(second[0], 'fr'),
+      )[0]?.[0] ?? null,
   }
 }
 

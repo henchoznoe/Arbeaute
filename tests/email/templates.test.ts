@@ -5,6 +5,7 @@ import {
   buildConfirmationMail,
   buildRescheduledMail,
   buildSeriesConfirmationMail,
+  buildWeeklyDigestMail,
 } from '@/lib/email/templates'
 
 const base: AppointmentMailData = {
@@ -149,5 +150,51 @@ describe('buildSeriesConfirmationMail', () => {
     expect(mail.text.replace(/\u00a0/g, ' ')).toContain(
       'Prix par séance : 120 CHF',
     )
+  })
+})
+
+describe('buildWeeklyDigestMail', () => {
+  const base = {
+    periodLabel: 'du 10 août 2026 au 16 août 2026',
+    visitCount: 12,
+    workedLabel: '9 h 30',
+    revenueCents: 96_000,
+    noShowCount: 0,
+    topServiceLabel: 'Soin visage bio',
+    upcomingCount: 8,
+  }
+
+  it('répond aux quatre questions du bilan', () => {
+    const mail = buildWeeklyDigestMail(base)
+
+    expect(mail.subject).toBe(
+      '12 personnes reçues du 10 août 2026 au 16 août 2026',
+    )
+    expect(mail.text).toContain('Personnes reçues : 12')
+    expect(mail.text).toContain('Temps de soin : 9 h 30')
+    expect(mail.text.replace(/\u00a0/g, ' ')).toContain(
+      'Montant réalisé : 960 CHF',
+    )
+    expect(mail.text).toContain('Semaine qui commence : 8 rendez-vous')
+  })
+
+  it('ne met pas un « 0 absence » en avant', () => {
+    expect(buildWeeklyDigestMail(base).text).not.toContain('Absences')
+    expect(buildWeeklyDigestMail({ ...base, noShowCount: 2 }).text).toContain(
+      'Absences notées : 2',
+    )
+  })
+
+  it('reste court et sans alarme sur une semaine vide', () => {
+    const mail = buildWeeklyDigestMail({
+      ...base,
+      visitCount: 0,
+      revenueCents: 0,
+      topServiceLabel: null,
+    })
+
+    expect(mail.subject).toContain('Semaine calme')
+    expect(mail.text).toContain('Aucun rendez-vous honoré')
+    expect(mail.text).toContain('La semaine qui commence en compte 8.')
   })
 })

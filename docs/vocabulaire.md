@@ -35,6 +35,10 @@ explication l’emporte, même si elle est plus longue.
 | Exports CSV | Télécharger vos données |
 | Exception horaire | Jour particulier |
 | Horaire hebdomadaire | Horaire de la semaine |
+| Confirmé · Terminé · Annulé · Absence (en tête de fiche) | Visites · Dernière venue · Soin habituel · Revient |
+| Visites réalisées | Visites |
+| Récapitulatif du soir | Bilan de la semaine |
+| Chiffre réalisé | Montant réalisé |
 | Origine (d’un rendez-vous) | Prise par |
 | Série finie | Répéter ce rendez-vous |
 | Occurrence | Rendez-vous, ou date |

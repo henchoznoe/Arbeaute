@@ -220,24 +220,28 @@ counted from successful sends and surfaced at `/admin/emails`, where a failed
 message can be resent — its body is rebuilt from the appointment rather than
 stored.
 
-**Only three messages are sent, and all three are triggered by a booking**:
-confirmation, reschedule, cancellation. Nothing is sent by the passage of time.
-The day-before reminder and the nightly digest were removed in v3 — the owner
-does not want a daily message — along with `vercel.json` and the cron route.
+**Four messages exist.** Three are triggered by a booking — confirmation,
+reschedule, cancellation — and one by the clock: Arzu's weekly summary, sent
+Sunday evening by the single cron in `vercel.json`. The day-before reminder and
+the nightly digest were removed in v3: the owner does not want a daily message.
 `APPOINTMENT_REMINDER` and `DAILY_DIGEST` remain in the `EmailKind` enum because
 past `EmailDelivery` rows carry them and dropping an enum value would be a
 destructive migration; `emailKindLabels` still translates them so the history
 reads in French, but `isResendableKind` excludes them — no template can rebuild
 them any more.
 
-A weekly summary for Arzu (Sunday evening) is planned as item 8 of
-[ROADMAP-V3.md](ROADMAP-V3.md); it will reintroduce a single cron. When it does,
-remember that **cron schedules are UTC and ignore daylight saving** — `0 18 * * 0`
-fires at 20:00 in Bulle in summer and 19:00 in winter — that Hobby triggers
-within the hour rather than to the minute, so nothing in the job may depend on
-an exact time, and that `CRON_SECRET` has to be added back to `lib/core/env.ts`
-and to `.env.example` — Vercel only injects it when a cron is declared in
-`vercel.json`.
+**Cron schedules are UTC and ignore daylight saving.** `0 18 * * 0` fires at
+20:00 in Bulle in summer and 19:00 in winter, and Hobby triggers within the hour
+rather than to the minute — so nothing in `runWeeklyDigest` depends on an exact
+time: the covered week comes from local date keys, never from "the last 168
+hours". Vercel injects `CRON_SECRET` only while a cron is declared in
+`vercel.json`; without it the route answers 503 rather than running
+unauthenticated.
+
+**A blank optional env var means "absent".** `lib/core/env.ts` wraps optional
+variables in a helper mapping `''` to `undefined`: `.optional()` alone only
+covers a *missing* variable, so `CRON_SECRET=""` in a `.env.local` used to fail
+`.min(16)` and break the build.
 
 ### PWA
 

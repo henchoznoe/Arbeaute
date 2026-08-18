@@ -78,9 +78,9 @@ figure dans le titre et se réévalue après chaque livraison.
 
 | Statut | Éléments |
 | --- | --- |
-| ✅ Terminés | 1, 2, 3, 5, 6, 7, 9, 10, 13, 14 |
+| ✅ Terminés | 1, 2, 3, 5, 6, 7, 8, 9, 10, 12, 13, 14 |
 | 🟡 En cours | Aucun |
-| ⏳ Prêt à démarrer | 4, 8, 12 |
+| ⏳ Prêt à démarrer | 4 |
 | 🔒 Bloqués | 11 — prémisse invalidée, à repenser (voir l’élément) |
 
 - **Priorité P0** : corrige une friction quotidienne ou prépare plusieurs autres
@@ -582,7 +582,7 @@ Deux points non prévus par le texte ci-dessus :
 
 **Dépendances :** aucune ; précède les éléments 5 et 8.
 
-### 8. Le bilan du dimanche soir — ⏳
+### 8. Le bilan du dimanche soir — ✅
 
 **Priorité : P1 · Effort : M · Nature : évolution**
 
@@ -591,7 +591,33 @@ sept récapitulatifs plats — `10:00 — Nom Prénom — Soin — +41 …` — 
 de la semaine écoulée, envoyé le dimanche soir : ce qui a été fait, ce que cela
 représente, et ce qui l’attend.
 
-**Recommandation.** Une seule tâche planifiée, `0 18 * * 0` dans `vercel.json`,
+**Livré.** `vercel.json` renaît avec un unique cron `0 18 * * 0` vers
+`/api/cron/weekly-digest`, `CRON_SECRET` revient dans `lib/core/env.ts`, et
+`runWeeklyDigest` calcule la semaine **en clés de date locales** — jamais en
+« 168 dernières heures », puisque le déclenchement n'est garanti qu'à l'heure
+près.
+
+Le message annonce bien du **réalisé** : `buildWeeklySummary` compte les
+rendez-vous confirmés dont l'heure est passée, exactement comme `totalVisits`.
+L'élément 11 n'était pas nécessaire.
+
+Deux choix à connaître :
+
+- **`WEEKLY_DIGEST` a été ajouté à l'énumération `EmailKind`.** Migration
+  purement additive : réutiliser `DAILY_DIGEST` aurait fait afficher « bilan de
+  la semaine » sur des envois quotidiens passés.
+- **`buildDashboardMetrics` n'a pas été réutilisé**, contrairement à ce que ce
+  document annonçait. Il raisonne autour d'une journée d'ancrage et calcule un
+  taux d'occupation dont le bilan n'a que faire, au prix de deux requêtes
+  d'ouvertures et d'exceptions. `buildWeeklySummary` fait quatre additions, en
+  pur et testé.
+
+**Un piège rencontré et refermé pour de bon :** `.env.local` déclarait
+`CRON_SECRET=""`, et `.optional()` ne rattrape qu'une variable *absente*, pas
+vide — le build échouait. `lib/core/env.ts` traite désormais la chaîne vide
+comme une absence, pour toutes les variables facultatives.
+
+**Recommandation initiale.** Une seule tâche planifiée, `0 18 * * 0` dans `vercel.json`,
 et une route renommée en conséquence (`/api/cron/weekly-digest`), toujours
 protégée par `CRON_SECRET` et exécutée dans `after()` comme aujourd’hui.
 
@@ -802,7 +828,7 @@ Les actions y sont celles qui existent déjà (`AppointmentStatusActions`).
 
 **Dépendances :** aucune ; précède les éléments 8 et 12.
 
-### 12. Réécrire l’en-tête de la fiche autour de ce qu’Arzu cherche — ⏳
+### 12. Réécrire l’en-tête de la fiche autour de ce qu’Arzu cherche — ✅
 
 **Priorité : P1 · Effort : M · Nature : amélioration**
 
@@ -817,7 +843,20 @@ Ce qu’Arzu cherche en ouvrant une fiche, c’est autre chose : appeler, savoir
 quand la personne est venue la dernière fois, ce qu’elle prend d’habitude, et
 si elle revient bientôt.
 
-**Recommandation.** Remplacer les cinq compteurs par ces quatre réponses, en
+**Livré.** Les cinq compteurs cèdent la place à quatre réponses — *Visites*,
+*Dernière venue*, *Soin habituel*, *Revient* — dérivées de l'historique déjà
+chargé, sans une requête de plus. L'appel reste l'action principale. Les
+comptages détaillés descendent au contact de l'historique, et les absences ne
+s'y affichent que s'il y en a.
+
+**Un défaut attrapé à la relecture d'écran :** le libellé « Ce qu'**elle** prend
+d'habitude » présumait une femme — exactement ce que `docs/vocabulaire.md`
+interdit depuis que la v2 a banni « client·e ». Devenu « Soin habituel ».
+
+Vérifié à 360 × 780 px : l'en-tête se termine à 540 px, dans le premier écran, et
+sans défilement horizontal.
+
+**Recommandation initiale.** Remplacer les cinq compteurs par ces quatre réponses, en
 gardant l’appel en action principale — `CustomerCallButton` existe. Les
 comptages détaillés ne disparaissent pas : ils descendent avec l’historique,
 où ils sont à leur place. Les absences ne s’affichent que s’il y en a : un « 0 »
@@ -1007,15 +1046,18 @@ moins coûteuse.
 5. ~~**1**, **2**, **3** — le parcours de réservation.~~ ✅ Livrés ensemble.
 6. ~~**10** et **9** — le lien vers la fiche, et le suivi des envois.~~
    ✅ Livrés ensemble. L’élément **11** est bloqué : sa prémisse est fausse.
-7. **8** — le bilan du dimanche, qui peut désormais parler de réalisé.
-8. **12**, puis **4** — l’en-tête de fiche, libéré de sa dépendance, et la
-   reprise de « Mes rendez-vous ».
+7. ~~**8** et **12** — le bilan du dimanche et l’en-tête de fiche.~~ ✅ Livrés
+   ensemble, les deux que la vérification de l’élément 11 avait débloqués.
+8. **4** — la reprise de « Mes rendez-vous », dernier élément ouvert.
 
 **Ce qui reste côté exploitation, et non côté code :**
 
 - ~~créer la base Neon de preview et supprimer la branche `develop`~~ ✅ fait ;
-- **peupler la base de preview** (`pnpm db:seed` pointé sur sa chaîne de
-  connexion) et **laisser `RESEND_API_KEY` vide en portée *Preview*** ;
+- ~~peupler la base de preview et laisser `RESEND_API_KEY` vide en preview~~
+  ✅ fait ;
+- **remettre `CRON_SECRET` dans Vercel** : le cron du dimanche est de retour
+  dans `vercel.json`, et Vercel réinjecte la variable — vérifier qu'elle est
+  bien présente en portée *Production* après le déploiement ;
 - terminer la vérification du domaine `arbeaute-bulle.ch` chez Resend, et
   renseigner `RESEND_API_KEY`, `RESEND_FROM` et `ADMIN_NOTIFICATION_EMAIL` dans
   la seule portée *Production* de Vercel ;

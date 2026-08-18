@@ -50,8 +50,12 @@ enum EmailKind {
   BOOKING_CONFIRMATION
   BOOKING_RESCHEDULED
   BOOKING_CANCELLED
+  /// Plus jamais écrits : les rappels et le récapitulatif quotidiens ont été
+  /// supprimés en v3. Les valeurs restent parce que des envois passés les
+  /// portent, et qu'une suppression d'énumération serait destructive.
   APPOINTMENT_REMINDER
   DAILY_DIGEST
+  WEEKLY_DIGEST
 }
 
 enum EmailStatus {
