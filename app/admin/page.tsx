@@ -99,6 +99,7 @@ const AdminAgenda = async ({ searchParams }: Readonly<AdminPageProps>) => {
         cleanupMinutes: true,
         serviceDurationMinutes: true,
         servicePriceCents: true,
+        customerId: true,
         customerFirstName: true,
         customerLastName: true,
         customerPhone: true,
@@ -220,6 +221,7 @@ const AdminAgenda = async ({ searchParams }: Readonly<AdminPageProps>) => {
           .filter(Boolean)
           .join(' '),
         customerPhone: appointment.customerPhone,
+        customerId: appointment.customerId,
         serviceLabel: formatServiceLabel(
           appointment.serviceNameSnapshot,
           appointment.service.category?.name,

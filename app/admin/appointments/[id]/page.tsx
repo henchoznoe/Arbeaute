@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { notFound, redirect } from 'next/navigation'
 import { Suspense } from 'react'
 import { AdminSkeleton } from '@/components/admin/admin-skeleton'
+import { AppointmentEmailStatus } from '@/components/admin/appointment-email-status'
 import { AppointmentForm } from '@/components/admin/appointment-form'
 import { AppointmentStatusActions } from '@/components/admin/appointment-status-actions'
 import { CustomerCallButton } from '@/components/admin/customer-call-button'
@@ -55,6 +56,22 @@ const EditAppointment = async ({
     },
   })
   if (!appointment) notFound()
+
+  // Bornée, et servie par l'index `[appointmentId, createdAt]` qui existait
+  // déjà sans que rien d'autre que l'écran de suivi ne le lise.
+  const emailDeliveries = await prisma.emailDelivery.findMany({
+    where: { appointmentId: appointment.id },
+    orderBy: { createdAt: 'desc' },
+    take: 5,
+    select: {
+      id: true,
+      kind: true,
+      status: true,
+      recipient: true,
+      error: true,
+      createdAt: true,
+    },
+  })
   const services =
     appointment.status === 'CONFIRMED'
       ? await prisma.service.findMany({
@@ -144,11 +161,23 @@ const EditAppointment = async ({
             si vous le déplacez ou l’annulez.
           </p>
         )}
-        <CustomerCallButton
-          phone={appointment.customerPhone}
-          customerName={customerName}
-          className="mt-4 w-full sm:w-auto"
-        />
+        <div className="mt-4 grid gap-3 sm:flex sm:flex-wrap">
+          <CustomerCallButton
+            phone={appointment.customerPhone}
+            customerName={customerName}
+            className="w-full sm:w-auto"
+          />
+          {/* Un seul appui pour savoir si la personne est déjà venue. Rien
+              n'était proposé ici : il fallait retenir le nom, ouvrir la
+              recherche et le retaper. */}
+          {appointment.customerId ? (
+            <Button asChild variant="outline" className="w-full sm:w-auto">
+              <Link href={`/admin/customers/${appointment.customerId}`}>
+                <UserRound className="size-4" /> Voir la fiche
+              </Link>
+            </Button>
+          ) : null}
+        </div>
         <AppointmentStatusActions
           appointmentId={appointment.id}
           status={appointment.status}
@@ -156,6 +185,8 @@ const EditAppointment = async ({
           className="mt-3"
         />
       </section>
+
+      <AppointmentEmailStatus deliveries={emailDeliveries} />
 
       {appointment.status === 'CONFIRMED' ? (
         <div className="mt-6">

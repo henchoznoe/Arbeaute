@@ -23,6 +23,8 @@ interface AdminTimelineAppointment extends TimelineInterval {
   cleanupMinutes: number
   customerName: string
   customerPhone: string | null
+  /** `null` pour les rendez-vous anciens que rien ne rattache à une fiche. */
+  customerId: string | null
   serviceLabel: string
   serviceColor: string
   source: 'PUBLIC' | 'ADMIN'
@@ -66,6 +68,7 @@ interface AppointmentInput {
   cleanupMinutes: number
   customerName: string
   customerPhone: string | null
+  customerId: string | null
   serviceLabel: string
   serviceColor: string
   source: 'PUBLIC' | 'ADMIN'
@@ -186,6 +189,7 @@ export const buildAdminTimelineDay = ({
       cleanupMinutes: appointment.cleanupMinutes,
       customerName: appointment.customerName,
       customerPhone: appointment.customerPhone,
+      customerId: appointment.customerId,
       serviceLabel: appointment.serviceLabel,
       serviceColor: appointment.serviceColor,
       source: appointment.source,

@@ -78,10 +78,10 @@ figure dans le titre et se réévalue après chaque livraison.
 
 | Statut | Éléments |
 | --- | --- |
-| ✅ Terminés | 1, 2, 3, 5, 6, 7, 13, 14 |
+| ✅ Terminés | 1, 2, 3, 5, 6, 7, 9, 10, 13, 14 |
 | 🟡 En cours | Aucun |
-| ⏳ Prêt à démarrer | 4, 8 à 12 |
-| 🔒 Bloqués | Aucun |
+| ⏳ Prêt à démarrer | 4, 8, 12 |
+| 🔒 Bloqués | 11 — prémisse invalidée, à repenser (voir l’élément) |
 
 - **Priorité P0** : corrige une friction quotidienne ou prépare plusieurs autres
   éléments.
@@ -638,10 +638,11 @@ que s’il y en a, et un lien direct vers `/admin` pour la semaine à venir.
   dans `.env.example` et le cron dans un `vercel.json` recréé ;
 - la tâche planifiée reste unique.
 
-**Dépendances :** élément 7 (qui libère la route), élément 5 (mise en forme
-partagée), élément 11 (pour parler de réalisé).
+**Dépendances :** élément 7 (qui libère la route) et élément 5 (mise en forme
+partagée). **Plus l’élément 11** : un chiffre réalisé se compte en rendez-vous
+confirmés dont l’heure est passée.
 
-### 9. Afficher le sort d’un e-mail là où la question se pose — ⏳
+### 9. Afficher le sort d’un e-mail là où la question se pose — ✅
 
 **Priorité : P1 · Effort : S · Nature : amélioration**
 
@@ -655,7 +656,19 @@ La donnée est pourtant déjà là et déjà indexée : `EmailDelivery` porte
 `appointmentId` et un index `[appointmentId, createdAt]`. Seul l’écran de
 suivi le lit.
 
-**Recommandation.** Porter l’information là où elle est utile : une ligne sur le
+**Livré.** `AppointmentEmailStatus` affiche, sur le détail d’un rendez-vous, les
+cinq derniers messages le concernant : leur nature, « Parti » ou « Pas parti », la
+date, le destinataire, la phrase actionnable de `describeEmailError`, le détail
+technique replié dans un `<details>`, et le bouton de renvoi quand le message
+peut être reconstruit. Une requête bornée de plus, servie par l’index
+`[appointmentId, createdAt]` qui existait déjà.
+
+**Non fait :** la même ligne sur la fiche. Elle reste possible sans requête par
+ligne — un seul `where: { appointmentId: { in: … } }` — mais la question « est-ce
+que la personne de 14 h a reçu sa confirmation » se pose devant le rendez-vous,
+pas devant la fiche.
+
+**Recommandation initiale.** Porter l’information là où elle est utile : une ligne sur le
 détail du rendez-vous et sur la fiche — « Confirmation partie le 18 août à
 10:45 », ou « Pas partie », suivie du bouton de renvoi existant. Tout est
 réutilisable sans rien réécrire : `describeEmailError`, `formatEmailMoment`,
@@ -681,7 +694,7 @@ pas le suivi individuel.
 
 ## III. L’agenda et les fiches d’Arzu
 
-### 10. Relier chaque rendez-vous à sa fiche — ⏳
+### 10. Relier chaque rendez-vous à sa fiche — ✅
 
 **Priorité : P0 · Effort : S · Nature : amélioration**
 
@@ -692,7 +705,21 @@ prochain rendez-vous, depuis le détail d’un rendez-vous, il n’existe aucun
 chemin. Pour savoir si la personne de 14 h est déjà venue, Arzu doit retenir son
 nom, ouvrir la recherche et le retaper.
 
-**Recommandation.** Ajouter le lien manquant aux trois endroits. `customerId`
+**Livré.** `customerId` traverse maintenant la timeline, et un bouton « Voir la
+fiche » apparaît **dans la liste du jour**, à côté du bouton d’appel, et **sur le
+détail d’un rendez-vous**. Un rendez-vous ancien sans fiche rattachée n’affiche
+rien plutôt qu’un lien mort.
+
+**Deux endroits volontairement laissés de côté :**
+
+- **La carte du prochain rendez-vous.** Elle est *entièrement* un lien ; y
+  imbriquer un second lien produirait du HTML invalide, et la sortir en bouton
+  séparé coûterait la soixantaine de pixels que l’élément 4 de la v2 avait
+  justement gagnée. Elle mène au détail, qui porte le lien.
+- **Les cartes de la grille de semaine**, larges de 150 px sur bureau. Elles
+  mènent au même détail.
+
+**Recommandation initiale.** Ajouter le lien manquant aux trois endroits. `customerId`
 reste nullable pour les rendez-vous antérieurs à l’élément 2 : dans ce cas, ne
 rien afficher plutôt qu’un lien mort.
 
@@ -706,9 +733,40 @@ rien afficher plutôt qu’un lien mort.
 
 **Dépendances :** aucune.
 
-### 11. Clôturer les journées passées en un geste — ⏳
+### 11. Clôturer les journées passées en un geste — 🔒
 
 **Priorité : P1 · Effort : M · Nature : amélioration**
+
+> **🔒 Bloqué : la prémisse ci-dessous est fausse.**
+>
+> Vérification faite dans le code : **aucun chemin n’écrit jamais `COMPLETED`.**
+> Les seules transitions possibles sont `CONFIRMED ⇄ NO_SHOW`
+> (`AdminAppointmentStatusTarget`), et `AppointmentStatusActions` n’offre que
+> « Absence » et « Rétablir ». Le bouton « Terminé » n’existe nulle part — la v2
+> l’a retiré à dessein : **un rendez-vous confirmé dont l’heure est passée *est*
+> une visite réalisée** (`lib/admin/customer-profile.ts:114`).
+>
+> Il n’y a donc rien à « clôturer ». Le seul geste manuel qui subsiste est de
+> noter une absence, et une section listant les rendez-vous passés encore
+> confirmés **ne se viderait jamais** : celles et ceux qui sont venus y
+> resteraient, puisque leur statut est correct. Elle contredirait son propre
+> critère « entièrement masquée quand elle est vide » et deviendrait un rappel
+> permanent pour un travail qui n’existe pas.
+>
+> **Ce qui reste vrai :** une absence non notée reste invisible, et le compteur
+> d’absences du tableau de bord reste à zéro. Pour y répondre sans harceler, il
+> faudrait marquer les journées déjà passées en revue — une colonne additive,
+> donc une migration — ou trouver un autre angle. À décider avant d’écrire.
+>
+> **Deux éléments s’en trouvent débloqués**, et c’est le gain de cette
+> vérification :
+>
+> - **l’élément 8** peut annoncer un chiffre **réalisé** sans attendre : il se
+>   compte en rendez-vous confirmés dont l’heure est passée, comme `totalVisits` ;
+> - **l’élément 12** n’a plus de dépendance : la contradiction « Terminé 0 » à
+>   côté de « Visites réalisées 12 » vient de ce que `COMPLETED` n’est plus
+>   écrit, et c’est exactement ce que la réécriture de l’en-tête fait
+>   disparaître.
 
 **Constat et valeur.** Les statuts « terminé » et « absence » existent depuis la
 v1 et leurs boutons sont partout depuis la v2 — mais **rien ne rappelle jamais
@@ -773,7 +831,9 @@ mis en avant est une accusation gratuite.
 - l’en-tête tient dans le premier écran à 360 px sans défilement horizontal ;
 - les termes retenus figurent dans `docs/vocabulaire.md`.
 
-**Dépendances :** élément 11, qui rend les statuts à nouveau vrais.
+**Dépendances :** aucune. L’élément 11 devait « rendre les statuts à nouveau
+vrais » ; `COMPLETED` n’étant plus écrit du tout, la réécriture de l’en-tête est
+la réponse directe à la contradiction.
 
 ---
 
@@ -945,12 +1005,11 @@ moins coûteuse.
 4. ~~**5**, puis **6** — les gabarits, puis les envois qui s’en servent.~~
    ✅ Livrés. Arzu ne téléphone plus pour annoncer un déplacement.
 5. ~~**1**, **2**, **3** — le parcours de réservation.~~ ✅ Livrés ensemble.
-6. **10** et **11** — deux gains immédiats pour Arzu, et l’élément 11 est ce qui
-   rend les statuts à nouveau vrais.
-7. **8** — le bilan du dimanche, une fois que le mot « réalisé » veut dire
-   quelque chose.
-8. **9**, **4**, puis **12** en dernier — le suivi des envois, la reprise de
-   « Mes rendez-vous », et l’en-tête de fiche qui attendait l’élément 11.
+6. ~~**10** et **9** — le lien vers la fiche, et le suivi des envois.~~
+   ✅ Livrés ensemble. L’élément **11** est bloqué : sa prémisse est fausse.
+7. **8** — le bilan du dimanche, qui peut désormais parler de réalisé.
+8. **12**, puis **4** — l’en-tête de fiche, libéré de sa dépendance, et la
+   reprise de « Mes rendez-vous ».
 
 **Ce qui reste côté exploitation, et non côté code :**
 

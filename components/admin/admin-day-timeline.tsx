@@ -1,6 +1,6 @@
 'use client'
 
-import { AlertTriangle, ChevronDown, Plus } from 'lucide-react'
+import { AlertTriangle, ChevronDown, Plus, UserRound } from 'lucide-react'
 import Link from 'next/link'
 import { AppointmentStatusActions } from '@/components/admin/appointment-status-actions'
 import { CustomerCallButton } from '@/components/admin/customer-call-button'
@@ -118,11 +118,23 @@ export const AdminDayTimeline = ({
                     {statusLabels[appointment.status]}
                   </StatusBadge>
                 </Link>
-                <CustomerCallButton
-                  phone={appointment.customerPhone}
-                  customerName={appointment.customerName}
-                  className="mt-2 w-full"
-                />
+                {/* Appeler et ouvrir la fiche côte à côte : les deux gestes
+                    qu'Arzu fait en regardant un nom. Un rendez-vous ancien sans
+                    fiche rattachée n'affiche pas de lien mort. */}
+                <div className="mt-2 grid gap-2 sm:grid-cols-2">
+                  <CustomerCallButton
+                    phone={appointment.customerPhone}
+                    customerName={appointment.customerName}
+                    className="w-full"
+                  />
+                  {appointment.customerId ? (
+                    <Button asChild variant="outline" className="w-full">
+                      <Link href={`/admin/customers/${appointment.customerId}`}>
+                        <UserRound className="size-4" /> Voir la fiche
+                      </Link>
+                    </Button>
+                  ) : null}
+                </div>
                 <AppointmentStatusActions
                   appointmentId={appointment.id}
                   status={appointment.status}
