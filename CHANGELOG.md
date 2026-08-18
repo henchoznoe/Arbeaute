@@ -1,3 +1,24 @@
+# [1.11.0](https://github.com/henchoznoe/Arbeaute/compare/v1.10.0...v1.11.0) (2026-08-18)
+
+
+### Bug Fixes
+
+* **admin:** remettre prix et dates sur les mises en forme partagées ([6899397](https://github.com/henchoznoe/Arbeaute/commit/6899397c9266fc9f7af591abd21294c499cc6472))
+* **admin:** rendre l'absence discrète dans les listes, et abandonner l'élément 11 ([c4303ad](https://github.com/henchoznoe/Arbeaute/commit/c4303ad3c19c8009e617580a62245b5479a3d265))
+
+
+### Features
+
+* **admin:** livrer le bilan du dimanche et réécrire l'en-tête de fiche ([26e027f](https://github.com/henchoznoe/Arbeaute/commit/26e027fe3c5081c65cdf577615ca3ca04e9ab674))
+* **admin:** ouvrir la fiche depuis un rendez-vous, et voir le sort de ses e-mails ([cc91e58](https://github.com/henchoznoe/Arbeaute/commit/cc91e58762951440b94b42f34c891384fbab2129))
+* **admin:** prévenir la personne à chaque changement décidé depuis l'agenda ([6c2fdf6](https://github.com/henchoznoe/Arbeaute/commit/6c2fdf6d6e20fe89af2c0d372e3d0bc86dfa419a))
+* **admin:** uniformiser la largeur des pages et généraliser le panneau latéral ([d284f34](https://github.com/henchoznoe/Arbeaute/commit/d284f34ebdb283b132cf2451cd416b186df50a3f))
+* **email:** joindre l'agenda, ajouter les boutons et une adresse de réponse ([9b648d5](https://github.com/henchoznoe/Arbeaute/commit/9b648d559b2fba43c9be1e5319866ad86c954dba))
+* **reservation:** demander l'adresse avant le créneau et reconnaître la personne ([5b0fe5b](https://github.com/henchoznoe/Arbeaute/commit/5b0fe5b0556430685129e744b715617e16bef81b))
+* **reservation:** ne demander que l'adresse, et reconnaître qui est déjà venu ([e24cc3b](https://github.com/henchoznoe/Arbeaute/commit/e24cc3be98e7b044dfc621b9ed61d5d60dae9d49))
+* **reservation:** ouvrir le déplacement sur la bonne semaine et annoncer l'e-mail ([e62d6cd](https://github.com/henchoznoe/Arbeaute/commit/e62d6cdd457579b235616d2e0b2df8c7f2428485))
+* update UI ([70c27eb](https://github.com/henchoznoe/Arbeaute/commit/70c27ebd90da43f8c25157b8e7f9e18e8daee5ab))
+
 # [1.10.0](https://github.com/henchoznoe/Arbeaute/compare/v1.9.0...v1.10.0) (2026-08-17)
 
 
