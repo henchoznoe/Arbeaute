@@ -14,7 +14,18 @@ import {
   Zap,
 } from 'lucide-react'
 import { useSearchParams } from 'next/navigation'
-import { useCallback, useEffect, useRef, useState, useTransition } from 'react'
+import {
+  useCallback,
+  useDeferredValue,
+  useEffect,
+  useRef,
+  useState,
+  useTransition,
+} from 'react'
+import {
+  CatalogEmptyState,
+  CatalogFilters,
+} from '@/components/catalog/catalog-filters'
 import { ServiceDetails } from '@/components/catalog/service-details'
 import { BookingSummary } from '@/components/reservation/booking-summary'
 import { ConfirmationActions } from '@/components/reservation/confirmation-actions'
@@ -32,6 +43,7 @@ import {
   getPublicWeekAvailability,
   lookupCustomerByEmail,
 } from '@/lib/actions/reservation'
+import { filterCatalog } from '@/lib/catalog/filter'
 import type { ServiceCareDetails } from '@/lib/catalog/service-content'
 import { contact } from '@/lib/constants/contact'
 import type { DayAvailability } from '@/lib/reservation/availability'
@@ -192,6 +204,14 @@ export const ReservationWizard = ({
   // ferme cette fuite ; désactiver le bouton empêche l'envoi précoce tout court.
   const [hydrated, setHydrated] = useState(false)
   const [website, setWebsite] = useState('')
+  // L'étape 1 réemploie la recherche et les pastilles de la vitrine. Le filtre
+  // ne survit pas au changement d'étape : le fil d'Ariane promet la liste
+  // complète, il doit la rendre.
+  const [catalogQuery, setCatalogQuery] = useState('')
+  const [catalogCategoryId, setCatalogCategoryId] = useState<string | null>(
+    null,
+  )
+  const deferredCatalogQuery = useDeferredValue(catalogQuery)
   const [viewStart, setViewStart] = useState(minDate)
   const wizardRef = useRef<HTMLElement>(null)
   const customerFormRef = useRef<HTMLFormElement>(null)
@@ -204,6 +224,26 @@ export const ReservationWizard = ({
   const customerChoseDayRef = useRef(false)
   const autoSearchedServiceRef = useRef<string | null>(null)
   const selectedService = services.find(service => service.id === serviceId)
+  // `filterCatalog` travaille par catégorie : la liste plate du tunnel est
+  // regroupée ici, sans requête serveur ni fonction de filtrage nouvelle.
+  const catalogCategories = [
+    ...new Map(
+      services.map(service => [
+        service.categoryName,
+        { id: service.categoryName, name: service.categoryName },
+      ]),
+    ).values(),
+  ]
+  const filteredCategories = filterCatalog(
+    catalogCategories.map(category => ({
+      ...category,
+      services: services.filter(
+        service => service.categoryName === category.name,
+      ),
+    })),
+    deferredCatalogQuery,
+    catalogCategoryId,
+  )
   const weekEnd = addDateKeyDays(viewStart, 6)
   const lastCompleteWeekStart = addDateKeyDays(maxDate, -6)
   const maxViewStart =
@@ -236,6 +276,8 @@ export const ReservationWizard = ({
   const goToStep = useCallback(
     (nextStep: WizardStep) => {
       setStep(nextStep)
+      setCatalogQuery('')
+      setCatalogCategoryId(null)
       scrollToWizardTop()
     },
     [scrollToWizardTop],
@@ -759,15 +801,28 @@ export const ReservationWizard = ({
       ) : null}
 
       {step === STEPS.service ? (
-        <div className="space-y-8">
-          {[...new Set(services.map(service => service.categoryName))].map(
-            category => (
-              <div key={category}>
-                <h2 className="font-heading text-xl font-bold">{category}</h2>
-                <div className="mt-3 grid gap-3 sm:grid-cols-2">
-                  {services
-                    .filter(service => service.categoryName === category)
-                    .map(service => (
+        <div>
+          <CatalogFilters
+            categories={catalogCategories}
+            query={catalogQuery}
+            onQueryChange={setCatalogQuery}
+            categoryId={catalogCategoryId}
+            onCategoryChange={setCatalogCategoryId}
+            resultCount={filteredCategories.reduce(
+              (count, category) => count + category.services.length,
+              0,
+            )}
+            searchId="reservation-service-search"
+          />
+          {filteredCategories.length > 0 ? (
+            <div className="space-y-8">
+              {filteredCategories.map(category => (
+                <div key={category.id}>
+                  <h2 className="font-heading text-xl font-bold">
+                    {category.name}
+                  </h2>
+                  <div className="mt-3 grid gap-3 sm:grid-cols-2">
+                    {category.services.map(service => (
                       <button
                         key={service.id}
                         type="button"
@@ -792,9 +847,17 @@ export const ReservationWizard = ({
                         ) : null}
                       </button>
                     ))}
+                  </div>
                 </div>
-              </div>
-            ),
+              ))}
+            </div>
+          ) : (
+            <CatalogEmptyState
+              onReset={() => {
+                setCatalogQuery('')
+                setCatalogCategoryId(null)
+              }}
+            />
           )}
         </div>
       ) : null}

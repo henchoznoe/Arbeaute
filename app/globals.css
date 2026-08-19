@@ -184,7 +184,9 @@
   }
 }
 
-#service-search::-webkit-search-cancel-button {
+/* Le champ de recherche du catalogue existe sur deux écrans : la règle vise le
+   type, pas un identifiant. */
+input[type="search"]::-webkit-search-cancel-button {
   appearance: none;
 }
 

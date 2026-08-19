@@ -78,9 +78,9 @@ Le statut figure dans le titre et se réévalue après chaque livraison.
 
 | Statut | Éléments |
 | --- | --- |
-| ✅ Terminés | 2, 3, 6, 9, 10, 11, 14, 19 |
+| ✅ Terminés | 1, 2, 3, 6, 9, 10, 11, 14, 19 |
 | 🟡 En cours | Aucun |
-| ⏳ Prêt à démarrer | 1, 4, 5, 7, 8, 12, 13, 15 à 18 |
+| ⏳ Prêt à démarrer | 4, 5, 7, 8, 12, 13, 15 à 18 |
 | 🔒 Bloqués | Aucun |
 | ❌ Abandonné | Aucun |
 
@@ -96,7 +96,7 @@ de l’écriture.
 
 ## I. Le tunnel de réservation
 
-### 1. Retrouver une prestation sans parcourir six écrans — ⏳
+### 1. Retrouver une prestation sans parcourir six écrans — ✅
 
 **Priorité : P0 · Effort : M · Nature : cohérence**
 

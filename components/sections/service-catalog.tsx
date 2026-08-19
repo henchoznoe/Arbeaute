@@ -1,9 +1,13 @@
 'use client'
 
-import { CalendarDays, Phone, Search, X } from 'lucide-react'
+import { CalendarDays, Phone } from 'lucide-react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { useDeferredValue, useLayoutEffect, useRef, useState } from 'react'
+import {
+  CatalogEmptyState,
+  CatalogFilters,
+} from '@/components/catalog/catalog-filters'
 import { ServiceDetails } from '@/components/catalog/service-details'
 import { Button } from '@/components/ui/button'
 import { filterCatalog } from '@/lib/catalog/filter'
@@ -57,67 +61,16 @@ export const ServiceCatalog = ({
 
   return (
     <div>
-      <div className="mx-auto mb-6 max-w-xl">
-        <label htmlFor="service-search" className="sr-only">
-          Rechercher une prestation
-        </label>
-        <div className="relative">
-          <Search
-            aria-hidden="true"
-            className="pointer-events-none absolute top-1/2 left-4 size-5 -translate-y-1/2 text-muted-foreground"
-          />
-          <input
-            id="service-search"
-            type="search"
-            value={query}
-            onChange={event => setQuery(event.target.value)}
-            placeholder="Nom, catégorie ou description…"
-            className="h-12 w-full rounded-full border bg-card pr-12 pl-12 text-base shadow-sm outline-none transition focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/30"
-          />
-          {query ? (
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon"
-              onClick={() => setQuery('')}
-              aria-label="Effacer la recherche"
-              className="absolute top-1/2 right-0.5 -translate-y-1/2 rounded-full text-muted-foreground"
-            >
-              <X className="size-4" />
-            </Button>
-          ) : null}
-        </div>
-      </div>
-
-      <div className="sticky top-16 z-30 -mx-6 mb-8 border-y bg-background/95 px-6 py-2 backdrop-blur-md">
-        <fieldset className="mx-auto flex min-w-0 max-w-6xl gap-2 overflow-x-auto py-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-          <legend className="sr-only">Filtrer par catégorie</legend>
-          <button
-            type="button"
-            aria-pressed={categoryId === null}
-            onClick={() => selectCategory(null)}
-            className="h-11 shrink-0 rounded-full border px-4 text-sm font-medium transition aria-pressed:border-primary aria-pressed:bg-primary aria-pressed:text-primary-foreground lg:px-3 lg:text-[13px]"
-          >
-            Toutes
-          </button>
-          {categories.map(category => (
-            <button
-              key={category.id}
-              type="button"
-              aria-pressed={categoryId === category.id}
-              onClick={() => selectCategory(category.id)}
-              className="h-11 shrink-0 rounded-full border bg-card px-4 text-sm font-medium transition aria-pressed:border-primary aria-pressed:bg-primary aria-pressed:text-primary-foreground lg:px-3 lg:text-[13px]"
-            >
-              {category.name}
-            </button>
-          ))}
-        </fieldset>
-      </div>
-
-      <p className="mb-5 text-sm text-muted-foreground" aria-live="polite">
-        {resultCount}{' '}
-        {resultCount > 1 ? 'prestations trouvées' : 'prestation trouvée'}
-      </p>
+      <CatalogFilters
+        categories={categories}
+        query={query}
+        onQueryChange={setQuery}
+        categoryId={categoryId}
+        onCategoryChange={selectCategory}
+        resultCount={resultCount}
+        searchId="service-search"
+        pillsClassName="sticky top-16 z-30 -mx-6 mb-8 border-y bg-background/95 px-6 py-2 backdrop-blur-md"
+      />
 
       {filteredCategories.length > 0 ? (
         <div className="columns-1 gap-8 lg:columns-2">
@@ -225,23 +178,12 @@ export const ServiceCatalog = ({
           ))}
         </div>
       ) : (
-        <div className="rounded-2xl border border-dashed bg-card px-6 py-12 text-center">
-          <p className="font-heading text-xl font-bold">Aucun soin trouvé</p>
-          <p className="mt-2 text-sm text-muted-foreground">
-            Essayez un autre mot ou affichez toutes les catégories.
-          </p>
-          <Button
-            type="button"
-            variant="outline"
-            onClick={() => {
-              setQuery('')
-              setCategoryId(null)
-            }}
-            className="mt-5 rounded-full"
-          >
-            Réinitialiser les filtres
-          </Button>
-        </div>
+        <CatalogEmptyState
+          onReset={() => {
+            setQuery('')
+            setCategoryId(null)
+          }}
+        />
       )}
     </div>
   )
