@@ -55,11 +55,11 @@ export const ServiceCategoryPanel = ({
       trigger={
         category ? (
           <Button
-            variant="outline"
+            variant="secondary"
             size="sm"
             aria-label={`Modifier le groupe ${category.name}`}
           >
-            <Pencil className="size-4" /> Modifier
+            <Pencil className="size-4" /> Modifier le groupe
           </Button>
         ) : (
           <Button variant="outline">

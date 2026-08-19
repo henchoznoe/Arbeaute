@@ -78,9 +78,9 @@ Le statut figure dans le titre et se réévalue après chaque livraison.
 
 | Statut | Éléments |
 | --- | --- |
-| ✅ Terminés | 1 à 11, 14, 19 |
+| ✅ Terminés | 1 à 11, 13, 14, 19 |
 | 🟡 En cours | Aucun |
-| ⏳ Prêt à démarrer | 12, 13, 15 à 18 |
+| ⏳ Prêt à démarrer | 12, 15 à 18 |
 | 🔒 Bloqués | Aucun |
 | ❌ Abandonné | Aucun |
 
@@ -526,7 +526,7 @@ vide, pour rendre la journée à sa place.
 
 **Dépendances :** aucune.
 
-### 13. Désencombrer la ligne d’une prestation — ⏳
+### 13. Désencombrer la ligne d’une prestation — ✅
 
 **Priorité : P1 · Effort : M · Nature : amélioration**
 
