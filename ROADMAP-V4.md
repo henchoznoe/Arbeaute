@@ -78,9 +78,9 @@ Le statut figure dans le titre et se réévalue après chaque livraison.
 
 | Statut | Éléments |
 | --- | --- |
-| ✅ Terminés | 3, 19 |
+| ✅ Terminés | 3, 9, 19 |
 | 🟡 En cours | Aucun |
-| ⏳ Prêt à démarrer | 1, 2, 4 à 18 |
+| ⏳ Prêt à démarrer | 1, 2, 4 à 8, 10 à 18 |
 | 🔒 Bloqués | Aucun |
 | ❌ Abandonné | Aucun |
 
@@ -399,7 +399,7 @@ restés en arrière, et cela se voit :
 
 ## III. L’agenda et les écrans d’Arzu
 
-### 9. Réparer la barre du bas quand une demande attend — ⏳
+### 9. Réparer la barre du bas quand une demande attend — ✅
 
 **Priorité : P0 · Effort : S · Nature : correction**
 

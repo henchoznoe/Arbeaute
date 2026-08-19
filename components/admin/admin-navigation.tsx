@@ -12,7 +12,7 @@ import {
 } from 'lucide-react'
 import Link from 'next/link'
 import { usePathname, useSearchParams } from 'next/navigation'
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { navigationItemBaseClass } from '@/components/ui/navigation'
 import { SubmitButton } from '@/components/ui/submit-button'
@@ -21,6 +21,8 @@ import {
   ADMIN_AGENDA_DATE_EVENT,
   type AdminNavigationItem,
   getActiveAdminNavigationItem,
+  getAdminNavigationEntries,
+  getBottomNavigationColumns,
   getNewAppointmentHref,
 } from '@/lib/admin/navigation'
 import { getLocalDateKey } from '@/lib/reservation/time'
@@ -30,17 +32,36 @@ interface AdminNavigationProps {
   pendingRequestCount: number
 }
 
+const navigationIcons: Record<AdminNavigationItem, typeof CalendarDays> = {
+  agenda: CalendarDays,
+  requests: Clock,
+  search: Search,
+  activity: Activity,
+  create: CirclePlus,
+  settings: Settings2,
+}
+
+/**
+ * Le dégagement du bas de page suit la hauteur réelle de la barre, publiée par
+ * `AdminNavigation` dans `--admin-nav-height`. Une constante suffisait tant que
+ * la barre avait cinq entrées ; la sixième, celle des demandes, la faisait
+ * grandir sans que le contenu le sache, et le bas de page passait dessous.
+ *
+ * La valeur de repli couvre le premier rendu, avant toute mesure ; au-delà de
+ * `md` la barre disparaît, et la variable remise à zéro annule le dégagement.
+ */
 export const AdminContent = ({
   children,
 }: Readonly<{ children: React.ReactNode }>) => {
   const pathname = usePathname()
+  if (pathname === '/admin/login') return <div>{children}</div>
   return (
     <div
-      className={
-        pathname === '/admin/login'
-          ? undefined
-          : 'pb-[calc(5.25rem+env(safe-area-inset-bottom))] md:pb-0'
-      }
+      className="md:[--admin-nav-height:0px]"
+      style={{
+        paddingBottom:
+          'var(--admin-nav-height, calc(5.25rem + env(safe-area-inset-bottom)))',
+      }}
     >
       {children}
     </div>
@@ -78,6 +99,7 @@ export const AdminNavigation = ({
   const [agendaDate, setAgendaDate] = useState(
     searchParams.get('date') ?? fallbackDate,
   )
+  const bottomNavigationRef = useRef<HTMLElement>(null)
 
   useEffect(() => {
     setAgendaDate(searchParams.get('date') ?? fallbackDate)
@@ -92,41 +114,29 @@ export const AdminNavigation = ({
     return () => window.removeEventListener(ADMIN_AGENDA_DATE_EVENT, updateDate)
   }, [])
 
+  // La hauteur de la barre change avec le nombre d'entrées : elle est mesurée
+  // puis publiée, pour que le dégagement du contenu la suive au lieu de parier
+  // sur une constante.
+  useEffect(() => {
+    const bottomNavigation = bottomNavigationRef.current
+    if (!bottomNavigation) return
+    const publishHeight = () => {
+      document.documentElement.style.setProperty(
+        '--admin-nav-height',
+        `${bottomNavigation.offsetHeight}px`,
+      )
+    }
+    publishHeight()
+    const observer = new ResizeObserver(publishHeight)
+    observer.observe(bottomNavigation)
+    return () => {
+      observer.disconnect()
+      document.documentElement.style.removeProperty('--admin-nav-height')
+    }
+  }, [])
+
   const createHref = getNewAppointmentHref(agendaDate, fallbackDate)
-  const items: Array<{
-    key: AdminNavigationItem
-    label: string
-    href: string
-    icon: typeof CalendarDays
-  }> = [
-    { key: 'agenda', label: 'Agenda', href: '/admin', icon: CalendarDays },
-    // Une entrée de plus encombrerait la barre du téléphone en permanence pour
-    // un cas rare : elle n'apparaît donc que lorsqu'une demande attend.
-    ...(pendingRequestCount > 0
-      ? [
-          {
-            key: 'requests' as const,
-            label: 'Demandes',
-            href: '/admin/demandes',
-            icon: Clock,
-          },
-        ]
-      : []),
-    { key: 'search', label: 'Recherche', href: '/admin/search', icon: Search },
-    {
-      key: 'activity',
-      label: 'Activité',
-      href: '/admin/activity',
-      icon: Activity,
-    },
-    { key: 'create', label: 'Ajouter', href: createHref, icon: CirclePlus },
-    {
-      key: 'settings',
-      label: 'Réglages',
-      href: '/admin/settings',
-      icon: Settings2,
-    },
-  ]
+  const items = getAdminNavigationEntries(createHref, pendingRequestCount)
 
   return (
     <>
@@ -144,7 +154,7 @@ export const AdminNavigation = ({
             className="hidden items-center gap-1 md:flex"
           >
             {items.map(item => {
-              const Icon = item.icon
+              const Icon = navigationIcons[item.key]
               const isActive = activeItem === item.key
               return (
                 <Link
@@ -196,21 +206,30 @@ export const AdminNavigation = ({
       </header>
 
       <nav
+        ref={bottomNavigationRef}
         aria-label="Navigation de l’administration"
-        className="fixed inset-x-0 bottom-0 z-50 border-t bg-background/97 px-2 pb-[env(safe-area-inset-bottom)] shadow-[0_-8px_30px_rgba(0,0,0,0.08)] backdrop-blur md:hidden"
+        className="fixed inset-x-0 bottom-0 z-50 border-t bg-background/97 px-1 pb-[env(safe-area-inset-bottom)] shadow-[0_-8px_30px_rgba(0,0,0,0.08)] backdrop-blur md:hidden"
       >
-        <div className="mx-auto grid max-w-lg grid-cols-5">
+        {/* Autant de colonnes que d'entrées : à six, la grille figée à cinq
+            renvoyait la dernière à la ligne. Le libellé rétrécit d'un point
+            plutôt que de se couper — la couleur ne dit jamais l'état seule. */}
+        <div
+          className="mx-auto grid max-w-lg"
+          style={{
+            gridTemplateColumns: getBottomNavigationColumns(items.length),
+          }}
+        >
           {items.map(item => {
-            const Icon = item.icon
+            const Icon = navigationIcons[item.key]
             const isActive = activeItem === item.key
             return (
               <Link
                 key={item.key}
                 href={item.href}
                 aria-current={isActive ? 'page' : undefined}
-                className={`${navigationItemBaseClass} relative min-h-[4.25rem] flex-col gap-1 text-[11px] font-semibold ${
-                  isActive ? 'text-primary' : 'text-muted-foreground'
-                }`}
+                className={`${navigationItemBaseClass} relative min-h-[4.25rem] flex-col gap-1 font-semibold whitespace-nowrap ${
+                  items.length > 5 ? 'text-[10px]' : 'text-[11px]'
+                } ${isActive ? 'text-primary' : 'text-muted-foreground'}`}
               >
                 <span
                   className={`relative grid h-7 min-w-10 place-items-center rounded-full px-2 ${isActive ? 'bg-primary/15' : ''}`}
