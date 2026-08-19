@@ -50,6 +50,7 @@ const storedRequest = {
   declineReason: null,
   appointmentId: null,
   createdAt: new Date('2099-08-10T06:00:00.000Z'),
+  service: { category: { name: 'Épilation laser' } },
 }
 
 const customerInput = {
@@ -101,6 +102,7 @@ const makeDatabase = (overrides: { pendingCount?: number } = {}) => {
         customerLastName: 'Dupont',
         serviceNameSnapshot: service.name,
         startsAt: requestedStartsAt,
+        service: { category: { name: 'Épilation laser' } },
       }),
     },
     appointmentActivity: { create: vi.fn().mockResolvedValue({ id: 'act' }) },
@@ -206,16 +208,18 @@ describe('demandes de dernière minute', () => {
 
     await acceptLateRequestSerializable(database, 'request-1')
 
-    expect(transaction.appointment.create).toHaveBeenCalledWith({
-      data: expect.objectContaining({
-        status: 'CONFIRMED',
-        startsAt: requestedStartsAt,
-        // Préparation et rangement élargissent l'intervalle protégé par la
-        // contrainte d'exclusion : 15 min avant, 60 + 10 min après.
-        occupiedStartsAt: new Date('2099-08-10T11:45:00.000Z'),
-        occupiedEndsAt: new Date('2099-08-10T13:10:00.000Z'),
+    expect(transaction.appointment.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          status: 'CONFIRMED',
+          startsAt: requestedStartsAt,
+          // Préparation et rangement élargissent l'intervalle protégé par la
+          // contrainte d'exclusion : 15 min avant, 60 + 10 min après.
+          occupiedStartsAt: new Date('2099-08-10T11:45:00.000Z'),
+          occupiedEndsAt: new Date('2099-08-10T13:10:00.000Z'),
+        }),
       }),
-    })
+    )
     expect(transaction.appointmentActivity.create).toHaveBeenCalled()
     expect(transaction.auditEvent.create).toHaveBeenCalledWith({
       data: expect.objectContaining({ action: 'ACCEPTED' }),

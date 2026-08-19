@@ -18,7 +18,7 @@ import { openCalendar } from './calendar-download'
 
 interface ConfirmationActionsProps {
   appointment: {
-    serviceName: string
+    serviceLabel: string
     dateLabel: string
     startsAt: string
     endsAt: string

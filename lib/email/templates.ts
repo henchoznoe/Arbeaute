@@ -67,7 +67,7 @@ const actionsText = (actions: MailAction[]): string[] =>
 const calendarAction = (data: AppointmentMailData): MailAction => ({
   label: 'Ajouter à mon agenda',
   url: createGoogleCalendarUrl({
-    serviceName: data.serviceLabel,
+    serviceLabel: data.serviceLabel,
     startsAt: data.startsAt.toISOString(),
     endsAt: data.endsAt.toISOString(),
   }),

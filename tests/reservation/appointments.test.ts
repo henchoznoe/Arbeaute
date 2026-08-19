@@ -29,6 +29,7 @@ const service = {
   durationMinutes: 60,
   preparationMinutes: 15,
   cleanupMinutes: 10,
+  category: { name: 'Soins visage' },
 }
 const appointment = {
   id: 'appointment-1',
@@ -53,6 +54,9 @@ const appointment = {
   cancelledAt: null,
   createdAt: new Date('2099-08-01T10:00:00.000Z'),
   updatedAt: new Date('2099-08-01T10:00:00.000Z'),
+  // Le déplacement et l'annulation joignent le groupe pour que l'e-mail
+  // annonce « Soins visage — Soin visage », jamais « Soin visage » seul.
+  service: { category: { name: 'Soins visage' } },
 }
 
 const makeDatabase = () => {

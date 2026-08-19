@@ -3,7 +3,6 @@ import {
   ChevronLeft,
   ChevronRight,
   History,
-  ShieldCheck,
   UserRound,
 } from 'lucide-react'
 import Link from 'next/link'
@@ -13,7 +12,6 @@ import { AdminPage } from '@/components/admin/admin-page'
 import { AdminSkeleton } from '@/components/admin/admin-skeleton'
 import { AppointmentStatusActions } from '@/components/admin/appointment-status-actions'
 import {
-  CustomerDuplicateList,
   CustomerProfileForm,
   CustomerQuickActions,
 } from '@/components/admin/customer-profile-controls'
@@ -247,27 +245,6 @@ const CustomerProfile = async ({ params }: Readonly<CustomerPageProps>) => {
             ) : null}
           </section>
         </div>
-      </div>
-
-      <div className="mt-5 grid items-start gap-5 lg:grid-cols-2">
-        <CustomerDuplicateList
-          targetId={customer.id}
-          duplicates={profile.duplicates}
-        />
-        <section className="rounded-3xl border bg-card p-5 shadow-sm sm:p-6">
-          <div className="flex items-center gap-2">
-            <ShieldCheck className="size-5 text-primary" />
-            <h2 className="text-lg font-semibold">Confidentialité</h2>
-          </div>
-          <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
-            L’anonymisation reste centralisée dans l’écran sécurisé des données.
-            Elle affiche le nombre exact de rendez-vous avant toute
-            confirmation.
-          </p>
-          <Button asChild variant="outline" className="mt-4 w-full">
-            <Link href="/admin/data">Gérer l’anonymisation</Link>
-          </Button>
-        </section>
       </div>
     </AdminPage>
   )

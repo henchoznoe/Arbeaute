@@ -295,7 +295,11 @@ export const AppointmentForm = ({
         </section>
       ) : null}
 
-      <CustomerPicker onSelect={selectCustomer} />
+      {/* Uniquement à la création : c'est un pré-remplissage des coordonnées,
+          pas un rattachement. Sur un rendez-vous existant, la personne est déjà
+          connue, et proposer d'en « reprendre » une autre laissait croire qu'on
+          pouvait le transférer d'un client à l'autre. */}
+      {appointment.id ? null : <CustomerPicker onSelect={selectCustomer} />}
 
       <div className="grid gap-5 sm:grid-cols-2">
         <FormField

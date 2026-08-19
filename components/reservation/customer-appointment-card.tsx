@@ -40,7 +40,7 @@ interface CustomerAppointmentCardProps {
   maxDate: string
   minDate: string
   priceLabel: string
-  serviceName: string
+  serviceLabel: string
 }
 
 const weekCacheKey = (appointmentId: string, weekStart: string): string =>
@@ -58,7 +58,7 @@ export const CustomerAppointmentCard = ({
   maxDate,
   minDate,
   priceLabel,
-  serviceName,
+  serviceLabel,
 }: Readonly<CustomerAppointmentCardProps>) => {
   const router = useRouter()
   const [moving, setMoving] = useState(false)
@@ -209,7 +209,7 @@ export const CustomerAppointmentCard = ({
       <p className="text-sm font-medium text-brand-strong">
         Rendez-vous confirmé
       </p>
-      <h3 className="mt-1 font-heading text-2xl font-bold">{serviceName}</h3>
+      <h3 className="mt-1 font-heading text-2xl font-bold">{serviceLabel}</h3>
       <p className="mt-3">{capitalizeFirst(dateLabel)}</p>
       <p className="mt-1 text-sm text-muted-foreground">{priceLabel}</p>
 

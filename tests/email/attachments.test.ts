@@ -3,7 +3,7 @@ import { createCalendarAttachment } from '@/lib/email/attachments'
 
 const appointment = {
   id: 'apt-1',
-  serviceNameSnapshot: 'Soin visage bio',
+  serviceLabel: 'Soins visage — Soin visage bio',
   startsAt: new Date('2026-08-17T11:30:00.000Z'),
   endsAt: new Date('2026-08-17T12:30:00.000Z'),
 }
@@ -17,7 +17,7 @@ describe('createCalendarAttachment', () => {
       'utf8',
     )
     expect(calendar).toContain('BEGIN:VCALENDAR')
-    expect(calendar).toContain('SUMMARY:Soin visage bio')
+    expect(calendar).toContain('SUMMARY:Soins visage — Soin visage bio')
     expect(calendar).toContain('DTSTART:20260817T113000Z')
   })
 

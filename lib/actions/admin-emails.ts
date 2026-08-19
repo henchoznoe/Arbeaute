@@ -90,13 +90,15 @@ export const resendFailedEmail = async (
         'Le rendez-vous n’a plus d’adresse e-mail. Ajoutez-en une sur son client, puis réessayez.',
     }
 
+  const serviceLabel = formatServiceLabel(
+    appointment.serviceNameSnapshot,
+    appointment.service.category?.name,
+  )
+
   const content = build({
     customerFirstName: appointment.customerFirstName,
     customerLastName: appointment.customerLastName,
-    serviceLabel: formatServiceLabel(
-      appointment.serviceNameSnapshot,
-      appointment.service.category?.name,
-    ),
+    serviceLabel,
     startsAt: appointment.startsAt,
     endsAt: appointment.endsAt,
     priceCents: appointment.servicePriceCents,
@@ -107,7 +109,7 @@ export const resendFailedEmail = async (
       ? null
       : createCalendarAttachment({
           id: appointment.id,
-          serviceNameSnapshot: appointment.serviceNameSnapshot,
+          serviceLabel,
           startsAt: appointment.startsAt,
           endsAt: appointment.endsAt,
         })

@@ -71,6 +71,9 @@ const requestSelect = {
   declineReason: true,
   appointmentId: true,
   createdAt: true,
+  // Le groupe, partout où une demande est lue : `/admin/demandes`, « Mes
+  // rendez-vous » et les trois e-mails nomment tous « Laser Erbium — Visage ».
+  service: { select: { category: { select: { name: true } } } },
 } satisfies Prisma.AppointmentRequestSelect
 
 export type LateRequest = Prisma.AppointmentRequestGetPayload<{
@@ -102,6 +105,9 @@ export const createLateRequestSerializable = async (
               isVisible: true,
               isArchived: false,
             },
+            // Le groupe part avec la demande : les trois e-mails de demande
+            // nomment « Laser Erbium — Visage », jamais « Visage » seul.
+            include: { category: { select: { name: true } } },
           })
           if (!service) throw new LateRequestError('SLOT_NOT_ON_REQUEST')
 
@@ -160,7 +166,13 @@ export const createLateRequestSerializable = async (
               status: request.status,
             },
           })
-          return { request, customer }
+          return {
+            request: {
+              ...request,
+              categoryName: request.service.category?.name ?? null,
+            },
+            customer,
+          }
         },
         { isolationLevel: 'Serializable' },
       )
@@ -214,6 +226,9 @@ export const acceptLateRequestSerializable = async (
               request.serviceDurationMinutes * 60_000,
           )
           const appointment = await transaction.appointment.create({
+            include: {
+              service: { select: { category: { select: { name: true } } } },
+            },
             data: {
               serviceId: request.serviceId,
               customerId: customer.id,
@@ -276,7 +291,16 @@ export const acceptLateRequestSerializable = async (
               requestedStartsAt: request.requestedStartsAt.toISOString(),
             },
           })
-          return { request: updated, appointment }
+          return {
+            request: {
+              ...updated,
+              categoryName: updated.service.category?.name ?? null,
+            },
+            appointment: {
+              ...appointment,
+              categoryName: appointment.service.category?.name ?? null,
+            },
+          }
         },
         { isolationLevel: 'Serializable' },
       )
@@ -332,7 +356,7 @@ const closeRequest = async (
         declineReason: updated.declineReason,
       },
     })
-    return updated
+    return { ...updated, categoryName: updated.service.category?.name ?? null }
   })
 
 export const declineLateRequestSerializable = (

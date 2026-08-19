@@ -11,7 +11,7 @@ import { contact } from '@/lib/constants/contact'
 
 interface PendingRequestCardProps {
   requestId: string
-  serviceName: string
+  serviceLabel: string
   dateLabel: string
   priceLabel: string
 }
@@ -25,7 +25,7 @@ interface PendingRequestCardProps {
  */
 export const PendingRequestCard = ({
   requestId,
-  serviceName,
+  serviceLabel,
   dateLabel,
   priceLabel,
 }: Readonly<PendingRequestCardProps>) => {
@@ -51,7 +51,7 @@ export const PendingRequestCard = ({
         <Clock className="size-4 shrink-0" />
         En attente de réponse
       </p>
-      <h3 className="mt-3 font-heading text-xl font-bold">{serviceName}</h3>
+      <h3 className="mt-3 font-heading text-xl font-bold">{serviceLabel}</h3>
       <p className="mt-1 text-sm">{dateLabel}</p>
       <p className="mt-1 text-sm text-price">{priceLabel}</p>
       <p className="mt-3 text-sm leading-relaxed text-muted-foreground">

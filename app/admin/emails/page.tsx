@@ -105,6 +105,11 @@ const Emails = async () => {
               <li>· la confirmation, dès qu’un rendez-vous est pris ;</li>
               <li>· le déplacement, quand la date change ;</li>
               <li>· l’annulation, quand le rendez-vous est retiré ;</li>
+              <li>
+                · l’accusé de réception d’une demande de dernière minute, et
+                votre alerte pour y répondre ;
+              </li>
+              <li>· le refus d’une demande, quand vous ne la retenez pas ;</li>
               <li>· votre bilan de la semaine, le dimanche soir.</li>
             </ul>
           </div>

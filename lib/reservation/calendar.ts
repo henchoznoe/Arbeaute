@@ -2,7 +2,13 @@ import { contact } from '@/lib/constants/contact'
 
 interface CalendarAppointment {
   id: string
-  serviceName: string
+  /**
+   * Le libellé complet, groupe compris, tel que `formatServiceLabel` le
+   * construit. Jamais `serviceNameSnapshot` seul : « Visage » existe dans
+   * trois groupes, et un événement d'agenda nommé « Visage — Arbeauté » ne dit
+   * pas lequel.
+   */
+  serviceLabel: string
   startsAt: Date
   endsAt: Date
 }
@@ -47,7 +53,7 @@ const foldIcsLine = (line: string): string => {
 
 export const createAppointmentCalendar = ({
   id,
-  serviceName,
+  serviceLabel,
   startsAt,
   endsAt,
 }: CalendarAppointment): string => {
@@ -69,7 +75,7 @@ export const createAppointmentCalendar = ({
     `DTSTAMP:${formatIcsDate(new Date())}`,
     `DTSTART:${formatIcsDate(startsAt)}`,
     `DTEND:${formatIcsDate(endsAt)}`,
-    `SUMMARY:${escapeIcs(`${serviceName} — ${contact.name}`)}`,
+    `SUMMARY:${escapeIcs(`${serviceLabel} — ${contact.name}`)}`,
     `LOCATION:${escapeIcs(contact.address)}`,
     `DESCRIPTION:${escapeIcs(description)}`,
     'STATUS:CONFIRMED',

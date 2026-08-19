@@ -5,7 +5,6 @@ import {
   Check,
   Clipboard,
   LoaderCircle,
-  Merge,
   Phone,
   Save,
 } from 'lucide-react'
@@ -14,17 +13,9 @@ import { useRouter } from 'next/navigation'
 import { type FormEvent, useState, useTransition } from 'react'
 import { AppToast } from '@/components/ui/app-toast'
 import { Button } from '@/components/ui/button'
-import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import { FormField, formControlClass } from '@/components/ui/form-field'
-import {
-  mergeAdminCustomerProfiles,
-  saveAdminCustomerProfile,
-} from '@/lib/actions/admin-customers'
-import type {
-  AdminCustomer,
-  AdminCustomerDuplicate,
-} from '@/lib/admin/customer-profile'
-import { formatDayDate } from '@/lib/reservation/time'
+import { saveAdminCustomerProfile } from '@/lib/actions/admin-customers'
+import type { AdminCustomer } from '@/lib/admin/customer-profile'
 
 export const CustomerQuickActions = ({
   customerId,
@@ -229,92 +220,5 @@ export const CustomerProfileForm = ({
         variant={isError ? 'danger' : 'success'}
       />
     </form>
-  )
-}
-
-const formatLastSeen = (date: Date): string => formatDayDate(new Date(date))
-
-export const CustomerDuplicateList = ({
-  targetId,
-  duplicates,
-}: Readonly<{
-  targetId: string
-  duplicates: AdminCustomerDuplicate[]
-}>) => {
-  const router = useRouter()
-  const [pending, startTransition] = useTransition()
-  const [toastOpen, setToastOpen] = useState(false)
-  const [message, setMessage] = useState<string | null>(null)
-  const [isError, setIsError] = useState(false)
-
-  if (!duplicates.length) return null
-
-  const merge = (sourceId: string) => {
-    startTransition(async () => {
-      const result = await mergeAdminCustomerProfiles({ targetId, sourceId })
-      setMessage(result.message)
-      setIsError(!result.ok)
-      setToastOpen(true)
-      if (result.ok) router.refresh()
-    })
-  }
-
-  return (
-    <section className="rounded-3xl border border-warning-line bg-warning-subtle/50 p-5 sm:p-6">
-      <div className="flex items-center gap-2">
-        <Merge className="size-5 text-warning-strong" />
-        <h2 className="text-lg font-semibold">Doublons possibles</h2>
-      </div>
-      <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
-        Une coordonnée ou le nom correspond. Vérifiez soigneusement avant toute
-        fusion.
-      </p>
-      <ul className="mt-4 space-y-3">
-        {duplicates.map(duplicate => {
-          const name = [duplicate.firstName, duplicate.lastName]
-            .filter(Boolean)
-            .join(' ')
-          return (
-            <li
-              key={duplicate.id}
-              className="rounded-2xl border bg-background p-4"
-            >
-              <p className="font-semibold">{name}</p>
-              <p className="mt-1 break-all text-xs text-muted-foreground">
-                {duplicate.email} · {duplicate.phone}
-              </p>
-              <p className="mt-1 text-xs text-muted-foreground">
-                {duplicate._count.appointments} rendez-vous · dernière activité{' '}
-                {formatLastSeen(duplicate.lastSeenAt)}
-              </p>
-              <ConfirmDialog
-                title={`Fusionner ${name} ?`}
-                description={`Les ${duplicate._count.appointments} rendez-vous seront rattachés à ce client ; chacun garde le nom et le prix qu’il avait. L’autre client sera supprimé, et le changement inscrit dans l’historique des modifications.`}
-                confirmLabel="Fusionner les deux clients"
-                onConfirm={() => merge(duplicate.id)}
-                pending={pending}
-                trigger={
-                  <Button
-                    type="button"
-                    variant="outline"
-                    disabled={pending}
-                    className="mt-3"
-                  >
-                    <Merge className="size-4" /> Vérifier et fusionner
-                  </Button>
-                }
-              />
-            </li>
-          )
-        })}
-      </ul>
-      <AppToast
-        open={toastOpen}
-        onOpenChange={setToastOpen}
-        title={isError ? 'Fusion impossible' : 'Clients fusionnés'}
-        description={message ?? undefined}
-        variant={isError ? 'danger' : 'success'}
-      />
-    </section>
   )
 }

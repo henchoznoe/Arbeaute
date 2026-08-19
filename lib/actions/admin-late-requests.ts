@@ -127,6 +127,7 @@ export const declineLateRequest = async (
             serviceNameSnapshot: request.serviceNameSnapshot,
             servicePriceCents: request.servicePriceCents,
             requestedStartsAt: request.requestedStartsAt,
+            categoryName: request.categoryName,
           },
           declineReason,
         )

@@ -121,6 +121,9 @@ export const auditActionLabels: Record<AuditActionType, string> = {
   FILE_ASSIGNED: 'Fichier ajouté',
   FILE_REMOVED: 'Fichier retiré',
   ANONYMIZED: 'Coordonnées effacées',
+  // Plus aucun écran ne fusionne : l'adresse e-mail identifie une personne et
+  // une seule depuis la v1.10. Le libellé reste pour les lignes anciennes —
+  // retirer une valeur d'énumération serait une migration destructive.
   MERGED: 'Fusion',
   ACCEPTED: 'Demande acceptée',
   DECLINED: 'Demande refusée',

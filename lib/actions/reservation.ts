@@ -35,6 +35,7 @@ import { createAppointmentCalendar } from '@/lib/reservation/calendar'
 import { CUSTOMER_SESSION_MUTATION_LIMIT } from '@/lib/reservation/constants'
 import { findCustomerForSession } from '@/lib/reservation/customers'
 import { normalizeEmail, normalizePhone } from '@/lib/reservation/identity'
+import { formatServiceLabel } from '@/lib/reservation/service-label'
 import {
   addLocalDays,
   canCustomerChangeAppointment,
@@ -71,7 +72,7 @@ export interface BookingResult {
   message: string
   reason?: 'INVALID_CUSTOMER' | 'SLOT_CONFLICT' | 'UNKNOWN'
   appointment?: {
-    serviceName: string
+    serviceLabel: string
     dateLabel: string
     priceLabel: string
     startsAt: string
@@ -288,18 +289,23 @@ export const createPublicAppointment = async (
     // qu'une adresse ou un téléphone change.
     await setCustomerSession(customer.id, customer.identityVersion)
 
+    const serviceLabel = formatServiceLabel(
+      appointment.serviceNameSnapshot,
+      appointment.categoryName,
+    )
+
     return {
       ok: true,
       message: 'Votre rendez-vous est confirmé.',
       appointment: {
-        serviceName: appointment.serviceNameSnapshot,
+        serviceLabel,
         dateLabel: formatAppointmentDate(appointment.startsAt),
         priceLabel: formatPrice(appointment.servicePriceCents),
         startsAt: appointment.startsAt.toISOString(),
         endsAt: appointment.endsAt.toISOString(),
         calendar: createAppointmentCalendar({
           id: appointment.id,
-          serviceName: appointment.serviceNameSnapshot,
+          serviceLabel,
           startsAt: appointment.startsAt,
           endsAt: appointment.endsAt,
         }),
@@ -488,7 +494,10 @@ export const moveCustomerAppointment = async (
       notifiedEmail,
       calendar: createAppointmentCalendar({
         id: appointment.id,
-        serviceName: appointment.serviceNameSnapshot,
+        serviceLabel: formatServiceLabel(
+          appointment.serviceNameSnapshot,
+          appointment.categoryName,
+        ),
         startsAt: appointment.startsAt,
         endsAt: appointment.endsAt,
       }),

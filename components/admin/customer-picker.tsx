@@ -29,10 +29,14 @@ export const CustomerPicker = ({
     <section className="rounded-2xl border bg-muted/30 p-4">
       <div className="flex items-center gap-2">
         <UserRoundCheck className="size-4 text-primary" />
-        <h2 className="text-sm font-semibold">Reprendre un client existant</h2>
+        <h2 className="text-sm font-semibold">
+          Remplir avec un client déjà connu
+        </h2>
       </div>
       <p className="mt-1 text-xs text-muted-foreground">
-        Recherchez par nom, e-mail ou téléphone pour remplir ses coordonnées.
+        Recherchez par nom, e-mail ou téléphone : les quatre champs ci-dessous
+        se remplissent seuls. Le rendez-vous reste rattaché à l’adresse e-mail
+        enregistrée au moment de l’enregistrer.
       </p>
       <div className="mt-3 flex min-w-0 gap-2">
         <div className="relative min-w-0 flex-1">
@@ -75,7 +79,7 @@ export const CustomerPicker = ({
                 onSelect(customer)
                 setResults([])
                 setMessage(
-                  `${[customer.firstName, customer.lastName].filter(Boolean).join(' ')} sélectionnée.`,
+                  `Coordonnées de ${[customer.firstName, customer.lastName].filter(Boolean).join(' ')} reprises.`,
                 )
               }}
               className="flex min-h-11 w-full min-w-0 items-center justify-between gap-3 rounded-lg px-2 py-2 text-left hover:bg-muted focus-visible:bg-muted focus-visible:outline-none"

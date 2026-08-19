@@ -22,6 +22,7 @@ import {
   LateRequestError,
   withdrawLateRequestSerializable,
 } from '@/lib/reservation/late-requests'
+import { formatServiceLabel } from '@/lib/reservation/service-label'
 import { formatAppointmentDate } from '@/lib/reservation/time'
 import { checkRateLimit } from '@/lib/services/rate-limit'
 import { formatPrice } from '@/lib/utils/format'
@@ -51,7 +52,7 @@ export interface LateRequestResult {
   message: string
   reason?: 'INVALID_CUSTOMER' | 'SLOT_TAKEN' | 'TOO_MANY' | 'UNKNOWN'
   request?: {
-    serviceName: string
+    serviceLabel: string
     dateLabel: string
     priceLabel: string
     acknowledgementEmailTo: string | null
@@ -163,6 +164,7 @@ export const createLateRequest = async (
       servicePriceCents: request.servicePriceCents,
       requestedStartsAt: request.requestedStartsAt,
       comment: request.comment,
+      categoryName: request.categoryName,
     }
     notifyLateRequestSubmitted(notifiable)
     const acknowledgementEmailTo = notifyLateRequestReceived(notifiable)
@@ -178,7 +180,10 @@ export const createLateRequest = async (
       ok: true,
       message: 'Votre demande a été transmise.',
       request: {
-        serviceName: request.serviceNameSnapshot,
+        serviceLabel: formatServiceLabel(
+          request.serviceNameSnapshot,
+          request.categoryName,
+        ),
         dateLabel: formatAppointmentDate(request.requestedStartsAt),
         priceLabel: formatPrice(request.servicePriceCents),
         acknowledgementEmailTo,

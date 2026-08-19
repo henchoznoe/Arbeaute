@@ -13,6 +13,7 @@ import {
   getLateRequestsForAdmin,
   isLateRequestExpired,
 } from '@/lib/reservation/late-requests'
+import { formatServiceLabel } from '@/lib/reservation/service-label'
 import { formatAppointmentDate } from '@/lib/reservation/time'
 import { capitalizeFirst, formatPrice } from '@/lib/utils/format'
 
@@ -73,8 +74,11 @@ const LateRequests = async () => {
                     )}
                   </p>
                   <p className="mt-1 text-sm text-muted-foreground">
-                    {request.serviceNameSnapshot} ·{' '}
-                    {request.serviceDurationMinutes} min ·{' '}
+                    {formatServiceLabel(
+                      request.serviceNameSnapshot,
+                      request.service.category?.name,
+                    )}{' '}
+                    · {request.serviceDurationMinutes} min ·{' '}
                     <span className="text-price">
                       {formatPrice(request.servicePriceCents)}
                     </span>

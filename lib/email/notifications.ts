@@ -28,7 +28,12 @@ interface NotifiableAppointment {
   servicePriceCents: number
   startsAt: Date
   endsAt: Date
-  categoryName?: string | null
+  /**
+   * Obligatoire, et non facultatif : une signature tolérante laissait passer
+   * les appelants qui ne joignaient pas le groupe, et l'e-mail annonçait alors
+   * « Visage » sans dire lequel des trois.
+   */
+  categoryName: string | null
 }
 
 const toMailData = (
@@ -39,7 +44,7 @@ const toMailData = (
   customerLastName: appointment.customerLastName,
   serviceLabel: formatServiceLabel(
     appointment.serviceNameSnapshot,
-    appointment.categoryName ?? undefined,
+    appointment.categoryName,
   ),
   startsAt: appointment.startsAt,
   endsAt: appointment.endsAt,
@@ -69,7 +74,13 @@ const queue = (
   const attachment =
     !withCalendar || kind === 'BOOKING_CANCELLED'
       ? null
-      : createCalendarAttachment(appointment)
+      : createCalendarAttachment({
+          ...appointment,
+          serviceLabel: formatServiceLabel(
+            appointment.serviceNameSnapshot,
+            appointment.categoryName,
+          ),
+        })
 
   after(async () => {
     await deliverEmail({

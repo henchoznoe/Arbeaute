@@ -248,7 +248,10 @@ const CustomerAppointments = async ({
                   <PendingRequestCard
                     key={request.id}
                     requestId={request.id}
-                    serviceName={request.serviceNameSnapshot}
+                    serviceLabel={formatServiceLabel(
+                      request.serviceNameSnapshot,
+                      request.service.category?.name,
+                    )}
                     dateLabel={formatAppointmentDate(request.requestedStartsAt)}
                     priceLabel={formatPrice(request.servicePriceCents)}
                   />
@@ -275,7 +278,7 @@ const CustomerAppointments = async ({
                   <CustomerAppointmentCard
                     key={appointment.id}
                     id={appointment.id}
-                    serviceName={formatServiceLabel(
+                    serviceLabel={formatServiceLabel(
                       appointment.serviceNameSnapshot,
                       appointment.service.category?.name,
                     )}
@@ -295,7 +298,10 @@ const CustomerAppointments = async ({
                     customerChangeCutoffLabel={customerChangeCutoffLabel}
                     calendar={createAppointmentCalendar({
                       id: appointment.id,
-                      serviceName: appointment.serviceNameSnapshot,
+                      serviceLabel: formatServiceLabel(
+                        appointment.serviceNameSnapshot,
+                        appointment.service.category?.name,
+                      ),
                       startsAt: appointment.startsAt,
                       endsAt: appointment.endsAt,
                     })}
@@ -341,7 +347,7 @@ const CustomerAppointments = async ({
                   return (
                     <CustomerAppointmentHistoryCard
                       key={appointment.id}
-                      serviceName={formatServiceLabel(
+                      serviceLabel={formatServiceLabel(
                         appointment.serviceNameSnapshot,
                         appointment.service.category?.name,
                       )}

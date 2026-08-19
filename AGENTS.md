@@ -211,7 +211,10 @@ her mail.
   phone changes, which expires open sessions even for edits made in SQL. The
   security trade-off is documented in `SECURITY.md`; before the change,
   identification required the exact phone number too and locked real customers
-  out.
+  out. **There is no duplicate-merge screen any more**: one address is one
+  person, so the admin console has nothing to reconcile. The `MERGED` audit
+  action survives in the enum for the rows written before the unique index —
+  dropping an enum value would be a destructive migration.
 - **Schema changes ship in two steps when they remove something.** The Vercel
   build runs `prisma migrate deploy` *before* the new code serves traffic, so a
   migration that drops a column the live code still writes breaks bookings for

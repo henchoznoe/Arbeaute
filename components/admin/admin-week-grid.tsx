@@ -1,5 +1,6 @@
 import { Plus } from 'lucide-react'
 import Link from 'next/link'
+import type { CSSProperties } from 'react'
 import {
   type AdminTimelineDay,
   assignTimelineLanes,
@@ -217,28 +218,36 @@ export const AdminWeekGrid = ({
                         key={appointment.id}
                         href={`/admin/appointments/${appointment.id}?date=${day.dateKey}`}
                         aria-label={`${formatTimelineMinute(appointment.startMinute)}, ${appointment.customerName}, ${appointment.serviceLabel}, ${statusLabels[appointment.status]}`}
-                        className={`absolute z-30 overflow-hidden rounded-lg border bg-background px-1.5 py-1 shadow-sm transition hover:z-40 hover:shadow-md ${appointmentTone(appointment.status, appointment.hasVisualOverlap)}`}
-                        style={{
-                          top: offset(appointment.occupiedStartMinute),
-                          height: Math.max(
-                            26,
-                            (appointment.occupiedEndMinute -
-                              appointment.occupiedStartMinute) *
-                              PIXELS_PER_MINUTE,
-                          ),
-                          left: `calc(${lane.lane * width}% + 2px)`,
-                          width: `calc(${width}% - 4px)`,
-                          borderLeftColor: appointment.serviceColor,
-                          borderLeftWidth: 3,
-                        }}
+                        // Un soin d'un quart d'heure ne fait que 26 px : le
+                        // nom du soin y était coupé, et il fallait ouvrir le
+                        // rendez-vous pour savoir lequel c'était. Au survol et
+                        // au focus, le bloc reprend sa hauteur naturelle et
+                        // passe au-dessus des suivants — il ne cache rien tant
+                        // qu'on ne le vise pas.
+                        className={`group absolute z-30 h-[var(--block-height)] overflow-hidden rounded-lg border bg-background px-1.5 py-1 shadow-sm transition-shadow hover:z-40 hover:h-auto hover:min-h-[var(--block-height)] hover:shadow-md focus-visible:z-40 focus-visible:h-auto focus-visible:min-h-[var(--block-height)] ${appointmentTone(appointment.status, appointment.hasVisualOverlap)}`}
+                        style={
+                          {
+                            top: offset(appointment.occupiedStartMinute),
+                            '--block-height': `${Math.max(
+                              26,
+                              (appointment.occupiedEndMinute -
+                                appointment.occupiedStartMinute) *
+                                PIXELS_PER_MINUTE,
+                            )}px`,
+                            left: `calc(${lane.lane * width}% + 2px)`,
+                            width: `calc(${width}% - 4px)`,
+                            borderLeftColor: appointment.serviceColor,
+                            borderLeftWidth: 3,
+                          } as CSSProperties
+                        }
                       >
                         <span className="block text-2xs font-bold tabular-nums">
                           {formatTimelineMinute(appointment.startMinute)}
                         </span>
-                        <span className="block truncate text-2xs font-semibold">
+                        <span className="block truncate text-2xs font-semibold group-hover:overflow-visible group-hover:whitespace-normal group-focus-visible:overflow-visible group-focus-visible:whitespace-normal">
                           {appointment.customerName}
                         </span>
-                        <span className="block truncate text-2xs text-muted-foreground">
+                        <span className="block truncate text-2xs text-muted-foreground group-hover:overflow-visible group-hover:whitespace-normal group-focus-visible:overflow-visible group-focus-visible:whitespace-normal">
                           {appointment.serviceLabel}
                         </span>
                         {appointment.status === 'CONFIRMED' ? null : (

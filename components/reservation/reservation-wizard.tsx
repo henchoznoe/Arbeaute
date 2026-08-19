@@ -654,7 +654,7 @@ export const ReservationWizard = ({
           possible : vous saurez alors si cette heure est retenue.
         </p>
         <div className="mt-6 rounded-2xl bg-muted p-5 text-left">
-          <p className="font-semibold">{requestResult.request.serviceName}</p>
+          <p className="font-semibold">{requestResult.request.serviceLabel}</p>
           <p className="mt-2 text-sm">
             {capitalizeFirst(requestResult.request.dateLabel)}
           </p>
@@ -713,7 +713,7 @@ export const ReservationWizard = ({
           faire pour le confirmer.
         </p>
         <div className="mt-6 rounded-2xl bg-muted p-5 text-left">
-          <p className="font-semibold">{result.appointment.serviceName}</p>
+          <p className="font-semibold">{result.appointment.serviceLabel}</p>
           <p className="mt-2 text-sm">
             {capitalizeFirst(result.appointment.dateLabel)}
           </p>

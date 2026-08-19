@@ -31,7 +31,8 @@ interface NotifiableRequest {
   servicePriceCents: number
   requestedStartsAt: Date
   comment?: string | null
-  categoryName?: string | null
+  /** Obligatoire : voir `NotifiableAppointment` dans `notifications.ts`. */
+  categoryName: string | null
 }
 
 const toMailData = (request: NotifiableRequest): LateRequestMailData => ({
@@ -40,7 +41,7 @@ const toMailData = (request: NotifiableRequest): LateRequestMailData => ({
   customerPhone: request.customerPhone,
   serviceLabel: formatServiceLabel(
     request.serviceNameSnapshot,
-    request.categoryName ?? undefined,
+    request.categoryName,
   ),
   requestedStartsAt: request.requestedStartsAt,
   priceCents: request.servicePriceCents,
