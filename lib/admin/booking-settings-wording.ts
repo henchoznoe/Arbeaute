@@ -46,3 +46,24 @@ export const describeSlotInterval = (minutes: number): string => {
 
 export const formatSlotIntervalLabel = (minutes: number): string =>
   minutes === 60 ? 'Toutes les heures' : `Toutes les ${minutes} minutes`
+
+export const describeLateRequests = (
+  enabled: boolean,
+  noticeHours: number,
+  floorHours: number,
+): string => {
+  if (!enabled)
+    return 'Désactivé : une journée dont toutes les heures sont trop proches s’affiche comme complète, sans distinction avec une journée réellement pleine.'
+  // Un plancher qui rattrape le délai de réservation ne laisse aucune heure
+  // entre les deux : le dire vaut mieux qu'un réglage sans effet visible.
+  if (floorHours >= noticeHours)
+    return `Aucune heure ne sera proposée sur demande : le délai minimum d’une demande (${plural(floorHours, 'heure')}) rattrape déjà celui de la réservation en ligne (${plural(noticeHours, 'heure')}). Réduisez le premier pour ouvrir une marge.`
+
+  return `Les heures encore libres entre ${plural(floorHours, 'heure')} et ${plural(noticeHours, 'heure')} avant le soin restent affichées, marquées « sur demande ». Elles ne se réservent pas en ligne : vous recevez la demande et vous décidez.`
+}
+
+export const describeLateRequestFloor = (hours: number): string => {
+  if (hours === 0)
+    return 'Aucun plancher : une demande peut vous arriver pour une heure qui commence dans quelques minutes.'
+  return `Rien n’est proposé, même sur demande, dans les ${plural(hours, 'dernière heure', 'dernières heures')} qui précèdent une heure libre. De quoi vous laisser le temps de voir passer le message.`
+}

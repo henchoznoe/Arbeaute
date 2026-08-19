@@ -65,8 +65,15 @@ export const createAppointmentSerializable = async (
             dateKey: getLocalDateKey(input.startsAt),
             settings,
           })
+          // `state` est décisif : depuis les demandes de dernière minute, la
+          // liste contient aussi les heures trop proches pour être réservées
+          // en ligne. Les accepter ici viderait le délai de tout son sens.
           if (
-            !slots.some(slot => slot.startsAt === input.startsAt.toISOString())
+            !slots.some(
+              slot =>
+                slot.startsAt === input.startsAt.toISOString() &&
+                slot.state === 'OPEN',
+            )
           )
             throw new ReservationError('SLOT_UNAVAILABLE')
 
@@ -194,7 +201,15 @@ export const moveAppointmentSerializable = async (
             excludeAppointmentId: appointment.id,
             settings,
           })
-          if (!slots.some(slot => slot.startsAt === startsAt.toISOString()))
+          // Un déplacement reste strictement dans les heures réservables : on
+          // ne bascule pas un rendez-vous acquis vers une simple demande.
+          if (
+            !slots.some(
+              slot =>
+                slot.startsAt === startsAt.toISOString() &&
+                slot.state === 'OPEN',
+            )
+          )
             throw new ReservationError('SLOT_UNAVAILABLE')
 
           const updated = await transaction.appointment.update({

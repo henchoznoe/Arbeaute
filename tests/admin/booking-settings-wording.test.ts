@@ -3,6 +3,8 @@ import {
   describeBookingHorizon,
   describeBookingNotice,
   describeChangeCutoff,
+  describeLateRequestFloor,
+  describeLateRequests,
   describeSlotInterval,
   formatSlotIntervalLabel,
 } from '@/lib/admin/booking-settings-wording'
@@ -65,5 +67,36 @@ describe('formatSlotIntervalLabel', () => {
   it('évite « toutes les 60 minutes »', () => {
     expect(formatSlotIntervalLabel(60)).toBe('Toutes les heures')
     expect(formatSlotIntervalLabel(15)).toBe('Toutes les 15 minutes')
+  })
+})
+
+describe('describeLateRequests', () => {
+  it('nomme ce que produit le réglage éteint', () => {
+    const phrase = describeLateRequests(false, 12, 2)
+    expect(phrase).toContain('Désactivé')
+    expect(phrase).toContain('complète')
+  })
+
+  it('annonce la marge réelle quand le réglage est actif', () => {
+    const phrase = describeLateRequests(true, 12, 2)
+    expect(phrase).toContain('2 heures')
+    expect(phrase).toContain('12 heures')
+    expect(phrase).toContain('sur demande')
+  })
+
+  it('dit quand le plancher vide la marge au lieu de laisser un réglage sans effet', () => {
+    const phrase = describeLateRequests(true, 12, 12)
+    expect(phrase).toContain('Aucune heure ne sera proposée sur demande')
+  })
+})
+
+describe('describeLateRequestFloor', () => {
+  it('nomme l’absence de plancher', () => {
+    expect(describeLateRequestFloor(0)).toContain('Aucun plancher')
+  })
+
+  it('accorde le pluriel des heures', () => {
+    expect(describeLateRequestFloor(1)).toContain('dernière heure')
+    expect(describeLateRequestFloor(2)).toContain('2 dernières heures')
   })
 })

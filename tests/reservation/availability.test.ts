@@ -5,8 +5,17 @@ import {
   getAvailableSlots,
   getAvailableSlotsByDate,
 } from '@/lib/reservation/availability'
+import {
+  type BookingSettingsValues,
+  DEFAULT_BOOKING_SETTINGS,
+} from '@/lib/reservation/booking-settings'
 import { getDateKeysInRange } from '@/lib/reservation/time'
 import type { Prisma } from '@/prisma/generated/prisma/client'
+
+/** Évite qu'un nouveau réglage casse chaque cas de test un par un. */
+const withSettings = (
+  overrides: Partial<BookingSettingsValues>,
+): BookingSettingsValues => ({ ...DEFAULT_BOOKING_SETTINGS, ...overrides })
 
 const makeDatabase = ({
   durationMinutes = 30,
@@ -65,6 +74,7 @@ describe('public availability', () => {
     expect(slots.at(0)).toEqual({
       startsAt: '2026-08-10T06:00:00.000Z',
       label: '08:00',
+      state: 'OPEN',
     })
     expect(slots.some(slot => slot.label === '10:45')).toBe(true)
     expect(slots.some(slot => slot.label === '11:00')).toBe(false)
@@ -171,12 +181,12 @@ describe('public availability', () => {
       serviceId: 'service',
       dateKey: monday,
       now: new Date('2026-08-10T05:59:00.000Z'),
-      settings: {
+      settings: withSettings({
         minBookingNoticeHours: 0,
         bookingHorizonMonths: 1,
         customerChangeCutoffHours: 24,
         slotIntervalMinutes: 20,
-      },
+      }),
     })
     expect(slots.slice(0, 3).map(slot => slot.label)).toEqual([
       '08:00',
@@ -196,16 +206,120 @@ describe('public availability', () => {
       serviceId: 'service',
       dateKey: monday,
       now: earlySunday,
-      settings: {
+      settings: withSettings({
         minBookingNoticeHours: 0,
         bookingHorizonMonths: 1,
         customerChangeCutoffHours: 24,
         slotIntervalMinutes: 20,
-      },
+      }),
     })
     expect(slots.some(slot => slot.label === '08:00')).toBe(false)
     expect(slots.some(slot => slot.label === '08:20')).toBe(true)
     expect(slots.some(slot => slot.label === '09:20')).toBe(false)
+  })
+})
+
+/**
+ * Une journée ouverte et vide s'annonçait « complète » dès que ses heures
+ * tombaient sous le délai de réservation. Ces cas gardent la distinction.
+ */
+describe('heures sur demande', () => {
+  // Lundi 8 h du matin : avec 12 h de délai, plus rien n'est réservable le
+  // jour même, alors que l'institut est ouvert et entièrement libre.
+  const mondayMorning = new Date('2026-08-10T06:00:00.000Z')
+  const enabled = withSettings({
+    lateRequestsEnabled: true,
+    lateRequestFloorHours: 2,
+  })
+
+  it('laisse la journée « complète » tant que le réglage est éteint', async () => {
+    const day = await getAvailabilityByDate({
+      database: makeDatabase({}),
+      serviceId: 'service',
+      fromDateKey: monday,
+      toDateKey: monday,
+      now: mondayMorning,
+    })
+
+    expect(day[monday]).toEqual({ state: 'FULL', slots: [] })
+  })
+
+  it('affiche la journée « sur demande » une fois le réglage actif', async () => {
+    const day = await getAvailabilityByDate({
+      database: makeDatabase({}),
+      serviceId: 'service',
+      fromDateKey: monday,
+      toDateKey: monday,
+      now: mondayMorning,
+      settings: enabled,
+    })
+
+    expect(day[monday]?.state).toBe('ON_REQUEST')
+    expect(day[monday]?.slots.length).toBeGreaterThan(0)
+    expect(day[monday]?.slots.every(slot => slot.state === 'ON_REQUEST')).toBe(
+      true,
+    )
+  })
+
+  it('ne propose rien sous le plancher, même sur demande', async () => {
+    const slots = await getAvailableSlots({
+      database: makeDatabase({}),
+      serviceId: 'service',
+      dateKey: monday,
+      now: mondayMorning,
+      settings: enabled,
+    })
+
+    // Le plancher est à 8 h + 2 h : la première heure proposée est 10 h.
+    expect(slots.some(slot => slot.label === '09:45')).toBe(false)
+    expect(slots.at(0)?.label).toBe('10:00')
+  })
+
+  it('garde l’horizon comme un filtre dur', async () => {
+    const slots = await getAvailableSlots({
+      database: makeDatabase({}),
+      serviceId: 'service',
+      dateKey: '2026-12-07',
+      now: new Date('2026-08-06T08:00:00.000Z'),
+      settings: enabled,
+    })
+
+    expect(slots).toHaveLength(0)
+  })
+
+  it('sépare les heures réservables de celles sur demande dans une même journée', async () => {
+    // 23 h dimanche : lundi matin est encore sous les 12 h, lundi après-midi
+    // non. La journée reste donc réservable, avec deux natures d'heures.
+    const day = await getAvailabilityByDate({
+      database: makeDatabase({}),
+      serviceId: 'service',
+      fromDateKey: monday,
+      toDateKey: monday,
+      now: new Date('2026-08-09T21:00:00.000Z'),
+      settings: enabled,
+    })
+
+    expect(day[monday]?.state).toBe('AVAILABLE')
+    const byLabel = new Map(
+      day[monday]?.slots.map(slot => [slot.label, slot.state]),
+    )
+    expect(byLabel.get('08:00')).toBe('ON_REQUEST')
+    expect(byLabel.get('16:00')).toBe('OPEN')
+  })
+
+  it('ne renvoie jamais une heure sur demande comme prochain créneau', async () => {
+    const found = await findNextAvailableSlot({
+      database: makeDatabase({}),
+      serviceId: 'service',
+      fromDateKey: monday,
+      now: mondayMorning,
+      settings: enabled,
+    })
+
+    // Lundi n'a que des heures sur demande : le prochain créneau réellement
+    // réservable est le lundi suivant.
+    expect(found?.dateKey).toBe('2026-08-17')
+    expect(found?.slot.state).toBe('OPEN')
   })
 })
 

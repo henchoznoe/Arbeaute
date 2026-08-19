@@ -165,6 +165,8 @@ const changeFieldLabels: Record<string, string> = {
   bookingHorizonMonths: 'Horizon de réservation',
   customerChangeCutoffHours: 'Délai de modification',
   slotIntervalMinutes: 'Pas des créneaux',
+  lateRequestsEnabled: 'Demandes de dernière minute',
+  lateRequestFloorHours: 'Délai minimum d’une demande',
   visibleDays: 'Jours affichés',
   type: 'Type',
   hadImage: 'Image présente',

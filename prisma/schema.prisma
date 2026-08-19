@@ -167,6 +167,13 @@ model BookingSettings {
   bookingHorizonMonths      Int      @default(3)
   customerChangeCutoffHours Int      @default(48)
   slotIntervalMinutes       Int      @default(15)
+  /// Les heures encore libres mais trop proches pour être réservées en ligne
+  /// restent affichées et peuvent faire l'objet d'une demande. Faux par défaut :
+  /// la mise en production ne change rien tant qu'Arzu ne l'a pas décidé.
+  lateRequestsEnabled       Boolean  @default(false)
+  /// Plancher absolu sous lequel plus aucune heure n'apparaît, même sur demande.
+  /// Arzu est en soin et ne lit pas ses e-mails.
+  lateRequestFloorHours     Int      @default(2)
   createdAt                 DateTime @default(now())
   updatedAt                 DateTime @updatedAt
 

@@ -32,7 +32,7 @@ const cards: Array<{
     icon: SlidersHorizontal,
     title: 'Réservation',
     description:
-      'Combien de temps à l’avance réserver, jusqu’à quand, et jusqu’à quand un rendez-vous peut être changé sans vous.',
+      'Combien de temps à l’avance réserver, jusqu’à quand, les demandes de dernière minute, et jusqu’à quand un rendez-vous peut être changé sans vous.',
     action: 'Gérer les règles',
   },
   {

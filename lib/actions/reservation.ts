@@ -405,7 +405,9 @@ export const getCustomerMoveWeekAvailability = async (
       fromDateKey,
       toDateKey: addLocalDays(fromDateKey, PUBLIC_WEEK_LENGTH - 1),
       excludeAppointmentId: appointment.id,
-      settings,
+      // Déplacer un rendez-vous acquis n'ouvre pas droit aux heures sur
+      // demande : le calendrier de déplacement ne montre que le réservable.
+      settings: { ...settings, lateRequestsEnabled: false },
     })
   } catch {
     return {}

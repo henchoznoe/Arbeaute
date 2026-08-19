@@ -7,9 +7,11 @@ import {
   CircleCheck,
   Clock,
   Minus,
+  Phone,
   X,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { contact } from '@/lib/constants/contact'
 import type {
   AvailabilityDayState,
   DayAvailability,
@@ -41,6 +43,7 @@ interface WeekAvailabilityPickerProps {
 
 const stateIcon = {
   AVAILABLE: CircleCheck,
+  ON_REQUEST: Phone,
   FULL: X,
   CLOSED: Minus,
 } satisfies Record<AvailabilityDayState, typeof CircleCheck>
@@ -68,6 +71,11 @@ export const WeekAvailabilityPicker = ({
     lastCompleteWeekStart < minDate ? minDate : lastCompleteWeekStart
   const selectedDay = availability[date]
   const slots = selectedDay?.slots ?? []
+  // Une même journée peut porter les deux natures d'heures : proposer une
+  // heure sur demande comme un bouton de réservation mènerait la personne
+  // jusqu'à la dernière étape pour un refus.
+  const openSlots = slots.filter(slot => slot.state === 'OPEN')
+  const requestSlots = slots.filter(slot => slot.state === 'ON_REQUEST')
 
   return (
     <>
@@ -129,6 +137,9 @@ export const WeekAvailabilityPicker = ({
                     state === 'AVAILABLE' &&
                     'border-success-accent text-success-strong hover:border-primary',
                   !selected &&
+                    state === 'ON_REQUEST' &&
+                    'border-primary/40 bg-primary/10 text-primary hover:border-primary',
+                  !selected &&
                     state === 'FULL' &&
                     'border-warning-accent bg-warning-subtle text-warning-strong',
                   !selected &&
@@ -144,13 +155,17 @@ export const WeekAvailabilityPicker = ({
                 </span>
                 <span className="mt-1.5 flex min-w-0 items-center justify-center gap-0.5 text-2xs leading-none font-semibold">
                   {StateIcon ? <StateIcon className="size-3 shrink-0" /> : null}
+                  {/* La pastille est étroite : le nom complet de l'état vit
+                      dans l'aria-label, jamais tronqué. */}
                   {state === 'AVAILABLE'
                     ? 'Libre'
-                    : state === 'FULL'
-                      ? 'Complet'
-                      : state === 'CLOSED'
-                        ? 'Fermé'
-                        : '…'}
+                    : state === 'ON_REQUEST'
+                      ? 'Demande'
+                      : state === 'FULL'
+                        ? 'Complet'
+                        : state === 'CLOSED'
+                          ? 'Fermé'
+                          : '…'}
                 </span>
               </button>
             )
@@ -164,6 +179,9 @@ export const WeekAvailabilityPicker = ({
           <li className="flex items-center gap-1">
             <CircleCheck className="size-3.5 text-success" />
             Disponible
+          </li>
+          <li className="flex items-center gap-1">
+            <Phone className="size-3.5 text-primary" /> Sur demande
           </li>
           <li className="flex items-center gap-1">
             <X className="size-3.5 text-warning-strong" /> Complet
@@ -182,24 +200,62 @@ export const WeekAvailabilityPicker = ({
           <p className="mt-4 text-sm text-muted-foreground">
             Recherche des créneaux…
           </p>
-        ) : selectedDay?.state === 'AVAILABLE' ? (
-          <div className="mt-3 grid grid-cols-3 gap-2 sm:grid-cols-5">
-            {slots.map(slot => (
-              <button
-                key={slot.startsAt}
-                type="button"
-                onClick={() => onSelectSlot(slot.startsAt)}
-                className={cn(
-                  'h-11 rounded-xl border text-sm font-medium',
-                  startsAt === slot.startsAt
-                    ? 'border-primary bg-primary text-primary-foreground'
-                    : 'bg-background hover:border-primary',
-                )}
-              >
-                {slot.label}
-              </button>
-            ))}
-          </div>
+        ) : slots.length > 0 ? (
+          <>
+            {openSlots.length > 0 ? (
+              <div className="mt-3 grid grid-cols-3 gap-2 sm:grid-cols-5">
+                {openSlots.map(slot => (
+                  <button
+                    key={slot.startsAt}
+                    type="button"
+                    onClick={() => onSelectSlot(slot.startsAt)}
+                    className={cn(
+                      'h-11 rounded-xl border text-sm font-medium',
+                      startsAt === slot.startsAt
+                        ? 'border-primary bg-primary text-primary-foreground'
+                        : 'bg-background hover:border-primary',
+                    )}
+                  >
+                    {slot.label}
+                  </button>
+                ))}
+              </div>
+            ) : null}
+            {requestSlots.length > 0 ? (
+              <div className={openSlots.length > 0 ? 'mt-6' : 'mt-3'}>
+                {openSlots.length > 0 ? (
+                  <p className="flex items-center gap-2 text-sm font-medium">
+                    <Phone className="size-4" /> Trop tard pour réserver en
+                    ligne
+                  </p>
+                ) : null}
+                <div className="mt-3 grid grid-cols-3 gap-2 sm:grid-cols-5">
+                  {requestSlots.map(slot => (
+                    <span
+                      key={slot.startsAt}
+                      className="flex h-11 items-center justify-center rounded-xl border border-primary/30 bg-primary/5 text-sm font-medium text-primary"
+                    >
+                      {slot.label}
+                    </span>
+                  ))}
+                </div>
+                <p className="mt-3 text-sm text-muted-foreground">
+                  Ces heures sont encore libres, mais il est trop tard pour les
+                  réserver en ligne. Appelez l’institut pour en prendre une.
+                </p>
+                <Button
+                  asChild
+                  variant="secondary"
+                  className="mt-3 w-full sm:w-auto"
+                >
+                  <a href={`tel:${contact.phoneRaw}`}>
+                    <Phone className="size-4 shrink-0" />
+                    Appeler le {contact.phone}
+                  </a>
+                </Button>
+              </div>
+            ) : null}
+          </>
         ) : selectedDay?.state === 'FULL' ? (
           <p className="mt-4 rounded-xl bg-muted p-4 text-sm text-muted-foreground">
             Tous les créneaux de ce jour sont déjà pris. Essayez une autre date

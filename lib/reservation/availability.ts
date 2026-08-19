@@ -20,12 +20,24 @@ interface Interval {
   end: Date
 }
 
+/**
+ * `ON_REQUEST` : l'heure est libre, mais trop proche pour être réservée en
+ * ligne. Elle reste affichée au lieu de disparaître — une journée vide qui
+ * s'annonce « complète » coûte une réservation à chaque fois.
+ */
+type SlotState = 'OPEN' | 'ON_REQUEST'
+
 export interface AvailableSlot {
   startsAt: string
   label: string
+  state: SlotState
 }
 
-export type AvailabilityDayState = 'AVAILABLE' | 'FULL' | 'CLOSED'
+export type AvailabilityDayState =
+  | 'AVAILABLE'
+  | 'ON_REQUEST'
+  | 'FULL'
+  | 'CLOSED'
 
 export interface DayAvailability {
   state: AvailabilityDayState
@@ -229,6 +241,11 @@ const computeAvailabilityForDay = (
   const earliest = new Date(
     now.getTime() + settings.minBookingNoticeHours * 60 * 60 * 1000,
   )
+  // Sans les demandes de dernière minute, le plancher est le délai lui-même :
+  // le comportement reste exactement celui d'avant le réglage.
+  const floor = settings.lateRequestsEnabled
+    ? new Date(now.getTime() + settings.lateRequestFloorHours * 60 * 60 * 1000)
+    : earliest
   const { latest } = getBookingDateLimits(now, settings.bookingHorizonMonths)
   const slots: AvailableSlot[] = []
 
@@ -246,23 +263,33 @@ const computeAvailabilityForDay = (
       end: new Date(endsAt.getTime() + service.cleanupMinutes * 60_000),
     }
 
-    if (startsAt < earliest || startsAt > latest) continue
+    // L'horizon et le plancher restent des filtres durs : au-delà, et en
+    // deçà, rien n'est proposé, pas même sur demande.
+    if (startsAt < floor || startsAt > latest) continue
     if (!openings.some(opening => contains(opening, occupied))) continue
     if (blocked.some(interval => overlaps(interval, occupied))) continue
 
     slots.push({
       startsAt: startsAt.toISOString(),
       label: formatSlotTime(startsAt),
+      state: startsAt < earliest ? 'ON_REQUEST' : 'OPEN',
     })
   }
 
   const uniqueSlots = [
     ...new Map(slots.map(slot => [slot.startsAt, slot])).values(),
   ]
-  return {
-    state: uniqueSlots.length > 0 ? 'AVAILABLE' : 'FULL',
-    slots: uniqueSlots,
-  }
+  // Une journée qui n'a plus que des heures sur demande n'est ni disponible ni
+  // complète : la confondre avec l'une ou l'autre est précisément le défaut
+  // que ce réglage corrige.
+  const state: AvailabilityDayState = uniqueSlots.some(
+    slot => slot.state === 'OPEN',
+  )
+    ? 'AVAILABLE'
+    : uniqueSlots.length > 0
+      ? 'ON_REQUEST'
+      : 'FULL'
+  return { state, slots: uniqueSlots }
 }
 
 const computeSlotsForDay = (
@@ -398,8 +425,12 @@ export const findNextAvailableSlot = async ({
   if (!window) return null
 
   for (const dateKey of getDateKeysInRange(fromDateKey, max)) {
-    const slots = computeSlotsForDay(window, dateKey, now, settings)
-    if (slots.length > 0) return { dateKey, slot: slots[0] }
+    // « Le prochain créneau disponible » promet une réservation immédiate :
+    // une heure sur demande n'en est pas une.
+    const slot = computeSlotsForDay(window, dateKey, now, settings).find(
+      candidate => candidate.state === 'OPEN',
+    )
+    if (slot) return { dateKey, slot }
   }
 
   return null

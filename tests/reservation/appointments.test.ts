@@ -97,9 +97,11 @@ describe('customer appointment activity', () => {
       bookingHorizonMonths: 3,
       customerChangeCutoffHours: 48,
       slotIntervalMinutes: 15,
+      lateRequestsEnabled: false,
+      lateRequestFloorHours: 2,
     })
     mocks.getAvailableSlots.mockResolvedValue([
-      { startsAt: startsAt.toISOString(), label: '14:00' },
+      { startsAt: startsAt.toISOString(), label: '14:00', state: 'OPEN' },
     ])
   })
 
@@ -155,7 +157,7 @@ describe('customer appointment activity', () => {
     }
     transaction.appointment.update.mockResolvedValue(moved)
     mocks.getAvailableSlots.mockResolvedValue([
-      { startsAt: movedStartsAt.toISOString(), label: '15:00' },
+      { startsAt: movedStartsAt.toISOString(), label: '15:00', state: 'OPEN' },
     ])
 
     await moveAppointmentSerializable(database, {
@@ -244,5 +246,48 @@ describe('customer appointment activity', () => {
     expect(transaction.appointment.create).not.toHaveBeenCalled()
     expect(transaction.appointmentActivity.create).not.toHaveBeenCalled()
     expect(transaction.auditEvent.create).not.toHaveBeenCalled()
+  })
+
+  // Le moteur renvoie désormais aussi les heures trop proches pour être
+  // réservées en ligne. Les accepter ici viderait le délai de tout son sens.
+  it('refuse de réserver une heure seulement disponible sur demande', async () => {
+    const { database, transaction } = makeDatabase()
+    mocks.getAvailableSlots.mockResolvedValue([
+      { startsAt: startsAt.toISOString(), label: '14:00', state: 'ON_REQUEST' },
+    ])
+
+    await expect(
+      createAppointmentSerializable(database, {
+        serviceId: service.id,
+        startsAt,
+        firstName: 'Marie',
+        lastName: 'Dupont',
+        email: 'marie@example.com',
+        phone: '+41791234567',
+        comment: null,
+      }),
+    ).rejects.toEqual(new ReservationError('SLOT_UNAVAILABLE'))
+    expect(transaction.appointment.create).not.toHaveBeenCalled()
+  })
+
+  it('refuse de déplacer un rendez-vous vers une heure sur demande', async () => {
+    const { database, transaction } = makeDatabase()
+    mocks.getAvailableSlots.mockResolvedValue([
+      {
+        startsAt: movedStartsAt.toISOString(),
+        label: '15:00',
+        state: 'ON_REQUEST',
+      },
+    ])
+
+    await expect(
+      moveAppointmentSerializable(database, {
+        appointmentId: appointment.id,
+        startsAt: movedStartsAt,
+        customerId: 'customer-1',
+        now: new Date('2099-08-01T10:00:00.000Z'),
+      }),
+    ).rejects.toEqual(new ReservationError('SLOT_UNAVAILABLE'))
+    expect(transaction.appointment.update).not.toHaveBeenCalled()
   })
 })

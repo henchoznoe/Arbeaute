@@ -3,6 +3,8 @@ import prisma from '@/lib/core/prisma'
 import {
   DEFAULT_BOOKING_HORIZON_MONTHS,
   DEFAULT_CUSTOMER_CHANGE_CUTOFF_HOURS,
+  DEFAULT_LATE_REQUEST_FLOOR_HOURS,
+  DEFAULT_LATE_REQUESTS_ENABLED,
   DEFAULT_MIN_BOOKING_NOTICE_HOURS,
   DEFAULT_SLOT_INTERVAL_MINUTES,
 } from '@/lib/reservation/constants'
@@ -15,6 +17,8 @@ export interface BookingSettingsValues {
   bookingHorizonMonths: number
   customerChangeCutoffHours: number
   slotIntervalMinutes: number
+  lateRequestsEnabled: boolean
+  lateRequestFloorHours: number
 }
 
 export const DEFAULT_BOOKING_SETTINGS: BookingSettingsValues = {
@@ -22,6 +26,8 @@ export const DEFAULT_BOOKING_SETTINGS: BookingSettingsValues = {
   bookingHorizonMonths: DEFAULT_BOOKING_HORIZON_MONTHS,
   customerChangeCutoffHours: DEFAULT_CUSTOMER_CHANGE_CUTOFF_HOURS,
   slotIntervalMinutes: DEFAULT_SLOT_INTERVAL_MINUTES,
+  lateRequestsEnabled: DEFAULT_LATE_REQUESTS_ENABLED,
+  lateRequestFloorHours: DEFAULT_LATE_REQUEST_FLOOR_HOURS,
 }
 
 export const formatCustomerChangeCutoff = (hours: number): string =>
@@ -40,6 +46,8 @@ export const getBookingSettings = async (): Promise<BookingSettingsValues> => {
       bookingHorizonMonths: true,
       customerChangeCutoffHours: true,
       slotIntervalMinutes: true,
+      lateRequestsEnabled: true,
+      lateRequestFloorHours: true,
     },
   })
   return settings ?? DEFAULT_BOOKING_SETTINGS

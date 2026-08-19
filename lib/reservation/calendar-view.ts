@@ -11,6 +11,7 @@ import type { AvailabilityDayState } from '@/lib/reservation/availability'
 
 export const availabilityStateLabels: Record<AvailabilityDayState, string> = {
   AVAILABLE: 'Disponible',
+  ON_REQUEST: 'Sur demande',
   FULL: 'Complet',
   CLOSED: 'Fermé',
 }
