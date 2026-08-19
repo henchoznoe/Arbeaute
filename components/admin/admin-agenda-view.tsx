@@ -92,17 +92,18 @@ export const AdminAgendaView = ({
             </Button>
           </div>
 
-          <div className="mt-3 grid grid-cols-7 gap-1" role="tablist">
+          {/* Des boutons, pas des onglets. Le motif ARIA `tablist` promet une
+              navigation aux flèches et une gestion du `tabindex` que ce bandeau
+              n'implémente pas : mieux vaut n'annoncer que ce qu'il fait. */}
+          <fieldset className="mt-3 grid grid-cols-7 gap-1">
+            <legend className="sr-only">Choisir un jour de la semaine</legend>
             {days.map(day => {
               const isSelected = day.dateKey === selectedDay.dateKey
               return (
                 <button
                   key={day.dateKey}
-                  id={`admin-day-tab-${day.dateKey}`}
                   type="button"
-                  role="tab"
-                  aria-controls="admin-day-panel"
-                  aria-selected={isSelected}
+                  aria-pressed={isSelected}
                   aria-label={`${day.label}${day.appointments.length ? `, ${day.appointments.length} rendez-vous` : ''}`}
                   onClick={() => selectDate(day.dateKey)}
                   className={`relative flex min-h-14 flex-col items-center justify-center rounded-xl text-xs font-semibold transition ${
@@ -124,7 +125,7 @@ export const AdminAgendaView = ({
                 </button>
               )
             })}
-          </div>
+          </fieldset>
 
           {selectedDay.dateKey !== today ? (
             <Button asChild variant="secondary" className="mt-2 w-full">
@@ -135,11 +136,7 @@ export const AdminAgendaView = ({
           ) : null}
         </div>
 
-        <div
-          id="admin-day-panel"
-          role="tabpanel"
-          aria-labelledby={`admin-day-tab-${selectedDay.dateKey}`}
-        >
+        <div>
           <div className="mt-4 flex items-center justify-between gap-3">
             <div>
               <p className="text-xs font-medium text-brand">

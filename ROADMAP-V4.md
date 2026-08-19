@@ -78,9 +78,9 @@ Le statut figure dans le titre et se réévalue après chaque livraison.
 
 | Statut | Éléments |
 | --- | --- |
-| ✅ Terminés | 1 à 14, 19 |
+| ✅ Terminés | 1 à 15, 19 |
 | 🟡 En cours | Aucun |
-| ⏳ Prêt à démarrer | 15 à 18 |
+| ⏳ Prêt à démarrer | 16, 17, 18 |
 | 🔒 Bloqués | Aucun |
 | ❌ Abandonné | Aucun |
 
@@ -596,7 +596,7 @@ la création d’une prestation.
 
 **Dépendances :** aucune.
 
-### 15. Corriger ce que la navigation admin annonce — ⏳
+### 15. Corriger ce que la navigation admin annonce — ✅
 
 **Priorité : P1 · Effort : S · Nature : correction**
 

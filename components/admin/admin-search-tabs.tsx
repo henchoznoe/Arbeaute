@@ -36,14 +36,15 @@ export const AdminSearchTabs = ({
 
   return (
     <>
-      <nav
-        aria-label="Que chercher"
-        className="mt-5 grid grid-cols-2 rounded-2xl bg-muted p-1"
-      >
+      {/* Ces deux boutons ne naviguent nulle part : ils changent ce qui est
+          affiché. Les marquer comme la page courante était faux ; les marquer
+          comme enfoncés dit ce qui se passe vraiment. */}
+      <fieldset className="mt-5 grid grid-cols-2 rounded-2xl bg-muted p-1">
+        <legend className="sr-only">Que chercher</legend>
         <button
           type="button"
           onClick={() => setActive('customers')}
-          aria-current={active === 'customers' ? 'page' : undefined}
+          aria-pressed={active === 'customers'}
           className={tabClass('customers')}
         >
           <UsersRound className="size-4" /> Clients
@@ -51,12 +52,12 @@ export const AdminSearchTabs = ({
         <button
           type="button"
           onClick={() => setActive('appointments')}
-          aria-current={active === 'appointments' ? 'page' : undefined}
+          aria-pressed={active === 'appointments'}
           className={tabClass('appointments')}
         >
           <CalendarSearch className="size-4" /> Rendez-vous
         </button>
-      </nav>
+      </fieldset>
 
       {active === 'customers' ? (
         <AdminCustomerSearch initialResult={initialCustomers} />

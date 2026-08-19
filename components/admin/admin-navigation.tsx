@@ -71,8 +71,17 @@ export const AdminContent = ({
 /**
  * La pastille se pose sur le coin du bouton, pas sur l'icône : accrochée à
  * l'icône, elle en recouvrait le dessin et se lisait comme une rature.
+ *
+ * Le texte caché dit ce que la pastille compte. Réemployée telle quelle pour
+ * les demandes en attente, elle annonçait « N activité(s) non lue(s) » : un
+ * lecteur d'écran présentait donc une demande urgente comme une activité
+ * consultable plus tard.
  */
-const activityBadge = (count: number, className: string) => {
+const countBadge = (
+  count: number,
+  className: string,
+  describe: (count: number) => string,
+) => {
   if (count <= 0) return null
   const label = count > 99 ? '99+' : count.toString()
   return (
@@ -80,13 +89,16 @@ const activityBadge = (count: number, className: string) => {
       className={`absolute grid min-h-4 min-w-4 place-items-center rounded-full bg-brand-strong px-1 text-2xs font-bold leading-none text-ink-light ring-2 ring-background ${className}`}
     >
       <span aria-hidden="true">{label}</span>
-      <span className="sr-only">
-        {count} activité{count > 1 ? 's' : ''} non lue
-        {count > 1 ? 's' : ''}
-      </span>
+      <span className="sr-only">{describe(count)}</span>
     </span>
   )
 }
+
+const describeUnreadActivity = (count: number): string =>
+  `${count} activité${count > 1 ? 's' : ''} non lue${count > 1 ? 's' : ''}`
+
+const describePendingRequests = (count: number): string =>
+  `${count} demande${count > 1 ? 's' : ''} de dernière minute en attente`
 
 export const AdminNavigation = ({
   unreadActivityCount,
@@ -149,8 +161,10 @@ export const AdminNavigation = ({
             Arbeauté <span className="ml-1 text-brand">Admin</span>
           </Link>
 
+          {/* Deux repères de navigation portaient le même nom : dans une
+              liste de repères, on ne pouvait pas les distinguer. */}
           <nav
-            aria-label="Navigation de l’administration"
+            aria-label="Administration, navigation principale"
             className="hidden items-center gap-1 md:flex"
           >
             {items.map(item => {
@@ -170,10 +184,18 @@ export const AdminNavigation = ({
                   <Icon className="size-4" />
                   {item.label}
                   {item.key === 'activity'
-                    ? activityBadge(unreadActivityCount, '-right-1.5 -top-1')
+                    ? countBadge(
+                        unreadActivityCount,
+                        '-right-1.5 -top-1',
+                        describeUnreadActivity,
+                      )
                     : null}
                   {item.key === 'requests'
-                    ? activityBadge(pendingRequestCount, '-right-1.5 -top-1')
+                    ? countBadge(
+                        pendingRequestCount,
+                        '-right-1.5 -top-1',
+                        describePendingRequests,
+                      )
                     : null}
                 </Link>
               )
@@ -207,7 +229,7 @@ export const AdminNavigation = ({
 
       <nav
         ref={bottomNavigationRef}
-        aria-label="Navigation de l’administration"
+        aria-label="Administration, barre du bas"
         className="fixed inset-x-0 bottom-0 z-50 border-t bg-background/97 px-1 pb-[env(safe-area-inset-bottom)] shadow-[0_-8px_30px_rgba(0,0,0,0.08)] backdrop-blur md:hidden"
       >
         {/* Autant de colonnes que d'entrées : à six, la grille figée à cinq
@@ -236,10 +258,18 @@ export const AdminNavigation = ({
                 >
                   <Icon className="size-5" />
                   {item.key === 'activity'
-                    ? activityBadge(unreadActivityCount, '-right-1 -top-1')
+                    ? countBadge(
+                        unreadActivityCount,
+                        '-right-1 -top-1',
+                        describeUnreadActivity,
+                      )
                     : null}
                   {item.key === 'requests'
-                    ? activityBadge(pendingRequestCount, '-right-1 -top-1')
+                    ? countBadge(
+                        pendingRequestCount,
+                        '-right-1 -top-1',
+                        describePendingRequests,
+                      )
                     : null}
                 </span>
                 {item.label}

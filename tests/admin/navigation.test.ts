@@ -101,3 +101,54 @@ describe('dégagement du contenu', () => {
     expect(NAVIGATION).not.toContain('grid-cols-5')
   })
 })
+
+/**
+ * Trois annonces étaient fausses ou incomplètes : le compteur de demandes
+ * empruntait le texte caché des activités non lues, les deux repères de
+ * navigation portaient le même nom, et deux bandeaux déclaraient un motif ARIA
+ * d'onglets qu'ils n'implémentaient pas.
+ */
+describe('ce que la navigation annonce', () => {
+  const NAVIGATION = readFileSync(
+    'components/admin/admin-navigation.tsx',
+    'utf8',
+  )
+  const AGENDA_VIEW = readFileSync(
+    'components/admin/admin-agenda-view.tsx',
+    'utf8',
+  )
+  const SEARCH_TABS = readFileSync(
+    'components/admin/admin-search-tabs.tsx',
+    'utf8',
+  )
+
+  it('donne aux demandes leur propre texte caché', () => {
+    expect(NAVIGATION).toContain('de dernière minute en attente')
+    // Le texte des activités n'est plus réemployé pour les demandes.
+    expect(NAVIGATION.match(/activité\$\{count > 1/g)).toHaveLength(1)
+  })
+
+  it('nomme les deux repères de navigation différemment', () => {
+    const names = [
+      ...NAVIGATION.matchAll(/aria-label="Administration, ([^"]+)"/g),
+    ].map(match => match[1])
+
+    expect(names).toHaveLength(2)
+    expect(new Set(names).size).toBe(2)
+  })
+
+  it('ne déclare aucun rôle d’onglet sans le clavier qui va avec', () => {
+    for (const source of [AGENDA_VIEW, SEARCH_TABS]) {
+      expect(source).not.toContain('role="tablist"')
+      expect(source).not.toContain('role="tab"')
+      expect(source).not.toContain('role="tabpanel"')
+      expect(source).not.toContain('aria-selected')
+    }
+    expect(AGENDA_VIEW).toContain('aria-pressed={isSelected}')
+  })
+
+  it('n’annonce plus une page là où rien ne navigue', () => {
+    expect(SEARCH_TABS).not.toContain('aria-current')
+    expect(SEARCH_TABS).toContain("aria-pressed={active === 'customers'}")
+  })
+})
