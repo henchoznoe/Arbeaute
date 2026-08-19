@@ -7,6 +7,7 @@ import {
   Clock3,
   Copy,
   LoaderCircle,
+  Minus,
   Palmtree,
   Plus,
   Trash2,
@@ -25,6 +26,8 @@ import {
 import {
   type AvailabilityCalendarSegment,
   type AvailabilityExceptionGroup,
+  describeExceptionDay,
+  getExceptionCountNoun,
   hasAvailabilityExceptionOverlap,
 } from '@/lib/admin/availability-calendar'
 import { formatCalendarDayDate } from '@/lib/reservation/calendar-view'
@@ -287,7 +290,11 @@ export const AvailabilityExceptionCalendar = ({
                 key={day.dateKey}
                 type="button"
                 onClick={() => selectDate(day.dateKey)}
-                aria-label={`${formatDate(day.dateKey)}${openings ? `, ${openings} ouverture${openings > 1 ? 's' : ''}` : ''}${closures ? `, ${closures} fermeture${closures > 1 ? 's' : ''}` : ''}`}
+                aria-label={describeExceptionDay(
+                  formatDate(day.dateKey),
+                  openings,
+                  closures,
+                )}
                 className={`relative flex min-h-16 min-w-0 flex-col items-center rounded-xl border p-1.5 text-sm transition hover:border-primary/40 hover:bg-muted sm:min-h-20 sm:items-start sm:p-2 ${
                   day.inMonth
                     ? 'bg-background'
@@ -299,15 +306,30 @@ export const AvailabilityExceptionCalendar = ({
                 >
                   {day.dayNumber}
                 </span>
-                <span className="mt-auto flex w-full flex-col gap-1">
+                {/* Le sens se lit sur l'icône, jamais sur la seule couleur :
+                    plus pour ce qu'un jour particulier ajoute, moins pour ce
+                    qu'il retire. Le nom revient à `lg`, où la cellule est
+                    assez large pour le porter sans le couper. */}
+                <span
+                  className="mt-auto flex w-full flex-col gap-1"
+                  aria-hidden="true"
+                >
                   {openings ? (
-                    <span className="truncate rounded bg-success-soft px-1 py-0.5 text-2xs font-semibold text-success-strong">
-                      {openings} ouv.
+                    <span className="flex items-center justify-center gap-0.5 rounded bg-success-soft px-1 py-0.5 text-2xs font-semibold text-success-strong sm:justify-start">
+                      <Plus className="size-3 shrink-0" />
+                      {openings}
+                      <span className="hidden lg:inline">
+                        {getExceptionCountNoun(openings, 'AVAILABLE')}
+                      </span>
                     </span>
                   ) : null}
                   {closures ? (
-                    <span className="truncate rounded bg-warning-soft px-1 py-0.5 text-2xs font-semibold text-warning-strong">
-                      {closures} ferm.
+                    <span className="flex items-center justify-center gap-0.5 rounded bg-warning-soft px-1 py-0.5 text-2xs font-semibold text-warning-strong sm:justify-start">
+                      <Minus className="size-3 shrink-0" />
+                      {closures}
+                      <span className="hidden lg:inline">
+                        {getExceptionCountNoun(closures, 'UNAVAILABLE')}
+                      </span>
                     </span>
                   ) : null}
                 </span>

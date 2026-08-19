@@ -78,9 +78,9 @@ Le statut figure dans le titre et se réévalue après chaque livraison.
 
 | Statut | Éléments |
 | --- | --- |
-| ✅ Terminés | 2, 3, 9, 19 |
+| ✅ Terminés | 2, 3, 9, 11, 19 |
 | 🟡 En cours | Aucun |
-| ⏳ Prêt à démarrer | 1, 4 à 8, 10 à 18 |
+| ⏳ Prêt à démarrer | 1, 4 à 8, 10, 12 à 18 |
 | 🔒 Bloqués | Aucun |
 | ❌ Abandonné | Aucun |
 
@@ -463,7 +463,7 @@ bande voisine au point de rendre le choix de l’heure imprévisible.
 
 **Dépendances :** aucune.
 
-### 11. Distinguer une ouverture d’une fermeture dans les jours particuliers — ⏳
+### 11. Distinguer une ouverture d’une fermeture dans les jours particuliers — ✅
 
 **Priorité : P0 · Effort : S · Nature : correction**
 
