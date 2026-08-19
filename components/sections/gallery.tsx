@@ -43,9 +43,9 @@ export async function Gallery() {
                   sizes="(min-width: 768px) 25vw, 50vw"
                   className="object-cover transition-transform duration-500 group-hover:scale-105"
                 />
-                <figcaption className="absolute inset-x-0 bottom-0 bg-linear-to-t from-black/75 via-black/35 to-transparent px-4 pt-14 pb-4 text-white">
+                <figcaption className="absolute inset-x-0 bottom-0 bg-linear-to-t from-ink-dark/75 via-ink-dark/35 to-transparent px-4 pt-14 pb-4 text-ink-light">
                   <span className="block font-medium">{service.name}</span>
-                  <span className="mt-0.5 block text-xs text-white/75">
+                  <span className="mt-0.5 block text-xs text-ink-light/75">
                     {service.categoryName}
                   </span>
                 </figcaption>

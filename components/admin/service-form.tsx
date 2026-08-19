@@ -1,3 +1,7 @@
+import {
+  ColorField,
+  DEFAULT_CATEGORY_COLOR,
+} from '@/components/admin/color-field'
 import { FormField, formControlClass } from '@/components/ui/form-field'
 import { SubmitButton } from '@/components/ui/submit-button'
 
@@ -265,16 +269,11 @@ export const ServiceForm = ({
           className={fieldClass}
         />
       </FormField>
-      <FormField controlId="service-color" label="Couleur">
-        <input
-          id="service-color"
-          name="color"
-          type="color"
-          required
-          defaultValue={service?.color ?? '#927b59'}
-          className={fieldClass}
-        />
-      </FormField>
+      <ColorField
+        controlId="service-color"
+        name="color"
+        defaultValue={service?.color ?? DEFAULT_CATEGORY_COLOR}
+      />
     </div>
 
     <div className="grid gap-4 sm:grid-cols-2">

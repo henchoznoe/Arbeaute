@@ -10,6 +10,7 @@ import { filterCatalog } from '@/lib/catalog/filter'
 import type { CatalogCategory } from '@/lib/catalog/queries'
 import { contact } from '@/lib/constants/contact'
 import { buildServiceReservationPath } from '@/lib/reservation/deep-link'
+import { getReadableInk, getSecondaryInkOpacity } from '@/lib/utils/contrast'
 import { formatPrice } from '@/lib/utils/format'
 
 export const ServiceCatalog = ({
@@ -125,15 +126,32 @@ export const ServiceCatalog = ({
               key={category.id}
               className="mb-8 break-inside-avoid overflow-hidden rounded-2xl border bg-card shadow-sm"
             >
+              {/* La seule couleur du site qui échappe aux jetons : elle est
+                  saisie dans l'administration. L'encre s'en déduit — claire sur
+                  fond foncé, foncée sur fond clair — au lieu d'être forcée en
+                  blanc, et l'opacité de la description est la plus discrète qui
+                  reste au-dessus de 4,5:1. */}
               <header
-                className="px-5 py-4 text-primary-foreground"
+                className={`px-5 py-4 ${
+                  getReadableInk(category.color) === 'light'
+                    ? 'text-ink-light'
+                    : 'text-ink-dark'
+                }`}
                 style={{ backgroundColor: category.color }}
               >
                 <h3 className="font-heading text-xl font-bold uppercase">
                   {category.name}
                 </h3>
                 {category.description ? (
-                  <p className="mt-1 text-sm text-white/80">
+                  <p
+                    className="mt-1 text-sm"
+                    style={{
+                      opacity: getSecondaryInkOpacity(
+                        category.color,
+                        getReadableInk(category.color),
+                      ),
+                    }}
+                  >
                     {category.description}
                   </p>
                 ) : null}

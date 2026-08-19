@@ -78,9 +78,9 @@ Le statut figure dans le titre et se réévalue après chaque livraison.
 
 | Statut | Éléments |
 | --- | --- |
-| ✅ Terminés | 2, 3, 9, 10, 11, 14, 19 |
+| ✅ Terminés | 2, 3, 6, 9, 10, 11, 14, 19 |
 | 🟡 En cours | Aucun |
-| ⏳ Prêt à démarrer | 1, 4 à 8, 12, 13, 15 à 18 |
+| ⏳ Prêt à démarrer | 1, 4, 5, 7, 8, 12, 13, 15 à 18 |
 | 🔒 Bloqués | Aucun |
 | ❌ Abandonné | Aucun |
 
@@ -280,7 +280,7 @@ bannière d’administration que sur les écrans authentifiés — jamais sur
 
 ## II. Ce que l’on voit
 
-### 6. Ramener les en-têtes de catégorie au-dessus de 4,5:1 — ⏳
+### 6. Ramener les en-têtes de catégorie au-dessus de 4,5:1 — ✅
 
 **Priorité : P0 · Effort : M · Nature : correction**
 

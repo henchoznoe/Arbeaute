@@ -2,6 +2,10 @@
 
 import { LoaderCircle, Pencil, Plus } from 'lucide-react'
 import { type FormEvent, useState, useTransition } from 'react'
+import {
+  ColorField,
+  DEFAULT_CATEGORY_COLOR,
+} from '@/components/admin/color-field'
 import { Button } from '@/components/ui/button'
 import { formControlClass } from '@/components/ui/form-field'
 import { SidePanel } from '@/components/ui/side-panel'
@@ -91,16 +95,11 @@ export const ServiceCategoryPanel = ({
             className={formControlClass}
           />
         </label>
-        <label className="grid gap-1.5 text-sm font-medium">
-          Couleur
-          <input
-            name="color"
-            type="color"
-            required
-            defaultValue={category?.color ?? '#927b59'}
-            className="h-11 w-full rounded-xl border bg-background p-1"
-          />
-        </label>
+        <ColorField
+          controlId="category-color"
+          name="color"
+          defaultValue={category?.color ?? DEFAULT_CATEGORY_COLOR}
+        />
         <Button type="submit" disabled={pending} className="w-full">
           {pending ? <LoaderCircle className="size-4 animate-spin" /> : null}
           {category ? 'Enregistrer le groupe' : 'Créer le groupe'}

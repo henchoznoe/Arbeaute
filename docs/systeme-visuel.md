@@ -61,10 +61,22 @@ Aucune couleur littérale (`#rrggbb`) ni teinte brute de la palette Tailwind
 | Danger | `destructive` et ses opacités | Annulation, suppression, absence |
 | Information | `primary` et ses opacités | État neutre mis en avant, rendez-vous en cours |
 | Prix | `price` | La seule couleur des montants, partout |
+| Encre sur média | `ink-light`, `ink-dark` | Texte et voile posés sur une photo, ou sur une couleur saisie dans l'administration |
 
 Chaque rampe va du fond le plus clair (`-subtle`) au texte le plus foncé
 (`-strong`). Le jeton sans suffixe est la couleur pleine : icône, point, surface
 saturée.
+
+### L'encre posée sur ce qu'on ne choisit pas
+
+`ink-light` et `ink-dark` sont les deux seules encres qui ne dépendent pas du
+thème mais de ce qui passe dessous : une photo, ou la couleur d'un groupe de
+prestations. Elles ne se choisissent pas à l'œil — `lib/utils/contrast.ts`
+déduit laquelle des deux poser, et cette déduction garantit au moins 4,58:1
+quelle que soit la teinte. Les encres teintées du thème ne suffisaient pas :
+leur meilleur des deux tombe à 4,05:1 sur les teintes moyennes, dont celle des
+catégories. Le sélecteur de couleur de l'administration affiche le contraste
+obtenu, pour que la garantie se voie.
 
 Le mode sombre n’est pas activé : aucune classe `dark:` ne doit être ajoutée
 tant qu’un jeu de jetons `.dark` n’existe pas dans `app/globals.css`.

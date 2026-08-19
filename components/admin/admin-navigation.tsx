@@ -77,7 +77,7 @@ const activityBadge = (count: number, className: string) => {
   const label = count > 99 ? '99+' : count.toString()
   return (
     <span
-      className={`absolute grid min-h-4 min-w-4 place-items-center rounded-full bg-brand-strong px-1 text-2xs font-bold leading-none text-white ring-2 ring-background ${className}`}
+      className={`absolute grid min-h-4 min-w-4 place-items-center rounded-full bg-brand-strong px-1 text-2xs font-bold leading-none text-ink-light ring-2 ring-background ${className}`}
     >
       <span aria-hidden="true">{label}</span>
       <span className="sr-only">

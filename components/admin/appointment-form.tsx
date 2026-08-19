@@ -539,7 +539,7 @@ export const AppointmentForm = ({
           <Button
             type="submit"
             disabled={pending}
-            className={override ? 'bg-warning text-white' : undefined}
+            className={override ? 'bg-warning text-ink-light' : undefined}
           >
             {pending ? (
               <LoaderCircle className="size-4 animate-spin" />

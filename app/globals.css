@@ -30,6 +30,8 @@
   --color-warning-soft: var(--warning-soft);
   --color-warning-line: var(--warning-line);
   --color-warning-accent: var(--warning-accent);
+  --color-ink-light: var(--ink-light);
+  --color-ink-dark: var(--ink-dark);
   --color-brand: var(--brand);
   --color-brand-strong: var(--brand-strong);
   --color-brand-subtle: var(--brand-subtle);
@@ -135,6 +137,14 @@
   --brand-subtle: oklch(0.969 0.015 12.422);
   --brand-soft: oklch(0.941 0.03 12.58);
   --brand-line: oklch(0.892 0.058 10.001);
+  /* Les deux seules encres qui ne dépendent pas du thème mais de ce qui passe
+     dessous : une photo, ou une couleur choisie dans l'administration. Le blanc
+     et le noir purs sont les seuls dont le meilleur des deux dépasse toujours
+     4,58:1 ; les encres teintées du thème tombent à 4,05:1 sur les teintes
+     moyennes, dont celle des catégories. Le calcul vit dans
+     `lib/utils/contrast.ts`, et sert aussi au voile posé sur les photos. */
+  --ink-light: oklch(1 0 0);
+  --ink-dark: oklch(0 0 0);
   /* Le prix a longtemps été écrit en dur sous trois teintes différentes. */
   --price: oklch(0.541 0.052 78.5);
 }

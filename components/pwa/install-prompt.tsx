@@ -94,7 +94,7 @@ export const InstallPrompt = () => {
       aria-label="Installer l’application"
       className="fixed inset-x-0 bottom-0 z-50 px-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]"
     >
-      <div className="mx-auto flex max-w-md animate-in gap-4 rounded-2xl border bg-card/95 p-4 shadow-2xl shadow-black/10 backdrop-blur-lg duration-500 fade-in slide-in-from-bottom-8">
+      <div className="mx-auto flex max-w-md animate-in gap-4 rounded-2xl border bg-card/95 p-4 shadow-2xl shadow-ink-dark/10 backdrop-blur-lg duration-500 fade-in slide-in-from-bottom-8">
         <Image
           src={target.icon}
           alt=""
