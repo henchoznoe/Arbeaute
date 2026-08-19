@@ -3,9 +3,13 @@ import {
   type AppointmentMailData,
   buildCancelledMail,
   buildConfirmationMail,
+  buildLateRequestDeclinedMail,
+  buildLateRequestReceivedMail,
+  buildLateRequestSubmittedMail,
   buildRescheduledMail,
   buildSeriesConfirmationMail,
   buildWeeklyDigestMail,
+  type LateRequestMailData,
 } from '@/lib/email/templates'
 
 const base: AppointmentMailData = {
@@ -196,5 +200,72 @@ describe('buildWeeklyDigestMail', () => {
     expect(mail.subject).toContain('Semaine calme')
     expect(mail.text).toContain('Aucun rendez-vous honoré')
     expect(mail.text).toContain('La semaine qui commence en compte 8.')
+  })
+})
+
+const lateRequestBase: LateRequestMailData = {
+  customerFirstName: 'Marie',
+  customerLastName: 'Dupont',
+  customerPhone: '+41791234567',
+  serviceLabel: 'Soins visage — Soin visage bio',
+  requestedStartsAt: new Date('2026-08-17T11:30:00.000Z'),
+  priceCents: 12_000,
+}
+
+describe('buildLateRequestSubmittedMail', () => {
+  it('donne à Arzu de quoi décider sans ouvrir le site', () => {
+    const mail = buildLateRequestSubmittedMail({
+      ...lateRequestBase,
+      comment: 'Si possible plutôt en fin de matinée',
+    })
+    expect(mail.text).toContain('Marie Dupont')
+    expect(mail.text).toContain('+41791234567')
+    expect(mail.text).toContain('Si possible plutôt en fin de matinée')
+    expect(mail.text).toContain('/admin/demandes')
+  })
+
+  it('dit que rien n’est réservé tant qu’elle n’a pas répondu', () => {
+    const mail = buildLateRequestSubmittedMail(lateRequestBase)
+    expect(mail.text).toContain('Rien n’est réservé')
+  })
+})
+
+describe('buildLateRequestReceivedMail', () => {
+  /**
+   * La garantie la plus importante de toute la fonctionnalité : un accusé qui
+   * se lit comme une confirmation enverrait quelqu'un se déplacer pour rien.
+   */
+  it('n’annonce jamais un rendez-vous', () => {
+    const mail = buildLateRequestReceivedMail(lateRequestBase)
+    expect(mail.text).toContain('Ce n’est pas encore un rendez-vous')
+    expect(mail.subject).not.toMatch(/confirmé/i)
+    expect(mail.text).not.toMatch(
+      /votre rendez-vous est (bien )?(confirmé|enregistré)/i,
+    )
+  })
+
+  it('laisse le téléphone comme recours immédiat', () => {
+    expect(buildLateRequestReceivedMail(lateRequestBase).text).toContain(
+      '+41 79 675 67 66',
+    )
+  })
+})
+
+describe('buildLateRequestDeclinedMail', () => {
+  it('reprend le mot d’Arzu quand elle en a laissé un', () => {
+    const mail = buildLateRequestDeclinedMail({
+      ...lateRequestBase,
+      declineReason: 'Je suis déjà prise, mais jeudi matin je suis libre.',
+    })
+    expect(mail.text).toContain('jeudi matin je suis libre')
+  })
+
+  it('rouvre le calendrier même sans motif', () => {
+    const mail = buildLateRequestDeclinedMail({
+      ...lateRequestBase,
+      declineReason: null,
+    })
+    expect(mail.text).toContain('/reservation')
+    expect(mail.text).toContain('+41 79 675 67 66')
   })
 })

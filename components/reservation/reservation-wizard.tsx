@@ -3,6 +3,7 @@
 import {
   Check,
   ChevronLeft,
+  Clock,
   FileText,
   Mail,
   MapPin,
@@ -20,6 +21,10 @@ import { ConfirmationActions } from '@/components/reservation/confirmation-actio
 import { WeekAvailabilityPicker } from '@/components/reservation/week-availability-picker'
 import { Button } from '@/components/ui/button'
 import { FormField, formControlClass } from '@/components/ui/form-field'
+import {
+  createLateRequest,
+  type LateRequestResult,
+} from '@/lib/actions/late-requests'
 import {
   type BookingResult,
   createPublicAppointment,
@@ -166,6 +171,11 @@ export const ReservationWizard = ({
   const [nextSlotNotice, setNextSlotNotice] = useState<string | null>(null)
   const [calendarAnnouncement, setCalendarAnnouncement] = useState('')
   const [result, setResult] = useState<BookingResult | null>(null)
+  // Une demande et une réservation ne rendent pas la même chose : les garder
+  // séparées évite d'avoir à deviner, à l'affichage, laquelle a abouti.
+  const [requestResult, setRequestResult] = useState<LateRequestResult | null>(
+    null,
+  )
   const [customer, setCustomer] =
     useState<CustomerFormValues>(emptyCustomerForm)
   const [customerErrors, setCustomerErrors] = useState<CustomerFormErrors>({})
@@ -194,6 +204,12 @@ export const ReservationWizard = ({
   const maxViewStart =
     lastCompleteWeekStart < minDate ? minDate : lastCompleteWeekStart
   const weekReady = loadedWeek === weekCacheKey(serviceId, viewStart)
+  // L'heure choisie décide de tout l'écran de vérification : réserver, ou
+  // demander. Elle se relit dans la semaine chargée, jamais dans un état à part
+  // qui pourrait se désynchroniser du calendrier.
+  const isOnRequestSlot =
+    weekAvailability[date]?.slots.find(slot => slot.startsAt === startsAt)
+      ?.state === 'ON_REQUEST'
 
   const scrollToWizardTop = useCallback(() => {
     const wizard = wizardRef.current
@@ -455,11 +471,48 @@ export const ReservationWizard = ({
     const errors = validateCustomerFields(customer, ['comment', 'consent'])
     setCustomerErrors(errors)
     if (errors.comment || errors.consent) return
-    submitBooking()
+    if (isOnRequestSlot) submitLateRequest()
+    else submitBooking()
+  }
+
+  /**
+   * Une heure trop proche ne se réserve pas : elle se demande. Rien n'est créé
+   * ici, et la formulation de l'écran suivant ne doit jamais laisser croire
+   * l'inverse.
+   */
+  const submitLateRequest = () => {
+    setRequestResult(null)
+    setResult(null)
+    startSubmitTransition(async () => {
+      const response = await createLateRequest({
+        serviceId,
+        startsAt,
+        firstName: customer.firstName,
+        lastName: customer.lastName,
+        email: customer.email,
+        phone: customer.phone,
+        comment: customer.comment,
+        consent: customer.consent,
+        website,
+      })
+      setRequestResult(response)
+      if (response.ok) {
+        scrollToWizardTop()
+        return
+      }
+      if (response.reason === 'SLOT_TAKEN') {
+        setStartsAt('')
+        goToStep(STEPS.slot)
+      } else if (response.reason === 'INVALID_CUSTOMER') {
+        setDetailsStage('identity')
+        goToStep(STEPS.details)
+      }
+    })
   }
 
   const submitBooking = () => {
     setResult(null)
+    setRequestResult(null)
     startSubmitTransition(async () => {
       const response = await createPublicAppointment({
         serviceId,
@@ -492,6 +545,67 @@ export const ReservationWizard = ({
   const deliveryNotice = describeConfirmationDelivery(
     result?.appointment?.confirmationEmailTo,
   )
+
+  /**
+   * L'écran d'une demande transmise.
+   *
+   * Il emprunte la teinte d'attente et non celle de la réussite, et il répète
+   * en toutes lettres que rien n'est réservé : quelqu'un qui se déplacerait
+   * sur la foi de cet écran ferait le trajet pour rien.
+   */
+  if (requestResult?.request) {
+    const requestDelivery = describeConfirmationDelivery(
+      requestResult.request.acknowledgementEmailTo,
+    )
+    return (
+      <section
+        ref={wizardRef}
+        className="mx-auto max-w-xl rounded-3xl border bg-card p-6 text-center shadow-sm sm:p-10"
+      >
+        <div className="mx-auto flex size-14 items-center justify-center rounded-full bg-primary/10 text-primary">
+          <Clock className="size-7" />
+        </div>
+        <p className="mt-5 text-sm font-semibold tracking-widest text-primary uppercase">
+          Demande transmise
+        </p>
+        <h2 className="mt-2 font-heading text-title font-bold">
+          Ce n’est pas encore un rendez-vous
+        </h2>
+        <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
+          {contact.owner} a reçu votre demande. Elle vous répond dès que
+          possible : vous saurez alors si cette heure est retenue.
+        </p>
+        <div className="mt-6 rounded-2xl bg-muted p-5 text-left">
+          <p className="font-semibold">{requestResult.request.serviceName}</p>
+          <p className="mt-2 text-sm">
+            {capitalizeFirst(requestResult.request.dateLabel)}
+          </p>
+          <p className="mt-1 text-sm text-price">
+            {requestResult.request.priceLabel}
+          </p>
+        </div>
+        {requestDelivery ? (
+          <div className="mt-4 rounded-2xl border border-primary/25 bg-primary/5 p-4 text-left text-sm">
+            <p className="font-semibold">{requestDelivery.title}</p>
+            <p className="mt-1 text-muted-foreground">
+              {requestDelivery.detail}
+            </p>
+          </div>
+        ) : null}
+        <p className="mt-5 text-sm text-muted-foreground">
+          C’est urgent ? Appelez l’institut au {contact.phone}.
+        </p>
+        <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:justify-center">
+          <Button asChild variant="secondary">
+            <a href={`tel:${contact.phoneRaw}`}>Appeler l’institut</a>
+          </Button>
+          <Button asChild variant="outline">
+            <a href="/mes-rendez-vous">Voir mes rendez-vous</a>
+          </Button>
+        </div>
+      </section>
+    )
+  }
 
   if (result?.appointment)
     return (
@@ -955,12 +1069,29 @@ export const ReservationWizard = ({
             <ChevronLeft className="size-4" /> Changer de créneau
           </Button>
           <h2 className="mt-5 font-heading text-2xl font-bold">
-            Vérifiez votre réservation
+            {isOnRequestSlot
+              ? 'Vérifiez votre demande'
+              : 'Vérifiez votre réservation'}
           </h2>
           <p className="mt-1 text-sm text-muted-foreground">
-            Rien n’est encore créé. Relisez ces informations avant la
-            confirmation définitive.
+            Rien n’est encore créé. Relisez ces informations avant{' '}
+            {isOnRequestSlot ? 'de l’envoyer' : 'la confirmation définitive'}.
           </p>
+          {isOnRequestSlot ? (
+            <div className="mt-5 rounded-xl border border-primary/25 bg-primary/5 p-4 text-sm">
+              <p className="flex items-start gap-2">
+                <Clock className="mt-0.5 size-4 shrink-0 text-primary" />
+                <span>
+                  <strong className="font-semibold">
+                    Cette heure ne se réserve pas en ligne.
+                  </strong>{' '}
+                  Elle est trop proche : vous envoyez une demande, et{' '}
+                  {contact.owner} vous répond par e-mail. Tant qu’elle n’a pas
+                  répondu, vous n’avez pas de rendez-vous.
+                </span>
+              </p>
+            </div>
+          ) : null}
 
           <div className="mt-6 divide-y rounded-2xl border">
             <div className="flex items-start justify-between gap-4 p-4">
@@ -1127,12 +1258,12 @@ export const ReservationWizard = ({
             </p>
           ) : null}
 
-          {result && !result.ok ? (
+          {(result && !result.ok) || (requestResult && !requestResult.ok) ? (
             <p
               className="mt-5 rounded-xl bg-destructive/10 p-4 text-sm text-destructive"
               role="alert"
             >
-              {result.message}
+              {result && !result.ok ? result.message : requestResult?.message}
             </p>
           ) : null}
           <Button
@@ -1142,9 +1273,13 @@ export const ReservationWizard = ({
             disabled={submitting}
             className="mt-6 w-full"
           >
-            {submitting
-              ? 'Création du rendez-vous…'
-              : 'Confirmer et créer le rendez-vous'}
+            {isOnRequestSlot
+              ? submitting
+                ? 'Envoi de la demande…'
+                : 'Envoyer ma demande'
+              : submitting
+                ? 'Création du rendez-vous…'
+                : 'Confirmer et créer le rendez-vous'}
           </Button>
         </section>
       ) : null}

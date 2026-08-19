@@ -2,6 +2,7 @@ import { isDateKey } from '@/lib/reservation/time'
 
 export type AdminNavigationItem =
   | 'agenda'
+  | 'requests'
   | 'search'
   | 'activity'
   | 'create'
@@ -12,6 +13,7 @@ export const ADMIN_AGENDA_DATE_EVENT = 'admin-agenda-date-change'
 export const getActiveAdminNavigationItem = (
   pathname: string,
 ): AdminNavigationItem => {
+  if (pathname.startsWith('/admin/demandes')) return 'requests'
   if (
     pathname.startsWith('/admin/search') ||
     pathname.startsWith('/admin/customers')

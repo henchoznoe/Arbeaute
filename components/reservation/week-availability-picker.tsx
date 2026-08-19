@@ -231,17 +231,25 @@ export const WeekAvailabilityPicker = ({
                 ) : null}
                 <div className="mt-3 grid grid-cols-3 gap-2 sm:grid-cols-5">
                   {requestSlots.map(slot => (
-                    <span
+                    <button
                       key={slot.startsAt}
-                      className="flex h-11 items-center justify-center rounded-xl border border-primary/30 bg-primary/5 text-sm font-medium text-primary"
+                      type="button"
+                      onClick={() => onSelectSlot(slot.startsAt)}
+                      className={cn(
+                        'h-11 rounded-xl border text-sm font-medium',
+                        startsAt === slot.startsAt
+                          ? 'border-primary bg-primary text-primary-foreground'
+                          : 'border-primary/30 bg-primary/5 text-primary hover:border-primary',
+                      )}
                     >
                       {slot.label}
-                    </span>
+                    </button>
                   ))}
                 </div>
                 <p className="mt-3 text-sm text-muted-foreground">
                   Ces heures sont encore libres, mais il est trop tard pour les
-                  réserver en ligne. Appelez l’institut pour en prendre une.
+                  réserver en ligne. Demandez-en une à {contact.owner} : elle
+                  vous répond, ou appelez directement.
                 </p>
                 <Button
                   asChild

@@ -1,4 +1,6 @@
 import { formatInTimeZone } from 'date-fns-tz'
+import { ChevronRight, Clock } from 'lucide-react'
+import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { Suspense } from 'react'
 import { ActivityOverview } from '@/components/admin/activity-overview'
@@ -16,6 +18,7 @@ import prisma from '@/lib/core/prisma'
 import { getAdminSession } from '@/lib/core/session-cookies'
 import { formatCalendarDayTitle } from '@/lib/reservation/calendar-view'
 import { RESERVATION_TIME_ZONE } from '@/lib/reservation/constants'
+import { getPendingLateRequestCount } from '@/lib/reservation/late-requests'
 import { formatServiceLabel } from '@/lib/reservation/service-label'
 import {
   addLocalDays,
@@ -61,6 +64,7 @@ const AdminAgenda = async ({ searchParams }: Readonly<AdminPageProps>) => {
     activityOverview,
     nextAppointment,
     agendaSettings,
+    pendingRequestCount,
   ] = await Promise.all([
     prisma.appointment.findMany({
       where: {
@@ -113,6 +117,7 @@ const AdminAgenda = async ({ searchParams }: Readonly<AdminPageProps>) => {
       },
     }),
     getAgendaSettings(),
+    getPendingLateRequestCount(),
   ])
 
   const timelineDays = weekDays.map(dateKey => {
@@ -169,6 +174,31 @@ const AdminAgenda = async ({ searchParams }: Readonly<AdminPageProps>) => {
         <h1 className="font-heading text-title font-bold">Agenda</h1>
         <p className="text-sm font-medium text-brand">Arbeauté</p>
       </header>
+
+      {/* Une demande se décide à l'heure près : elle ne peut pas attendre
+          qu'Arzu pense à ouvrir un autre écran. */}
+      {pendingRequestCount > 0 ? (
+        <Link
+          href="/admin/demandes"
+          className="mt-4 flex items-center gap-3 rounded-2xl border border-primary/30 bg-primary/5 p-4 transition hover:border-primary"
+        >
+          <span className="grid size-10 shrink-0 place-items-center rounded-full bg-primary/10 text-primary">
+            <Clock className="size-5" />
+          </span>
+          <span className="min-w-0">
+            <span className="block font-semibold">
+              {pendingRequestCount === 1
+                ? 'Une demande attend votre réponse'
+                : `${pendingRequestCount} demandes attendent votre réponse`}
+            </span>
+            <span className="block text-sm text-muted-foreground">
+              Des heures trop proches pour être réservées en ligne. Rien n’est
+              réservé tant que vous n’avez pas répondu.
+            </span>
+          </span>
+          <ChevronRight className="ml-auto size-5 shrink-0 text-muted-foreground" />
+        </Link>
+      ) : null}
 
       {nextAppointment && nextAppointmentDateKey ? (
         <NextAppointmentCard

@@ -17,11 +17,16 @@ export const emailKindLabels: Record<EmailKind, string> = {
   APPOINTMENT_REMINDER: 'Rappel de la veille',
   DAILY_DIGEST: 'Votre récapitulatif du soir',
   WEEKLY_DIGEST: 'Votre bilan de la semaine',
+  LATE_REQUEST_SUBMITTED: 'Demande de dernière minute reçue',
+  LATE_REQUEST_RECEIVED: 'Accusé de demande de dernière minute',
+  LATE_REQUEST_DECLINED: 'Demande de dernière minute refusée',
 }
 
 /**
  * Seuls les messages déclenchés par une réservation peuvent être reconstruits :
- * ce sont les seuls dont un gabarit existe encore.
+ * ce sont les seuls dont un gabarit se rebâtit à partir du seul rendez-vous.
+ * Les messages liés à une demande de dernière minute en sont exclus — leur
+ * contenu dépend de la demande, pas d'un rendez-vous existant.
  */
 const RESENDABLE_KINDS: ReadonlySet<EmailKind> = new Set<EmailKind>([
   'BOOKING_CONFIRMATION',

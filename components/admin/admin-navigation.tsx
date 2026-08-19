@@ -4,6 +4,7 @@ import {
   Activity,
   CalendarDays,
   CirclePlus,
+  Clock,
   House,
   LogOut,
   Search,
@@ -26,6 +27,7 @@ import { getLocalDateKey } from '@/lib/reservation/time'
 
 interface AdminNavigationProps {
   unreadActivityCount: number
+  pendingRequestCount: number
 }
 
 export const AdminContent = ({
@@ -67,6 +69,7 @@ const activityBadge = (count: number, className: string) => {
 
 export const AdminNavigation = ({
   unreadActivityCount,
+  pendingRequestCount,
 }: Readonly<AdminNavigationProps>) => {
   const pathname = usePathname()
   const searchParams = useSearchParams()
@@ -97,6 +100,18 @@ export const AdminNavigation = ({
     icon: typeof CalendarDays
   }> = [
     { key: 'agenda', label: 'Agenda', href: '/admin', icon: CalendarDays },
+    // Une entrée de plus encombrerait la barre du téléphone en permanence pour
+    // un cas rare : elle n'apparaît donc que lorsqu'une demande attend.
+    ...(pendingRequestCount > 0
+      ? [
+          {
+            key: 'requests' as const,
+            label: 'Demandes',
+            href: '/admin/demandes',
+            icon: Clock,
+          },
+        ]
+      : []),
     { key: 'search', label: 'Recherche', href: '/admin/search', icon: Search },
     {
       key: 'activity',
@@ -146,6 +161,9 @@ export const AdminNavigation = ({
                   {item.label}
                   {item.key === 'activity'
                     ? activityBadge(unreadActivityCount, '-right-1.5 -top-1')
+                    : null}
+                  {item.key === 'requests'
+                    ? activityBadge(pendingRequestCount, '-right-1.5 -top-1')
                     : null}
                 </Link>
               )
@@ -200,6 +218,9 @@ export const AdminNavigation = ({
                   <Icon className="size-5" />
                   {item.key === 'activity'
                     ? activityBadge(unreadActivityCount, '-right-1 -top-1')
+                    : null}
+                  {item.key === 'requests'
+                    ? activityBadge(pendingRequestCount, '-right-1 -top-1')
                     : null}
                 </span>
                 {item.label}

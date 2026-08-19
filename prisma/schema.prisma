@@ -25,6 +25,16 @@ enum AppointmentActivityType {
   CANCELLED
 }
 
+/// Une demande d'heure trop proche pour la réservation en ligne. Elle vit hors
+/// du modèle `Appointment` : tant qu'Arzu n'a pas répondu, rien ne doit compter
+/// comme un rendez-vous, ni dans l'agenda, ni dans le bilan, ni dans les exports.
+enum AppointmentRequestStatus {
+  PENDING
+  ACCEPTED
+  DECLINED
+  WITHDRAWN
+}
+
 enum AvailabilityExceptionType {
   AVAILABLE
   UNAVAILABLE
@@ -44,6 +54,7 @@ enum AuditEntityType {
   AVAILABILITY_EXCEPTION
   BOOKING_SETTINGS
   AGENDA_SETTINGS
+  APPOINTMENT_REQUEST
 }
 
 enum EmailKind {
@@ -56,6 +67,9 @@ enum EmailKind {
   APPOINTMENT_REMINDER
   DAILY_DIGEST
   WEEKLY_DIGEST
+  LATE_REQUEST_SUBMITTED
+  LATE_REQUEST_RECEIVED
+  LATE_REQUEST_DECLINED
 }
 
 enum EmailStatus {
@@ -76,6 +90,8 @@ enum AuditActionType {
   FILE_REMOVED
   ANONYMIZED
   MERGED
+  ACCEPTED
+  DECLINED
 }
 
 model ServiceCategory {
@@ -95,9 +111,9 @@ model ServiceCategory {
 }
 
 model Service {
-  id                 String           @id @default(cuid())
-  slug               String           @unique
-  agendaSourceId     Int?             @unique
+  id                 String               @id @default(cuid())
+  slug               String               @unique
+  agendaSourceId     Int?                 @unique
   categoryId         String?
   name               String
   description        String?
@@ -113,20 +129,21 @@ model Service {
   faqAnswer3         String?
   priceNote          String?
   durationMinutes    Int
-  preparationMinutes Int              @default(0)
-  cleanupMinutes     Int              @default(0)
+  preparationMinutes Int                  @default(0)
+  cleanupMinutes     Int                  @default(0)
   priceCents         Int
-  color              String           @default("#d99086")
+  color              String               @default("#d99086")
   imageUrl           String?
   consentFormUrl     String?
-  sortOrder          Int              @default(0)
-  isBookable         Boolean          @default(true)
-  isVisible          Boolean          @default(true)
-  isArchived         Boolean          @default(false)
-  createdAt          DateTime         @default(now())
-  updatedAt          DateTime         @updatedAt
-  category           ServiceCategory? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  sortOrder          Int                  @default(0)
+  isBookable         Boolean              @default(true)
+  isVisible          Boolean              @default(true)
+  isArchived         Boolean              @default(false)
+  createdAt          DateTime             @default(now())
+  updatedAt          DateTime             @updatedAt
+  category           ServiceCategory?     @relation(fields: [categoryId], references: [id], onDelete: SetNull)
   appointments       Appointment[]
+  requests           AppointmentRequest[]
 
   @@index([categoryId, isArchived, sortOrder])
   @@index([isBookable, isVisible, isArchived])
@@ -195,28 +212,29 @@ model AgendaSettings {
 }
 
 model Customer {
-  id String @id @default(cuid())
+  id              String               @id @default(cuid())
   /// Incrémenté par le trigger `customer_identity_version_trigger` dès qu'une
   /// adresse change ou que les coordonnées sont effacées : les sessions
   /// ouvertes cessent alors d'être valides.
-  identityVersion Int     @default(1)
+  identityVersion Int                  @default(1)
   firstName       String?
   lastName        String
   email           String
   /// Clé d'identité : une adresse, une personne. C'est cette unicité qui rend
   /// l'`upsert` de réservation sûr quand deux demandes arrivent ensemble.
-  emailNormalized String  @unique
+  emailNormalized String               @unique
   phone           String
   phoneNormalized String
   searchName      String
-  firstSeenAt     DateTime      @default(now())
-  lastSeenAt      DateTime      @default(now())
-  createdAt       DateTime      @default(now())
-  updatedAt       DateTime      @updatedAt
+  firstSeenAt     DateTime             @default(now())
+  lastSeenAt      DateTime             @default(now())
+  createdAt       DateTime             @default(now())
+  updatedAt       DateTime             @updatedAt
   anonymizedAt    DateTime?
   internalNote    String?
   preferences     String?
   appointments    Appointment[]
+  requests        AppointmentRequest[]
 
   @@index([phoneNormalized])
   @@index([searchName])
@@ -225,42 +243,43 @@ model Customer {
 }
 
 model Appointment {
-  id                      String                @id @default(cuid())
-  serviceId               String
-  customerId              String?
-  serviceNameSnapshot     String
-  servicePriceCents       Int
-  serviceDurationMinutes  Int
-  preparationMinutes      Int                   @default(0)
-  cleanupMinutes          Int                   @default(0)
-  startsAt                DateTime
-  endsAt                  DateTime
+  id                     String                @id @default(cuid())
+  serviceId              String
+  customerId             String?
+  serviceNameSnapshot    String
+  servicePriceCents      Int
+  serviceDurationMinutes Int
+  preparationMinutes     Int                   @default(0)
+  cleanupMinutes         Int                   @default(0)
+  startsAt               DateTime
+  endsAt                 DateTime
   // timestamptz est imposé par la contrainte d'exclusion GIST
   // `appointment_no_confirmed_overlap`, qui s'appuie sur tstzrange().
-  occupiedStartsAt        DateTime              @db.Timestamptz(3)
-  occupiedEndsAt          DateTime              @db.Timestamptz(3)
-  customerFirstName       String?
-  customerLastName        String
-  customerSearchName      String
+  occupiedStartsAt       DateTime              @db.Timestamptz(3)
+  occupiedEndsAt         DateTime              @db.Timestamptz(3)
+  customerFirstName      String?
+  customerLastName       String
+  customerSearchName     String
   /// Nullables pour toujours : l'effacement des coordonnées écrit NULL ici.
-  customerEmail           String?
-  customerPhone           String?
-  comment                 String?
+  customerEmail          String?
+  customerPhone          String?
+  comment                String?
   /// Superposition assumée par Arzu depuis l'agenda : un soin court glissé
   /// pendant la pose d'un autre. La contrainte d'exclusion GIST ignore les
   /// lignes marquées — c'est le seul moyen de les écrire — mais deux
   /// rendez-vous ordinaires restent impossibles à superposer. Jamais écrit
   /// depuis le site public, où les créneaux occupés ne sont pas proposés.
-  allowsOverlap           Boolean               @default(false)
-  source                  AppointmentSource
-  status                  AppointmentStatus     @default(CONFIRMED)
-  cancelledAt             DateTime?
-  createdAt               DateTime              @default(now())
-  updatedAt               DateTime              @updatedAt
-  service                 Service               @relation(fields: [serviceId], references: [id], onDelete: Restrict)
-  customer                Customer?             @relation(fields: [customerId], references: [id], onDelete: SetNull)
-  activities              AppointmentActivity[]
-  emailDeliveries         EmailDelivery[]
+  allowsOverlap          Boolean               @default(false)
+  source                 AppointmentSource
+  status                 AppointmentStatus     @default(CONFIRMED)
+  cancelledAt            DateTime?
+  createdAt              DateTime              @default(now())
+  updatedAt              DateTime              @updatedAt
+  service                Service               @relation(fields: [serviceId], references: [id], onDelete: Restrict)
+  customer               Customer?             @relation(fields: [customerId], references: [id], onDelete: SetNull)
+  activities             AppointmentActivity[]
+  emailDeliveries        EmailDelivery[]
+  request                AppointmentRequest?
 
   @@index([startsAt, endsAt, status])
   @@index([occupiedStartsAt, occupiedEndsAt, status])
@@ -272,6 +291,42 @@ model Appointment {
   @@index([serviceId, startsAt])
   @@index([status, source, startsAt])
   @@map("appointment")
+}
+
+/// Demande d'une heure trop proche pour la réservation en ligne.
+///
+/// Volontairement hors du modèle `Appointment` : une demande n'est pas un
+/// rendez-vous, et rien — agenda, bilan hebdomadaire, exports, indicateurs — ne
+/// doit avoir à la filtrer pour ne pas la compter. Elle ne participe donc pas
+/// non plus à la contrainte d'exclusion GIST : deux personnes peuvent demander
+/// la même heure, et c'est l'acceptation qui tranche.
+model AppointmentRequest {
+  id                     String                   @id @default(cuid())
+  serviceId              String
+  customerId             String
+  requestedStartsAt      DateTime
+  /// Le nom et le prix d'alors : une demande relue plus tard doit dire ce qui
+  /// avait été demandé, pas ce que le catalogue affiche aujourd'hui.
+  serviceNameSnapshot    String
+  servicePriceCents      Int
+  serviceDurationMinutes Int
+  preparationMinutes     Int                      @default(0)
+  cleanupMinutes         Int                      @default(0)
+  comment                String?
+  status                 AppointmentRequestStatus @default(PENDING)
+  decidedAt              DateTime?
+  declineReason          String?
+  /// Renseigné à l'acceptation : le rendez-vous réellement créé.
+  appointmentId          String?                  @unique
+  createdAt              DateTime                 @default(now())
+  updatedAt              DateTime                 @updatedAt
+  service                Service                  @relation(fields: [serviceId], references: [id], onDelete: Restrict)
+  customer               Customer                 @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  appointment            Appointment?             @relation(fields: [appointmentId], references: [id], onDelete: SetNull)
+
+  @@index([status, requestedStartsAt])
+  @@index([customerId, createdAt])
+  @@map("appointment_request")
 }
 
 model AppointmentActivity {

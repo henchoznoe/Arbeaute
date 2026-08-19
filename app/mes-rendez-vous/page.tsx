@@ -3,6 +3,7 @@ import { Suspense } from 'react'
 import { SiteHeader } from '@/components/layout/site-header'
 import { CustomerAppointmentCard } from '@/components/reservation/customer-appointment-card'
 import { CustomerAppointmentHistoryCard } from '@/components/reservation/customer-appointment-history-card'
+import { PendingRequestCard } from '@/components/reservation/pending-request-card'
 import { Button } from '@/components/ui/button'
 import { FormField, formControlClass } from '@/components/ui/form-field'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -21,6 +22,7 @@ import {
   getCustomerRebookingPath,
 } from '@/lib/reservation/customer-appointments'
 import { findCustomerForSession } from '@/lib/reservation/customers'
+import { getPendingLateRequestsForCustomer } from '@/lib/reservation/late-requests'
 import { formatServiceLabel } from '@/lib/reservation/service-label'
 import {
   canCustomerChangeAppointment,
@@ -174,7 +176,7 @@ const CustomerAppointments = async ({
       },
     },
   } as const
-  const [upcomingAppointments, historyAppointments, settings] =
+  const [upcomingAppointments, historyAppointments, settings, pendingRequests] =
     await Promise.all([
       prisma.appointment.findMany({
         where: {
@@ -195,6 +197,7 @@ const CustomerAppointments = async ({
         include: appointmentInclude,
       }),
       getBookingSettings(),
+      getPendingLateRequestsForCustomer(customer.id),
     ])
   const limits = getBookingDateLimits(now, settings.bookingHorizonMonths)
   const customerChangeCutoffLabel = formatCustomerChangeCutoff(
@@ -225,6 +228,30 @@ const CustomerAppointments = async ({
           <h1 className="mt-2 font-heading text-title font-bold">
             Mes rendez-vous
           </h1>
+          {/* Avant « À venir » : une demande sans réponse est la question la
+              plus pressante que la personne se pose en ouvrant cette page. */}
+          {pendingRequests.length > 0 ? (
+            <section className="mt-8" aria-labelledby="pending-requests-title">
+              <h2
+                id="pending-requests-title"
+                className="font-heading text-2xl font-bold"
+              >
+                En attente de réponse
+              </h2>
+              <div className="mt-4 space-y-5">
+                {pendingRequests.map(request => (
+                  <PendingRequestCard
+                    key={request.id}
+                    requestId={request.id}
+                    serviceName={request.serviceNameSnapshot}
+                    dateLabel={formatAppointmentDate(request.requestedStartsAt)}
+                    priceLabel={formatPrice(request.servicePriceCents)}
+                  />
+                ))}
+              </div>
+            </section>
+          ) : null}
+
           <section className="mt-8" aria-labelledby="upcoming-title">
             <div className="flex items-center gap-3">
               <h2
