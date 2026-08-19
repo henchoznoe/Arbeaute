@@ -78,9 +78,9 @@ Le statut figure dans le titre et se réévalue après chaque livraison.
 
 | Statut | Éléments |
 | --- | --- |
-| ✅ Terminés | 2, 3, 9, 11, 19 |
+| ✅ Terminés | 2, 3, 9, 11, 14, 19 |
 | 🟡 En cours | Aucun |
-| ⏳ Prêt à démarrer | 1, 4 à 8, 10, 12 à 18 |
+| ⏳ Prêt à démarrer | 1, 4 à 8, 10, 12, 13, 15 à 18 |
 | 🔒 Bloqués | Aucun |
 | ❌ Abandonné | Aucun |
 
@@ -563,7 +563,7 @@ groupe de ceux d’une prestation.
 
 **Dépendances :** l’élément 8 touche les mêmes fichiers ; les mener ensemble.
 
-### 14. Confirmer chaque enregistrement, et dire si l’e-mail est parti — ⏳
+### 14. Confirmer chaque enregistrement, et dire si l’e-mail est parti — ✅
 
 **Priorité : P0 · Effort : S · Nature : correction**
 

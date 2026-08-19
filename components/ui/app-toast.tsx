@@ -10,12 +10,16 @@ export const AppToast = ({
   title,
   description,
   variant = 'success',
+  duration = 6000,
 }: Readonly<{
   open: boolean
   onOpenChange: (open: boolean) => void
   title: string
   description?: string
   variant?: 'success' | 'danger'
+  /** Six secondes par défaut ; plus court quand la fermeture enchaîne sur une
+   * navigation, pour ne pas faire attendre devant un écran déjà fini. */
+  duration?: number
 }>) => {
   const Icon = variant === 'danger' ? CircleAlert : CheckCircle2
   return (
@@ -23,7 +27,7 @@ export const AppToast = ({
       <Toast.Root
         open={open}
         onOpenChange={onOpenChange}
-        duration={6000}
+        duration={duration}
         className={cn(
           'grid grid-cols-[auto_1fr_auto] items-start gap-3 rounded-2xl border bg-popover p-4 text-popover-foreground shadow-xl data-[state=closed]:animate-out data-[state=open]:animate-in data-[state=closed]:slide-out-to-right data-[state=open]:slide-in-from-right motion-reduce:animate-none',
           variant === 'danger'
