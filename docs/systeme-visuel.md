@@ -78,8 +78,13 @@ leur meilleur des deux tombe à 4,05:1 sur les teintes moyennes, dont celle des
 catégories. Le sélecteur de couleur de l'administration affiche le contraste
 obtenu, pour que la garantie se voie.
 
-Le mode sombre n’est pas activé : aucune classe `dark:` ne doit être ajoutée
-tant qu’un jeu de jetons `.dark` n’existe pas dans `app/globals.css`.
+Il n’y a pas de mode sombre, et la surface qui laissait croire le contraire a
+été retirée : ni variante `dark`, ni classe `dark:` héritée de shadcn. Une
+variante déclarée sans jeu de jetons donnait le change — on croyait pouvoir s’en
+servir, et le jour où `.dark` serait posé, ces utilitaires se seraient
+déclenchés contre des jetons clairs. La règle n’a donc plus d’exception :
+**aucune classe `dark:` dans `app/` ni `components/`**, et
+`tests/ui/system.test.ts` la vérifie.
 
 ### La seule exception : les gabarits d’e-mail
 
