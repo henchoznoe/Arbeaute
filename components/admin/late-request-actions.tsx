@@ -5,6 +5,7 @@ import { useState, useTransition } from 'react'
 import { AppToast } from '@/components/ui/app-toast'
 import { Button } from '@/components/ui/button'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
+import { FormField, formControlClass } from '@/components/ui/form-field'
 import {
   acceptLateRequest,
   declineLateRequest,
@@ -83,22 +84,22 @@ export const LateRequestActions = ({
 
       {/* Facultatif, et repris tel quel dans le message : une phrase d'Arzu
           vaut mieux qu'un refus sec, mais l'exiger retarderait la réponse. */}
-      <label className="mt-3 block text-sm">
-        <span className="font-medium">
-          Un mot à joindre au refus{' '}
-          <span className="font-normal text-muted-foreground">
-            (facultatif)
-          </span>
-        </span>
+      <FormField
+        controlId="late-request-decline-reason"
+        label="Un mot à joindre au refus"
+        optional
+        className="mt-3"
+      >
         <textarea
+          id="late-request-decline-reason"
           value={declineReason}
           onChange={event => setDeclineReason(event.target.value)}
           rows={2}
           maxLength={500}
           placeholder="Je suis déjà prise à cette heure-là, mais jeudi matin je suis libre."
-          className="mt-1 min-h-11 w-full rounded-xl border bg-background px-3 py-2 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/40"
+          className={`${formControlClass} py-2`}
         />
-      </label>
+      </FormField>
 
       {error ? (
         <p className="mt-3 text-sm text-destructive" role="alert">

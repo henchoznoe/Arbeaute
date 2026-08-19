@@ -14,7 +14,7 @@ import { useEffect, useRef, useState, useTransition } from 'react'
 import { AppToast } from '@/components/ui/app-toast'
 import { Button } from '@/components/ui/button'
 import { EmptyState } from '@/components/ui/empty-state'
-import { formControlClass } from '@/components/ui/form-field'
+import { FormField, formControlClass } from '@/components/ui/form-field'
 import { StatusBadge } from '@/components/ui/status-badge'
 import {
   type AdminSearchActionResult,
@@ -132,32 +132,34 @@ export const AdminSearch = ({
   return (
     <>
       <section className="mt-6 rounded-3xl border bg-card p-4 shadow-sm sm:p-6">
-        <label htmlFor="admin-global-search" className="text-sm font-semibold">
-          Chercher un rendez-vous
-        </label>
-        <div className="relative mt-2">
-          <Search className="pointer-events-none absolute top-3.5 left-3 size-4 text-muted-foreground" />
-          <input
-            id="admin-global-search"
-            value={filters.query}
-            onChange={event => updateFilter('query', event.target.value)}
-            placeholder="Nom, e-mail exact ou téléphone complet…"
-            autoComplete="off"
-            className={`${formControlClass} pr-10 pl-10`}
-          />
-          {filters.query ? (
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon"
-              onClick={() => updateFilter('query', '')}
-              aria-label="Effacer la recherche"
-              className="absolute top-0 right-0 text-muted-foreground"
-            >
-              <X className="size-4" />
-            </Button>
-          ) : null}
-        </div>
+        <FormField
+          controlId="admin-global-search"
+          label="Chercher un rendez-vous"
+        >
+          <div className="relative">
+            <Search className="pointer-events-none absolute top-3.5 left-3 size-4 text-muted-foreground" />
+            <input
+              id="admin-global-search"
+              value={filters.query}
+              onChange={event => updateFilter('query', event.target.value)}
+              placeholder="Nom, e-mail exact ou téléphone complet…"
+              autoComplete="off"
+              className={`${formControlClass} pr-10 pl-10`}
+            />
+            {filters.query ? (
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                onClick={() => updateFilter('query', '')}
+                aria-label="Effacer la recherche"
+                className="absolute top-0 right-0 text-muted-foreground"
+              >
+                <X className="size-4" />
+              </Button>
+            ) : null}
+          </div>
+        </FormField>
         <p className="mt-2 text-xs text-muted-foreground">
           La saisie reste dans cet écran et n’est jamais ajoutée à l’adresse de
           la page.
@@ -182,12 +184,16 @@ export const AdminSearch = ({
           ) : null}
         </div>
         <div className="mt-3 grid min-w-0 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          <label className="min-w-0 text-xs font-medium text-muted-foreground">
-            Prestation
+          <FormField
+            controlId="search-service"
+            label="Prestation"
+            className="min-w-0 gap-1 text-xs text-muted-foreground"
+          >
             <select
+              id="search-service"
               value={filters.serviceId}
               onChange={event => updateFilter('serviceId', event.target.value)}
-              className={`mt-1 ${formControlClass}`}
+              className={formControlClass}
             >
               <option value="">Toutes</option>
               {services.map(service => (
@@ -197,10 +203,14 @@ export const AdminSearch = ({
                 </option>
               ))}
             </select>
-          </label>
-          <label className="min-w-0 text-xs font-medium text-muted-foreground">
-            Statut
+          </FormField>
+          <FormField
+            controlId="search-status"
+            label="Statut"
+            className="min-w-0 gap-1 text-xs text-muted-foreground"
+          >
             <select
+              id="search-status"
               value={filters.status}
               onChange={event =>
                 updateFilter(
@@ -208,7 +218,7 @@ export const AdminSearch = ({
                   event.target.value as SearchFilters['status'],
                 )
               }
-              className={`mt-1 ${formControlClass}`}
+              className={formControlClass}
             >
               <option value="">Tous</option>
               {Object.entries(statusLabels).map(([status, label]) => (
@@ -217,10 +227,14 @@ export const AdminSearch = ({
                 </option>
               ))}
             </select>
-          </label>
-          <label className="min-w-0 text-xs font-medium text-muted-foreground">
-            Prise par
+          </FormField>
+          <FormField
+            controlId="search-source"
+            label="Prise par"
+            className="min-w-0 gap-1 text-xs text-muted-foreground"
+          >
             <select
+              id="search-source"
               value={filters.source}
               onChange={event =>
                 updateFilter(
@@ -228,32 +242,40 @@ export const AdminSearch = ({
                   event.target.value as SearchFilters['source'],
                 )
               }
-              className={`mt-1 ${formControlClass}`}
+              className={formControlClass}
             >
               <option value="">Toutes</option>
               <option value="PUBLIC">Réservation en ligne</option>
               <option value="ADMIN">Ajout manuel</option>
             </select>
-          </label>
-          <label className="min-w-0 text-xs font-medium text-muted-foreground">
-            Du
+          </FormField>
+          <FormField
+            controlId="search-from"
+            label="Du"
+            className="min-w-0 gap-1 text-xs text-muted-foreground"
+          >
             <input
+              id="search-from"
               type="date"
               value={filters.from}
               onChange={event => updateFilter('from', event.target.value)}
-              className={`mt-1 ${formControlClass}`}
+              className={formControlClass}
             />
-          </label>
-          <label className="min-w-0 text-xs font-medium text-muted-foreground">
-            Au
+          </FormField>
+          <FormField
+            controlId="search-to"
+            label="Au"
+            className="min-w-0 gap-1 text-xs text-muted-foreground"
+          >
             <input
+              id="search-to"
               type="date"
               value={filters.to}
               min={filters.from || undefined}
               onChange={event => updateFilter('to', event.target.value)}
-              className={`mt-1 ${formControlClass}`}
+              className={formControlClass}
             />
-          </label>
+          </FormField>
         </div>
       </section>
 

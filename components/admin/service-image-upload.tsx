@@ -55,7 +55,7 @@ export const ServiceImageUpload = ({
   }
 
   return (
-    <section className="rounded-2xl border bg-card p-5">
+    <section className="rounded-3xl border bg-card p-5 shadow-sm sm:p-6">
       <h2 className="font-semibold">Image</h2>
       {imageUrl ? (
         <Image

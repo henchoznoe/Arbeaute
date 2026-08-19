@@ -2,7 +2,7 @@
 
 import { SlidersHorizontal } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { formControlClass } from '@/components/ui/form-field'
+import { FormField, formControlClass } from '@/components/ui/form-field'
 import { SidePanel } from '@/components/ui/side-panel'
 
 /**
@@ -29,17 +29,24 @@ export const DataExportPanel = ({
       method="get"
       className="space-y-4"
     >
-      <label className="grid gap-1.5 text-sm font-medium text-muted-foreground">
-        Du
-        <input name="from" type="date" className={formControlClass} />
-      </label>
-      <label className="grid gap-1.5 text-sm font-medium text-muted-foreground">
-        Au
-        <input name="to" type="date" className={formControlClass} />
-      </label>
-      <label className="grid gap-1.5 text-sm font-medium text-muted-foreground">
-        Statut
-        <select name="status" className={formControlClass}>
+      <FormField controlId="export-from" label="Du">
+        <input
+          id="export-from"
+          name="from"
+          type="date"
+          className={formControlClass}
+        />
+      </FormField>
+      <FormField controlId="export-to" label="Au">
+        <input
+          id="export-to"
+          name="to"
+          type="date"
+          className={formControlClass}
+        />
+      </FormField>
+      <FormField controlId="export-status" label="Statut">
+        <select id="export-status" name="status" className={formControlClass}>
           <option value="">Tous</option>
           {statusOptions.map(option => (
             <option key={option.value} value={option.value}>
@@ -47,7 +54,7 @@ export const DataExportPanel = ({
             </option>
           ))}
         </select>
-      </label>
+      </FormField>
       <Button type="submit" className="w-full">
         Télécharger cette période
       </Button>

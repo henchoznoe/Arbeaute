@@ -54,7 +54,7 @@ export const ServiceConsentUpload = ({
   }
 
   return (
-    <section className="rounded-2xl border bg-card p-5">
+    <section className="rounded-3xl border bg-card p-5 shadow-sm sm:p-6">
       <h2 className="font-semibold">Formulaire de consentement</h2>
       <p className="mt-1 text-sm text-muted-foreground">
         Si vous ajoutez un PDF, il sera proposé au moment de réserver cette

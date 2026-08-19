@@ -4,7 +4,7 @@ import { Filter } from 'lucide-react'
 import Link from 'next/link'
 import { useState } from 'react'
 import { Button } from '@/components/ui/button'
-import { formControlClass } from '@/components/ui/form-field'
+import { FormField, formControlClass } from '@/components/ui/form-field'
 import { SidePanel } from '@/components/ui/side-panel'
 
 interface AuditFilterField {
@@ -46,12 +46,14 @@ export const AuditFilterPanel = ({
     >
       <form className="space-y-4">
         {fields.map(field => (
-          <label
+          <FormField
             key={field.name}
-            className="grid gap-1.5 text-sm font-medium text-muted-foreground"
+            controlId={`audit-filter-${field.name}`}
+            label={field.label}
+            className="text-muted-foreground"
           >
-            {field.label}
             <select
+              id={`audit-filter-${field.name}`}
               name={field.name}
               defaultValue={field.value}
               className={formControlClass}
@@ -63,7 +65,7 @@ export const AuditFilterPanel = ({
                 </option>
               ))}
             </select>
-          </label>
+          </FormField>
         ))}
         <div className="flex flex-col-reverse gap-3 sm:flex-row">
           {activeCount > 0 ? (

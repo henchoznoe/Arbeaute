@@ -78,9 +78,9 @@ Le statut figure dans le titre et se réévalue après chaque livraison.
 
 | Statut | Éléments |
 | --- | --- |
-| ✅ Terminés | 1 à 7, 9, 10, 11, 14, 19 |
+| ✅ Terminés | 1 à 11, 14, 19 |
 | 🟡 En cours | Aucun |
-| ⏳ Prêt à démarrer | 8, 12, 13, 15 à 18 |
+| ⏳ Prêt à démarrer | 12, 13, 15 à 18 |
 | 🔒 Bloqués | Aucun |
 | ❌ Abandonné | Aucun |
 
@@ -350,7 +350,7 @@ c’est un ajout, pas une finition.
 
 **Dépendances :** aucune.
 
-### 8. Ramener l’administration sur la charte — ⏳
+### 8. Ramener l’administration sur la charte — ✅
 
 **Priorité : P1 · Effort : M · Nature : cohérence**
 

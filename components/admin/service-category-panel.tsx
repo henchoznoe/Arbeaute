@@ -7,7 +7,7 @@ import {
   DEFAULT_CATEGORY_COLOR,
 } from '@/components/admin/color-field'
 import { Button } from '@/components/ui/button'
-import { formControlClass } from '@/components/ui/form-field'
+import { FormField, formControlClass } from '@/components/ui/form-field'
 import { SidePanel } from '@/components/ui/side-panel'
 import { createCategory, updateCategory } from '@/lib/actions/catalog'
 
@@ -72,9 +72,9 @@ export const ServiceCategoryPanel = ({
         {category ? (
           <input type="hidden" name="id" value={category.id} />
         ) : null}
-        <label className="grid gap-1.5 text-sm font-medium">
-          Nom
+        <FormField controlId="category-name" label="Nom">
           <input
+            id="category-name"
             name="name"
             required
             maxLength={120}
@@ -82,19 +82,20 @@ export const ServiceCategoryPanel = ({
             placeholder="Soins du visage"
             className={formControlClass}
           />
-        </label>
-        <label className="grid gap-1.5 text-sm font-medium">
-          Description{' '}
-          <span className="font-normal text-muted-foreground">
-            (optionnelle)
-          </span>
+        </FormField>
+        <FormField
+          controlId="category-description"
+          label="Description"
+          optional
+        >
           <input
+            id="category-description"
             name="description"
             defaultValue={category?.description ?? ''}
             placeholder="Ce que ce groupe rassemble, en une phrase"
             className={formControlClass}
           />
-        </label>
+        </FormField>
         <ColorField
           controlId="category-color"
           name="color"

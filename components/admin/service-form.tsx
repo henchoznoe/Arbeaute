@@ -52,7 +52,10 @@ export const ServiceForm = ({
   service,
   submitLabel,
 }: Readonly<ServiceFormProps>) => (
-  <form action={action} className="space-y-5 rounded-2xl border bg-card p-5">
+  <form
+    action={action}
+    className="space-y-5 rounded-3xl border bg-card p-5 shadow-sm sm:p-6"
+  >
     {service?.id ? <input type="hidden" name="id" value={service.id} /> : null}
     <div className="grid gap-5 sm:grid-cols-2">
       <FormField controlId="service-name" label="Nom">
