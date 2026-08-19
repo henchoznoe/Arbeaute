@@ -1,3 +1,30 @@
+# [1.12.0](https://github.com/henchoznoe/Arbeaute/compare/v1.11.0...v1.12.0) (2026-08-19)
+
+
+### Bug Fixes
+
+* **a11y:** corriger ce que la navigation admin annonce ([4064a86](https://github.com/henchoznoe/Arbeaute/commit/4064a866082b3baeffbab92e542d065eb11bf81b))
+* **a11y:** reprendre le focus, annoncer les étapes, poser un lien d'évitement ([d693c1a](https://github.com/henchoznoe/Arbeaute/commit/d693c1a3095cf758242ef54cd33a6e7e551fdb01))
+* **admin:** confirmer chaque enregistrement et dire si l'e-mail est parti ([f460211](https://github.com/henchoznoe/Arbeaute/commit/f46021152c93a0fc484e3851ea93617dcb548c15))
+* **admin:** distinguer une ouverture d'une fermeture dans les jours particuliers ([374dbcc](https://github.com/henchoznoe/Arbeaute/commit/374dbccaa59afa94ce4e31679f75df13fffe02ee))
+* **admin:** rendre la carte du prochain rendez-vous utile, ou la faire taire ([6406142](https://github.com/henchoznoe/Arbeaute/commit/64061429576f9d850988d05e5971f2f0459f3980))
+* **admin:** rendre tapables les raccourcis de l'agenda ([4c07d8f](https://github.com/henchoznoe/Arbeaute/commit/4c07d8f684d7313d3a8e240710498101cb3c785c))
+* **admin:** réparer la barre du bas quand une demande attend ([2f9aec2](https://github.com/henchoznoe/Arbeaute/commit/2f9aec2423f7f2f96670cb761f036832ad3e8796))
+* **catalog:** ramener les en-têtes de catégorie au-dessus de 4,5:1 ([8bdce87](https://github.com/henchoznoe/Arbeaute/commit/8bdce879fc6798f2e162e05b6e31595adce37124))
+* **pwa:** ne plus proposer d'installer l'application au milieu d'une réservation ([5addb53](https://github.com/henchoznoe/Arbeaute/commit/5addb53d47a20b0d6b30434d75fc0b15a81841e9))
+* **reservation:** empêcher l'adresse e-mail de partir dans l'URL ([40a3ae1](https://github.com/henchoznoe/Arbeaute/commit/40a3ae117be224db89236659073023b233ad36a8))
+* **reservation:** rendre les sept pastilles de jour lisibles à 360 px ([ddc1ae6](https://github.com/henchoznoe/Arbeaute/commit/ddc1ae675a03b424559de156038000468c98537b))
+
+
+### Features
+
+* add late booking phase 1 ([beac49c](https://github.com/henchoznoe/Arbeaute/commit/beac49c5015936de2f5e21862b1ffbec3e0d7f71))
+* add late booking phase 2 ([c481f1e](https://github.com/henchoznoe/Arbeaute/commit/c481f1e76ab155d34cb756d28b104ab1f5f192c7))
+* **admin:** désencombrer la ligne d'une prestation ([85d3dc4](https://github.com/henchoznoe/Arbeaute/commit/85d3dc4e2dc1b9f064991041832797fa9f1ae2f4))
+* **admin:** donner une page d'erreur et une page introuvable ([818ca80](https://github.com/henchoznoe/Arbeaute/commit/818ca808e6499302ba6929af4f888a7178377a7e))
+* **reservation:** retrouver une prestation sans parcourir six écrans ([cc92dcf](https://github.com/henchoznoe/Arbeaute/commit/cc92dcf01c099e407ca8169bfd2723e022a1c13b))
+* update some UI points ([8ef672f](https://github.com/henchoznoe/Arbeaute/commit/8ef672f3e2c2f2a40fcab957fde245782d90caa9))
+
 # [1.11.0](https://github.com/henchoznoe/Arbeaute/compare/v1.10.0...v1.11.0) (2026-08-18)
 
 
