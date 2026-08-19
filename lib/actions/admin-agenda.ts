@@ -468,7 +468,7 @@ export const cancelAdminAppointment = async (
     return {
       ok: false,
       message:
-        'Ce rendez-vous n’est plus actif : il a déjà été annulé ou terminé.',
+        'Ce rendez-vous ne peut plus être modifié : il a déjà été annulé, ou il est passé.',
     }
   }
 }

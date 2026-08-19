@@ -78,9 +78,9 @@ Le statut figure dans le titre et se réévalue après chaque livraison.
 
 | Statut | Éléments |
 | --- | --- |
-| ✅ Terminés | 1 à 17, 19 |
+| ✅ Terminés | 1 à 19 |
 | 🟡 En cours | Aucun |
-| ⏳ Prêt à démarrer | 18 |
+| ⏳ Prêt à démarrer | Aucun |
 | 🔒 Bloqués | Aucun |
 | ❌ Abandonné | Aucun |
 
@@ -708,7 +708,7 @@ dans chaque refus d’origine. Un seul nom pour le développeur.
 
 **Dépendances :** aucune.
 
-### 18. Retirer la bannière d’annulation morte et le statut « terminé » des messages — ⏳
+### 18. Retirer la bannière d’annulation morte et le statut « terminé » des messages — ✅
 
 **Priorité : P1 · Effort : S · Nature : nettoyage**
 

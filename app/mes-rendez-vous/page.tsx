@@ -44,7 +44,7 @@ export const metadata = createPageMetadata({
 })
 
 interface CustomerAppointmentsPageProps {
-  searchParams: Promise<{ error?: string; cancelled?: string }>
+  searchParams: Promise<{ error?: string }>
 }
 
 const fieldClass = cn(formControlClass, 'min-h-12 px-4')
@@ -104,7 +104,7 @@ const CustomerAppointments = async ({
   const customer = session
     ? await findCustomerForSession(prisma, session)
     : null
-  const { error, cancelled } = await searchParams
+  const { error } = await searchParams
   const now = new Date()
 
   if (!customer)
@@ -125,12 +125,7 @@ const CustomerAppointments = async ({
           className="flex min-h-screen items-center justify-center px-5 pt-16 pb-12"
         >
           <section className="w-full max-w-md rounded-3xl border bg-card p-6 shadow-sm sm:p-9">
-            {cancelled ? (
-              <p className="mt-6 rounded-xl bg-success-subtle p-4 text-sm font-medium text-success-strong">
-                Votre rendez-vous a bien été annulé.
-              </p>
-            ) : null}
-            <h1 className="mt-8 font-heading text-title font-bold">
+            <h1 className="font-heading text-title font-bold">
               Mes rendez-vous
             </h1>
             <p className="mt-3 text-sm text-muted-foreground">
