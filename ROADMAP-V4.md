@@ -78,9 +78,9 @@ Le statut figure dans le titre et se réévalue après chaque livraison.
 
 | Statut | Éléments |
 | --- | --- |
-| ✅ Terminés | 1 à 4, 6, 9, 10, 11, 14, 19 |
+| ✅ Terminés | 1 à 6, 9, 10, 11, 14, 19 |
 | 🟡 En cours | Aucun |
-| ⏳ Prêt à démarrer | 5, 7, 8, 12, 13, 15 à 18 |
+| ⏳ Prêt à démarrer | 7, 8, 12, 13, 15 à 18 |
 | 🔒 Bloqués | Aucun |
 | ❌ Abandonné | Aucun |
 
@@ -248,7 +248,7 @@ deux écrans terminaux. Ajouter un lien d’évitement en tête de la coquille, 
 
 **Dépendances :** aucune.
 
-### 5. Ne plus proposer d’installer l’application au milieu d’une réservation — ⏳
+### 5. Ne plus proposer d’installer l’application au milieu d’une réservation — ✅
 
 **Priorité : P1 · Effort : S · Nature : correction**
 
