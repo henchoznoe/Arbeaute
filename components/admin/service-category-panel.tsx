@@ -64,7 +64,7 @@ export const ServiceCategoryPanel = ({
         )
       }
     >
-      <form onSubmit={submit} className="space-y-4">
+      <form method="post" onSubmit={submit} className="space-y-4">
         {category ? (
           <input type="hidden" name="id" value={category.id} />
         ) : null}

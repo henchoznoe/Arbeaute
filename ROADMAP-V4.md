@@ -78,9 +78,9 @@ Le statut figure dans le titre et se réévalue après chaque livraison.
 
 | Statut | Éléments |
 | --- | --- |
-| ✅ Terminés | 19 |
+| ✅ Terminés | 3, 19 |
 | 🟡 En cours | Aucun |
-| ⏳ Prêt à démarrer | 1 à 18 |
+| ⏳ Prêt à démarrer | 1, 2, 4 à 18 |
 | 🔒 Bloqués | Aucun |
 | ❌ Abandonné | Aucun |
 
@@ -165,7 +165,7 @@ lettres. L’`aria-label` reste inchangé. Au-delà de `sm`, le libellé revient
 
 **Dépendances :** aucune.
 
-### 3. Empêcher l’adresse e-mail de partir dans l’URL — ⏳
+### 3. Empêcher l’adresse e-mail de partir dans l’URL — ✅
 
 **Priorité : P0 · Effort : S · Nature : correction**
 

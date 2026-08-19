@@ -105,6 +105,7 @@ export const CustomerProfileForm = ({
 
   return (
     <form
+      method="post"
       onSubmit={submit}
       className="rounded-3xl border bg-card p-5 shadow-sm sm:p-6"
     >

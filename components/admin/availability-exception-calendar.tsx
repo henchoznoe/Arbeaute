@@ -413,7 +413,7 @@ export const AvailabilityExceptionCalendar = ({
         title={capitalizeFirst(formatDate(selectedDate))}
         description="Fermez l’institut sur ce jour, ou ouvrez des heures en plus de vos horaires habituels."
       >
-        <form onSubmit={submit} className="space-y-5">
+        <form method="post" onSubmit={submit} className="space-y-5">
           <input type="hidden" name="shortcut" value={shortcut} />
           <div className="grid grid-cols-2 gap-2">
             {shortcutButtons.map(option => {

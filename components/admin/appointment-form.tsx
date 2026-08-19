@@ -183,6 +183,7 @@ export const AppointmentForm = ({
   return (
     <form
       ref={formRef}
+      method="post"
       onSubmit={event => {
         event.preventDefault()
         const formData = new FormData(event.currentTarget)

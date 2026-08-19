@@ -186,6 +186,11 @@ export const ReservationWizard = ({
     'email',
   )
   const [checkingEmail, startEmailTransition] = useTransition()
+  // Tant que React n'a pas hydraté la page, `onSubmit` n'est attaché à rien :
+  // « Continuer » partirait alors en soumission native, c'est-à-dire en `GET`
+  // avec l'adresse e-mail et le pot de miel écrits dans l'URL. `method="post"`
+  // ferme cette fuite ; désactiver le bouton empêche l'envoi précoce tout court.
+  const [hydrated, setHydrated] = useState(false)
   const [website, setWebsite] = useState('')
   const [viewStart, setViewStart] = useState(minDate)
   const wizardRef = useRef<HTMLElement>(null)
@@ -210,6 +215,10 @@ export const ReservationWizard = ({
   const isOnRequestSlot =
     weekAvailability[date]?.slots.find(slot => slot.startsAt === startsAt)
       ?.state === 'ON_REQUEST'
+
+  useEffect(() => {
+    setHydrated(true)
+  }, [])
 
   const scrollToWizardTop = useCallback(() => {
     const wizard = wizardRef.current
@@ -794,6 +803,7 @@ export const ReservationWizard = ({
         <form
           ref={customerFormRef}
           noValidate
+          method="post"
           onSubmit={event => {
             event.preventDefault()
             if (detailsStage === 'email') submitEmailStage()
@@ -867,7 +877,7 @@ export const ReservationWizard = ({
               <Button
                 type="submit"
                 size="lg"
-                disabled={checkingEmail}
+                disabled={!hydrated || checkingEmail}
                 className="mt-6 w-full"
               >
                 {checkingEmail ? 'Vérification…' : 'Continuer'}
@@ -965,7 +975,12 @@ export const ReservationWizard = ({
                   />
                 </FormField>
               </div>
-              <Button type="submit" size="lg" className="mt-6 w-full">
+              <Button
+                type="submit"
+                size="lg"
+                disabled={!hydrated}
+                className="mt-6 w-full"
+              >
                 Choisir mon créneau
               </Button>
             </>
