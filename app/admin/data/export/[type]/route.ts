@@ -12,6 +12,14 @@ interface ExportRouteProps {
   params: Promise<{ type: string }>
 }
 
+/**
+ * Un téléchargement qui échoue répondait par du texte brut — « Période
+ * invalide », en pleine page blanche. On revient à l'écran d'où l'on vient,
+ * avec de quoi dire ce qui s'est passé et quoi faire.
+ */
+const backToData = (request: Request, reason: string): Response =>
+  Response.redirect(new URL(`/admin/data?export=${reason}`, request.url), 303)
+
 const csvResponse = (csv: string, name: string): Response =>
   new Response(csv, {
     headers: {
@@ -27,7 +35,7 @@ export const GET = async (
   { params }: ExportRouteProps,
 ): Promise<Response> => {
   if (!(await getAdminSession()))
-    return new Response('Non autorisé', { status: 401 })
+    return Response.redirect(new URL('/admin/login', request.url), 303)
 
   const type = (await params).type
   const { searchParams } = new URL(request.url)
@@ -40,13 +48,12 @@ export const GET = async (
         (to && !isDateKey(to)) ||
         (from && to && from > to)
       )
-        return new Response('Période invalide', { status: 400 })
+        return backToData(request, 'periode')
       const requestedStatus = searchParams.get('status')
       const status = Object.values(AppointmentStatus).find(
         value => value === requestedStatus,
       )
-      if (requestedStatus && !status)
-        return new Response('Statut invalide', { status: 400 })
+      if (requestedStatus && !status) return backToData(request, 'statut')
       return csvResponse(
         await createAppointmentsExport(prisma, { from, to, status }),
         'rendez-vous',
@@ -56,8 +63,8 @@ export const GET = async (
       return csvResponse(await createCustomersExport(prisma), 'clients')
     if (type === 'catalog')
       return csvResponse(await createCatalogExport(prisma), 'catalogue')
-    return new Response('Export introuvable', { status: 404 })
+    return backToData(request, 'introuvable')
   } catch {
-    return new Response('L’export n’a pas pu être généré', { status: 500 })
+    return backToData(request, 'impossible')
   }
 }

@@ -78,9 +78,9 @@ Le statut figure dans le titre et se réévalue après chaque livraison.
 
 | Statut | Éléments |
 | --- | --- |
-| ✅ Terminés | 1 à 15, 19 |
+| ✅ Terminés | 1 à 16, 19 |
 | 🟡 En cours | Aucun |
-| ⏳ Prêt à démarrer | 16, 17, 18 |
+| ⏳ Prêt à démarrer | 17, 18 |
 | 🔒 Bloqués | Aucun |
 | ❌ Abandonné | Aucun |
 
@@ -632,7 +632,7 @@ honnête.
 
 **Dépendances :** l’élément 9 touche le même fichier.
 
-### 16. Donner une page d’erreur et une page introuvable à l’administration — ⏳
+### 16. Donner une page d’erreur et une page introuvable à l’administration — ✅
 
 **Priorité : P1 · Effort : S · Nature : correction**
 
