@@ -78,9 +78,9 @@ Le statut figure dans le titre et se réévalue après chaque livraison.
 
 | Statut | Éléments |
 | --- | --- |
-| ✅ Terminés | 3, 9, 19 |
+| ✅ Terminés | 2, 3, 9, 19 |
 | 🟡 En cours | Aucun |
-| ⏳ Prêt à démarrer | 1, 2, 4 à 8, 10 à 18 |
+| ⏳ Prêt à démarrer | 1, 4 à 8, 10 à 18 |
 | 🔒 Bloqués | Aucun |
 | ❌ Abandonné | Aucun |
 
@@ -131,7 +131,7 @@ Deux points d’attention :
 
 **Dépendances :** aucune.
 
-### 2. Rendre les sept pastilles de jour lisibles à 360 px — ⏳
+### 2. Rendre les sept pastilles de jour lisibles à 360 px — ✅
 
 **Priorité : P0 · Effort : S · Nature : correction**
 

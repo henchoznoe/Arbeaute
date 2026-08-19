@@ -1,5 +1,9 @@
+import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
+import type { AvailabilityDayState } from '@/lib/reservation/availability'
 import {
+  availabilityShortStateLabels,
+  availabilityStateLabels,
   clampDateKey,
   formatCalendarDate,
   formatCalendarPeriod,
@@ -47,5 +51,45 @@ describe('clampDateKey', () => {
   it('accepte les bornes elles-mêmes', () => {
     expect(clampDateKey(minDate, minDate, maxDate)).toBe(minDate)
     expect(clampDateKey(maxDate, minDate, maxDate)).toBe(maxDate)
+  })
+})
+
+/**
+ * Cinq pastilles sur sept débordaient leur boîte à 375 px : on lisait
+ * « Comple » et « Fermé— ». Une coupure au milieu d'un mot ne se lit pas comme
+ * une abréviation, et la couleur restait seule à porter l'information — ce que
+ * la première règle de `docs/systeme-visuel.md` interdit.
+ */
+describe('bande de sept jours', () => {
+  const PICKER = readFileSync(
+    'components/reservation/week-availability-picker.tsx',
+    'utf8',
+  )
+  const states: AvailabilityDayState[] = [
+    'AVAILABLE',
+    'ON_REQUEST',
+    'FULL',
+    'CLOSED',
+  ]
+
+  it('donne à chaque état un nom complet et un nom court', () => {
+    for (const state of states) {
+      expect(availabilityStateLabels[state]).toBeTruthy()
+      expect(availabilityShortStateLabels[state]).toBeTruthy()
+      // Sept colonnes à 360 px : au-delà de huit signes, le mot ne tient plus
+      // dans la pastille même à partir de `sm`.
+      expect(availabilityShortStateLabels[state].length).toBeLessThanOrEqual(8)
+    }
+  })
+
+  it('n’affiche le nom court qu’à partir de sm', () => {
+    expect(PICKER).toContain('hidden sm:inline')
+    expect(PICKER).not.toContain("? 'Libre'")
+  })
+
+  it('garde le nom complet dans l’aria-label et dans la légende', () => {
+    expect(PICKER).toContain('availabilityStateLabels[state]')
+    for (const state of states)
+      expect(PICKER).toContain(availabilityStateLabels[state])
   })
 })

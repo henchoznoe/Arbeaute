@@ -17,6 +17,7 @@ import type {
   DayAvailability,
 } from '@/lib/reservation/availability'
 import {
+  availabilityShortStateLabels,
   availabilityStateLabels,
   formatCalendarDate,
   formatCalendarDayNumber,
@@ -156,16 +157,16 @@ export const WeekAvailabilityPicker = ({
                 <span className="mt-1.5 flex min-w-0 items-center justify-center gap-0.5 text-2xs leading-none font-semibold">
                   {StateIcon ? <StateIcon className="size-3 shrink-0" /> : null}
                   {/* La pastille est étroite : le nom complet de l'état vit
-                      dans l'aria-label, jamais tronqué. */}
-                  {state === 'AVAILABLE'
-                    ? 'Libre'
-                    : state === 'ON_REQUEST'
-                      ? 'Demande'
-                      : state === 'FULL'
-                        ? 'Complet'
-                        : state === 'CLOSED'
-                          ? 'Fermé'
-                          : '…'}
+                      dans l'aria-label, jamais tronqué. Sous `sm`, elle ne fait
+                      que 42 px et le libellé s'y coupait au milieu d'un mot :
+                      seules l'icône et la légende disent alors l'état. */}
+                  {state ? (
+                    <span className="hidden sm:inline">
+                      {availabilityShortStateLabels[state]}
+                    </span>
+                  ) : (
+                    '…'
+                  )}
                 </span>
               </button>
             )
