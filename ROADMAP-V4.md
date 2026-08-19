@@ -78,9 +78,9 @@ Le statut figure dans le titre et se réévalue après chaque livraison.
 
 | Statut | Éléments |
 | --- | --- |
-| ✅ Terminés | 1 à 16, 19 |
+| ✅ Terminés | 1 à 17, 19 |
 | 🟡 En cours | Aucun |
-| ⏳ Prêt à démarrer | 17, 18 |
+| ⏳ Prêt à démarrer | 18 |
 | 🔒 Bloqués | Aucun |
 | ❌ Abandonné | Aucun |
 
@@ -665,7 +665,7 @@ consigne d’usage. Ajouter les mêmes garde-fous côté public.
 
 ## IV. Les mots et les restes
 
-### 17. Une seule façon de dire qu’une session a expiré — ⏳
+### 17. Une seule façon de dire qu’une session a expiré — ✅
 
 **Priorité : P1 · Effort : S · Nature : cohérence**
 

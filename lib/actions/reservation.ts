@@ -3,6 +3,10 @@
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import { z } from 'zod/v4'
+import {
+  CUSTOMER_SESSION_EXPIRED,
+  CUSTOMER_WRONG_ORIGIN,
+} from '@/lib/actions/messages'
 import prisma from '@/lib/core/prisma'
 import {
   clearCustomerSession,
@@ -455,7 +459,7 @@ export const moveCustomerAppointment = async (
   input: unknown,
 ): Promise<MutationResult> => {
   if (!(await hasSameOrigin()))
-    return { ok: false, message: 'La demande est invalide.' }
+    return { ok: false, message: CUSTOMER_WRONG_ORIGIN }
   const parsed = appointmentMutationSchema.safeParse(input)
   if (!parsed.success || !parsed.data.startsAt)
     return {
@@ -466,8 +470,7 @@ export const moveCustomerAppointment = async (
 
   try {
     const customer = await requireCustomerMutation()
-    if (!customer)
-      return { ok: false, message: 'Votre session a expiré. Reconnectez-vous.' }
+    if (!customer) return { ok: false, message: CUSTOMER_SESSION_EXPIRED }
     const appointment = await moveAppointmentSerializable(prisma, {
       appointmentId: parsed.data.appointmentId,
       startsAt: new Date(parsed.data.startsAt),
@@ -505,15 +508,18 @@ export const cancelCustomerAppointment = async (
   input: unknown,
 ): Promise<MutationResult> => {
   if (!(await hasSameOrigin()))
-    return { ok: false, message: 'La demande est invalide.' }
+    return { ok: false, message: CUSTOMER_WRONG_ORIGIN }
   const parsed = appointmentMutationSchema.safeParse(input)
   if (!parsed.success)
-    return { ok: false, message: 'Ce rendez-vous est invalide.' }
+    return {
+      ok: false,
+      message:
+        'Ce rendez-vous n’a pas pu être identifié. Rechargez « Mes rendez-vous », puis recommencez.',
+    }
 
   try {
     const customer = await requireCustomerMutation()
-    if (!customer)
-      return { ok: false, message: 'Votre session a expiré. Reconnectez-vous.' }
+    if (!customer) return { ok: false, message: CUSTOMER_SESSION_EXPIRED }
     const cancelled = await cancelAppointmentSerializable(
       prisma,
       parsed.data.appointmentId,

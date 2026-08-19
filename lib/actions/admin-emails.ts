@@ -1,6 +1,10 @@
 'use server'
 
 import { revalidatePath } from 'next/cache'
+import {
+  ADMIN_SESSION_EXPIRED,
+  ADMIN_WRONG_ORIGIN,
+} from '@/lib/actions/messages'
 import prisma from '@/lib/core/prisma'
 import { getAdminSession } from '@/lib/core/session-cookies'
 import { createCalendarAttachment } from '@/lib/email/attachments'
@@ -37,13 +41,12 @@ export const resendFailedEmail = async (
   if (!(await hasSameOrigin()))
     return {
       ok: false,
-      message:
-        'Cette demande n’est pas valable. Rafraîchissez la page, puis réessayez.',
+      message: ADMIN_WRONG_ORIGIN,
     }
   if (!(await getAdminSession()))
     return {
       ok: false,
-      message: 'Votre session a expiré. Reconnectez-vous, puis recommencez.',
+      message: ADMIN_SESSION_EXPIRED,
     }
 
   const delivery = await prisma.emailDelivery.findUnique({

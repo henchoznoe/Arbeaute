@@ -2,6 +2,7 @@
 
 import { revalidatePath } from 'next/cache'
 import { z } from 'zod/v4'
+import { ADMIN_SESSION_EXPIRED } from '@/lib/actions/messages'
 import {
   AdminCustomerProfileError,
   mergeAdminCustomers,
@@ -49,7 +50,7 @@ export const saveAdminCustomerProfile = async (
   if (!(await requireAdminMutation()))
     return {
       ok: false,
-      message: 'Votre session a expiré. Reconnectez-vous, puis recommencez.',
+      message: ADMIN_SESSION_EXPIRED,
     }
   const parsed = updateSchema.safeParse(input)
   if (!parsed.success)
@@ -102,7 +103,7 @@ export const mergeAdminCustomerProfiles = async (
   if (!(await requireAdminMutation()))
     return {
       ok: false,
-      message: 'Votre session a expiré. Reconnectez-vous, puis recommencez.',
+      message: ADMIN_SESSION_EXPIRED,
     }
   const parsed = mergeSchema.safeParse(input)
   if (!parsed.success)

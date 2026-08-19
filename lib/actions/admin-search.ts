@@ -1,6 +1,7 @@
 'use server'
 
 import { z } from 'zod/v4'
+import { ADMIN_SESSION_EXPIRED } from '@/lib/actions/messages'
 import {
   type AdminCustomerSearchPage,
   getAdminCustomerSearchPage,
@@ -43,7 +44,7 @@ export const searchAdminAppointments = async (
   if (!(await getAdminSession()) || !(await hasSameOrigin()))
     return {
       ok: false,
-      message: 'Votre session a expiré. Reconnectez-vous, puis recommencez.',
+      message: ADMIN_SESSION_EXPIRED,
     }
   const parsed = searchSchema.safeParse(input)
   if (!parsed.success)
@@ -85,7 +86,7 @@ export const searchAdminCustomerPage = async (
   if (!(await getAdminSession()) || !(await hasSameOrigin()))
     return {
       ok: false,
-      message: 'Votre session a expiré. Reconnectez-vous, puis recommencez.',
+      message: ADMIN_SESSION_EXPIRED,
     }
   const parsed = customerSearchSchema.safeParse(input)
   if (!parsed.success)

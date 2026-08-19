@@ -2,6 +2,7 @@
 
 import { revalidatePath } from 'next/cache'
 import { z } from 'zod/v4'
+import { ADMIN_SESSION_EXPIRED, DEVELOPER_NAME } from '@/lib/actions/messages'
 import prisma from '@/lib/core/prisma'
 import { getAdminSession } from '@/lib/core/session-cookies'
 import { notifyLateRequestDeclined } from '@/lib/email/late-request-notifications'
@@ -43,11 +44,15 @@ export const acceptLateRequest = async (
   input: unknown,
 ): Promise<AdminLateRequestResult> => {
   if (!(await requireAdminMutation()))
-    return { ok: false, message: 'Action impossible. Reconnectez-vous.' }
+    return { ok: false, message: ADMIN_SESSION_EXPIRED }
 
   const parsed = acceptSchema.safeParse(input)
   if (!parsed.success)
-    return { ok: false, message: 'Demande introuvable. Rechargez la page.' }
+    return {
+      ok: false,
+      message:
+        'Cette demande n’a pas pu être identifiée. Rechargez la page, puis recommencez.',
+    }
 
   try {
     const { appointment } = await acceptLateRequestSerializable(
@@ -80,8 +85,7 @@ export const acceptLateRequest = async (
     }
     return {
       ok: false,
-      message:
-        'Le rendez-vous n’a pas pu être créé. Réessayez, ou prévenez le développeur si cela se reproduit.',
+      message: `Le rendez-vous n’a pas pu être créé. Réessayez ; si cela recommence, notez l’heure et prévenez ${DEVELOPER_NAME}.`,
     }
   }
 }
@@ -91,11 +95,15 @@ export const declineLateRequest = async (
   input: unknown,
 ): Promise<AdminLateRequestResult> => {
   if (!(await requireAdminMutation()))
-    return { ok: false, message: 'Action impossible. Reconnectez-vous.' }
+    return { ok: false, message: ADMIN_SESSION_EXPIRED }
 
   const parsed = declineSchema.safeParse(input)
   if (!parsed.success)
-    return { ok: false, message: 'Demande introuvable. Rechargez la page.' }
+    return {
+      ok: false,
+      message:
+        'Cette demande n’a pas pu être identifiée. Rechargez la page, puis recommencez.',
+    }
 
   const declineReason = parsed.data.declineReason?.trim() || null
 
@@ -139,8 +147,7 @@ export const declineLateRequest = async (
       }
     return {
       ok: false,
-      message:
-        'La demande n’a pas pu être refusée. Réessayez, ou prévenez le développeur si cela se reproduit.',
+      message: `La demande n’a pas pu être refusée. Réessayez ; si cela recommence, notez l’heure et prévenez ${DEVELOPER_NAME}.`,
     }
   }
 }

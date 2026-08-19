@@ -2,6 +2,10 @@
 
 import { revalidatePath } from 'next/cache'
 import { z } from 'zod/v4'
+import {
+  CUSTOMER_SESSION_EXPIRED,
+  CUSTOMER_WRONG_ORIGIN,
+} from '@/lib/actions/messages'
 import prisma from '@/lib/core/prisma'
 import {
   getCustomerSession,
@@ -205,7 +209,7 @@ export const withdrawLateRequest = async (
   requestId: string,
 ): Promise<{ ok: boolean; message: string }> => {
   if (!(await hasSameOrigin()))
-    return { ok: false, message: 'Action impossible depuis cette page.' }
+    return { ok: false, message: CUSTOMER_WRONG_ORIGIN }
 
   // `findCustomerForSession` revalide `identityVersion` : une session ouverte
   // avant un changement de coordonnées ne doit plus rien pouvoir retirer.
@@ -216,7 +220,7 @@ export const withdrawLateRequest = async (
   if (!customer)
     return {
       ok: false,
-      message: 'Votre session a expiré. Indiquez à nouveau votre adresse.',
+      message: CUSTOMER_SESSION_EXPIRED,
     }
 
   try {
