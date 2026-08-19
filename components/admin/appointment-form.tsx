@@ -69,6 +69,13 @@ export const AppointmentForm = ({
     overlap: boolean
   } | null>(null)
   const [toastOpen, setToastOpen] = useState(false)
+  /**
+   * Le message du serveur dit qui a été prévenu et à quelle adresse : il ne
+   * peut pas transiter par l'URL. La confirmation s'affiche donc ici, et la
+   * navigation vers l'agenda attend qu'elle soit lue — fermée à la main, ou au
+   * bout de ses secondes.
+   */
+  const [confirmedHref, setConfirmedHref] = useState<string | null>(null)
   const [seriesEnabled, setSeriesEnabled] = useState(false)
   const [seriesPreview, setSeriesPreview] =
     useState<AdminAppointmentSeriesPreview | null>(null)
@@ -84,6 +91,7 @@ export const AppointmentForm = ({
     setOverride(null)
     setMessage(null)
     setToastOpen(false)
+    setConfirmedHref(null)
     setSeriesPreview(null)
     setAcknowledgeSeriesOutsideHours(false)
   }
@@ -131,8 +139,8 @@ export const AppointmentForm = ({
         })
         return
       }
-      if (!result.ok) setToastOpen(true)
-      if (result.ok) router.push(`/admin?date=${date}`)
+      setToastOpen(true)
+      if (result.ok) setConfirmedHref(`/admin?date=${date}`)
     })
   }
 
@@ -157,8 +165,8 @@ export const AppointmentForm = ({
       )
       setMessage(result.message)
       if (result.preview) setSeriesPreview(result.preview)
-      if (result.ok) router.push(`/admin?date=${date}`)
-      else setToastOpen(true)
+      setToastOpen(true)
+      if (result.ok) setConfirmedHref(`/admin?date=${date}`)
     })
   }
 
@@ -175,14 +183,15 @@ export const AppointmentForm = ({
     startTransition(async () => {
       const result = await cancelAdminAppointment(appointment.id as string)
       setMessage(result.message)
-      if (result.ok) router.push(`/admin?date=${appointment.date}`)
-      else setToastOpen(true)
+      setToastOpen(true)
+      if (result.ok) setConfirmedHref(`/admin?date=${appointment.date}`)
     })
   }
 
   return (
     <form
       ref={formRef}
+      method="post"
       onSubmit={event => {
         event.preventDefault()
         const formData = new FormData(event.currentTarget)
@@ -286,7 +295,11 @@ export const AppointmentForm = ({
         </section>
       ) : null}
 
-      <CustomerPicker onSelect={selectCustomer} />
+      {/* Uniquement à la création : c'est un pré-remplissage des coordonnées,
+          pas un rattachement. Sur un rendez-vous existant, la personne est déjà
+          connue, et proposer d'en « reprendre » une autre laissait croire qu'on
+          pouvait le transférer d'un client à l'autre. */}
+      {appointment.id ? null : <CustomerPicker onSelect={selectCustomer} />}
 
       <div className="grid gap-5 sm:grid-cols-2">
         <FormField
@@ -530,7 +543,7 @@ export const AppointmentForm = ({
           <Button
             type="submit"
             disabled={pending}
-            className={override ? 'bg-warning text-white' : undefined}
+            className={override ? 'bg-warning text-ink-light' : undefined}
           >
             {pending ? (
               <LoaderCircle className="size-4 animate-spin" />
@@ -551,10 +564,17 @@ export const AppointmentForm = ({
       </div>
       <AppToast
         open={toastOpen}
-        onOpenChange={setToastOpen}
-        title="Action impossible"
+        onOpenChange={open => {
+          setToastOpen(open)
+          if (open || !confirmedHref) return
+          const href = confirmedHref
+          setConfirmedHref(null)
+          router.push(href)
+        }}
+        title={confirmedHref ? 'C’est fait' : 'Action impossible'}
         description={message ?? undefined}
-        variant="danger"
+        variant={confirmedHref ? 'success' : 'danger'}
+        duration={confirmedHref ? 4000 : 6000}
       />
     </form>
   )

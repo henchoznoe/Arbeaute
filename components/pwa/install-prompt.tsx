@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button'
 import { type InstallVariant, installTargets } from '@/lib/config/pwa'
 import {
   INSTALLABLE_EVENT,
+  invitesInstall,
   isIos,
   isSilenced,
   isStandalone,
@@ -29,6 +30,7 @@ export const InstallPrompt = () => {
     ? 'admin'
     : 'public'
   const target = installTargets[variant]
+  const invited = invitesInstall(pathname)
 
   const [mode, setMode] = useState<Mode>('hidden')
 
@@ -53,12 +55,14 @@ export const InstallPrompt = () => {
       rememberDismissal(target.dismissKey)
     }
 
+    // La demande explicite passe partout ; l'ouverture d'elle-même, non.
     window.addEventListener(SHOW_INSTALL_EVENT, showNow)
     window.addEventListener('appinstalled', onInstalled)
-    window.addEventListener(INSTALLABLE_EVENT, showLater)
-
-    if (!isSilenced(target.dismissKey, target.dismissDays)) {
-      if (isIos() || window.__pwaInstallPrompt) showLater()
+    if (invited) {
+      window.addEventListener(INSTALLABLE_EVENT, showLater)
+      if (!isSilenced(target.dismissKey, target.dismissDays)) {
+        if (isIos() || window.__pwaInstallPrompt) showLater()
+      }
     }
 
     return () => {
@@ -67,7 +71,7 @@ export const InstallPrompt = () => {
       window.removeEventListener('appinstalled', onInstalled)
       window.removeEventListener(INSTALLABLE_EVENT, showLater)
     }
-  }, [target])
+  }, [invited, target])
 
   const dismiss = useCallback(() => {
     rememberDismissal(target.dismissKey)
@@ -94,7 +98,7 @@ export const InstallPrompt = () => {
       aria-label="Installer l’application"
       className="fixed inset-x-0 bottom-0 z-50 px-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]"
     >
-      <div className="mx-auto flex max-w-md animate-in gap-4 rounded-2xl border bg-card/95 p-4 shadow-2xl shadow-black/10 backdrop-blur-lg duration-500 fade-in slide-in-from-bottom-8">
+      <div className="mx-auto flex max-w-md animate-in gap-4 rounded-2xl border bg-card/95 p-4 shadow-2xl shadow-ink-dark/10 backdrop-blur-lg duration-500 fade-in slide-in-from-bottom-8">
         <Image
           src={target.icon}
           alt=""

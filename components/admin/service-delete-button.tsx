@@ -39,17 +39,18 @@ export const ServiceDeleteButton = ({
         trigger={
           <Button
             type="button"
-            size="icon"
             variant="destructive"
             onClick={() => setError(null)}
-            aria-label={`Supprimer ${name}`}
+            className="mt-4 w-full justify-start"
           >
-            <Trash2 className="size-4" />
+            <Trash2 className="size-4" /> Supprimer « {name} »
           </Button>
         }
       />
       {error ? (
-        <p className="basis-full text-xs text-destructive">{error}</p>
+        <p className="mt-3 text-xs text-destructive" role="alert">
+          {error}
+        </p>
       ) : null}
     </>
   )

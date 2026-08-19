@@ -1,4 +1,5 @@
 import { Skeleton } from '@/components/ui/skeleton'
+import { MAIN_CONTENT_ID } from '@/components/ui/skip-link'
 
 /**
  * Coquille du site public. Elle reprend la composition du premier écran — barre
@@ -13,7 +14,10 @@ const PublicLoading = () => (
         <Skeleton className="h-9 w-36 rounded-full" />
       </div>
     </div>
-    <main className="min-h-screen bg-linear-to-br from-brand-subtle via-warning-subtle/70 to-warning-subtle/40 px-5 pt-24 pb-12 sm:px-8">
+    <main
+      id={MAIN_CONTENT_ID}
+      className="min-h-screen bg-linear-to-br from-brand-subtle via-warning-subtle/70 to-warning-subtle/40 px-5 pt-24 pb-12 sm:px-8"
+    >
       <p role="status" className="sr-only">
         Chargement…
       </p>

@@ -276,7 +276,9 @@ export const createService = async (formData: FormData): Promise<void> => {
     }),
   )
   refreshCatalog()
-  redirect(`/admin/services/${service.id}`)
+  // Créer et modifier sont deux gestes voisins : ils confirment de la même
+  // façon, sans quoi l'un des deux laisse croire que rien ne s'est passé.
+  redirect(`/admin/services/${service.id}?saved=1`)
 }
 
 export const updateService = async (formData: FormData): Promise<void> => {

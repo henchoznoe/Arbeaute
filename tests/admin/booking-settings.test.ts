@@ -10,6 +10,8 @@ const settings = {
   bookingHorizonMonths: 3,
   customerChangeCutoffHours: 48,
   slotIntervalMinutes: 15,
+  lateRequestsEnabled: false,
+  lateRequestFloorHours: 2,
 }
 
 describe('booking settings', () => {
@@ -28,6 +30,24 @@ describe('booking settings', () => {
         slotIntervalMinutes: 7,
       }).success,
     ).toBe(false)
+  })
+
+  // Une case décochée ne poste rien : sans traitement, le champ manquant
+  // ferait échouer l'enregistrement de toute la page.
+  it('lit la case des demandes de dernière minute à partir de ce que poste le navigateur', () => {
+    const { lateRequestsEnabled, ...withoutCheckbox } = settings
+    expect(lateRequestsEnabled).toBe(false)
+
+    expect(bookingSettingsSchema.safeParse(withoutCheckbox)).toMatchObject({
+      success: true,
+      data: { lateRequestsEnabled: false },
+    })
+    expect(
+      bookingSettingsSchema.safeParse({
+        ...withoutCheckbox,
+        lateRequestsEnabled: 'on',
+      }),
+    ).toMatchObject({ success: true, data: { lateRequestsEnabled: true } })
   })
 
   it('updates the singleton and its audit event in the same transaction', async () => {

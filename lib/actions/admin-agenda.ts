@@ -4,6 +4,7 @@ import { randomUUID } from 'node:crypto'
 import { revalidatePath, updateTag } from 'next/cache'
 import { redirect } from 'next/navigation'
 import { z } from 'zod/v4'
+import { ADMIN_SESSION_EXPIRED } from '@/lib/actions/messages'
 import {
   AdminAgendaError,
   AdminAppointmentSeriesError,
@@ -177,7 +178,7 @@ export const searchAdminCustomers = async (
   if (!(await requireAdminMutation()))
     return {
       ok: false,
-      message: 'Votre session a expiré. Reconnectez-vous, puis recommencez.',
+      message: ADMIN_SESSION_EXPIRED,
       customers: [],
     }
   const parsed = z.string().trim().min(2).max(100).safeParse(input)
@@ -225,7 +226,7 @@ export const previewAdminAppointmentSeries = async (
   if (!(await requireAdminMutation()))
     return {
       ok: false,
-      message: 'Votre session a expiré. Reconnectez-vous, puis recommencez.',
+      message: ADMIN_SESSION_EXPIRED,
     }
   const parsed = appointmentSeriesSchema.safeParse(input)
   if (!parsed.success)
@@ -267,7 +268,7 @@ export const createAdminAppointmentSeries = async (
   if (!(await requireAdminMutation()))
     return {
       ok: false,
-      message: 'Votre session a expiré. Reconnectez-vous, puis recommencez.',
+      message: ADMIN_SESSION_EXPIRED,
     }
   const parsed = appointmentSeriesSchema.safeParse(input)
   if (!parsed.success)
@@ -319,7 +320,7 @@ export const saveAdminAppointment = async (
   if (!(await requireAdminMutation()))
     return {
       ok: false,
-      message: 'Votre session a expiré. Reconnectez-vous, puis recommencez.',
+      message: ADMIN_SESSION_EXPIRED,
     }
   const parsed = appointmentSchema.safeParse(input)
   if (!parsed.success)
@@ -442,7 +443,7 @@ export const cancelAdminAppointment = async (
   if (!(await requireAdminMutation()))
     return {
       ok: false,
-      message: 'Votre session a expiré. Reconnectez-vous, puis recommencez.',
+      message: ADMIN_SESSION_EXPIRED,
     }
   const parsedId = z.string().min(1).safeParse(appointmentId)
   if (!parsedId.success)
@@ -467,7 +468,7 @@ export const cancelAdminAppointment = async (
     return {
       ok: false,
       message:
-        'Ce rendez-vous n’est plus actif : il a déjà été annulé ou terminé.',
+        'Ce rendez-vous ne peut plus être modifié : il a déjà été annulé, ou il est passé.',
     }
   }
 }
@@ -662,7 +663,7 @@ export const deleteAvailabilityExceptionGroup = async (
   if (!(await requireAdminMutation()))
     return {
       ok: false,
-      message: 'Votre session a expiré. Reconnectez-vous, puis recommencez.',
+      message: ADMIN_SESSION_EXPIRED,
     }
   const parsed = z.string().min(1).safeParse(groupId)
   if (!parsed.success)

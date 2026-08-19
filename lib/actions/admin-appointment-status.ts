@@ -2,6 +2,7 @@
 
 import { revalidatePath } from 'next/cache'
 import { z } from 'zod/v4'
+import { ADMIN_SESSION_EXPIRED } from '@/lib/actions/messages'
 import {
   AdminAppointmentStatusError,
   type AdminAppointmentStatusTarget,
@@ -28,7 +29,7 @@ export const changeAdminAppointmentStatus = async (input: {
   if (!(await getAdminSession()) || !(await hasSameOrigin()))
     return {
       ok: false,
-      message: 'Votre session a expiré. Reconnectez-vous, puis recommencez.',
+      message: ADMIN_SESSION_EXPIRED,
     }
   const parsed = appointmentStatusSchema.safeParse(input)
   if (!parsed.success)

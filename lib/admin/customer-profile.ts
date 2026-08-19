@@ -33,31 +33,16 @@ const appointmentSelect = {
   service: { select: { category: { select: { name: true } } } },
 } satisfies Prisma.AppointmentSelect
 
-const duplicateSelect = {
-  id: true,
-  firstName: true,
-  lastName: true,
-  email: true,
-  phone: true,
-  lastSeenAt: true,
-  _count: { select: { appointments: true } },
-} satisfies Prisma.CustomerSelect
-
 export type AdminCustomer = Prisma.CustomerGetPayload<{
   select: typeof customerSelect
 }>
 export type AdminCustomerAppointment = Prisma.AppointmentGetPayload<{
   select: typeof appointmentSelect
 }>
-export type AdminCustomerDuplicate = Prisma.CustomerGetPayload<{
-  select: typeof duplicateSelect
-}>
-
 export interface AdminCustomerProfile {
   customer: AdminCustomer
   upcoming: AdminCustomerAppointment[]
   history: AdminCustomerAppointment[]
-  duplicates: AdminCustomerDuplicate[]
   statusCounts: Record<AppointmentStatus, number>
   totalAppointments: number
   totalVisits: number
@@ -89,7 +74,7 @@ export const getAdminCustomerProfile = async (
   })
   if (!customer) return null
 
-  const [upcoming, history, groupedCounts, pastConfirmedCount, duplicates] =
+  const [upcoming, history, groupedCounts, pastConfirmedCount] =
     await Promise.all([
       database.appointment.findMany({
         where: {
@@ -120,23 +105,6 @@ export const getAdminCustomerProfile = async (
       database.appointment.count({
         where: { customerId, status: 'CONFIRMED', endsAt: { lt: now } },
       }),
-      database.customer.findMany({
-        where: {
-          id: { not: customerId },
-          anonymizedAt: null,
-          // Plus de recherche par adresse : `emailNormalized` est unique
-          // depuis la v1.10, la condition ne pourrait jamais rien trouver.
-          // Deux clients restent rapprochables par téléphone — un couple qui
-          // partage un numéro — ou par nom.
-          OR: [
-            { phoneNormalized: customer.phoneNormalized },
-            { searchName: customer.searchName },
-          ],
-        },
-        orderBy: [{ lastSeenAt: 'desc' }, { id: 'asc' }],
-        take: 8,
-        select: duplicateSelect,
-      }),
     ])
   const statusCounts = Object.fromEntries(
     Object.values(AppointmentStatus).map(status => [status, 0]),
@@ -166,7 +134,6 @@ export const getAdminCustomerProfile = async (
     customer,
     upcoming,
     history,
-    duplicates,
     statusCounts,
     totalAppointments,
     // `COMPLETED` ne compte plus que les rendez-vous marqués par l'ancienne
@@ -205,7 +172,7 @@ export const updateAdminCustomer = async (
     if (!current) throw new AdminCustomerProfileError('CUSTOMER_NOT_FOUND')
 
     // Une adresse ne peut désigner qu'une personne : la corriger vers celle
-    // d'un autre client demande une fusion, pas une modification.
+    // d'un autre client reviendrait à confondre deux personnes.
     const conflict = await transaction.customer.findFirst({
       where: {
         emailNormalized: input.email,
@@ -272,88 +239,3 @@ export const updateAdminCustomer = async (
     })
     return { propagatedAppointments: propagated.count }
   })
-
-const combineText = (
-  target: string | null,
-  source: string | null,
-  maxLength: number,
-): string | null => {
-  if (!source || source === target) return target
-  if (!target) return source.slice(0, maxLength)
-  return `${target}\n\n${source}`.slice(0, maxLength)
-}
-
-export const mergeAdminCustomers = async (
-  database: PrismaClient,
-  targetId: string,
-  sourceId: string,
-): Promise<{ movedAppointments: number }> => {
-  if (targetId === sourceId)
-    throw new AdminCustomerProfileError('INVALID_MERGE')
-  return database.$transaction(
-    async transaction => {
-      const [target, source] = await Promise.all([
-        transaction.customer.findFirst({
-          where: { id: targetId, anonymizedAt: null },
-          select: {
-            id: true,
-            firstSeenAt: true,
-            lastSeenAt: true,
-            internalNote: true,
-            preferences: true,
-          },
-        }),
-        transaction.customer.findFirst({
-          where: { id: sourceId, anonymizedAt: null },
-          select: {
-            id: true,
-            firstSeenAt: true,
-            lastSeenAt: true,
-            internalNote: true,
-            preferences: true,
-          },
-        }),
-      ])
-      if (!target || !source)
-        throw new AdminCustomerProfileError('INVALID_MERGE')
-
-      const moved = await transaction.appointment.updateMany({
-        where: { customerId: source.id },
-        data: { customerId: target.id },
-      })
-      await transaction.customer.update({
-        where: { id: target.id },
-        data: {
-          firstSeenAt:
-            target.firstSeenAt < source.firstSeenAt
-              ? target.firstSeenAt
-              : source.firstSeenAt,
-          lastSeenAt:
-            target.lastSeenAt > source.lastSeenAt
-              ? target.lastSeenAt
-              : source.lastSeenAt,
-          internalNote: combineText(
-            target.internalNote,
-            source.internalNote,
-            2000,
-          ),
-          preferences: combineText(target.preferences, source.preferences, 500),
-        },
-      })
-      await transaction.customer.delete({ where: { id: source.id } })
-      await writeAuditEvent(transaction, {
-        actorType: 'ADMIN',
-        actorId: 'admin',
-        entityType: 'CUSTOMER',
-        entityId: target.id,
-        action: 'MERGED',
-        after: {
-          sourceCustomerId: source.id,
-          sourceAppointmentCount: moved.count,
-        },
-      })
-      return { movedAppointments: moved.count }
-    },
-    { isolationLevel: 'Serializable' },
-  )
-}

@@ -56,6 +56,10 @@ export const createAppointmentSerializable = async (
               isVisible: true,
               isArchived: false,
             },
+            // Le groupe voyage avec la prestation : l'e-mail, le fichier
+            // d'agenda et l'écran de confirmation nomment tous « Laser Erbium
+            // — Visage », jamais « Visage » seul.
+            include: { category: { select: { name: true } } },
           })
           if (!service) throw new ReservationError('SLOT_UNAVAILABLE')
 
@@ -65,8 +69,15 @@ export const createAppointmentSerializable = async (
             dateKey: getLocalDateKey(input.startsAt),
             settings,
           })
+          // `state` est décisif : depuis les demandes de dernière minute, la
+          // liste contient aussi les heures trop proches pour être réservées
+          // en ligne. Les accepter ici viderait le délai de tout son sens.
           if (
-            !slots.some(slot => slot.startsAt === input.startsAt.toISOString())
+            !slots.some(
+              slot =>
+                slot.startsAt === input.startsAt.toISOString() &&
+                slot.state === 'OPEN',
+            )
           )
             throw new ReservationError('SLOT_UNAVAILABLE')
 
@@ -133,7 +144,13 @@ export const createAppointmentSerializable = async (
               status: appointment.status,
             },
           })
-          return { appointment, customer }
+          return {
+            appointment: {
+              ...appointment,
+              categoryName: service.category?.name ?? null,
+            },
+            customer,
+          }
         },
         { isolationLevel: 'Serializable' },
       )
@@ -194,11 +211,22 @@ export const moveAppointmentSerializable = async (
             excludeAppointmentId: appointment.id,
             settings,
           })
-          if (!slots.some(slot => slot.startsAt === startsAt.toISOString()))
+          // Un déplacement reste strictement dans les heures réservables : on
+          // ne bascule pas un rendez-vous acquis vers une simple demande.
+          if (
+            !slots.some(
+              slot =>
+                slot.startsAt === startsAt.toISOString() &&
+                slot.state === 'OPEN',
+            )
+          )
             throw new ReservationError('SLOT_UNAVAILABLE')
 
           const updated = await transaction.appointment.update({
             where: { id: appointment.id },
+            include: {
+              service: { select: { category: { select: { name: true } } } },
+            },
             data: {
               startsAt,
               endsAt: new Date(
@@ -239,7 +267,11 @@ export const moveAppointmentSerializable = async (
           })
           // L'ancien horaire remonte pour que l'e-mail de déplacement puisse
           // le rappeler dans le message.
-          return { ...updated, previousStartsAt: appointment.startsAt }
+          return {
+            ...updated,
+            categoryName: updated.service.category?.name ?? null,
+            previousStartsAt: appointment.startsAt,
+          }
         },
         { isolationLevel: 'Serializable' },
       )
@@ -282,6 +314,9 @@ export const cancelAppointmentSerializable = async (
 
       const cancelled = await transaction.appointment.update({
         where: { id: appointment.id },
+        include: {
+          service: { select: { category: { select: { name: true } } } },
+        },
         data: { status: 'CANCELLED', cancelledAt: now },
       })
       await transaction.appointmentActivity.create({
@@ -304,7 +339,10 @@ export const cancelAppointmentSerializable = async (
         before: { status: appointment.status },
         after: { status: cancelled.status },
       })
-      return cancelled
+      return {
+        ...cancelled,
+        categoryName: cancelled.service.category?.name ?? null,
+      }
     },
     { isolationLevel: 'Serializable' },
   )

@@ -1,5 +1,8 @@
+import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
 import {
+  describeExceptionDay,
+  getExceptionCountNoun,
   getMonthCalendarDateKeys,
   groupAvailabilityExceptions,
   hasAvailabilityExceptionOverlap,
@@ -79,5 +82,45 @@ describe('admin availability calendar', () => {
         existing,
       ),
     ).toBe(false)
+  })
+})
+
+/**
+ * Dans une pastille de 27 px, « 1 ouv. » et « 1 ferm. » s'affichaient tous deux
+ * « 1 … » : il ne restait que la couleur pour dire si le jour ajoutait des
+ * heures ou en retirait. Une ouverture exceptionnelle et des vacances sont
+ * pourtant l'inverse l'une de l'autre.
+ */
+describe('jours particuliers', () => {
+  const CALENDAR = readFileSync(
+    'components/admin/availability-exception-calendar.tsx',
+    'utf8',
+  )
+
+  it('accorde le nom au nombre', () => {
+    expect(getExceptionCountNoun(1, 'AVAILABLE')).toBe('ouverture')
+    expect(getExceptionCountNoun(2, 'AVAILABLE')).toBe('ouvertures')
+    expect(getExceptionCountNoun(1, 'UNAVAILABLE')).toBe('fermeture')
+    expect(getExceptionCountNoun(3, 'UNAVAILABLE')).toBe('fermetures')
+  })
+
+  it('annonce le contenu complet de la cellule', () => {
+    expect(describeExceptionDay('17 août 2026', 0, 0)).toBe('17 août 2026')
+    expect(describeExceptionDay('17 août 2026', 1, 0)).toBe(
+      '17 août 2026, 1 ouverture',
+    )
+    expect(describeExceptionDay('17 août 2026', 2, 3)).toBe(
+      '17 août 2026, 2 ouvertures, 3 fermetures',
+    )
+  })
+
+  it('distingue les deux natures par une icône, sans couper de mot', () => {
+    expect(CALENDAR).toContain('describeExceptionDay(')
+    expect(CALENDAR).not.toContain('ouv.')
+    expect(CALENDAR).not.toContain('ferm.')
+    // `truncate` sur la pastille était la cause de « 1 … » : le nom se cache
+    // désormais tant que la place manque, au lieu de se couper.
+    expect(CALENDAR).not.toContain('truncate rounded bg-success-soft')
+    expect(CALENDAR).toContain('hidden lg:inline')
   })
 })

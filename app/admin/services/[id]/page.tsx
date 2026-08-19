@@ -49,9 +49,7 @@ const EditService = async ({
         title={service.name}
         aside={
           saved ? (
-            <StatusBadge variant="success">
-              Modifications enregistrées
-            </StatusBadge>
+            <StatusBadge variant="success">Prestation enregistrée</StatusBadge>
           ) : null
         }
       />

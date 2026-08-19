@@ -1,11 +1,15 @@
+import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
 import {
   assignTimelineLanes,
   buildAdminTimelineDay,
   formatTimelineMinute,
   getFreeTimelineStarts,
+  getQuickAddTouchPadding,
   getWeekTimelineBounds,
   isAdminAppointmentTime,
+  MINIMUM_TOUCH_TARGET_PX,
+  QUICK_ADD_STEP_MINUTES,
 } from '@/lib/admin/agenda-timeline'
 
 const buildDay = (
@@ -284,5 +288,77 @@ describe('grille hebdomadaire de bureau', () => {
       { lane: 1, laneCount: 2 },
       { lane: 0, laneCount: 2 },
     ])
+  })
+})
+
+/**
+ * Les zones de pré-remplissage faisaient 16,5 px sur la semaine et 22,5 px sur
+ * la journée : les seuls gestes de l'agenda qu'on ne pouvait pas viser au
+ * doigt, et ce sont précisément ceux qu'on annonce comme le moyen rapide
+ * d'ajouter un rendez-vous à une heure précise.
+ */
+describe('cible tactile des bandes de pré-remplissage', () => {
+  const bounds = { startMinute: 480, endMinute: 1080 }
+  const height = (
+    minute: number,
+    freeStarts: number[],
+    pixelsPerMinute: number,
+  ): number => {
+    const touch = getQuickAddTouchPadding(
+      minute,
+      freeStarts,
+      bounds,
+      pixelsPerMinute,
+    )
+    return QUICK_ADD_STEP_MINUTES * pixelsPerMinute + touch.top + touch.bottom
+  }
+
+  it.each([
+    ['la semaine', 1.1],
+    ['la journée', 1.5],
+  ])('donne 44 px à une bande isolée sur %s', (_name, pixelsPerMinute) => {
+    expect(height(600, [600], pixelsPerMinute)).toBeCloseTo(
+      MINIMUM_TOUCH_TARGET_PX,
+    )
+  })
+
+  it('n’empiète jamais sur la bande voisine', () => {
+    // Trois quarts d'heure d'affilée : celle du milieu n'a nulle part où
+    // s'étendre, et la place n'existe tout simplement pas.
+    const run = [600, 615, 630]
+    const touch = getQuickAddTouchPadding(615, run, bounds, 1.5)
+    expect(touch).toEqual({ top: 0, bottom: 0 })
+
+    // Les deux extrémités ne débordent que du côté libre.
+    expect(getQuickAddTouchPadding(600, run, bounds, 1.5).bottom).toBe(0)
+    expect(getQuickAddTouchPadding(630, run, bounds, 1.5).top).toBe(0)
+  })
+
+  it('ne déborde pas hors de la chronologie', () => {
+    const first = getQuickAddTouchPadding(
+      bounds.startMinute,
+      [bounds.startMinute],
+      bounds,
+      1.5,
+    )
+    expect(first.top).toBe(0)
+
+    const last = bounds.endMinute - QUICK_ADD_STEP_MINUTES
+    expect(getQuickAddTouchPadding(last, [last], bounds, 1.5).bottom).toBe(0)
+  })
+
+  it('ne rétrécit pas une bande déjà assez haute', () => {
+    expect(getQuickAddTouchPadding(600, [600], bounds, 4)).toEqual({
+      top: 0,
+      bottom: 0,
+    })
+  })
+})
+
+describe('raccourci « + » de la grille de semaine', () => {
+  it('mesure 44 px comme tous les autres contrôles', () => {
+    const grid = readFileSync('components/admin/admin-week-grid.tsx', 'utf8')
+    expect(grid).toContain('grid size-11 shrink-0 place-items-center')
+    expect(grid).not.toContain('grid size-7 shrink-0 place-items-center')
   })
 })

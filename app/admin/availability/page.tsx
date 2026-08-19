@@ -4,7 +4,7 @@ import { Suspense } from 'react'
 import { AdminPage, AdminPageHeader } from '@/components/admin/admin-page'
 import { AdminSkeleton } from '@/components/admin/admin-skeleton'
 import { AvailabilityExceptionCalendar } from '@/components/admin/availability-exception-calendar'
-import { formControlClass } from '@/components/ui/form-field'
+import { FormField, formControlClass } from '@/components/ui/form-field'
 import { SubmitButton } from '@/components/ui/submit-button'
 import {
   createWeeklyAvailability,
@@ -207,19 +207,18 @@ const Availability = async ({
           action={createWeeklyAvailability}
           className="mt-5 grid gap-3 sm:max-w-2xl sm:grid-cols-[1.3fr_1fr_1fr_auto]"
         >
-          <label className="grid gap-1.5 text-sm font-medium">
-            Jour
-            <select name="dayOfWeek" className={fieldClass}>
+          <FormField controlId="weekly-day" label="Jour">
+            <select id="weekly-day" name="dayOfWeek" className={fieldClass}>
               {days.map(day => (
                 <option key={day.value} value={day.value}>
                   {day.label}
                 </option>
               ))}
             </select>
-          </label>
-          <label className="grid gap-1.5 text-sm font-medium">
-            Début
+          </FormField>
+          <FormField controlId="weekly-start" label="Début">
             <input
+              id="weekly-start"
               name="startTime"
               type="time"
               step={900}
@@ -227,10 +226,10 @@ const Availability = async ({
               required
               className={fieldClass}
             />
-          </label>
-          <label className="grid gap-1.5 text-sm font-medium">
-            Fin
+          </FormField>
+          <FormField controlId="weekly-end" label="Fin">
             <input
+              id="weekly-end"
               name="endTime"
               type="time"
               step={900}
@@ -238,7 +237,7 @@ const Availability = async ({
               required
               className={fieldClass}
             />
-          </label>
+          </FormField>
           <SubmitButton pendingLabel="Ajout…" className="mt-auto">
             <Plus className="size-4" /> Ajouter
           </SubmitButton>

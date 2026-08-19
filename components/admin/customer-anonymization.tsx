@@ -68,7 +68,7 @@ export const CustomerAnonymization = () => {
         </div>
       </div>
 
-      <form onSubmit={handlePreview} className="mt-5 grid gap-4">
+      <form method="post" onSubmit={handlePreview} className="mt-5 grid gap-4">
         <FormField
           controlId="anonymization-email"
           label="Adresse e-mail exacte"

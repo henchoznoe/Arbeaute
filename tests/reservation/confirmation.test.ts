@@ -6,7 +6,7 @@ import {
 } from '@/lib/reservation/confirmation'
 
 const appointment = {
-  serviceName: 'Soin visage bio',
+  serviceLabel: 'Soins visage — Soin visage bio',
   dateLabel: 'lundi 10 août 2026 à 08:00',
   startsAt: '2026-08-10T06:00:00.000Z',
   endsAt: '2026-08-10T07:30:00.000Z',
@@ -16,7 +16,7 @@ describe('appointment confirmation helpers', () => {
   it('creates human-readable details without a technical identifier', () => {
     const details = createAppointmentDetails(appointment)
 
-    expect(details).toContain(`Soin : ${appointment.serviceName}`)
+    expect(details).toContain(`Soin : ${appointment.serviceLabel}`)
     expect(details).toContain(`Horaire : ${appointment.dateLabel}`)
     expect(details).toContain(`Adresse : ${contact.address}`)
     expect(details).toContain(`Téléphone : ${contact.phone}`)
@@ -30,7 +30,7 @@ describe('appointment confirmation helpers', () => {
     expect(url.origin).toBe('https://calendar.google.com')
     expect(url.pathname).toBe('/calendar/render')
     expect(url.searchParams.get('action')).toBe('TEMPLATE')
-    expect(url.searchParams.get('text')).toContain(appointment.serviceName)
+    expect(url.searchParams.get('text')).toContain(appointment.serviceLabel)
     expect(url.searchParams.get('dates')).toBe(
       '20260810T060000Z/20260810T073000Z',
     )

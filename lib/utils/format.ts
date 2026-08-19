@@ -50,3 +50,17 @@ export const formatPrice = (priceCents: number): string =>
 const counts = new Intl.NumberFormat('fr-CH')
 
 export const formatCount = (value: number): string => counts.format(value)
+
+/**
+ * « 5,2:1 » — un rapport de contraste, tel qu'il se lit en français.
+ *
+ * Une décimale suffit : le seuil AA est 4,5:1, et personne ne décide d'une
+ * couleur au centième près.
+ */
+const contrastRatios = new Intl.NumberFormat('fr-CH', {
+  minimumFractionDigits: 1,
+  maximumFractionDigits: 1,
+})
+
+export const formatContrastRatio = (ratio: number): string =>
+  `${contrastRatios.format(ratio)}:1`

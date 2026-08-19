@@ -1,6 +1,7 @@
 'use server'
 
 import { z } from 'zod/v4'
+import { ADMIN_SESSION_EXPIRED } from '@/lib/actions/messages'
 import {
   type AnonymizationPreview,
   anonymizeCustomer,
@@ -35,7 +36,7 @@ export const previewCustomerAnonymization = async (
   if (!(await requireAdminMutation()))
     return {
       ok: false,
-      message: 'Votre session a expiré. Reconnectez-vous, puis recommencez.',
+      message: ADMIN_SESSION_EXPIRED,
     }
   const parsed = identitySchema.safeParse(input)
   if (!parsed.success)
@@ -72,7 +73,7 @@ export const confirmCustomerAnonymization = async (
   if (!(await requireAdminMutation()))
     return {
       ok: false,
-      message: 'Votre session a expiré. Reconnectez-vous, puis recommencez.',
+      message: ADMIN_SESSION_EXPIRED,
     }
   const parsed = anonymizationSchema.safeParse(input)
   if (!parsed.success)

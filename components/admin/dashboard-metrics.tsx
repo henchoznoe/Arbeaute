@@ -25,9 +25,12 @@ export const DashboardMetrics = ({
   // l'occupation, dont elles sont le numérateur.
   const cards = [
     {
-      label: 'Rendez-vous',
+      // Les trois autres cartes couvrent la semaine ; celle-ci couvre le jour
+      // ouvert dans l'agenda. La date seule ne le disait pas : on lisait un
+      // nombre hebdomadaire suivi d'une date inexpliquée.
+      label: 'Rendez-vous du jour',
       value: formatCount(metrics.selectedDayCount),
-      scope: selectedDayLabel,
+      scope: `Le ${selectedDayLabel}, le jour ouvert dans l’agenda`,
       icon: CalendarCheck2,
     },
     {
@@ -47,9 +50,11 @@ export const DashboardMetrics = ({
       icon: Gauge,
     },
     {
-      label: 'Rendez-vous non honorés',
+      // Le même mot que le bilan du dimanche (« Absences notées ») et que le
+      // bouton de l'agenda (« Absence ») : une seule façon de nommer la chose.
+      label: 'Absences notées',
       value: formatCount(metrics.noShowCount),
-      scope: 'Comptés à part, ils n’entrent pas dans la recette attendue',
+      scope: 'Comptées à part, elles n’entrent pas dans la recette attendue',
       icon: UserX,
     },
   ]

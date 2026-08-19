@@ -2,9 +2,9 @@
 
 import { revalidatePath } from 'next/cache'
 import { z } from 'zod/v4'
+import { ADMIN_SESSION_EXPIRED } from '@/lib/actions/messages'
 import {
   AdminCustomerProfileError,
-  mergeAdminCustomers,
   updateAdminCustomer,
 } from '@/lib/admin/customer-profile'
 import prisma from '@/lib/core/prisma'
@@ -21,11 +21,6 @@ const updateSchema = z.object({
   internalNote: z.string().trim().max(2000).optional(),
   preferences: z.string().trim().max(500).optional(),
   propagateFuture: z.boolean(),
-})
-
-const mergeSchema = z.object({
-  targetId: z.string().min(1),
-  sourceId: z.string().min(1),
 })
 
 export interface AdminCustomerActionResult {
@@ -49,7 +44,7 @@ export const saveAdminCustomerProfile = async (
   if (!(await requireAdminMutation()))
     return {
       ok: false,
-      message: 'Votre session a expiré. Reconnectez-vous, puis recommencez.',
+      message: ADMIN_SESSION_EXPIRED,
     }
   const parsed = updateSchema.safeParse(input)
   if (!parsed.success)
@@ -86,47 +81,12 @@ export const saveAdminCustomerProfile = async (
       return {
         ok: false,
         message:
-          'Ces coordonnées appartiennent déjà à un autre client. Utilisez la fusion de doublons.',
+          'Cette adresse e-mail est déjà celle d’un autre client. Ouvrez ce client-là pour le modifier, ou saisissez une autre adresse.',
       }
     return {
       ok: false,
       message:
         'Le client n’a pas pu être enregistré. Réessayez ; si cela recommence, notez l’heure et prévenez Noé.',
-    }
-  }
-}
-
-export const mergeAdminCustomerProfiles = async (
-  input: unknown,
-): Promise<AdminCustomerActionResult> => {
-  if (!(await requireAdminMutation()))
-    return {
-      ok: false,
-      message: 'Votre session a expiré. Reconnectez-vous, puis recommencez.',
-    }
-  const parsed = mergeSchema.safeParse(input)
-  if (!parsed.success)
-    return {
-      ok: false,
-      message:
-        'Cette fusion n’est pas valable. Rafraîchissez la page, puis recommencez.',
-    }
-  try {
-    const result = await mergeAdminCustomers(
-      prisma,
-      parsed.data.targetId,
-      parsed.data.sourceId,
-    )
-    refreshCustomerViews(parsed.data.targetId)
-    return {
-      ok: true,
-      message: `Doublon fusionné. ${result.movedAppointments} rendez-vous rattaché${result.movedAppointments > 1 ? 's' : ''} à ce client.`,
-    }
-  } catch {
-    return {
-      ok: false,
-      message:
-        'Ces deux clients ne peuvent plus être fusionnés : l’un d’eux a changé. Rafraîchissez la page.',
     }
   }
 }

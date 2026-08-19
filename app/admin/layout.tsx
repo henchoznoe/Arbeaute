@@ -7,6 +7,7 @@ import {
 import { getUnreadActivityCount } from '@/lib/admin/activity'
 import { installTargets } from '@/lib/config/pwa'
 import { getAdminSession } from '@/lib/core/session-cookies'
+import { getPendingLateRequestCount } from '@/lib/reservation/late-requests'
 
 const admin = installTargets.admin
 
@@ -49,8 +50,16 @@ export const viewport: Viewport = {
 
 const AuthenticatedAdminNavigation = async () => {
   if (!(await getAdminSession())) return null
-  const unreadActivityCount = await getUnreadActivityCount()
-  return <AdminNavigation unreadActivityCount={unreadActivityCount} />
+  const [unreadActivityCount, pendingRequestCount] = await Promise.all([
+    getUnreadActivityCount(),
+    getPendingLateRequestCount(),
+  ])
+  return (
+    <AdminNavigation
+      unreadActivityCount={unreadActivityCount}
+      pendingRequestCount={pendingRequestCount}
+    />
+  )
 }
 
 const AdminLayout = ({ children }: Readonly<{ children: React.ReactNode }>) => (

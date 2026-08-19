@@ -2,6 +2,7 @@ import { WifiOff } from 'lucide-react'
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
+import { MAIN_CONTENT_ID } from '@/components/ui/skip-link'
 import { contact } from '@/lib/constants/contact'
 
 export const metadata: Metadata = {
@@ -11,7 +12,10 @@ export const metadata: Metadata = {
 
 /** Page de repli mise en cache par `public/sw.js` quand le réseau manque. */
 const OfflinePage = () => (
-  <main className="flex min-h-screen items-center justify-center px-6 py-16">
+  <main
+    id={MAIN_CONTENT_ID}
+    className="flex min-h-screen items-center justify-center px-6 py-16"
+  >
     <section className="w-full max-w-sm text-center">
       <div className="mx-auto grid size-14 place-items-center rounded-2xl bg-brand-subtle text-brand">
         <WifiOff className="size-6" />

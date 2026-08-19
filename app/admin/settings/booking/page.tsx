@@ -16,6 +16,8 @@ import {
   describeBookingHorizon,
   describeBookingNotice,
   describeChangeCutoff,
+  describeLateRequestFloor,
+  describeLateRequests,
   describeSlotInterval,
   formatSlotIntervalLabel,
 } from '@/lib/admin/booking-settings-wording'
@@ -51,7 +53,7 @@ const BookingSettingsForm = async ({
         eyebrow="Arbeauté"
         title="Règles de réservation"
         icon={SlidersHorizontal}
-        description="Ces quatre réglages décident de ce qui peut être réservé en ligne, et jusqu’à quand un rendez-vous peut être modifié sans vous."
+        description="Ces réglages décident de ce qui peut être réservé en ligne, de ce que vous préférez décider vous-même, et jusqu’à quand un rendez-vous peut être modifié sans vous."
       />
 
       <AdminPageColumns>
@@ -182,6 +184,53 @@ const BookingSettingsForm = async ({
                   </option>
                 ))}
               </select>
+            </FormField>
+
+            <label className="flex min-h-11 items-start gap-3 rounded-xl border bg-background p-3 text-sm font-medium focus-within:ring-3 focus-within:ring-ring/40 sm:col-span-2">
+              <input
+                name="lateRequestsEnabled"
+                type="checkbox"
+                className="mt-0.5 size-5 accent-primary"
+                defaultChecked={settings.lateRequestsEnabled}
+                aria-describedby="late-requests-help"
+              />
+              <span>
+                Accepter les demandes de dernière minute
+                <span
+                  id="late-requests-help"
+                  className="mt-1 block text-xs leading-relaxed font-normal text-muted-foreground"
+                >
+                  {describeLateRequests(
+                    settings.lateRequestsEnabled,
+                    settings.minBookingNoticeHours,
+                    settings.lateRequestFloorHours,
+                  )}
+                </span>
+              </span>
+            </label>
+
+            <FormField
+              controlId="late-request-floor"
+              label="Délai minimum d’une demande"
+              help={describeLateRequestFloor(settings.lateRequestFloorHours)}
+              helpId="late-request-floor-help"
+            >
+              <div className="relative">
+                <input
+                  id="late-request-floor"
+                  name="lateRequestFloorHours"
+                  type="number"
+                  min={0}
+                  max={240}
+                  required
+                  defaultValue={settings.lateRequestFloorHours}
+                  aria-describedby="late-request-floor-help"
+                  className={`${formControlClass} w-full pr-20`}
+                />
+                <span className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-sm text-muted-foreground">
+                  heures
+                </span>
+              </div>
             </FormField>
           </div>
 

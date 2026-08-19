@@ -106,6 +106,7 @@ export const auditEntityLabels: Record<AuditEntityType, string> = {
   AVAILABILITY_EXCEPTION: 'Jour particulier',
   BOOKING_SETTINGS: 'Règles de réservation',
   AGENDA_SETTINGS: 'Jours affichés dans l’agenda',
+  APPOINTMENT_REQUEST: 'Demande de dernière minute',
 }
 
 export const auditActionLabels: Record<AuditActionType, string> = {
@@ -120,12 +121,18 @@ export const auditActionLabels: Record<AuditActionType, string> = {
   FILE_ASSIGNED: 'Fichier ajouté',
   FILE_REMOVED: 'Fichier retiré',
   ANONYMIZED: 'Coordonnées effacées',
+  // Plus aucun écran ne fusionne : l'adresse e-mail identifie une personne et
+  // une seule depuis la v1.10. Le libellé reste pour les lignes anciennes —
+  // retirer une valeur d'énumération serait une migration destructive.
   MERGED: 'Fusion',
+  ACCEPTED: 'Demande acceptée',
+  DECLINED: 'Demande refusée',
 }
 
 export const getAuditEntityHref = (
   event: Pick<AuditEventItem, 'entityType' | 'entityId'>,
 ): string | null => {
+  if (event.entityType === 'APPOINTMENT_REQUEST') return '/admin/demandes'
   if (event.entityType === 'APPOINTMENT')
     return `/admin/appointments/${event.entityId}`
   if (event.entityType === 'SERVICE') return `/admin/services/${event.entityId}`
@@ -165,6 +172,10 @@ const changeFieldLabels: Record<string, string> = {
   bookingHorizonMonths: 'Horizon de réservation',
   customerChangeCutoffHours: 'Délai de modification',
   slotIntervalMinutes: 'Pas des créneaux',
+  lateRequestsEnabled: 'Demandes de dernière minute',
+  requestedStartsAt: 'Heure demandée',
+  declineReason: 'Motif du refus',
+  lateRequestFloorHours: 'Délai minimum d’une demande',
   visibleDays: 'Jours affichés',
   type: 'Type',
   hadImage: 'Image présente',
@@ -206,7 +217,11 @@ const formatAuditValue = (key: string, value: Prisma.JsonValue): string => {
   if (['startMinute', 'endMinute'].includes(key) && typeof value === 'number')
     return `${String(Math.floor(value / 60)).padStart(2, '0')}:${String(value % 60).padStart(2, '0')}`
   if (
-    ['minBookingNoticeHours', 'customerChangeCutoffHours'].includes(key) &&
+    [
+      'minBookingNoticeHours',
+      'customerChangeCutoffHours',
+      'lateRequestFloorHours',
+    ].includes(key) &&
     typeof value === 'number'
   )
     return `${value} h`
@@ -215,7 +230,7 @@ const formatAuditValue = (key: string, value: Prisma.JsonValue): string => {
   if (key === 'slotIntervalMinutes' && typeof value === 'number')
     return `${value} min`
   if (
-    ['startsAt', 'from', 'to'].includes(key) &&
+    ['startsAt', 'requestedStartsAt', 'from', 'to'].includes(key) &&
     typeof value === 'string' &&
     !Number.isNaN(Date.parse(value))
   )

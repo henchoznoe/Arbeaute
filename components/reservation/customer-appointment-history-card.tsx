@@ -18,7 +18,7 @@ interface CustomerAppointmentHistoryCardProps {
   bookingPath: string | null
   dateLabel: string
   priceLabel: string
-  serviceName: string
+  serviceLabel: string
   state: Exclude<CustomerAppointmentState, 'UPCOMING'>
 }
 
@@ -52,7 +52,7 @@ export const CustomerAppointmentHistoryCard = ({
   bookingPath,
   dateLabel,
   priceLabel,
-  serviceName,
+  serviceLabel,
   state,
 }: Readonly<CustomerAppointmentHistoryCardProps>) => {
   const presentation = statePresentation[state]
@@ -71,7 +71,9 @@ export const CustomerAppointmentHistoryCard = ({
             <StateIcon className="size-4" />
             {customerAppointmentStateLabels[state]}
           </p>
-          <h3 className="mt-3 font-heading text-xl font-bold">{serviceName}</h3>
+          <h3 className="mt-3 font-heading text-xl font-bold">
+            {serviceLabel}
+          </h3>
           <p className="mt-2 text-sm">{capitalizeFirst(dateLabel)}</p>
           <p className="mt-1 text-sm text-muted-foreground">{priceLabel}</p>
         </div>

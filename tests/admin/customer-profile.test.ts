@@ -1,7 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
 import {
   getAdminCustomerProfile,
-  mergeAdminCustomers,
   updateAdminCustomer,
 } from '@/lib/admin/customer-profile'
 import type { PrismaClient } from '@/prisma/generated/prisma/client'
@@ -33,7 +32,6 @@ describe('admin customer profile', () => {
     const database = {
       customer: {
         findFirst: vi.fn().mockResolvedValue(customer),
-        findMany: vi.fn().mockResolvedValue([{ id: 'duplicate-1' }]),
       },
       appointment: {
         findMany: findManyAppointments,
@@ -188,56 +186,5 @@ describe('admin customer profile', () => {
       code: 'IDENTITY_CONFLICT',
     })
     expect(transaction.customer.update).not.toHaveBeenCalled()
-  })
-
-  it('merges relations without rewriting historical snapshots and audits it', async () => {
-    const transaction = {
-      customer: {
-        findFirst: vi
-          .fn()
-          .mockResolvedValueOnce({
-            id: 'target',
-            firstSeenAt: new Date('2025-01-01T10:00:00.000Z'),
-            lastSeenAt: new Date('2026-06-01T10:00:00.000Z'),
-            internalNote: 'Note cible',
-            preferences: null,
-          })
-          .mockResolvedValueOnce({
-            id: 'source',
-            firstSeenAt: new Date('2024-01-01T10:00:00.000Z'),
-            lastSeenAt: new Date('2026-08-01T10:00:00.000Z'),
-            internalNote: 'Note source',
-            preferences: 'Après-midi',
-          }),
-        update: vi.fn().mockResolvedValue({ id: 'target' }),
-        delete: vi.fn().mockResolvedValue({ id: 'source' }),
-      },
-      appointment: { updateMany: vi.fn().mockResolvedValue({ count: 3 }) },
-      auditEvent: { create: vi.fn().mockResolvedValue({ id: 'audit-1' }) },
-    }
-    const database = {
-      $transaction: vi.fn((callback, _options) => callback(transaction)),
-    } as unknown as PrismaClient
-
-    await expect(
-      mergeAdminCustomers(database, 'target', 'source'),
-    ).resolves.toEqual({ movedAppointments: 3 })
-    expect(transaction.appointment.updateMany).toHaveBeenCalledWith({
-      where: { customerId: 'source' },
-      data: { customerId: 'target' },
-    })
-    expect(database.$transaction).toHaveBeenCalledWith(expect.any(Function), {
-      isolationLevel: 'Serializable',
-    })
-    expect(transaction.auditEvent.create).toHaveBeenCalledWith({
-      data: expect.objectContaining({
-        entityId: 'target',
-        action: 'MERGED',
-        changes: {
-          before: {},
-          after: { sourceCustomerId: 'source', sourceAppointmentCount: 3 },
-        },
-      }),
-    })
   })
 })

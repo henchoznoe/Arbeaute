@@ -34,10 +34,14 @@ peut être enregistré, même en cas de réservations simultanées.
 
 ### Features
 
-- **Réservation en quatre étapes** — prestation, créneau, coordonnées et
-  vérification. Le
-  calendrier charge la semaine entière d'un coup et grise les jours complets ; un
-  bouton « prochain créneau disponible » balaie les trois mois à venir.
+- **Réservation en quatre étapes** — prestation, coordonnées, créneau et
+  vérification. Le calendrier charge la semaine entière d'un coup et grise les
+  jours complets ; un bouton « prochain créneau disponible » balaie les trois
+  mois à venir.
+- **Demandes de dernière minute** — quand le réglage est actif, une heure encore
+  libre mais trop proche pour se réserver en ligne reste affichée et peut faire
+  l'objet d'une demande. Trois demandes par 24 heures, deux demandes en attente
+  au maximum ; c'est l'institut qui tranche depuis `/admin/demandes`.
 - **Espace personnel sans mot de passe** — identification par adresse e-mail
   seule, session de quinze minutes, déplacement et annulation libres jusqu'à
   48 heures ouvrables avant la séance. Le compromis de sécurité est expliqué dans

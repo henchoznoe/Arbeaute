@@ -3,6 +3,10 @@
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import { z } from 'zod/v4'
+import {
+  CUSTOMER_SESSION_EXPIRED,
+  CUSTOMER_WRONG_ORIGIN,
+} from '@/lib/actions/messages'
 import prisma from '@/lib/core/prisma'
 import {
   clearCustomerSession,
@@ -31,6 +35,7 @@ import { createAppointmentCalendar } from '@/lib/reservation/calendar'
 import { CUSTOMER_SESSION_MUTATION_LIMIT } from '@/lib/reservation/constants'
 import { findCustomerForSession } from '@/lib/reservation/customers'
 import { normalizeEmail, normalizePhone } from '@/lib/reservation/identity'
+import { formatServiceLabel } from '@/lib/reservation/service-label'
 import {
   addLocalDays,
   canCustomerChangeAppointment,
@@ -67,7 +72,7 @@ export interface BookingResult {
   message: string
   reason?: 'INVALID_CUSTOMER' | 'SLOT_CONFLICT' | 'UNKNOWN'
   appointment?: {
-    serviceName: string
+    serviceLabel: string
     dateLabel: string
     priceLabel: string
     startsAt: string
@@ -284,18 +289,23 @@ export const createPublicAppointment = async (
     // qu'une adresse ou un téléphone change.
     await setCustomerSession(customer.id, customer.identityVersion)
 
+    const serviceLabel = formatServiceLabel(
+      appointment.serviceNameSnapshot,
+      appointment.categoryName,
+    )
+
     return {
       ok: true,
       message: 'Votre rendez-vous est confirmé.',
       appointment: {
-        serviceName: appointment.serviceNameSnapshot,
+        serviceLabel,
         dateLabel: formatAppointmentDate(appointment.startsAt),
         priceLabel: formatPrice(appointment.servicePriceCents),
         startsAt: appointment.startsAt.toISOString(),
         endsAt: appointment.endsAt.toISOString(),
         calendar: createAppointmentCalendar({
           id: appointment.id,
-          serviceName: appointment.serviceNameSnapshot,
+          serviceLabel,
           startsAt: appointment.startsAt,
           endsAt: appointment.endsAt,
         }),
@@ -405,7 +415,9 @@ export const getCustomerMoveWeekAvailability = async (
       fromDateKey,
       toDateKey: addLocalDays(fromDateKey, PUBLIC_WEEK_LENGTH - 1),
       excludeAppointmentId: appointment.id,
-      settings,
+      // Déplacer un rendez-vous acquis n'ouvre pas droit aux heures sur
+      // demande : le calendrier de déplacement ne montre que le réservable.
+      settings: { ...settings, lateRequestsEnabled: false },
     })
   } catch {
     return {}
@@ -453,7 +465,7 @@ export const moveCustomerAppointment = async (
   input: unknown,
 ): Promise<MutationResult> => {
   if (!(await hasSameOrigin()))
-    return { ok: false, message: 'La demande est invalide.' }
+    return { ok: false, message: CUSTOMER_WRONG_ORIGIN }
   const parsed = appointmentMutationSchema.safeParse(input)
   if (!parsed.success || !parsed.data.startsAt)
     return {
@@ -464,8 +476,7 @@ export const moveCustomerAppointment = async (
 
   try {
     const customer = await requireCustomerMutation()
-    if (!customer)
-      return { ok: false, message: 'Votre session a expiré. Reconnectez-vous.' }
+    if (!customer) return { ok: false, message: CUSTOMER_SESSION_EXPIRED }
     const appointment = await moveAppointmentSerializable(prisma, {
       appointmentId: parsed.data.appointmentId,
       startsAt: new Date(parsed.data.startsAt),
@@ -483,7 +494,10 @@ export const moveCustomerAppointment = async (
       notifiedEmail,
       calendar: createAppointmentCalendar({
         id: appointment.id,
-        serviceName: appointment.serviceNameSnapshot,
+        serviceLabel: formatServiceLabel(
+          appointment.serviceNameSnapshot,
+          appointment.categoryName,
+        ),
         startsAt: appointment.startsAt,
         endsAt: appointment.endsAt,
       }),
@@ -503,15 +517,18 @@ export const cancelCustomerAppointment = async (
   input: unknown,
 ): Promise<MutationResult> => {
   if (!(await hasSameOrigin()))
-    return { ok: false, message: 'La demande est invalide.' }
+    return { ok: false, message: CUSTOMER_WRONG_ORIGIN }
   const parsed = appointmentMutationSchema.safeParse(input)
   if (!parsed.success)
-    return { ok: false, message: 'Ce rendez-vous est invalide.' }
+    return {
+      ok: false,
+      message:
+        'Ce rendez-vous n’a pas pu être identifié. Rechargez « Mes rendez-vous », puis recommencez.',
+    }
 
   try {
     const customer = await requireCustomerMutation()
-    if (!customer)
-      return { ok: false, message: 'Votre session a expiré. Reconnectez-vous.' }
+    if (!customer) return { ok: false, message: CUSTOMER_SESSION_EXPIRED }
     const cancelled = await cancelAppointmentSerializable(
       prisma,
       parsed.data.appointmentId,
@@ -529,7 +546,7 @@ export const cancelCustomerAppointment = async (
     return {
       ok: false,
       message:
-        'Ce rendez-vous n’est plus actif : il a déjà été annulé ou terminé.',
+        'Ce rendez-vous ne peut plus être modifié : il a déjà été annulé, ou il est passé.',
     }
   }
 }

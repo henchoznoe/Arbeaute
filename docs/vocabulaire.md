@@ -21,7 +21,7 @@ explication l’emporte, même si elle est plus longue.
 | Pas des créneaux | Espacement des heures proposées |
 | Occupation | Temps rempli |
 | Chiffre prévu | Recette attendue |
-| Absences | Rendez-vous non honorés |
+| Absences (seul, sans contexte) | Absences notées |
 | Indicateurs de la semaine | Votre semaine en chiffres |
 | Prépa / rangement | Installation et rangement |
 | Statut métier | Appeler ou noter ce qui s’est passé |
@@ -69,11 +69,11 @@ fiche ou de la personne — et se lit à voix haute sans buter.
 | les clientes, vos clientes | les personnes qui réservent, votre clientèle |
 | Fiche cliente | Client |
 | Cliente trouvée · Aucune cliente trouvée | Client trouvé · Aucun client trouvé |
-| Clientes non venues | Rendez-vous non honorés |
+| Clientes non venues | Absences notées |
 | Cliente sans nom | Sans nom |
 | Marquer cette cliente comme absente | Noter une absence |
 | Cliente anonymisée | Coordonnées effacées |
-| Reprendre une cliente existante | Reprendre un client existant |
+| Reprendre une cliente existante | Remplir avec un client déjà connu |
 | Effacer les coordonnées d’une cliente | Effacer les coordonnées d’une personne |
 | Historique des activités clientes | Historique de l’activité |
 

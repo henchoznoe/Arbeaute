@@ -296,6 +296,7 @@ const validateAdminAppointmentSeries = async (
     preparationMinutes: number
     cleanupMinutes: number
     isArchived: boolean
+    category: { name: string } | null
   }
   startsAt: Date[]
 }> => {
@@ -309,6 +310,7 @@ const validateAdminAppointmentSeries = async (
       preparationMinutes: true,
       cleanupMinutes: true,
       isArchived: true,
+      category: { select: { name: true } },
     },
   })
   if (!service || service.isArchived)
@@ -439,6 +441,9 @@ export const saveAdminAppointmentSerializable = async (
             throw new AdminAgendaError('APPOINTMENT_NOT_FOUND')
           const service = await transaction.service.findUnique({
             where: { id: input.serviceId },
+            // Le groupe suit la prestation partout : e-mail, fichier d'agenda,
+            // écran de confirmation. « Visage » seul ne dit pas lequel.
+            include: { category: { select: { name: true } } },
           })
           if (
             !service ||
@@ -526,7 +531,13 @@ export const saveAdminAppointmentSerializable = async (
                 ...(created.allowsOverlap ? { allowsOverlap: true } : {}),
               },
             })
-            return { appointment: created, previous: null }
+            return {
+              appointment: {
+                ...created,
+                categoryName: service.category?.name ?? null,
+              },
+              previous: null,
+            }
           }
 
           const updated = await transaction.appointment.update({
@@ -551,7 +562,10 @@ export const saveAdminAppointmentSerializable = async (
             },
           })
           return {
-            appointment: updated,
+            appointment: {
+              ...updated,
+              categoryName: service.category?.name ?? null,
+            },
             previous: {
               startsAt: current.startsAt,
               serviceId: current.serviceId,
@@ -652,7 +666,10 @@ export const createAdminAppointmentSeriesSerializable = async (
                 series: true,
               },
             })
-            created.push(appointment)
+            created.push({
+              ...appointment,
+              categoryName: validation.service.category?.name ?? null,
+            })
           }
           return created
         },
@@ -687,6 +704,9 @@ export const cancelAdminAppointmentSerializable = async (
       })
       if (!appointment) throw new AdminAgendaError('APPOINTMENT_NOT_FOUND')
       const cancelled = await transaction.appointment.update({
+        include: {
+          service: { select: { category: { select: { name: true } } } },
+        },
         where: { id: appointment.id },
         data: { status: 'CANCELLED', cancelledAt: new Date() },
       })
@@ -700,7 +720,10 @@ export const cancelAdminAppointmentSerializable = async (
         before: { status: appointment.status },
         after: { status: cancelled.status },
       })
-      return cancelled
+      return {
+        ...cancelled,
+        categoryName: cancelled.service.category?.name ?? null,
+      }
     },
     { isolationLevel: 'Serializable' },
   )

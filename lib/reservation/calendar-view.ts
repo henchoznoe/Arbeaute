@@ -11,6 +11,26 @@ import type { AvailabilityDayState } from '@/lib/reservation/availability'
 
 export const availabilityStateLabels: Record<AvailabilityDayState, string> = {
   AVAILABLE: 'Disponible',
+  ON_REQUEST: 'Sur demande',
+  FULL: 'Complet',
+  CLOSED: 'Fermé',
+}
+
+/**
+ * Le libellé court de la bande de sept jours.
+ *
+ * Il n'apparaît qu'à partir de `sm` : en dessous, une pastille fait 42 px et le
+ * mot s'y coupait au milieu — on lisait « Comple » et « Fermé— ». Une coupure
+ * pareille ne se lit pas comme une abréviation, elle se lit comme un défaut.
+ * L'icône reste, la légende sous la bande porte les quatre noms en toutes
+ * lettres, et `availabilityStateLabels` garde le nom complet dans l'aria-label.
+ */
+export const availabilityShortStateLabels: Record<
+  AvailabilityDayState,
+  string
+> = {
+  AVAILABLE: 'Libre',
+  ON_REQUEST: 'Demande',
   FULL: 'Complet',
   CLOSED: 'Fermé',
 }

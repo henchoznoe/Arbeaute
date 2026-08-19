@@ -3,6 +3,7 @@ import { ChevronLeft } from 'lucide-react'
 import Link from 'next/link'
 import type { ReactNode } from 'react'
 import { Button } from '@/components/ui/button'
+import { MAIN_CONTENT_ID } from '@/components/ui/skip-link'
 import { cn } from '@/lib/utils/cn'
 
 /**
@@ -21,6 +22,7 @@ export const AdminPage = ({
   className,
 }: Readonly<{ children: ReactNode; className?: string }>) => (
   <main
+    id={MAIN_CONTENT_ID}
     className={cn(
       'mx-auto min-h-screen w-full min-w-0 px-4 py-5 sm:px-8 sm:py-8',
       ADMIN_PAGE_WIDTH,

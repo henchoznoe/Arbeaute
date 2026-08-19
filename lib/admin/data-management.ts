@@ -297,3 +297,23 @@ export const anonymizeCustomer = async (
       activityCount: activities.count,
     }
   })
+
+/**
+ * La phrase à afficher quand un téléchargement n'a pas abouti.
+ *
+ * La route répondait par du texte brut — « Période invalide » en pleine page
+ * blanche. `docs/vocabulaire.md` demande de dire ce qui s'est passé, puis quoi
+ * faire : chaque cas nomme donc le geste qui débloque.
+ */
+export const describeExportFailure = (
+  reason: string | undefined,
+): string | null => {
+  if (!reason) return null
+  if (reason === 'periode')
+    return 'Les dates demandées ne forment pas une période valide. Vérifiez que la date de début précède celle de fin, puis relancez le téléchargement.'
+  if (reason === 'statut')
+    return 'Ce filtre de statut n’existe pas. Choisissez-en un dans la liste, puis relancez le téléchargement.'
+  if (reason === 'introuvable')
+    return 'Ce téléchargement n’existe pas. Repartez d’un des trois boutons ci-dessous.'
+  return 'Le fichier n’a pas pu être préparé. Réessayez dans un instant ; si cela se reproduit, prévenez Noé.'
+}

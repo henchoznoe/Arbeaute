@@ -2,8 +2,12 @@
 
 import { LoaderCircle, Pencil, Plus } from 'lucide-react'
 import { type FormEvent, useState, useTransition } from 'react'
+import {
+  ColorField,
+  DEFAULT_CATEGORY_COLOR,
+} from '@/components/admin/color-field'
 import { Button } from '@/components/ui/button'
-import { formControlClass } from '@/components/ui/form-field'
+import { FormField, formControlClass } from '@/components/ui/form-field'
 import { SidePanel } from '@/components/ui/side-panel'
 import { createCategory, updateCategory } from '@/lib/actions/catalog'
 
@@ -51,11 +55,11 @@ export const ServiceCategoryPanel = ({
       trigger={
         category ? (
           <Button
-            variant="outline"
+            variant="secondary"
             size="sm"
             aria-label={`Modifier le groupe ${category.name}`}
           >
-            <Pencil className="size-4" /> Modifier
+            <Pencil className="size-4" /> Modifier le groupe
           </Button>
         ) : (
           <Button variant="outline">
@@ -64,13 +68,13 @@ export const ServiceCategoryPanel = ({
         )
       }
     >
-      <form onSubmit={submit} className="space-y-4">
+      <form method="post" onSubmit={submit} className="space-y-4">
         {category ? (
           <input type="hidden" name="id" value={category.id} />
         ) : null}
-        <label className="grid gap-1.5 text-sm font-medium">
-          Nom
+        <FormField controlId="category-name" label="Nom">
           <input
+            id="category-name"
             name="name"
             required
             maxLength={120}
@@ -78,29 +82,25 @@ export const ServiceCategoryPanel = ({
             placeholder="Soins du visage"
             className={formControlClass}
           />
-        </label>
-        <label className="grid gap-1.5 text-sm font-medium">
-          Description{' '}
-          <span className="font-normal text-muted-foreground">
-            (optionnelle)
-          </span>
+        </FormField>
+        <FormField
+          controlId="category-description"
+          label="Description"
+          optional
+        >
           <input
+            id="category-description"
             name="description"
             defaultValue={category?.description ?? ''}
             placeholder="Ce que ce groupe rassemble, en une phrase"
             className={formControlClass}
           />
-        </label>
-        <label className="grid gap-1.5 text-sm font-medium">
-          Couleur
-          <input
-            name="color"
-            type="color"
-            required
-            defaultValue={category?.color ?? '#927b59'}
-            className="h-11 w-full rounded-xl border bg-background p-1"
-          />
-        </label>
+        </FormField>
+        <ColorField
+          controlId="category-color"
+          name="color"
+          defaultValue={category?.color ?? DEFAULT_CATEGORY_COLOR}
+        />
         <Button type="submit" disabled={pending} className="w-full">
           {pending ? <LoaderCircle className="size-4 animate-spin" /> : null}
           {category ? 'Enregistrer le groupe' : 'Créer le groupe'}

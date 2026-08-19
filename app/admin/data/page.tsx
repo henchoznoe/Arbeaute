@@ -6,7 +6,10 @@ import { AdminSkeleton } from '@/components/admin/admin-skeleton'
 import { CustomerAnonymization } from '@/components/admin/customer-anonymization'
 import { DataExportPanel } from '@/components/admin/data-export-panel'
 import { Button } from '@/components/ui/button'
-import { exportColumnDocumentation } from '@/lib/admin/data-management'
+import {
+  describeExportFailure,
+  exportColumnDocumentation,
+} from '@/lib/admin/data-management'
 import { getAdminSession } from '@/lib/core/session-cookies'
 import { AppointmentStatus } from '@/prisma/generated/prisma/enums'
 
@@ -17,9 +20,11 @@ const statusLabels = {
   NO_SHOW: 'Absence',
 } as const
 
-const DataPage = () => (
+const DataPage = ({
+  searchParams,
+}: Readonly<{ searchParams: Promise<{ export?: string }> }>) => (
   <Suspense fallback={<AdminSkeleton variant="list" />}>
-    <DataManagement />
+    <DataManagement searchParams={searchParams} />
   </Suspense>
 )
 
@@ -35,8 +40,11 @@ const ExportColumns = ({
   </ul>
 )
 
-const DataManagement = async () => {
+const DataManagement = async ({
+  searchParams,
+}: Readonly<{ searchParams: Promise<{ export?: string }> }>) => {
   if (!(await getAdminSession())) redirect('/admin/login')
+  const failure = describeExportFailure((await searchParams).export)
 
   return (
     <AdminPage className="overflow-x-hidden">
@@ -48,6 +56,17 @@ const DataManagement = async () => {
         icon={Database}
         description="Téléchargez vos données sur votre appareil, effacez les coordonnées d’une personne qui le demande, ou consultez la marche à suivre pour sauvegarder. Rien n’est stocké en ligne au passage."
       />
+
+      {/* Un téléchargement qui échoue revient ici : le texte brut d'une page
+          blanche ne disait ni ce qui s'était passé ni quoi faire. */}
+      {failure ? (
+        <p
+          role="alert"
+          className="mt-6 rounded-2xl border border-warning-accent bg-warning-subtle p-4 text-sm leading-relaxed text-warning-strong"
+        >
+          {failure}
+        </p>
+      ) : null}
 
       <section className="mt-6" aria-labelledby="exports-title">
         <div className="flex items-center gap-3">

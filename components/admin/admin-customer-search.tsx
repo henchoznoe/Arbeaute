@@ -13,7 +13,7 @@ import { CustomerCallButton } from '@/components/admin/customer-call-button'
 import { AppToast } from '@/components/ui/app-toast'
 import { Button } from '@/components/ui/button'
 import { EmptyState } from '@/components/ui/empty-state'
-import { formControlClass } from '@/components/ui/form-field'
+import { FormField, formControlClass } from '@/components/ui/form-field'
 import {
   type AdminCustomerSearchActionResult,
   searchAdminCustomerPage,
@@ -71,41 +71,37 @@ export const AdminCustomerSearch = ({
   return (
     <>
       <section className="mt-6 rounded-3xl border bg-card p-4 shadow-sm sm:p-6">
-        <label
-          htmlFor="admin-customer-search"
-          className="text-sm font-semibold"
-        >
-          Chercher un client
-        </label>
-        <div className="relative mt-2">
-          <Search className="pointer-events-none absolute top-3.5 left-3 size-4 text-muted-foreground" />
-          <input
-            id="admin-customer-search"
-            value={query}
-            onChange={event => {
-              setQuery(event.target.value)
-              setPage(1)
-            }}
-            placeholder="Nom, e-mail ou téléphone…"
-            autoComplete="off"
-            className={`${formControlClass} pr-10 pl-10`}
-          />
-          {query ? (
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon"
-              onClick={() => {
-                setQuery('')
+        <FormField controlId="admin-customer-search" label="Chercher un client">
+          <div className="relative">
+            <Search className="pointer-events-none absolute top-3.5 left-3 size-4 text-muted-foreground" />
+            <input
+              id="admin-customer-search"
+              value={query}
+              onChange={event => {
+                setQuery(event.target.value)
                 setPage(1)
               }}
-              aria-label="Effacer la recherche"
-              className="absolute top-0 right-0 text-muted-foreground"
-            >
-              <X className="size-4" />
-            </Button>
-          ) : null}
-        </div>
+              placeholder="Nom, e-mail ou téléphone…"
+              autoComplete="off"
+              className={`${formControlClass} pr-10 pl-10`}
+            />
+            {query ? (
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                onClick={() => {
+                  setQuery('')
+                  setPage(1)
+                }}
+                aria-label="Effacer la recherche"
+                className="absolute top-0 right-0 text-muted-foreground"
+              >
+                <X className="size-4" />
+              </Button>
+            ) : null}
+          </div>
+        </FormField>
         <p className="mt-2 text-xs text-muted-foreground">
           {query
             ? 'La saisie reste dans cet écran et n’est jamais ajoutée à l’adresse de la page.'

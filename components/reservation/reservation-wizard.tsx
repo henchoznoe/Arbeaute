@@ -3,6 +3,7 @@
 import {
   Check,
   ChevronLeft,
+  Clock,
   FileText,
   Mail,
   MapPin,
@@ -13,7 +14,18 @@ import {
   Zap,
 } from 'lucide-react'
 import { useSearchParams } from 'next/navigation'
-import { useCallback, useEffect, useRef, useState, useTransition } from 'react'
+import {
+  useCallback,
+  useDeferredValue,
+  useEffect,
+  useRef,
+  useState,
+  useTransition,
+} from 'react'
+import {
+  CatalogEmptyState,
+  CatalogFilters,
+} from '@/components/catalog/catalog-filters'
 import { ServiceDetails } from '@/components/catalog/service-details'
 import { BookingSummary } from '@/components/reservation/booking-summary'
 import { ConfirmationActions } from '@/components/reservation/confirmation-actions'
@@ -21,12 +33,17 @@ import { WeekAvailabilityPicker } from '@/components/reservation/week-availabili
 import { Button } from '@/components/ui/button'
 import { FormField, formControlClass } from '@/components/ui/form-field'
 import {
+  createLateRequest,
+  type LateRequestResult,
+} from '@/lib/actions/late-requests'
+import {
   type BookingResult,
   createPublicAppointment,
   getNextPublicAvailableSlot,
   getPublicWeekAvailability,
   lookupCustomerByEmail,
 } from '@/lib/actions/reservation'
+import { filterCatalog } from '@/lib/catalog/filter'
 import type { ServiceCareDetails } from '@/lib/catalog/service-content'
 import { contact } from '@/lib/constants/contact'
 import type { DayAvailability } from '@/lib/reservation/availability'
@@ -166,6 +183,11 @@ export const ReservationWizard = ({
   const [nextSlotNotice, setNextSlotNotice] = useState<string | null>(null)
   const [calendarAnnouncement, setCalendarAnnouncement] = useState('')
   const [result, setResult] = useState<BookingResult | null>(null)
+  // Une demande et une réservation ne rendent pas la même chose : les garder
+  // séparées évite d'avoir à deviner, à l'affichage, laquelle a abouti.
+  const [requestResult, setRequestResult] = useState<LateRequestResult | null>(
+    null,
+  )
   const [customer, setCustomer] =
     useState<CustomerFormValues>(emptyCustomerForm)
   const [customerErrors, setCustomerErrors] = useState<CustomerFormErrors>({})
@@ -176,9 +198,25 @@ export const ReservationWizard = ({
     'email',
   )
   const [checkingEmail, startEmailTransition] = useTransition()
+  // Tant que React n'a pas hydraté la page, `onSubmit` n'est attaché à rien :
+  // « Continuer » partirait alors en soumission native, c'est-à-dire en `GET`
+  // avec l'adresse e-mail et le pot de miel écrits dans l'URL. `method="post"`
+  // ferme cette fuite ; désactiver le bouton empêche l'envoi précoce tout court.
+  const [hydrated, setHydrated] = useState(false)
   const [website, setWebsite] = useState('')
+  // L'étape 1 réemploie la recherche et les pastilles de la vitrine. Le filtre
+  // ne survit pas au changement d'étape : le fil d'Ariane promet la liste
+  // complète, il doit la rendre.
+  const [catalogQuery, setCatalogQuery] = useState('')
+  const [catalogCategoryId, setCatalogCategoryId] = useState<string | null>(
+    null,
+  )
+  const confirmed = Boolean(result?.appointment)
+  const requested = Boolean(requestResult?.request)
+  const deferredCatalogQuery = useDeferredValue(catalogQuery)
   const [viewStart, setViewStart] = useState(minDate)
   const wizardRef = useRef<HTMLElement>(null)
+  const stepHeadingRef = useRef<HTMLHeadingElement>(null)
   const customerFormRef = useRef<HTMLFormElement>(null)
   const pendingSlotRef = useRef<{ dateKey: string; startsAt: string } | null>(
     null,
@@ -189,11 +227,58 @@ export const ReservationWizard = ({
   const customerChoseDayRef = useRef(false)
   const autoSearchedServiceRef = useRef<string | null>(null)
   const selectedService = services.find(service => service.id === serviceId)
+  // `filterCatalog` travaille par catégorie : la liste plate du tunnel est
+  // regroupée ici, sans requête serveur ni fonction de filtrage nouvelle.
+  const catalogCategories = [
+    ...new Map(
+      services.map(service => [
+        service.categoryName,
+        { id: service.categoryName, name: service.categoryName },
+      ]),
+    ).values(),
+  ]
+  const filteredCategories = filterCatalog(
+    catalogCategories.map(category => ({
+      ...category,
+      services: services.filter(
+        service => service.categoryName === category.name,
+      ),
+    })),
+    deferredCatalogQuery,
+    catalogCategoryId,
+  )
   const weekEnd = addDateKeyDays(viewStart, 6)
   const lastCompleteWeekStart = addDateKeyDays(maxDate, -6)
   const maxViewStart =
     lastCompleteWeekStart < minDate ? minDate : lastCompleteWeekStart
   const weekReady = loadedWeek === weekCacheKey(serviceId, viewStart)
+  // L'heure choisie décide de tout l'écran de vérification : réserver, ou
+  // demander. Elle se relit dans la semaine chargée, jamais dans un état à part
+  // qui pourrait se désynchroniser du calendrier.
+  const isOnRequestSlot =
+    weekAvailability[date]?.slots.find(slot => slot.startsAt === startsAt)
+      ?.state === 'ON_REQUEST'
+
+  useEffect(() => {
+    setHydrated(true)
+  }, [])
+
+  /**
+   * Le bouton qui vient d'être pressé devient `disabled` ou disparaît avec
+   * l'étape : sans reprise explicite, le focus retombe sur `<body>` et la
+   * lecture repart du haut de la page à chaque étape. Le titre de l'étape
+   * atteinte le reçoit, y compris sur les deux écrans terminaux — le moment le
+   * plus important du parcours était le seul à n'être pas annoncé.
+   *
+   * Le premier rendu ne prend rien : le focus appartient alors à la page.
+   */
+  const stepFocusKey = `${step}:${detailsStage}:${confirmed}:${requested}`
+  const focusedStepRef = useRef(stepFocusKey)
+  useEffect(() => {
+    if (focusedStepRef.current === stepFocusKey) return
+    focusedStepRef.current = stepFocusKey
+    stepHeadingRef.current?.focus()
+  }, [stepFocusKey])
 
   const scrollToWizardTop = useCallback(() => {
     const wizard = wizardRef.current
@@ -211,6 +296,8 @@ export const ReservationWizard = ({
   const goToStep = useCallback(
     (nextStep: WizardStep) => {
       setStep(nextStep)
+      setCatalogQuery('')
+      setCatalogCategoryId(null)
       scrollToWizardTop()
     },
     [scrollToWizardTop],
@@ -455,11 +542,48 @@ export const ReservationWizard = ({
     const errors = validateCustomerFields(customer, ['comment', 'consent'])
     setCustomerErrors(errors)
     if (errors.comment || errors.consent) return
-    submitBooking()
+    if (isOnRequestSlot) submitLateRequest()
+    else submitBooking()
+  }
+
+  /**
+   * Une heure trop proche ne se réserve pas : elle se demande. Rien n'est créé
+   * ici, et la formulation de l'écran suivant ne doit jamais laisser croire
+   * l'inverse.
+   */
+  const submitLateRequest = () => {
+    setRequestResult(null)
+    setResult(null)
+    startSubmitTransition(async () => {
+      const response = await createLateRequest({
+        serviceId,
+        startsAt,
+        firstName: customer.firstName,
+        lastName: customer.lastName,
+        email: customer.email,
+        phone: customer.phone,
+        comment: customer.comment,
+        consent: customer.consent,
+        website,
+      })
+      setRequestResult(response)
+      if (response.ok) {
+        scrollToWizardTop()
+        return
+      }
+      if (response.reason === 'SLOT_TAKEN') {
+        setStartsAt('')
+        goToStep(STEPS.slot)
+      } else if (response.reason === 'INVALID_CUSTOMER') {
+        setDetailsStage('identity')
+        goToStep(STEPS.details)
+      }
+    })
   }
 
   const submitBooking = () => {
     setResult(null)
+    setRequestResult(null)
     startSubmitTransition(async () => {
       const response = await createPublicAppointment({
         serviceId,
@@ -493,6 +617,74 @@ export const ReservationWizard = ({
     result?.appointment?.confirmationEmailTo,
   )
 
+  /**
+   * L'écran d'une demande transmise.
+   *
+   * Il emprunte la teinte d'attente et non celle de la réussite, et il répète
+   * en toutes lettres que rien n'est réservé : quelqu'un qui se déplacerait
+   * sur la foi de cet écran ferait le trajet pour rien.
+   */
+  if (requestResult?.request) {
+    const requestDelivery = describeConfirmationDelivery(
+      requestResult.request.acknowledgementEmailTo,
+    )
+    return (
+      <section
+        ref={wizardRef}
+        className="mx-auto max-w-xl rounded-3xl border bg-card p-6 text-center shadow-sm sm:p-10"
+      >
+        <p className="sr-only" role="status">
+          Demande transmise. Ce n’est pas encore un rendez-vous.
+        </p>
+        <div className="mx-auto flex size-14 items-center justify-center rounded-full bg-primary/10 text-primary">
+          <Clock className="size-7" />
+        </div>
+        <p className="mt-5 text-sm font-semibold tracking-widest text-primary uppercase">
+          Demande transmise
+        </p>
+        <h2
+          ref={stepHeadingRef}
+          tabIndex={-1}
+          className="mt-2 font-heading text-title font-bold focus:outline-none"
+        >
+          Ce n’est pas encore un rendez-vous
+        </h2>
+        <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
+          {contact.owner} a reçu votre demande. Elle vous répond dès que
+          possible : vous saurez alors si cette heure est retenue.
+        </p>
+        <div className="mt-6 rounded-2xl bg-muted p-5 text-left">
+          <p className="font-semibold">{requestResult.request.serviceLabel}</p>
+          <p className="mt-2 text-sm">
+            {capitalizeFirst(requestResult.request.dateLabel)}
+          </p>
+          <p className="mt-1 text-sm text-price">
+            {requestResult.request.priceLabel}
+          </p>
+        </div>
+        {requestDelivery ? (
+          <div className="mt-4 rounded-2xl border border-primary/25 bg-primary/5 p-4 text-left text-sm">
+            <p className="font-semibold">{requestDelivery.title}</p>
+            <p className="mt-1 text-muted-foreground">
+              {requestDelivery.detail}
+            </p>
+          </div>
+        ) : null}
+        <p className="mt-5 text-sm text-muted-foreground">
+          C’est urgent ? Appelez l’institut au {contact.phone}.
+        </p>
+        <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:justify-center">
+          <Button asChild variant="secondary">
+            <a href={`tel:${contact.phoneRaw}`}>Appeler l’institut</a>
+          </Button>
+          <Button asChild variant="outline">
+            <a href="/mes-rendez-vous">Voir mes rendez-vous</a>
+          </Button>
+        </div>
+      </section>
+    )
+  }
+
   if (result?.appointment)
     return (
       <section
@@ -500,13 +692,20 @@ export const ReservationWizard = ({
         data-print-receipt
         className="mx-auto max-w-xl rounded-3xl border bg-card p-6 text-center shadow-sm sm:p-10"
       >
+        <p className="sr-only" role="status">
+          Votre rendez-vous est confirmé.
+        </p>
         <div className="mx-auto flex size-14 items-center justify-center rounded-full bg-success-soft text-success">
           <Check className="size-7" />
         </div>
         <p className="mt-5 text-sm font-semibold tracking-widest text-success uppercase">
           Rendez-vous confirmé
         </p>
-        <h2 className="mt-2 font-heading text-title font-bold">
+        <h2
+          ref={stepHeadingRef}
+          tabIndex={-1}
+          className="mt-2 font-heading text-title font-bold focus:outline-none"
+        >
           Votre rendez-vous est bien enregistré
         </h2>
         <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
@@ -514,7 +713,7 @@ export const ReservationWizard = ({
           faire pour le confirmer.
         </p>
         <div className="mt-6 rounded-2xl bg-muted p-5 text-left">
-          <p className="font-semibold">{result.appointment.serviceName}</p>
+          <p className="font-semibold">{result.appointment.serviceLabel}</p>
           <p className="mt-2 text-sm">
             {capitalizeFirst(result.appointment.dateLabel)}
           </p>
@@ -572,6 +771,12 @@ export const ReservationWizard = ({
 
   return (
     <section ref={wizardRef} className="mx-auto max-w-3xl">
+      {/* Rien n'annonçait le changement d'étape : quelqu'un qui navigue au
+          clavier ou à la voix traversait le tunnel dans le silence. */}
+      <p className="sr-only" role="status" aria-live="polite">
+        Étape {step} sur {STEP_LABELS.length} :{' '}
+        {STEP_LABELS[step - 1]?.label ?? ''}
+      </p>
       <ol
         className="mb-5 grid grid-cols-4 gap-1 sm:mb-8 sm:gap-2"
         aria-label="Étapes"
@@ -636,15 +841,33 @@ export const ReservationWizard = ({
       ) : null}
 
       {step === STEPS.service ? (
-        <div className="space-y-8">
-          {[...new Set(services.map(service => service.categoryName))].map(
-            category => (
-              <div key={category}>
-                <h2 className="font-heading text-xl font-bold">{category}</h2>
-                <div className="mt-3 grid gap-3 sm:grid-cols-2">
-                  {services
-                    .filter(service => service.categoryName === category)
-                    .map(service => (
+        <div>
+          {/* L'étape n'avait pas de titre : les catégories en tenaient lieu.
+              Il en faut un pour recevoir le focus et nommer l'étape. */}
+          <h2 ref={stepHeadingRef} tabIndex={-1} className="sr-only">
+            Choisir une prestation
+          </h2>
+          <CatalogFilters
+            categories={catalogCategories}
+            query={catalogQuery}
+            onQueryChange={setCatalogQuery}
+            categoryId={catalogCategoryId}
+            onCategoryChange={setCatalogCategoryId}
+            resultCount={filteredCategories.reduce(
+              (count, category) => count + category.services.length,
+              0,
+            )}
+            searchId="reservation-service-search"
+          />
+          {filteredCategories.length > 0 ? (
+            <div className="space-y-8">
+              {filteredCategories.map(category => (
+                <div key={category.id}>
+                  <h2 className="font-heading text-xl font-bold">
+                    {category.name}
+                  </h2>
+                  <div className="mt-3 grid gap-3 sm:grid-cols-2">
+                    {category.services.map(service => (
                       <button
                         key={service.id}
                         type="button"
@@ -669,9 +892,17 @@ export const ReservationWizard = ({
                         ) : null}
                       </button>
                     ))}
+                  </div>
                 </div>
-              </div>
-            ),
+              ))}
+            </div>
+          ) : (
+            <CatalogEmptyState
+              onReset={() => {
+                setCatalogQuery('')
+                setCatalogCategoryId(null)
+              }}
+            />
           )}
         </div>
       ) : null}
@@ -680,6 +911,7 @@ export const ReservationWizard = ({
         <form
           ref={customerFormRef}
           noValidate
+          method="post"
           onSubmit={event => {
             event.preventDefault()
             if (detailsStage === 'email') submitEmailStage()
@@ -706,7 +938,11 @@ export const ReservationWizard = ({
 
           {detailsStage === 'email' ? (
             <>
-              <h2 className="mt-5 font-heading text-2xl font-bold">
+              <h2
+                ref={stepHeadingRef}
+                tabIndex={-1}
+                className="mt-5 font-heading text-2xl font-bold focus:outline-none"
+              >
                 Votre adresse e-mail
               </h2>
               <p className="mt-1 text-sm text-muted-foreground">
@@ -753,7 +989,7 @@ export const ReservationWizard = ({
               <Button
                 type="submit"
                 size="lg"
-                disabled={checkingEmail}
+                disabled={!hydrated || checkingEmail}
                 className="mt-6 w-full"
               >
                 {checkingEmail ? 'Vérification…' : 'Continuer'}
@@ -761,7 +997,11 @@ export const ReservationWizard = ({
             </>
           ) : (
             <>
-              <h2 className="mt-5 font-heading text-2xl font-bold">
+              <h2
+                ref={stepHeadingRef}
+                tabIndex={-1}
+                className="mt-5 font-heading text-2xl font-bold focus:outline-none"
+              >
                 Vos coordonnées
               </h2>
               <p className="mt-1 text-sm text-muted-foreground">
@@ -851,7 +1091,12 @@ export const ReservationWizard = ({
                   />
                 </FormField>
               </div>
-              <Button type="submit" size="lg" className="mt-6 w-full">
+              <Button
+                type="submit"
+                size="lg"
+                disabled={!hydrated}
+                className="mt-6 w-full"
+              >
                 Choisir mon créneau
               </Button>
             </>
@@ -879,7 +1124,11 @@ export const ReservationWizard = ({
           >
             <ChevronLeft className="size-4" /> Modifier mes coordonnées
           </Button>
-          <h2 className="mt-5 font-heading text-2xl font-bold">
+          <h2
+            ref={stepHeadingRef}
+            tabIndex={-1}
+            className="mt-5 font-heading text-2xl font-bold focus:outline-none"
+          >
             Choisissez votre créneau
           </h2>
           {selectedService ? (
@@ -954,13 +1203,34 @@ export const ReservationWizard = ({
           >
             <ChevronLeft className="size-4" /> Changer de créneau
           </Button>
-          <h2 className="mt-5 font-heading text-2xl font-bold">
-            Vérifiez votre réservation
+          <h2
+            ref={stepHeadingRef}
+            tabIndex={-1}
+            className="mt-5 font-heading text-2xl font-bold focus:outline-none"
+          >
+            {isOnRequestSlot
+              ? 'Vérifiez votre demande'
+              : 'Vérifiez votre réservation'}
           </h2>
           <p className="mt-1 text-sm text-muted-foreground">
-            Rien n’est encore créé. Relisez ces informations avant la
-            confirmation définitive.
+            Rien n’est encore créé. Relisez ces informations avant{' '}
+            {isOnRequestSlot ? 'de l’envoyer' : 'la confirmation définitive'}.
           </p>
+          {isOnRequestSlot ? (
+            <div className="mt-5 rounded-xl border border-primary/25 bg-primary/5 p-4 text-sm">
+              <p className="flex items-start gap-2">
+                <Clock className="mt-0.5 size-4 shrink-0 text-primary" />
+                <span>
+                  <strong className="font-semibold">
+                    Cette heure ne se réserve pas en ligne.
+                  </strong>{' '}
+                  Elle est trop proche : vous envoyez une demande, et{' '}
+                  {contact.owner} vous répond par e-mail. Tant qu’elle n’a pas
+                  répondu, vous n’avez pas de rendez-vous.
+                </span>
+              </p>
+            </div>
+          ) : null}
 
           <div className="mt-6 divide-y rounded-2xl border">
             <div className="flex items-start justify-between gap-4 p-4">
@@ -1127,12 +1397,12 @@ export const ReservationWizard = ({
             </p>
           ) : null}
 
-          {result && !result.ok ? (
+          {(result && !result.ok) || (requestResult && !requestResult.ok) ? (
             <p
               className="mt-5 rounded-xl bg-destructive/10 p-4 text-sm text-destructive"
               role="alert"
             >
-              {result.message}
+              {result && !result.ok ? result.message : requestResult?.message}
             </p>
           ) : null}
           <Button
@@ -1142,9 +1412,13 @@ export const ReservationWizard = ({
             disabled={submitting}
             className="mt-6 w-full"
           >
-            {submitting
-              ? 'Création du rendez-vous…'
-              : 'Confirmer et créer le rendez-vous'}
+            {isOnRequestSlot
+              ? submitting
+                ? 'Envoi de la demande…'
+                : 'Envoyer ma demande'
+              : submitting
+                ? 'Création du rendez-vous…'
+                : 'Confirmer et créer le rendez-vous'}
           </Button>
         </section>
       ) : null}

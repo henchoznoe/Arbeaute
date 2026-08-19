@@ -36,7 +36,7 @@ export const SidePanel = ({
   <Dialog.Root open={open} onOpenChange={onOpenChange}>
     {trigger ? <Dialog.Trigger asChild>{trigger}</Dialog.Trigger> : null}
     <Dialog.Portal>
-      <Dialog.Overlay className="fixed inset-0 z-[70] bg-black/45 backdrop-blur-[2px] data-[state=closed]:animate-out data-[state=open]:animate-in data-[state=closed]:fade-out data-[state=open]:fade-in motion-reduce:animate-none" />
+      <Dialog.Overlay className="fixed inset-0 z-[70] bg-ink-dark/45 backdrop-blur-[2px] data-[state=closed]:animate-out data-[state=open]:animate-in data-[state=closed]:fade-out data-[state=open]:fade-in motion-reduce:animate-none" />
       <Dialog.Content className="fixed inset-x-0 bottom-0 z-[80] max-h-[calc(100dvh-1rem)] overflow-y-auto rounded-t-3xl border bg-background p-5 pb-[calc(1.25rem+env(safe-area-inset-bottom))] shadow-2xl outline-none data-[state=closed]:animate-out data-[state=open]:animate-in data-[state=closed]:slide-out-to-bottom data-[state=open]:slide-in-from-bottom motion-reduce:animate-none sm:inset-y-4 sm:left-auto sm:right-4 sm:w-[30rem] sm:rounded-3xl sm:p-7 sm:data-[state=closed]:slide-out-to-right sm:data-[state=open]:slide-in-from-right">
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">

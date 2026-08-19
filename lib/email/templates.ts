@@ -67,7 +67,7 @@ const actionsText = (actions: MailAction[]): string[] =>
 const calendarAction = (data: AppointmentMailData): MailAction => ({
   label: 'Ajouter à mon agenda',
   url: createGoogleCalendarUrl({
-    serviceName: data.serviceLabel,
+    serviceLabel: data.serviceLabel,
     startsAt: data.startsAt.toISOString(),
     endsAt: data.endsAt.toISOString(),
   }),
@@ -398,6 +398,167 @@ export const buildWeeklyDigestMail = (data: WeeklyDigestData): MailContent => {
           const [label, ...rest] = line.split(' : ')
           return `<strong>${escapeHtml(label)} :</strong> ${escapeHtml(rest.join(' : '))}`
         }),
+      ],
+      actions,
+    ),
+  }
+}
+
+export interface LateRequestMailData {
+  customerFirstName: string | null
+  customerLastName: string
+  customerPhone: string
+  serviceLabel: string
+  requestedStartsAt: Date
+  priceCents: number
+  comment?: string | null
+}
+
+const lateRequestSummaryText = (data: LateRequestMailData): string[] => [
+  `Soin : ${data.serviceLabel}`,
+  `Date : ${formatMailDate(data.requestedStartsAt)}`,
+  `Heure : ${formatMailTime(data.requestedStartsAt)}`,
+  `Prix : ${formatPrice(data.priceCents)}`,
+]
+
+const lateRequestSummaryHtml = (data: LateRequestMailData): string[] => [
+  `<strong>Soin :</strong> ${escapeHtml(data.serviceLabel)}`,
+  `<strong>Date :</strong> ${escapeHtml(formatMailDate(data.requestedStartsAt))}`,
+  `<strong>Heure :</strong> ${escapeHtml(formatMailTime(data.requestedStartsAt))}`,
+  `<strong>Prix :</strong> ${escapeHtml(formatPrice(data.priceCents))}`,
+]
+
+const requesterName = (data: LateRequestMailData): string =>
+  [data.customerFirstName?.trim(), data.customerLastName.trim()]
+    .filter(Boolean)
+    .join(' ')
+
+/**
+ * Le message qu'Arzu reçoit quand quelqu'un demande une heure trop proche.
+ *
+ * Le numéro y figure en toutes lettres : la réponse la plus rapide est souvent
+ * un appel, et la faire revenir sur le site pour le retrouver serait un détour.
+ */
+export const buildLateRequestSubmittedMail = (
+  data: LateRequestMailData,
+): MailContent => {
+  const title = 'Une demande de dernière minute'
+  const intro = `${requesterName(data)} aimerait venir ${formatMailDate(data.requestedStartsAt)} à ${formatMailTime(data.requestedStartsAt)}.`
+  const closing =
+    'Rien n’est réservé tant que vous n’avez pas répondu. Le créneau reste libre pour quelqu’un d’autre entre-temps.'
+  const actions = [
+    {
+      label: 'Répondre à la demande',
+      url: `${contact.website}/admin/demandes`,
+    },
+  ]
+  const lines = [
+    ...lateRequestSummaryText(data),
+    `Téléphone : ${data.customerPhone}`,
+    ...(data.comment?.trim() ? [`Message : ${data.comment.trim()}`] : []),
+  ]
+
+  return {
+    subject: `Demande pour ${formatMailDate(data.requestedStartsAt)} à ${formatMailTime(data.requestedStartsAt)}`,
+    text: [
+      'Bonjour Arzu,',
+      '',
+      intro,
+      '',
+      ...lines,
+      '',
+      closing,
+      ...actionsText(actions),
+      '',
+      contact.name,
+    ].join('\n'),
+    html: wrapHtml(
+      title,
+      [
+        escapeHtml(intro),
+        ...lateRequestSummaryHtml(data),
+        `<strong>Téléphone :</strong> ${escapeHtml(data.customerPhone)}`,
+        ...(data.comment?.trim()
+          ? [`<strong>Message :</strong> ${escapeHtml(data.comment.trim())}`]
+          : []),
+        escapeHtml(closing),
+      ],
+      actions,
+    ),
+  }
+}
+
+/**
+ * L'accusé envoyé à la personne.
+ *
+ * Il dit deux fois, en deux endroits, que ce n'est pas encore un rendez-vous.
+ * Un accusé qui ressemble à une confirmation est pire que pas d'accusé du tout :
+ * quelqu'un se déplacerait pour rien.
+ */
+export const buildLateRequestReceivedMail = (
+  data: LateRequestMailData,
+): MailContent => {
+  const title = 'Votre demande est bien arrivée'
+  const intro = `Bonjour ${data.customerFirstName?.trim() || data.customerLastName.trim()}, votre demande a bien été transmise à ${contact.owner}.`
+  const warning =
+    'Ce n’est pas encore un rendez-vous : l’heure demandée est trop proche pour être réservée en ligne. Vous recevrez un message dès qu’elle aura répondu.'
+  const closing = `Si c’est urgent, appelez directement le ${contact.phone}.`
+
+  return {
+    subject: `Demande reçue — ${formatMailDate(data.requestedStartsAt)} à ${formatMailTime(data.requestedStartsAt)}`,
+    text: [
+      intro,
+      '',
+      warning,
+      '',
+      ...lateRequestSummaryText(data),
+      '',
+      closing,
+      '',
+      ...textFooter,
+    ].join('\n'),
+    html: wrapHtml(title, [
+      escapeHtml(intro),
+      escapeHtml(warning),
+      ...lateRequestSummaryHtml(data),
+      escapeHtml(closing),
+    ]),
+  }
+}
+
+/**
+ * Le refus.
+ *
+ * Court, sans justification inventée, et il rouvre immédiatement deux portes :
+ * le téléphone et le calendrier. Un refus qui laisse sans suite donne
+ * l'impression d'une porte fermée alors que l'institut reste ouvert.
+ */
+export const buildLateRequestDeclinedMail = (
+  data: LateRequestMailData & { declineReason?: string | null },
+): MailContent => {
+  const title = 'Cette heure n’a pas pu être retenue'
+  const intro = `Bonjour ${data.customerFirstName?.trim() || data.customerLastName.trim()}, ${contact.owner} ne peut malheureusement pas vous recevoir ${formatMailDate(data.requestedStartsAt)} à ${formatMailTime(data.requestedStartsAt)}.`
+  const reason = data.declineReason?.trim()
+  const closing = `Il reste d’autres heures libres, et vous pouvez aussi appeler le ${contact.phone}.`
+  const actions = [{ label: 'Voir les heures libres', url: BOOKING_URL }]
+
+  return {
+    subject: `Demande non retenue — ${formatMailDate(data.requestedStartsAt)}`,
+    text: [
+      intro,
+      ...(reason ? ['', reason] : []),
+      '',
+      closing,
+      ...actionsText(actions),
+      '',
+      ...textFooter,
+    ].join('\n'),
+    html: wrapHtml(
+      title,
+      [
+        escapeHtml(intro),
+        ...(reason ? [escapeHtml(reason)] : []),
+        escapeHtml(closing),
       ],
       actions,
     ),

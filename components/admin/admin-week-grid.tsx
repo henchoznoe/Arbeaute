@@ -1,10 +1,12 @@
 import { Plus } from 'lucide-react'
 import Link from 'next/link'
+import type { CSSProperties } from 'react'
 import {
   type AdminTimelineDay,
   assignTimelineLanes,
   formatTimelineMinute,
   getFreeTimelineStarts,
+  getQuickAddTouchPadding,
   getWeekTimelineBounds,
   QUICK_ADD_STEP_MINUTES,
 } from '@/lib/admin/agenda-timeline'
@@ -90,6 +92,7 @@ export const AdminWeekGrid = ({
           }}
         >
           {visibleDays.map(day => {
+            const freeStarts = getFreeTimelineStarts(day)
             const lanes = assignTimelineLanes(
               day.appointments.map(appointment => ({
                 startMinute: appointment.occupiedStartMinute,
@@ -106,10 +109,12 @@ export const AdminWeekGrid = ({
                   <h3 className="truncate text-sm font-semibold">
                     {capitalizeFirst(day.label.replace(/\s\d{4}$/, ''))}
                   </h3>
+                  {/* 44 px comme partout ailleurs : c'était le seul raccourci
+                      de l'agenda qu'on ne pouvait pas viser au doigt. */}
                   <Link
                     href={`/admin/appointments/new?date=${day.dateKey}`}
                     aria-label={`Ajouter un rendez-vous le ${day.label}`}
-                    className="grid size-7 shrink-0 place-items-center rounded-lg text-muted-foreground transition hover:bg-muted hover:text-foreground"
+                    className="grid size-11 shrink-0 place-items-center rounded-lg text-muted-foreground transition hover:bg-muted hover:text-foreground"
                   >
                     <Plus className="size-4" />
                   </Link>
@@ -140,23 +145,41 @@ export const AdminWeekGrid = ({
                   {/* Un clic sur un blanc préremplit la bonne heure : c'est le
                       geste le plus fréquent, il ne doit pas passer par un
                       formulaire vide. */}
-                  {getFreeTimelineStarts(day).map(minute => (
-                    <Link
-                      key={minute}
-                      href={`/admin/appointments/new?date=${day.dateKey}&time=${formatTimelineMinute(minute)}`}
-                      aria-label={`Ajouter un rendez-vous le ${day.label} à ${formatTimelineMinute(minute)}`}
-                      className="group absolute inset-x-0.5 z-10 flex items-center justify-center overflow-hidden rounded-md border border-dashed border-transparent text-2xs font-medium leading-none text-success-strong transition hover:border-success-accent hover:bg-success-soft/80 focus:border-success focus:bg-success-soft focus:outline-none"
-                      style={{
-                        top: offset(minute),
-                        height: QUICK_ADD_STEP_MINUTES * PIXELS_PER_MINUTE,
-                      }}
-                    >
-                      <span className="inline-flex items-center gap-0.5 opacity-0 transition group-hover:opacity-100 group-focus:opacity-100">
-                        <Plus className="size-3" />
-                        {formatTimelineMinute(minute)}
-                      </span>
-                    </Link>
-                  ))}
+                  {freeStarts.map(minute => {
+                    // La bande dessinée garde sa hauteur ; c'est la zone
+                    // cliquable qui déborde, et seulement dans le vide.
+                    const touch = getQuickAddTouchPadding(
+                      minute,
+                      freeStarts,
+                      bounds,
+                      PIXELS_PER_MINUTE,
+                    )
+                    return (
+                      <Link
+                        key={minute}
+                        href={`/admin/appointments/new?date=${day.dateKey}&time=${formatTimelineMinute(minute)}`}
+                        aria-label={`Ajouter un rendez-vous le ${day.label} à ${formatTimelineMinute(minute)}`}
+                        className="group absolute inset-x-0.5 z-10 block focus:outline-none"
+                        style={{
+                          top: offset(minute) - touch.top,
+                          paddingTop: touch.top,
+                          paddingBottom: touch.bottom,
+                        }}
+                      >
+                        <span
+                          className="flex items-center justify-center overflow-hidden rounded-md border border-dashed border-transparent text-2xs font-medium leading-none text-success-strong transition group-hover:border-success-accent group-hover:bg-success-soft/80 group-focus:border-success group-focus:bg-success-soft"
+                          style={{
+                            height: QUICK_ADD_STEP_MINUTES * PIXELS_PER_MINUTE,
+                          }}
+                        >
+                          <span className="inline-flex items-center gap-0.5 opacity-0 transition group-hover:opacity-100 group-focus:opacity-100">
+                            <Plus className="size-3" />
+                            {formatTimelineMinute(minute)}
+                          </span>
+                        </span>
+                      </Link>
+                    )
+                  })}
 
                   {day.exceptions.map(exception => {
                     const top = Math.max(
@@ -195,28 +218,36 @@ export const AdminWeekGrid = ({
                         key={appointment.id}
                         href={`/admin/appointments/${appointment.id}?date=${day.dateKey}`}
                         aria-label={`${formatTimelineMinute(appointment.startMinute)}, ${appointment.customerName}, ${appointment.serviceLabel}, ${statusLabels[appointment.status]}`}
-                        className={`absolute z-30 overflow-hidden rounded-lg border bg-background px-1.5 py-1 shadow-sm transition hover:z-40 hover:shadow-md ${appointmentTone(appointment.status, appointment.hasVisualOverlap)}`}
-                        style={{
-                          top: offset(appointment.occupiedStartMinute),
-                          height: Math.max(
-                            26,
-                            (appointment.occupiedEndMinute -
-                              appointment.occupiedStartMinute) *
-                              PIXELS_PER_MINUTE,
-                          ),
-                          left: `calc(${lane.lane * width}% + 2px)`,
-                          width: `calc(${width}% - 4px)`,
-                          borderLeftColor: appointment.serviceColor,
-                          borderLeftWidth: 3,
-                        }}
+                        // Un soin d'un quart d'heure ne fait que 26 px : le
+                        // nom du soin y était coupé, et il fallait ouvrir le
+                        // rendez-vous pour savoir lequel c'était. Au survol et
+                        // au focus, le bloc reprend sa hauteur naturelle et
+                        // passe au-dessus des suivants — il ne cache rien tant
+                        // qu'on ne le vise pas.
+                        className={`group absolute z-30 h-[var(--block-height)] overflow-hidden rounded-lg border bg-background px-1.5 py-1 shadow-sm transition-shadow hover:z-40 hover:h-auto hover:min-h-[var(--block-height)] hover:shadow-md focus-visible:z-40 focus-visible:h-auto focus-visible:min-h-[var(--block-height)] ${appointmentTone(appointment.status, appointment.hasVisualOverlap)}`}
+                        style={
+                          {
+                            top: offset(appointment.occupiedStartMinute),
+                            '--block-height': `${Math.max(
+                              26,
+                              (appointment.occupiedEndMinute -
+                                appointment.occupiedStartMinute) *
+                                PIXELS_PER_MINUTE,
+                            )}px`,
+                            left: `calc(${lane.lane * width}% + 2px)`,
+                            width: `calc(${width}% - 4px)`,
+                            borderLeftColor: appointment.serviceColor,
+                            borderLeftWidth: 3,
+                          } as CSSProperties
+                        }
                       >
                         <span className="block text-2xs font-bold tabular-nums">
                           {formatTimelineMinute(appointment.startMinute)}
                         </span>
-                        <span className="block truncate text-2xs font-semibold">
+                        <span className="block truncate text-2xs font-semibold group-hover:overflow-visible group-hover:whitespace-normal group-focus-visible:overflow-visible group-focus-visible:whitespace-normal">
                           {appointment.customerName}
                         </span>
-                        <span className="block truncate text-2xs text-muted-foreground">
+                        <span className="block truncate text-2xs text-muted-foreground group-hover:overflow-visible group-hover:whitespace-normal group-focus-visible:overflow-visible group-focus-visible:whitespace-normal">
                           {appointment.serviceLabel}
                         </span>
                         {appointment.status === 'CONFIRMED' ? null : (

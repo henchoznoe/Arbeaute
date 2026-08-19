@@ -1,6 +1,10 @@
 'use server'
 
 import { revalidatePath } from 'next/cache'
+import {
+  ADMIN_SESSION_EXPIRED,
+  ADMIN_WRONG_ORIGIN,
+} from '@/lib/actions/messages'
 import prisma from '@/lib/core/prisma'
 import { getAdminSession } from '@/lib/core/session-cookies'
 import { createCalendarAttachment } from '@/lib/email/attachments'
@@ -37,13 +41,12 @@ export const resendFailedEmail = async (
   if (!(await hasSameOrigin()))
     return {
       ok: false,
-      message:
-        'Cette demande n’est pas valable. Rafraîchissez la page, puis réessayez.',
+      message: ADMIN_WRONG_ORIGIN,
     }
   if (!(await getAdminSession()))
     return {
       ok: false,
-      message: 'Votre session a expiré. Reconnectez-vous, puis recommencez.',
+      message: ADMIN_SESSION_EXPIRED,
     }
 
   const delivery = await prisma.emailDelivery.findUnique({
@@ -87,13 +90,15 @@ export const resendFailedEmail = async (
         'Le rendez-vous n’a plus d’adresse e-mail. Ajoutez-en une sur son client, puis réessayez.',
     }
 
+  const serviceLabel = formatServiceLabel(
+    appointment.serviceNameSnapshot,
+    appointment.service.category?.name,
+  )
+
   const content = build({
     customerFirstName: appointment.customerFirstName,
     customerLastName: appointment.customerLastName,
-    serviceLabel: formatServiceLabel(
-      appointment.serviceNameSnapshot,
-      appointment.service.category?.name,
-    ),
+    serviceLabel,
     startsAt: appointment.startsAt,
     endsAt: appointment.endsAt,
     priceCents: appointment.servicePriceCents,
@@ -104,7 +109,7 @@ export const resendFailedEmail = async (
       ? null
       : createCalendarAttachment({
           id: appointment.id,
-          serviceNameSnapshot: appointment.serviceNameSnapshot,
+          serviceLabel,
           startsAt: appointment.startsAt,
           endsAt: appointment.endsAt,
         })

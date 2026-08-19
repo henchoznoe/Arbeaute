@@ -152,3 +152,41 @@ export const hasAvailabilityExceptionOverlap = (
         candidate.endMinute > exception.startMinute,
     ),
   )
+
+type AvailabilityExceptionKind = AvailabilityCalendarSegment['type']
+
+const exceptionKindNouns: Record<AvailabilityExceptionKind, string> = {
+  AVAILABLE: 'ouverture',
+  UNAVAILABLE: 'fermeture',
+}
+
+/**
+ * Le nom de ce qu'un jour particulier ajoute ou retire.
+ *
+ * Une ouverture exceptionnelle et des vacances sont l'inverse l'une de l'autre,
+ * et dans une pastille de 27 px « 1 ouv. » comme « 1 ferm. » s'affichaient
+ * « 1 … » : seule la couleur de fond les distinguait encore, ce que la première
+ * règle de `docs/systeme-visuel.md` interdit. Le nombre et une icône explicite
+ * restent visibles ; le nom revient dès que la cellule est assez large.
+ */
+export const getExceptionCountNoun = (
+  count: number,
+  kind: AvailabilityExceptionKind,
+): string => `${exceptionKindNouns[kind]}${count > 1 ? 's' : ''}`
+
+const describeExceptionCount = (
+  count: number,
+  kind: AvailabilityExceptionKind,
+): string => `${count} ${getExceptionCountNoun(count, kind)}`
+
+/** Ce que la cellule annonce en entier aux technologies d'assistance. */
+export const describeExceptionDay = (
+  dateLabel: string,
+  openings: number,
+  closures: number,
+): string =>
+  [
+    dateLabel,
+    ...(openings > 0 ? [describeExceptionCount(openings, 'AVAILABLE')] : []),
+    ...(closures > 0 ? [describeExceptionCount(closures, 'UNAVAILABLE')] : []),
+  ].join(', ')

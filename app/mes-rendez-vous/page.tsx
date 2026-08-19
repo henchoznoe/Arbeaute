@@ -3,9 +3,11 @@ import { Suspense } from 'react'
 import { SiteHeader } from '@/components/layout/site-header'
 import { CustomerAppointmentCard } from '@/components/reservation/customer-appointment-card'
 import { CustomerAppointmentHistoryCard } from '@/components/reservation/customer-appointment-history-card'
+import { PendingRequestCard } from '@/components/reservation/pending-request-card'
 import { Button } from '@/components/ui/button'
 import { FormField, formControlClass } from '@/components/ui/form-field'
 import { Skeleton } from '@/components/ui/skeleton'
+import { MAIN_CONTENT_ID } from '@/components/ui/skip-link'
 import { identifyCustomer, logoutCustomer } from '@/lib/actions/reservation'
 import { createPageMetadata } from '@/lib/config/seo'
 import prisma from '@/lib/core/prisma'
@@ -21,6 +23,7 @@ import {
   getCustomerRebookingPath,
 } from '@/lib/reservation/customer-appointments'
 import { findCustomerForSession } from '@/lib/reservation/customers'
+import { getPendingLateRequestsForCustomer } from '@/lib/reservation/late-requests'
 import { formatServiceLabel } from '@/lib/reservation/service-label'
 import {
   canCustomerChangeAppointment,
@@ -41,7 +44,7 @@ export const metadata = createPageMetadata({
 })
 
 interface CustomerAppointmentsPageProps {
-  searchParams: Promise<{ error?: string; cancelled?: string }>
+  searchParams: Promise<{ error?: string }>
 }
 
 const fieldClass = cn(formControlClass, 'min-h-12 px-4')
@@ -58,7 +61,10 @@ const fieldClass = cn(formControlClass, 'min-h-12 px-4')
 const CustomerAppointmentsSkeleton = () => (
   <>
     <SiteHeader />
-    <main className="min-h-screen px-5 pt-24 pb-8 sm:px-8 sm:pt-28 sm:pb-12">
+    <main
+      id={MAIN_CONTENT_ID}
+      className="min-h-screen px-5 pt-24 pb-8 sm:px-8 sm:pt-28 sm:pb-12"
+    >
       <p role="status" className="sr-only">
         Chargement de vos rendez-vous…
       </p>
@@ -98,7 +104,7 @@ const CustomerAppointments = async ({
   const customer = session
     ? await findCustomerForSession(prisma, session)
     : null
-  const { error, cancelled } = await searchParams
+  const { error } = await searchParams
   const now = new Date()
 
   if (!customer)
@@ -114,14 +120,12 @@ const CustomerAppointments = async ({
             </Link>
           }
         />
-        <main className="flex min-h-screen items-center justify-center px-5 pt-16 pb-12">
+        <main
+          id={MAIN_CONTENT_ID}
+          className="flex min-h-screen items-center justify-center px-5 pt-16 pb-12"
+        >
           <section className="w-full max-w-md rounded-3xl border bg-card p-6 shadow-sm sm:p-9">
-            {cancelled ? (
-              <p className="mt-6 rounded-xl bg-success-subtle p-4 text-sm font-medium text-success-strong">
-                Votre rendez-vous a bien été annulé.
-              </p>
-            ) : null}
-            <h1 className="mt-8 font-heading text-title font-bold">
+            <h1 className="font-heading text-title font-bold">
               Mes rendez-vous
             </h1>
             <p className="mt-3 text-sm text-muted-foreground">
@@ -174,7 +178,7 @@ const CustomerAppointments = async ({
       },
     },
   } as const
-  const [upcomingAppointments, historyAppointments, settings] =
+  const [upcomingAppointments, historyAppointments, settings, pendingRequests] =
     await Promise.all([
       prisma.appointment.findMany({
         where: {
@@ -195,6 +199,7 @@ const CustomerAppointments = async ({
         include: appointmentInclude,
       }),
       getBookingSettings(),
+      getPendingLateRequestsForCustomer(customer.id),
     ])
   const limits = getBookingDateLimits(now, settings.bookingHorizonMonths)
   const customerChangeCutoffLabel = formatCustomerChangeCutoff(
@@ -217,7 +222,10 @@ const CustomerAppointments = async ({
           </form>
         }
       />
-      <main className="min-h-screen px-5 pt-24 pb-8 sm:px-8 sm:pt-28 sm:pb-12">
+      <main
+        id={MAIN_CONTENT_ID}
+        className="min-h-screen px-5 pt-24 pb-8 sm:px-8 sm:pt-28 sm:pb-12"
+      >
         <section className="mx-auto max-w-3xl">
           <p className="text-sm font-semibold tracking-widest text-brand uppercase">
             Espace personnel
@@ -225,6 +233,33 @@ const CustomerAppointments = async ({
           <h1 className="mt-2 font-heading text-title font-bold">
             Mes rendez-vous
           </h1>
+          {/* Avant « À venir » : une demande sans réponse est la question la
+              plus pressante que la personne se pose en ouvrant cette page. */}
+          {pendingRequests.length > 0 ? (
+            <section className="mt-8" aria-labelledby="pending-requests-title">
+              <h2
+                id="pending-requests-title"
+                className="font-heading text-2xl font-bold"
+              >
+                En attente de réponse
+              </h2>
+              <div className="mt-4 space-y-5">
+                {pendingRequests.map(request => (
+                  <PendingRequestCard
+                    key={request.id}
+                    requestId={request.id}
+                    serviceLabel={formatServiceLabel(
+                      request.serviceNameSnapshot,
+                      request.service.category?.name,
+                    )}
+                    dateLabel={formatAppointmentDate(request.requestedStartsAt)}
+                    priceLabel={formatPrice(request.servicePriceCents)}
+                  />
+                ))}
+              </div>
+            </section>
+          ) : null}
+
           <section className="mt-8" aria-labelledby="upcoming-title">
             <div className="flex items-center gap-3">
               <h2
@@ -243,7 +278,7 @@ const CustomerAppointments = async ({
                   <CustomerAppointmentCard
                     key={appointment.id}
                     id={appointment.id}
-                    serviceName={formatServiceLabel(
+                    serviceLabel={formatServiceLabel(
                       appointment.serviceNameSnapshot,
                       appointment.service.category?.name,
                     )}
@@ -263,7 +298,10 @@ const CustomerAppointments = async ({
                     customerChangeCutoffLabel={customerChangeCutoffLabel}
                     calendar={createAppointmentCalendar({
                       id: appointment.id,
-                      serviceName: appointment.serviceNameSnapshot,
+                      serviceLabel: formatServiceLabel(
+                        appointment.serviceNameSnapshot,
+                        appointment.service.category?.name,
+                      ),
                       startsAt: appointment.startsAt,
                       endsAt: appointment.endsAt,
                     })}
@@ -309,7 +347,7 @@ const CustomerAppointments = async ({
                   return (
                     <CustomerAppointmentHistoryCard
                       key={appointment.id}
-                      serviceName={formatServiceLabel(
+                      serviceLabel={formatServiceLabel(
                         appointment.serviceNameSnapshot,
                         appointment.service.category?.name,
                       )}

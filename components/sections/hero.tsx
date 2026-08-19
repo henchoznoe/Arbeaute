@@ -119,9 +119,9 @@ export function Hero() {
               sizes="42vw"
               className="object-cover"
             />
-            <div className="absolute inset-x-0 bottom-0 bg-linear-to-t from-black/55 to-transparent px-6 pt-20 pb-6 text-white">
+            <div className="absolute inset-x-0 bottom-0 bg-linear-to-t from-ink-dark/70 to-transparent px-6 pt-20 pb-6 text-ink-light">
               <p className="font-heading text-2xl font-bold">Arzu Yurdakul</p>
-              <p className="mt-1 text-sm text-white/85">
+              <p className="mt-1 text-sm text-ink-light/85">
                 Votre esthéticienne à Bulle
               </p>
             </div>

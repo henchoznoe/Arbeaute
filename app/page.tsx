@@ -9,6 +9,7 @@ import { Hero } from '@/components/sections/hero'
 import { Services } from '@/components/sections/services'
 import { TrustHighlights } from '@/components/sections/trust-highlights'
 import { Button } from '@/components/ui/button'
+import { MAIN_CONTENT_ID } from '@/components/ui/skip-link'
 import { contact } from '@/lib/constants/contact'
 
 export default function Page() {
@@ -32,7 +33,7 @@ export default function Page() {
         }
       />
       <div className="pb-[calc(4.75rem+env(safe-area-inset-bottom))] sm:pb-0">
-        <main>
+        <main id={MAIN_CONTENT_ID}>
           <Hero />
           <TrustHighlights />
           <Services />

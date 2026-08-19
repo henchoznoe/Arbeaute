@@ -1,4 +1,6 @@
 import { formatInTimeZone } from 'date-fns-tz'
+import { CalendarClock, ChevronRight, Clock } from 'lucide-react'
+import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { Suspense } from 'react'
 import { ActivityOverview } from '@/components/admin/activity-overview'
@@ -7,7 +9,6 @@ import { AdminPage as AdminPageShell } from '@/components/admin/admin-page'
 import { AdminSkeleton } from '@/components/admin/admin-skeleton'
 import { DashboardMetrics } from '@/components/admin/dashboard-metrics'
 import { NextAppointmentCard } from '@/components/admin/next-appointment-card'
-import { EmptyState } from '@/components/ui/empty-state'
 import { getActivityOverview } from '@/lib/admin/activity'
 import { getAgendaSettings } from '@/lib/admin/agenda-settings'
 import { buildAdminTimelineDay } from '@/lib/admin/agenda-timeline'
@@ -16,6 +17,7 @@ import prisma from '@/lib/core/prisma'
 import { getAdminSession } from '@/lib/core/session-cookies'
 import { formatCalendarDayTitle } from '@/lib/reservation/calendar-view'
 import { RESERVATION_TIME_ZONE } from '@/lib/reservation/constants'
+import { getPendingLateRequestCount } from '@/lib/reservation/late-requests'
 import { formatServiceLabel } from '@/lib/reservation/service-label'
 import {
   addLocalDays,
@@ -61,6 +63,7 @@ const AdminAgenda = async ({ searchParams }: Readonly<AdminPageProps>) => {
     activityOverview,
     nextAppointment,
     agendaSettings,
+    pendingRequestCount,
   ] = await Promise.all([
     prisma.appointment.findMany({
       where: {
@@ -113,6 +116,7 @@ const AdminAgenda = async ({ searchParams }: Readonly<AdminPageProps>) => {
       },
     }),
     getAgendaSettings(),
+    getPendingLateRequestCount(),
   ])
 
   const timelineDays = weekDays.map(dateKey => {
@@ -170,6 +174,31 @@ const AdminAgenda = async ({ searchParams }: Readonly<AdminPageProps>) => {
         <p className="text-sm font-medium text-brand">Arbeauté</p>
       </header>
 
+      {/* Une demande se décide à l'heure près : elle ne peut pas attendre
+          qu'Arzu pense à ouvrir un autre écran. */}
+      {pendingRequestCount > 0 ? (
+        <Link
+          href="/admin/demandes"
+          className="mt-4 flex items-center gap-3 rounded-2xl border border-primary/30 bg-primary/5 p-4 transition hover:border-primary"
+        >
+          <span className="grid size-10 shrink-0 place-items-center rounded-full bg-primary/10 text-primary">
+            <Clock className="size-5" />
+          </span>
+          <span className="min-w-0">
+            <span className="block font-semibold">
+              {pendingRequestCount === 1
+                ? 'Une demande attend votre réponse'
+                : `${pendingRequestCount} demandes attendent votre réponse`}
+            </span>
+            <span className="block text-sm text-muted-foreground">
+              Des heures trop proches pour être réservées en ligne. Rien n’est
+              réservé tant que vous n’avez pas répondu.
+            </span>
+          </span>
+          <ChevronRight className="ml-auto size-5 shrink-0 text-muted-foreground" />
+        </Link>
+      ) : null}
+
       {nextAppointment && nextAppointmentDateKey ? (
         <NextAppointmentCard
           id={nextAppointment.id}
@@ -192,11 +221,14 @@ const AdminAgenda = async ({ searchParams }: Readonly<AdminPageProps>) => {
           )}
         />
       ) : (
-        <EmptyState
-          className="mt-4"
-          title="Aucun rendez-vous à venir"
-          description="Le prochain rendez-vous confirmé s’affichera ici dès la première réservation."
-        />
+        /* Vide, ce bloc occupait 230 px avant la bande de semaine : le plus
+           de place pour ce qui a le moins à dire. Et sa phrase prétendait
+           qu'aucune réservation n'avait jamais eu lieu, alors qu'elle
+           constate seulement qu'il ne reste rien à venir. */
+        <p className="mt-4 flex items-center gap-2 rounded-2xl border bg-card px-4 py-3 text-sm text-muted-foreground">
+          <CalendarClock className="size-4 shrink-0 text-primary" />
+          Plus aucun rendez-vous confirmé à venir.
+        </p>
       )}
 
       <AdminAgendaView

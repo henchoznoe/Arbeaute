@@ -27,7 +27,7 @@ export const ConfirmDialog = ({
   <AlertDialog.Root>
     <AlertDialog.Trigger asChild>{trigger}</AlertDialog.Trigger>
     <AlertDialog.Portal>
-      <AlertDialog.Overlay className="fixed inset-0 z-[70] bg-black/45 backdrop-blur-[2px] data-[state=closed]:animate-out data-[state=open]:animate-in data-[state=closed]:fade-out data-[state=open]:fade-in motion-reduce:animate-none" />
+      <AlertDialog.Overlay className="fixed inset-0 z-[70] bg-ink-dark/45 backdrop-blur-[2px] data-[state=closed]:animate-out data-[state=open]:animate-in data-[state=closed]:fade-out data-[state=open]:fade-in motion-reduce:animate-none" />
       <AlertDialog.Content className="fixed left-1/2 top-1/2 z-[80] w-[calc(100%-2rem)] max-w-md -translate-x-1/2 -translate-y-1/2 rounded-3xl border bg-background p-6 shadow-2xl outline-none data-[state=closed]:animate-out data-[state=open]:animate-in data-[state=closed]:fade-out data-[state=open]:fade-in data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 motion-reduce:animate-none sm:p-7">
         <span className="grid size-11 place-items-center rounded-full bg-destructive/10 text-destructive">
           <AlertTriangle className="size-5" />

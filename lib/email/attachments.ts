@@ -13,14 +13,14 @@ import { createAppointmentCalendar } from '@/lib/reservation/calendar'
  */
 export const createCalendarAttachment = (appointment: {
   id: string
-  serviceNameSnapshot: string
+  serviceLabel: string
   startsAt: Date
   endsAt: Date
 }): MailAttachment | null => {
   try {
     const calendar = createAppointmentCalendar({
       id: appointment.id,
-      serviceName: appointment.serviceNameSnapshot,
+      serviceLabel: appointment.serviceLabel,
       startsAt: appointment.startsAt,
       endsAt: appointment.endsAt,
     })

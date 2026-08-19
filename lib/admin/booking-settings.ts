@@ -14,6 +14,9 @@ export const bookingSettingsSchema = z
       .number()
       .int()
       .refine(value => SLOT_INTERVAL_OPTIONS.some(option => option === value)),
+    // Une case décochée ne poste rien : l'absence vaut « non ».
+    lateRequestsEnabled: z.preprocess(value => value === 'on', z.boolean()),
+    lateRequestFloorHours: z.coerce.number().int().min(0).max(240),
   })
   .superRefine((settings, context) => {
     const minimumHorizonHours = settings.bookingHorizonMonths * 28 * 24
@@ -61,6 +64,8 @@ export const saveBookingSettingsAudited = async (
             bookingHorizonMonths: previous.bookingHorizonMonths,
             customerChangeCutoffHours: previous.customerChangeCutoffHours,
             slotIntervalMinutes: previous.slotIntervalMinutes,
+            lateRequestsEnabled: previous.lateRequestsEnabled,
+            lateRequestFloorHours: previous.lateRequestFloorHours,
           }
         : undefined,
       after: input,

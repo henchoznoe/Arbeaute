@@ -7,6 +7,7 @@ import {
   Clock3,
   Copy,
   LoaderCircle,
+  Minus,
   Palmtree,
   Plus,
   Trash2,
@@ -16,7 +17,7 @@ import { useRouter } from 'next/navigation'
 import { type FormEvent, useMemo, useState, useTransition } from 'react'
 import { Button } from '@/components/ui/button'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
-import { formControlClass } from '@/components/ui/form-field'
+import { FormField, formControlClass } from '@/components/ui/form-field'
 import { SidePanel } from '@/components/ui/side-panel'
 import {
   createAvailabilityException,
@@ -25,6 +26,8 @@ import {
 import {
   type AvailabilityCalendarSegment,
   type AvailabilityExceptionGroup,
+  describeExceptionDay,
+  getExceptionCountNoun,
   hasAvailabilityExceptionOverlap,
 } from '@/lib/admin/availability-calendar'
 import { formatCalendarDayDate } from '@/lib/reservation/calendar-view'
@@ -287,7 +290,11 @@ export const AvailabilityExceptionCalendar = ({
                 key={day.dateKey}
                 type="button"
                 onClick={() => selectDate(day.dateKey)}
-                aria-label={`${formatDate(day.dateKey)}${openings ? `, ${openings} ouverture${openings > 1 ? 's' : ''}` : ''}${closures ? `, ${closures} fermeture${closures > 1 ? 's' : ''}` : ''}`}
+                aria-label={describeExceptionDay(
+                  formatDate(day.dateKey),
+                  openings,
+                  closures,
+                )}
                 className={`relative flex min-h-16 min-w-0 flex-col items-center rounded-xl border p-1.5 text-sm transition hover:border-primary/40 hover:bg-muted sm:min-h-20 sm:items-start sm:p-2 ${
                   day.inMonth
                     ? 'bg-background'
@@ -299,15 +306,30 @@ export const AvailabilityExceptionCalendar = ({
                 >
                   {day.dayNumber}
                 </span>
-                <span className="mt-auto flex w-full flex-col gap-1">
+                {/* Le sens se lit sur l'icône, jamais sur la seule couleur :
+                    plus pour ce qu'un jour particulier ajoute, moins pour ce
+                    qu'il retire. Le nom revient à `lg`, où la cellule est
+                    assez large pour le porter sans le couper. */}
+                <span
+                  className="mt-auto flex w-full flex-col gap-1"
+                  aria-hidden="true"
+                >
                   {openings ? (
-                    <span className="truncate rounded bg-success-soft px-1 py-0.5 text-2xs font-semibold text-success-strong">
-                      {openings} ouv.
+                    <span className="flex items-center justify-center gap-0.5 rounded bg-success-soft px-1 py-0.5 text-2xs font-semibold text-success-strong sm:justify-start">
+                      <Plus className="size-3 shrink-0" />
+                      {openings}
+                      <span className="hidden lg:inline">
+                        {getExceptionCountNoun(openings, 'AVAILABLE')}
+                      </span>
                     </span>
                   ) : null}
                   {closures ? (
-                    <span className="truncate rounded bg-warning-soft px-1 py-0.5 text-2xs font-semibold text-warning-strong">
-                      {closures} ferm.
+                    <span className="flex items-center justify-center gap-0.5 rounded bg-warning-soft px-1 py-0.5 text-2xs font-semibold text-warning-strong sm:justify-start">
+                      <Minus className="size-3 shrink-0" />
+                      {closures}
+                      <span className="hidden lg:inline">
+                        {getExceptionCountNoun(closures, 'UNAVAILABLE')}
+                      </span>
                     </span>
                   ) : null}
                 </span>
@@ -413,7 +435,7 @@ export const AvailabilityExceptionCalendar = ({
         title={capitalizeFirst(formatDate(selectedDate))}
         description="Fermez l’institut sur ce jour, ou ouvrez des heures en plus de vos horaires habituels."
       >
-        <form onSubmit={submit} className="space-y-5">
+        <form method="post" onSubmit={submit} className="space-y-5">
           <input type="hidden" name="shortcut" value={shortcut} />
           <div className="grid grid-cols-2 gap-2">
             {shortcutButtons.map(option => {
@@ -437,9 +459,9 @@ export const AvailabilityExceptionCalendar = ({
           </div>
 
           <div className="grid gap-4 sm:grid-cols-2">
-            <label className="grid gap-1.5 text-sm font-medium">
-              Date
+            <FormField controlId="exception-date" label="Date">
               <input
+                id="exception-date"
                 name="date"
                 type="date"
                 required
@@ -454,11 +476,11 @@ export const AvailabilityExceptionCalendar = ({
                 }}
                 className={formControlClass}
               />
-            </label>
+            </FormField>
             {shortcut !== 'COPY_WEEKLY' ? (
-              <label className="grid gap-1.5 text-sm font-medium">
-                Jusqu’au
+              <FormField controlId="exception-end-date" label="Jusqu’au">
                 <input
+                  id="exception-end-date"
                   name="endDate"
                   type="date"
                   required
@@ -468,16 +490,16 @@ export const AvailabilityExceptionCalendar = ({
                   onChange={event => setEndDate(event.target.value)}
                   className={formControlClass}
                 />
-              </label>
+              </FormField>
             ) : (
               <input type="hidden" name="endDate" value={selectedDate} />
             )}
           </div>
 
           {shortcut === 'COPY_WEEKLY' ? (
-            <label className="grid gap-1.5 text-sm font-medium">
-              Horaire modèle
+            <FormField controlId="exception-copy-day" label="Horaire modèle">
               <select
+                id="exception-copy-day"
                 name="copyDayOfWeek"
                 value={copyDayOfWeek}
                 onChange={event => setCopyDayOfWeek(Number(event.target.value))}
@@ -506,25 +528,27 @@ export const AvailabilityExceptionCalendar = ({
                   )
                 })}
               </select>
-            </label>
+            </FormField>
           ) : null}
 
           {shortcut === 'COPY_WEEKLY' || shortcut === 'VACATION' ? (
-            <div className="grid gap-1.5 text-sm font-medium">
-              Type
+            <div className="flex flex-col gap-2 text-sm font-medium">
+              <span>Type</span>
               <input
                 type="hidden"
                 name="type"
                 value={shortcut === 'COPY_WEEKLY' ? 'AVAILABLE' : 'UNAVAILABLE'}
               />
+              {/* Le raccourci a déjà tranché : la nature se lit, elle ne se
+                  choisit plus. */}
               <p className="flex min-h-11 items-center rounded-xl border bg-muted px-3 font-normal">
                 {shortcut === 'COPY_WEEKLY' ? 'Ouverture' : 'Fermeture'}
               </p>
             </div>
           ) : (
-            <label className="grid gap-1.5 text-sm font-medium">
-              Type
+            <FormField controlId="exception-type" label="Type">
               <select
+                id="exception-type"
                 name="type"
                 value={type}
                 onChange={event => setType(event.target.value as typeof type)}
@@ -533,14 +557,14 @@ export const AvailabilityExceptionCalendar = ({
                 <option value="UNAVAILABLE">Fermeture</option>
                 <option value="AVAILABLE">Ouverture</option>
               </select>
-            </label>
+            </FormField>
           )}
 
           {shortcut === 'CUSTOM' ? (
             <div className="grid grid-cols-2 gap-4">
-              <label className="grid gap-1.5 text-sm font-medium">
-                Début
+              <FormField controlId="exception-start-time" label="Début">
                 <input
+                  id="exception-start-time"
                   name="startTime"
                   type="time"
                   step={900}
@@ -549,10 +573,10 @@ export const AvailabilityExceptionCalendar = ({
                   onChange={event => setStartTime(event.target.value)}
                   className={formControlClass}
                 />
-              </label>
-              <label className="grid gap-1.5 text-sm font-medium">
-                Fin
+              </FormField>
+              <FormField controlId="exception-end-time" label="Fin">
                 <input
+                  id="exception-end-time"
                   name="endTime"
                   type="time"
                   step={900}
@@ -561,7 +585,7 @@ export const AvailabilityExceptionCalendar = ({
                   onChange={event => setEndTime(event.target.value)}
                   className={formControlClass}
                 />
-              </label>
+              </FormField>
             </div>
           ) : (
             <>
@@ -570,12 +594,9 @@ export const AvailabilityExceptionCalendar = ({
             </>
           )}
 
-          <label className="grid gap-1.5 text-sm font-medium">
-            Motif{' '}
-            <span className="font-normal text-muted-foreground">
-              (optionnel)
-            </span>
+          <FormField controlId="exception-label" label="Motif" optional>
             <input
+              id="exception-label"
               name="label"
               maxLength={120}
               value={label}
@@ -583,7 +604,7 @@ export const AvailabilityExceptionCalendar = ({
               placeholder="Vacances, formation, ouverture…"
               className={formControlClass}
             />
-          </label>
+          </FormField>
 
           {tooLongRange ? (
             <p role="alert" className="text-sm text-destructive">

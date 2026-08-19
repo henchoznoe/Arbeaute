@@ -1,7 +1,11 @@
 import { contact } from '@/lib/constants/contact'
 
 interface ConfirmationAppointment {
-  serviceName: string
+  /**
+   * Le libellé complet, groupe compris — voir `formatServiceLabel`. Le nom seul
+   * est ambigu : trois groupes proposent une prestation « Visage ».
+   */
+  serviceLabel: string
   dateLabel: string
   startsAt: string
   endsAt: string
@@ -11,12 +15,12 @@ const formatCalendarDate = (value: string): string =>
   new Date(value).toISOString().replaceAll(/[-:]/g, '').replace('.000', '')
 
 export const createAppointmentDetails = ({
-  serviceName,
+  serviceLabel,
   dateLabel,
-}: Pick<ConfirmationAppointment, 'serviceName' | 'dateLabel'>): string =>
+}: Pick<ConfirmationAppointment, 'serviceLabel' | 'dateLabel'>): string =>
   [
     `Rendez-vous chez ${contact.name}`,
-    `Soin : ${serviceName}`,
+    `Soin : ${serviceLabel}`,
     `Horaire : ${dateLabel}`,
     `Adresse : ${contact.address}`,
     `Téléphone : ${contact.phone}`,
@@ -24,13 +28,13 @@ export const createAppointmentDetails = ({
   ].join('\n')
 
 export const createGoogleCalendarUrl = ({
-  serviceName,
+  serviceLabel,
   startsAt,
   endsAt,
 }: Omit<ConfirmationAppointment, 'dateLabel'>): string => {
   const parameters = new URLSearchParams({
     action: 'TEMPLATE',
-    text: `${serviceName} — ${contact.name}`,
+    text: `${serviceLabel} — ${contact.name}`,
     dates: `${formatCalendarDate(startsAt)}/${formatCalendarDate(endsAt)}`,
     details: `Rendez-vous chez ${contact.name}.\nTéléphone : ${contact.phone}\nGérer mes rendez-vous : ${contact.website}/mes-rendez-vous`,
     location: contact.address,
