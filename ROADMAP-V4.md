@@ -78,9 +78,9 @@ Le statut figure dans le titre et se réévalue après chaque livraison.
 
 | Statut | Éléments |
 | --- | --- |
-| ✅ Terminés | Aucun |
+| ✅ Terminés | 19 |
 | 🟡 En cours | Aucun |
-| ⏳ Prêt à démarrer | 1 à 19 |
+| ⏳ Prêt à démarrer | 1 à 18 |
 | 🔒 Bloqués | Aucun |
 | ❌ Abandonné | Aucun |
 
@@ -741,7 +741,7 @@ vraiment : le rendez-vous a été annulé, ou il est passé.
 
 **Dépendances :** aucune.
 
-### 19. Remettre `AGENTS.md` et `README.md` d’accord avec le code — ⏳
+### 19. Remettre `AGENTS.md` et `README.md` d’accord avec le code — ✅
 
 **Priorité : P0 · Effort : S · Nature : correction**
 
