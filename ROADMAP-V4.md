@@ -78,9 +78,9 @@ Le statut figure dans le titre et se réévalue après chaque livraison.
 
 | Statut | Éléments |
 | --- | --- |
-| ✅ Terminés | 2, 3, 9, 11, 14, 19 |
+| ✅ Terminés | 2, 3, 9, 10, 11, 14, 19 |
 | 🟡 En cours | Aucun |
-| ⏳ Prêt à démarrer | 1, 4 à 8, 10, 12, 13, 15 à 18 |
+| ⏳ Prêt à démarrer | 1, 4 à 8, 12, 13, 15 à 18 |
 | 🔒 Bloqués | Aucun |
 | ❌ Abandonné | Aucun |
 
@@ -430,7 +430,7 @@ barre plutôt que sur une constante.
 
 **Dépendances :** aucune.
 
-### 10. Rendre tapables les raccourcis de l’agenda — ⏳
+### 10. Rendre tapables les raccourcis de l’agenda — ✅
 
 **Priorité : P0 · Effort : S · Nature : correction**
 

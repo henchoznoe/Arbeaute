@@ -322,6 +322,49 @@ export const assignTimelineLanes = (
  */
 export const QUICK_ADD_STEP_MINUTES = 15
 
+/** Le plancher tactile du projet, rappelé dans `components/ui/button.tsx`. */
+export const MINIMUM_TOUCH_TARGET_PX = 44
+
+/**
+ * De combien étendre, en pixels, la zone cliquable d'une bande de
+ * pré-remplissage au-dessus et en dessous de la bande dessinée.
+ *
+ * Un quart d'heure mesure 16,5 px sur la semaine et 22,5 px sur la journée :
+ * donner 44 px à chacun des quarts d'heure d'une plage libre continue est
+ * géométriquement impossible, la place n'existe pas. La cible s'étend donc dans
+ * le vide qui entoure la bande — jamais sur la bande voisine, sans quoi l'heure
+ * atteinte deviendrait imprévisible. Une plage isolée entre deux rendez-vous
+ * atteint ainsi 44 px ; au milieu d'une longue plage libre, deux bandes
+ * voisines mènent de toute façon au même écran, à un quart d'heure près.
+ */
+export const getQuickAddTouchPadding = (
+  minute: number,
+  freeStarts: readonly number[],
+  bounds: { startMinute: number; endMinute: number },
+  pixelsPerMinute: number,
+): { top: number; bottom: number } => {
+  const drawn = QUICK_ADD_STEP_MINUTES * pixelsPerMinute
+  const missing = MINIMUM_TOUCH_TARGET_PX - drawn
+  if (missing <= 0) return { top: 0, bottom: 0 }
+
+  const free = new Set(freeStarts)
+  const roomAbove = free.has(minute - QUICK_ADD_STEP_MINUTES)
+    ? 0
+    : Math.max(0, (minute - bounds.startMinute) * pixelsPerMinute)
+  const roomBelow = free.has(minute + QUICK_ADD_STEP_MINUTES)
+    ? 0
+    : Math.max(
+        0,
+        (bounds.endMinute - minute - QUICK_ADD_STEP_MINUTES) * pixelsPerMinute,
+      )
+
+  const sides = (roomAbove > 0 ? 1 : 0) + (roomBelow > 0 ? 1 : 0)
+  if (sides === 0) return { top: 0, bottom: 0 }
+
+  const top = Math.min(missing / sides, roomAbove)
+  return { top, bottom: Math.min(missing - top, roomBelow) }
+}
+
 export const getFreeTimelineStarts = (day: AdminTimelineDay): number[] => {
   const closures = day.exceptions.filter(
     exception => exception.type === 'UNAVAILABLE',

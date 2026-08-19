@@ -5,6 +5,7 @@ import {
   assignTimelineLanes,
   formatTimelineMinute,
   getFreeTimelineStarts,
+  getQuickAddTouchPadding,
   getWeekTimelineBounds,
   QUICK_ADD_STEP_MINUTES,
 } from '@/lib/admin/agenda-timeline'
@@ -90,6 +91,7 @@ export const AdminWeekGrid = ({
           }}
         >
           {visibleDays.map(day => {
+            const freeStarts = getFreeTimelineStarts(day)
             const lanes = assignTimelineLanes(
               day.appointments.map(appointment => ({
                 startMinute: appointment.occupiedStartMinute,
@@ -106,10 +108,12 @@ export const AdminWeekGrid = ({
                   <h3 className="truncate text-sm font-semibold">
                     {capitalizeFirst(day.label.replace(/\s\d{4}$/, ''))}
                   </h3>
+                  {/* 44 px comme partout ailleurs : c'était le seul raccourci
+                      de l'agenda qu'on ne pouvait pas viser au doigt. */}
                   <Link
                     href={`/admin/appointments/new?date=${day.dateKey}`}
                     aria-label={`Ajouter un rendez-vous le ${day.label}`}
-                    className="grid size-7 shrink-0 place-items-center rounded-lg text-muted-foreground transition hover:bg-muted hover:text-foreground"
+                    className="grid size-11 shrink-0 place-items-center rounded-lg text-muted-foreground transition hover:bg-muted hover:text-foreground"
                   >
                     <Plus className="size-4" />
                   </Link>
@@ -140,23 +144,41 @@ export const AdminWeekGrid = ({
                   {/* Un clic sur un blanc préremplit la bonne heure : c'est le
                       geste le plus fréquent, il ne doit pas passer par un
                       formulaire vide. */}
-                  {getFreeTimelineStarts(day).map(minute => (
-                    <Link
-                      key={minute}
-                      href={`/admin/appointments/new?date=${day.dateKey}&time=${formatTimelineMinute(minute)}`}
-                      aria-label={`Ajouter un rendez-vous le ${day.label} à ${formatTimelineMinute(minute)}`}
-                      className="group absolute inset-x-0.5 z-10 flex items-center justify-center overflow-hidden rounded-md border border-dashed border-transparent text-2xs font-medium leading-none text-success-strong transition hover:border-success-accent hover:bg-success-soft/80 focus:border-success focus:bg-success-soft focus:outline-none"
-                      style={{
-                        top: offset(minute),
-                        height: QUICK_ADD_STEP_MINUTES * PIXELS_PER_MINUTE,
-                      }}
-                    >
-                      <span className="inline-flex items-center gap-0.5 opacity-0 transition group-hover:opacity-100 group-focus:opacity-100">
-                        <Plus className="size-3" />
-                        {formatTimelineMinute(minute)}
-                      </span>
-                    </Link>
-                  ))}
+                  {freeStarts.map(minute => {
+                    // La bande dessinée garde sa hauteur ; c'est la zone
+                    // cliquable qui déborde, et seulement dans le vide.
+                    const touch = getQuickAddTouchPadding(
+                      minute,
+                      freeStarts,
+                      bounds,
+                      PIXELS_PER_MINUTE,
+                    )
+                    return (
+                      <Link
+                        key={minute}
+                        href={`/admin/appointments/new?date=${day.dateKey}&time=${formatTimelineMinute(minute)}`}
+                        aria-label={`Ajouter un rendez-vous le ${day.label} à ${formatTimelineMinute(minute)}`}
+                        className="group absolute inset-x-0.5 z-10 block focus:outline-none"
+                        style={{
+                          top: offset(minute) - touch.top,
+                          paddingTop: touch.top,
+                          paddingBottom: touch.bottom,
+                        }}
+                      >
+                        <span
+                          className="flex items-center justify-center overflow-hidden rounded-md border border-dashed border-transparent text-2xs font-medium leading-none text-success-strong transition group-hover:border-success-accent group-hover:bg-success-soft/80 group-focus:border-success group-focus:bg-success-soft"
+                          style={{
+                            height: QUICK_ADD_STEP_MINUTES * PIXELS_PER_MINUTE,
+                          }}
+                        >
+                          <span className="inline-flex items-center gap-0.5 opacity-0 transition group-hover:opacity-100 group-focus:opacity-100">
+                            <Plus className="size-3" />
+                            {formatTimelineMinute(minute)}
+                          </span>
+                        </span>
+                      </Link>
+                    )
+                  })}
 
                   {day.exceptions.map(exception => {
                     const top = Math.max(
