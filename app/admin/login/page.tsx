@@ -2,6 +2,7 @@ import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { Suspense } from 'react'
 import { AdminSkeleton } from '@/components/admin/admin-skeleton'
+import { MAIN_CONTENT_ID } from '@/components/ui/skip-link'
 import { SubmitButton } from '@/components/ui/submit-button'
 import { loginAdmin } from '@/lib/actions/admin-auth'
 import { getAdminSession } from '@/lib/core/session-cookies'
@@ -21,7 +22,10 @@ const AdminLogin = async ({ searchParams }: Readonly<AdminLoginPageProps>) => {
   const { error } = await searchParams
 
   return (
-    <main className="flex min-h-screen items-center justify-center px-6 py-16">
+    <main
+      id={MAIN_CONTENT_ID}
+      className="flex min-h-screen items-center justify-center px-6 py-16"
+    >
       <section className="w-full max-w-sm rounded-3xl border bg-card p-8 shadow-xl shadow-brand-soft/40">
         <Link href="/" className="font-heading text-xl font-bold">
           Arbeauté

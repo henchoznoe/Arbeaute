@@ -3,6 +3,7 @@ import { Suspense } from 'react'
 import { SiteHeader } from '@/components/layout/site-header'
 import { ReservationWizard } from '@/components/reservation/reservation-wizard'
 import { Skeleton, skeletonKeys } from '@/components/ui/skeleton'
+import { MAIN_CONTENT_ID } from '@/components/ui/skip-link'
 import { getBookableServices } from '@/lib/catalog/queries'
 import { createPageMetadata } from '@/lib/config/seo'
 import { isEmailConfigured } from '@/lib/core/env'
@@ -57,7 +58,10 @@ const ReservationPage = async () => {
           </Link>
         }
       />
-      <main className="min-h-screen px-5 pt-24 pb-8 sm:px-8 sm:pt-28 sm:pb-12">
+      <main
+        id={MAIN_CONTENT_ID}
+        className="min-h-screen px-5 pt-24 pb-8 sm:px-8 sm:pt-28 sm:pb-12"
+      >
         <div className="mx-auto mb-9 max-w-3xl">
           <p className="text-sm font-semibold tracking-widest text-brand uppercase">
             Réservation en ligne

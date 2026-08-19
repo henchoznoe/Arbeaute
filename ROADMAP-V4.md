@@ -78,9 +78,9 @@ Le statut figure dans le titre et se réévalue après chaque livraison.
 
 | Statut | Éléments |
 | --- | --- |
-| ✅ Terminés | 1, 2, 3, 6, 9, 10, 11, 14, 19 |
+| ✅ Terminés | 1 à 4, 6, 9, 10, 11, 14, 19 |
 | 🟡 En cours | Aucun |
-| ⏳ Prêt à démarrer | 4, 5, 7, 8, 12, 13, 15 à 18 |
+| ⏳ Prêt à démarrer | 5, 7, 8, 12, 13, 15 à 18 |
 | 🔒 Bloqués | Aucun |
 | ❌ Abandonné | Aucun |
 
@@ -210,7 +210,7 @@ qui partage le formulaire.
 
 **Dépendances :** aucune.
 
-### 4. Reprendre le focus, annoncer les étapes, poser un lien d’évitement — ⏳
+### 4. Reprendre le focus, annoncer les étapes, poser un lien d’évitement — ✅
 
 **Priorité : P1 · Effort : S · Nature : correction**
 

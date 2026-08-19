@@ -7,6 +7,7 @@ import { PendingRequestCard } from '@/components/reservation/pending-request-car
 import { Button } from '@/components/ui/button'
 import { FormField, formControlClass } from '@/components/ui/form-field'
 import { Skeleton } from '@/components/ui/skeleton'
+import { MAIN_CONTENT_ID } from '@/components/ui/skip-link'
 import { identifyCustomer, logoutCustomer } from '@/lib/actions/reservation'
 import { createPageMetadata } from '@/lib/config/seo'
 import prisma from '@/lib/core/prisma'
@@ -60,7 +61,10 @@ const fieldClass = cn(formControlClass, 'min-h-12 px-4')
 const CustomerAppointmentsSkeleton = () => (
   <>
     <SiteHeader />
-    <main className="min-h-screen px-5 pt-24 pb-8 sm:px-8 sm:pt-28 sm:pb-12">
+    <main
+      id={MAIN_CONTENT_ID}
+      className="min-h-screen px-5 pt-24 pb-8 sm:px-8 sm:pt-28 sm:pb-12"
+    >
       <p role="status" className="sr-only">
         Chargement de vos rendez-vous…
       </p>
@@ -116,7 +120,10 @@ const CustomerAppointments = async ({
             </Link>
           }
         />
-        <main className="flex min-h-screen items-center justify-center px-5 pt-16 pb-12">
+        <main
+          id={MAIN_CONTENT_ID}
+          className="flex min-h-screen items-center justify-center px-5 pt-16 pb-12"
+        >
           <section className="w-full max-w-md rounded-3xl border bg-card p-6 shadow-sm sm:p-9">
             {cancelled ? (
               <p className="mt-6 rounded-xl bg-success-subtle p-4 text-sm font-medium text-success-strong">
@@ -220,7 +227,10 @@ const CustomerAppointments = async ({
           </form>
         }
       />
-      <main className="min-h-screen px-5 pt-24 pb-8 sm:px-8 sm:pt-28 sm:pb-12">
+      <main
+        id={MAIN_CONTENT_ID}
+        className="min-h-screen px-5 pt-24 pb-8 sm:px-8 sm:pt-28 sm:pb-12"
+      >
         <section className="mx-auto max-w-3xl">
           <p className="text-sm font-semibold tracking-widest text-brand uppercase">
             Espace personnel

@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react'
 import { ADMIN_PAGE_WIDTH } from '@/components/admin/admin-page'
 import { Skeleton, skeletonKeys } from '@/components/ui/skeleton'
+import { MAIN_CONTENT_ID } from '@/components/ui/skip-link'
 
 /**
  * Coquilles des pages d'administration.
@@ -116,7 +117,10 @@ export const AdminSkeleton = ({
 }: Readonly<{ variant?: AdminSkeletonVariant }>) => {
   if (variant === 'card')
     return (
-      <main className="flex min-h-screen items-center justify-center px-6 py-16">
+      <main
+        id={MAIN_CONTENT_ID}
+        className="flex min-h-screen items-center justify-center px-6 py-16"
+      >
         <p role="status" className="sr-only">
           Chargement…
         </p>
@@ -127,6 +131,7 @@ export const AdminSkeleton = ({
   const Shape = shapes[variant]
   return (
     <main
+      id={MAIN_CONTENT_ID}
       className={`mx-auto min-h-screen w-full min-w-0 ${ADMIN_PAGE_WIDTH} px-4 py-5 sm:px-8 sm:py-8`}
     >
       <p role="status" className="sr-only">

@@ -211,9 +211,12 @@ export const ReservationWizard = ({
   const [catalogCategoryId, setCatalogCategoryId] = useState<string | null>(
     null,
   )
+  const confirmed = Boolean(result?.appointment)
+  const requested = Boolean(requestResult?.request)
   const deferredCatalogQuery = useDeferredValue(catalogQuery)
   const [viewStart, setViewStart] = useState(minDate)
   const wizardRef = useRef<HTMLElement>(null)
+  const stepHeadingRef = useRef<HTMLHeadingElement>(null)
   const customerFormRef = useRef<HTMLFormElement>(null)
   const pendingSlotRef = useRef<{ dateKey: string; startsAt: string } | null>(
     null,
@@ -259,6 +262,23 @@ export const ReservationWizard = ({
   useEffect(() => {
     setHydrated(true)
   }, [])
+
+  /**
+   * Le bouton qui vient d'être pressé devient `disabled` ou disparaît avec
+   * l'étape : sans reprise explicite, le focus retombe sur `<body>` et la
+   * lecture repart du haut de la page à chaque étape. Le titre de l'étape
+   * atteinte le reçoit, y compris sur les deux écrans terminaux — le moment le
+   * plus important du parcours était le seul à n'être pas annoncé.
+   *
+   * Le premier rendu ne prend rien : le focus appartient alors à la page.
+   */
+  const stepFocusKey = `${step}:${detailsStage}:${confirmed}:${requested}`
+  const focusedStepRef = useRef(stepFocusKey)
+  useEffect(() => {
+    if (focusedStepRef.current === stepFocusKey) return
+    focusedStepRef.current = stepFocusKey
+    stepHeadingRef.current?.focus()
+  }, [stepFocusKey])
 
   const scrollToWizardTop = useCallback(() => {
     const wizard = wizardRef.current
@@ -613,13 +633,20 @@ export const ReservationWizard = ({
         ref={wizardRef}
         className="mx-auto max-w-xl rounded-3xl border bg-card p-6 text-center shadow-sm sm:p-10"
       >
+        <p className="sr-only" role="status">
+          Demande transmise. Ce n’est pas encore un rendez-vous.
+        </p>
         <div className="mx-auto flex size-14 items-center justify-center rounded-full bg-primary/10 text-primary">
           <Clock className="size-7" />
         </div>
         <p className="mt-5 text-sm font-semibold tracking-widest text-primary uppercase">
           Demande transmise
         </p>
-        <h2 className="mt-2 font-heading text-title font-bold">
+        <h2
+          ref={stepHeadingRef}
+          tabIndex={-1}
+          className="mt-2 font-heading text-title font-bold focus:outline-none"
+        >
           Ce n’est pas encore un rendez-vous
         </h2>
         <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
@@ -665,13 +692,20 @@ export const ReservationWizard = ({
         data-print-receipt
         className="mx-auto max-w-xl rounded-3xl border bg-card p-6 text-center shadow-sm sm:p-10"
       >
+        <p className="sr-only" role="status">
+          Votre rendez-vous est confirmé.
+        </p>
         <div className="mx-auto flex size-14 items-center justify-center rounded-full bg-success-soft text-success">
           <Check className="size-7" />
         </div>
         <p className="mt-5 text-sm font-semibold tracking-widest text-success uppercase">
           Rendez-vous confirmé
         </p>
-        <h2 className="mt-2 font-heading text-title font-bold">
+        <h2
+          ref={stepHeadingRef}
+          tabIndex={-1}
+          className="mt-2 font-heading text-title font-bold focus:outline-none"
+        >
           Votre rendez-vous est bien enregistré
         </h2>
         <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
@@ -737,6 +771,12 @@ export const ReservationWizard = ({
 
   return (
     <section ref={wizardRef} className="mx-auto max-w-3xl">
+      {/* Rien n'annonçait le changement d'étape : quelqu'un qui navigue au
+          clavier ou à la voix traversait le tunnel dans le silence. */}
+      <p className="sr-only" role="status" aria-live="polite">
+        Étape {step} sur {STEP_LABELS.length} :{' '}
+        {STEP_LABELS[step - 1]?.label ?? ''}
+      </p>
       <ol
         className="mb-5 grid grid-cols-4 gap-1 sm:mb-8 sm:gap-2"
         aria-label="Étapes"
@@ -802,6 +842,11 @@ export const ReservationWizard = ({
 
       {step === STEPS.service ? (
         <div>
+          {/* L'étape n'avait pas de titre : les catégories en tenaient lieu.
+              Il en faut un pour recevoir le focus et nommer l'étape. */}
+          <h2 ref={stepHeadingRef} tabIndex={-1} className="sr-only">
+            Choisir une prestation
+          </h2>
           <CatalogFilters
             categories={catalogCategories}
             query={catalogQuery}
@@ -893,7 +938,11 @@ export const ReservationWizard = ({
 
           {detailsStage === 'email' ? (
             <>
-              <h2 className="mt-5 font-heading text-2xl font-bold">
+              <h2
+                ref={stepHeadingRef}
+                tabIndex={-1}
+                className="mt-5 font-heading text-2xl font-bold focus:outline-none"
+              >
                 Votre adresse e-mail
               </h2>
               <p className="mt-1 text-sm text-muted-foreground">
@@ -948,7 +997,11 @@ export const ReservationWizard = ({
             </>
           ) : (
             <>
-              <h2 className="mt-5 font-heading text-2xl font-bold">
+              <h2
+                ref={stepHeadingRef}
+                tabIndex={-1}
+                className="mt-5 font-heading text-2xl font-bold focus:outline-none"
+              >
                 Vos coordonnées
               </h2>
               <p className="mt-1 text-sm text-muted-foreground">
@@ -1071,7 +1124,11 @@ export const ReservationWizard = ({
           >
             <ChevronLeft className="size-4" /> Modifier mes coordonnées
           </Button>
-          <h2 className="mt-5 font-heading text-2xl font-bold">
+          <h2
+            ref={stepHeadingRef}
+            tabIndex={-1}
+            className="mt-5 font-heading text-2xl font-bold focus:outline-none"
+          >
             Choisissez votre créneau
           </h2>
           {selectedService ? (
@@ -1146,7 +1203,11 @@ export const ReservationWizard = ({
           >
             <ChevronLeft className="size-4" /> Changer de créneau
           </Button>
-          <h2 className="mt-5 font-heading text-2xl font-bold">
+          <h2
+            ref={stepHeadingRef}
+            tabIndex={-1}
+            className="mt-5 font-heading text-2xl font-bold focus:outline-none"
+          >
             {isOnRequestSlot
               ? 'Vérifiez votre demande'
               : 'Vérifiez votre réservation'}

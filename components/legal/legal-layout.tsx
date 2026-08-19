@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react'
 import { SiteHeader } from '@/components/layout/site-header'
+import { MAIN_CONTENT_ID } from '@/components/ui/skip-link'
 
 interface LegalLayoutProps {
   eyebrow: string
@@ -16,7 +17,10 @@ export const LegalLayout = ({
 }: Readonly<LegalLayoutProps>) => (
   <>
     <SiteHeader />
-    <main className="min-h-screen px-5 pt-24 pb-16 sm:px-8 sm:pt-28">
+    <main
+      id={MAIN_CONTENT_ID}
+      className="min-h-screen px-5 pt-24 pb-16 sm:px-8 sm:pt-28"
+    >
       <div className="mx-auto max-w-3xl">
         <p className="text-sm font-semibold tracking-widest text-brand uppercase">
           {eyebrow}

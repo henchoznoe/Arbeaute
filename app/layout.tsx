@@ -8,6 +8,7 @@ import './globals.css'
 import { InstallPrompt } from '@/components/pwa/install-prompt'
 import { ServiceWorkerRegistration } from '@/components/pwa/service-worker-registration'
 import { JsonLd } from '@/components/seo/json-ld'
+import { SkipLink } from '@/components/ui/skip-link'
 import { installTargets } from '@/lib/config/pwa'
 import { createLocalBusinessJsonLd } from '@/lib/config/seo'
 import { siteConfig } from '@/lib/config/site'
@@ -120,7 +121,7 @@ export default async function RootLayout({
 
   return (
     <html
-      lang="fr"
+      lang="fr-CH"
       data-scroll-behavior="smooth"
       suppressHydrationWarning
       className={cn(
@@ -135,6 +136,7 @@ export default async function RootLayout({
           dangerouslySetInnerHTML={{ __html: captureInstallPrompt }}
         />
         <JsonLd data={createLocalBusinessJsonLd(openingHours)} />
+        <SkipLink />
         {children}
         {/*
           La bannière lit `usePathname()` pour savoir quelle application
