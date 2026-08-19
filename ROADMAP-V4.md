@@ -78,9 +78,9 @@ Le statut figure dans le titre et se réévalue après chaque livraison.
 
 | Statut | Éléments |
 | --- | --- |
-| ✅ Terminés | 1 à 11, 13, 14, 19 |
+| ✅ Terminés | 1 à 14, 19 |
 | 🟡 En cours | Aucun |
-| ⏳ Prêt à démarrer | 12, 15 à 18 |
+| ⏳ Prêt à démarrer | 15 à 18 |
 | 🔒 Bloqués | Aucun |
 | ❌ Abandonné | Aucun |
 
@@ -495,7 +495,7 @@ place existe.
 
 **Dépendances :** aucune.
 
-### 12. Rendre la carte du prochain rendez-vous utile, ou la faire taire — ⏳
+### 12. Rendre la carte du prochain rendez-vous utile, ou la faire taire — ✅
 
 **Priorité : P1 · Effort : S · Nature : correction**
 

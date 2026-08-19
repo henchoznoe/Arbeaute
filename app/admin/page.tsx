@@ -1,5 +1,5 @@
 import { formatInTimeZone } from 'date-fns-tz'
-import { ChevronRight, Clock } from 'lucide-react'
+import { CalendarClock, ChevronRight, Clock } from 'lucide-react'
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { Suspense } from 'react'
@@ -9,7 +9,6 @@ import { AdminPage as AdminPageShell } from '@/components/admin/admin-page'
 import { AdminSkeleton } from '@/components/admin/admin-skeleton'
 import { DashboardMetrics } from '@/components/admin/dashboard-metrics'
 import { NextAppointmentCard } from '@/components/admin/next-appointment-card'
-import { EmptyState } from '@/components/ui/empty-state'
 import { getActivityOverview } from '@/lib/admin/activity'
 import { getAgendaSettings } from '@/lib/admin/agenda-settings'
 import { buildAdminTimelineDay } from '@/lib/admin/agenda-timeline'
@@ -222,11 +221,14 @@ const AdminAgenda = async ({ searchParams }: Readonly<AdminPageProps>) => {
           )}
         />
       ) : (
-        <EmptyState
-          className="mt-4"
-          title="Aucun rendez-vous à venir"
-          description="Le prochain rendez-vous confirmé s’affichera ici dès la première réservation."
-        />
+        /* Vide, ce bloc occupait 230 px avant la bande de semaine : le plus
+           de place pour ce qui a le moins à dire. Et sa phrase prétendait
+           qu'aucune réservation n'avait jamais eu lieu, alors qu'elle
+           constate seulement qu'il ne reste rien à venir. */
+        <p className="mt-4 flex items-center gap-2 rounded-2xl border bg-card px-4 py-3 text-sm text-muted-foreground">
+          <CalendarClock className="size-4 shrink-0 text-primary" />
+          Plus aucun rendez-vous confirmé à venir.
+        </p>
       )}
 
       <AdminAgendaView

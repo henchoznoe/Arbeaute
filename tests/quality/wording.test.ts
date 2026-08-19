@@ -34,3 +34,27 @@ describe('vocabulaire sans genre', () => {
     expect(offenders).toEqual([])
   })
 })
+
+/**
+ * L'agenda ouvrait sur « Aucun rendez-vous à venir » suivi de « Le prochain
+ * rendez-vous confirmé s'affichera ici dès la première réservation. » La phrase
+ * était fausse : des réservations existaient, il n'en restait simplement plus
+ * à venir. On expliquait à Arzu qu'elle n'avait jamais reçu personne.
+ */
+describe('carte du prochain rendez-vous', () => {
+  const AGENDA = readFileSync('app/admin/page.tsx', 'utf8')
+
+  it('ne prétend plus qu’aucune réservation n’a jamais eu lieu', () => {
+    expect(AGENDA).not.toContain('dès la première réservation')
+    expect(AGENDA).toContain('Plus aucun rendez-vous confirmé à venir.')
+  })
+
+  it('tient sur une ligne quand il n’y a rien à dire', () => {
+    // `EmptyState` pose `py-8` et un titre centré : 230 px avant la bande de
+    // semaine, pour le bloc qui a le moins à dire de tout l'écran.
+    expect(AGENDA).not.toContain('<EmptyState')
+    expect(AGENDA).toContain(
+      'flex items-center gap-2 rounded-2xl border bg-card px-4 py-3',
+    )
+  })
+})
