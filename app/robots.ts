@@ -10,18 +10,19 @@ import { env } from '@/lib/core/env'
 export const isProductionDeployment = (environment?: string): boolean =>
   environment === 'production'
 
-const robots = (): MetadataRoute.Robots => {
-  if (!isProductionDeployment(env.VERCEL_ENV))
+export const createRobots = (environment?: string): MetadataRoute.Robots => {
+  if (!isProductionDeployment(environment))
     return { rules: [{ userAgent: '*', disallow: '/' }] }
 
   return {
     rules: {
       userAgent: '*',
       allow: '/',
-      disallow: ['/admin', '/mes-rendez-vous'],
     },
     sitemap: `${siteConfig.url}/sitemap.xml`,
   }
 }
+
+const robots = (): MetadataRoute.Robots => createRobots(env.VERCEL_ENV)
 
 export default robots

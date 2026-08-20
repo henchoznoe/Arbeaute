@@ -5,7 +5,9 @@ import { PublicShell } from '@/components/layout/public-shell'
 import { FeaturedServices } from '@/components/sections/featured-services'
 import { Gallery } from '@/components/sections/gallery'
 import { Hero } from '@/components/sections/hero'
+import { JsonLd } from '@/components/seo/json-ld'
 import { Button } from '@/components/ui/button'
+import { createWebsiteJsonLd } from '@/lib/config/seo'
 import { bio, contact } from '@/lib/constants/contact'
 
 /**
@@ -37,6 +39,7 @@ const highlights = [
 
 const Page = () => (
   <PublicShell>
+    <JsonLd data={createWebsiteJsonLd()} />
     <Hero />
 
     <section

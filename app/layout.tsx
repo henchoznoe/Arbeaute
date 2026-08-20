@@ -9,8 +9,12 @@ import { InstallPrompt } from '@/components/pwa/install-prompt'
 import { ServiceWorkerRegistration } from '@/components/pwa/service-worker-registration'
 import { JsonLd } from '@/components/seo/json-ld'
 import { SkipLink } from '@/components/ui/skip-link'
+import { getPublicCatalog } from '@/lib/catalog/queries'
 import { installTargets } from '@/lib/config/pwa'
-import { createLocalBusinessJsonLd } from '@/lib/config/seo'
+import {
+  createCatalogPriceRange,
+  createLocalBusinessJsonLd,
+} from '@/lib/config/seo'
 import { siteConfig } from '@/lib/config/site'
 import { contact } from '@/lib/constants/contact'
 import { getOpeningHours } from '@/lib/reservation/opening-hours'
@@ -76,11 +80,23 @@ export const metadata: Metadata = {
     siteName: siteConfig.name,
     title: 'Arbeauté | Soins esthétiques à Bulle',
     description: siteConfig.description,
+    images: [
+      {
+        url: siteConfig.ogImage,
+        alt: 'Arbeauté — Soins esthétiques à Bulle',
+      },
+    ],
   },
   twitter: {
     card: 'summary_large_image',
     title: 'Arbeauté | Soins esthétiques à Bulle',
     description: siteConfig.description,
+    images: [
+      {
+        url: siteConfig.ogImage,
+        alt: 'Arbeauté — Soins esthétiques à Bulle',
+      },
+    ],
   },
   robots: {
     index: true,
@@ -128,7 +144,17 @@ export default async function RootLayout({
 }: Readonly<{
   children: React.ReactNode
 }>) {
-  const openingHours = await getOpeningHours()
+  const [openingHours, categories] = await Promise.all([
+    getOpeningHours(),
+    getPublicCatalog(),
+  ])
+  const priceRange = createCatalogPriceRange(
+    categories.flatMap(category =>
+      category.services
+        .filter(service => service.priceNote !== '/ min')
+        .map(service => service.priceCents),
+    ),
+  )
 
   return (
     <html
@@ -146,7 +172,7 @@ export default async function RootLayout({
           // biome-ignore lint/security/noDangerouslySetInnerHtml: constante littérale, sans donnée externe.
           dangerouslySetInnerHTML={{ __html: captureInstallPrompt }}
         />
-        <JsonLd data={createLocalBusinessJsonLd(openingHours)} />
+        <JsonLd data={createLocalBusinessJsonLd(openingHours, priceRange)} />
         <SkipLink />
         {children}
         {/*

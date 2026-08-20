@@ -1,4 +1,7 @@
 import { type CatalogCategory, getPublicCatalog } from '@/lib/catalog/queries'
+import { contact } from '@/lib/constants/contact'
+import { formatServiceLabel } from '@/lib/reservation/service-label'
+import { formatPrice } from '@/lib/utils/format'
 
 /**
  * Une prestation retrouvée par son adresse, avec son groupe.
@@ -31,6 +34,45 @@ export const buildServiceStaticParams = (slugs: string[]): { slug: string }[] =>
   (slugs.length > 0 ? slugs : [SERVICE_PAGE_VALIDATION_SLUG]).map(slug => ({
     slug,
   }))
+
+interface ServiceMetaDescriptionOptions {
+  readonly serviceName: string
+  readonly categoryName: string
+  readonly description: string | null
+  readonly durationMinutes: number
+  readonly priceCents: number
+  readonly priceNote: string | null
+}
+
+const META_DESCRIPTION_MAX_LENGTH = 160
+
+const truncateMetaDescription = (description: string): string => {
+  if (description.length <= META_DESCRIPTION_MAX_LENGTH) return description
+
+  const shortened = description.slice(0, META_DESCRIPTION_MAX_LENGTH - 1)
+  const lastSpace = shortened.lastIndexOf(' ')
+  return `${shortened.slice(0, lastSpace)}…`
+}
+
+/** Description propre à chaque soin, concise et utile dans un résultat Google. */
+export const buildServiceMetaDescription = ({
+  serviceName,
+  categoryName,
+  description,
+  durationMinutes,
+  priceCents,
+  priceNote,
+}: Readonly<ServiceMetaDescriptionOptions>): string => {
+  const label = formatServiceLabel(serviceName, categoryName)
+  const price = `${formatPrice(priceCents)}${priceNote === '/ min' ? ' / min' : ''}`
+  const details =
+    description?.trim() ||
+    'Découvrez le soin, ses informations utiles et les modalités de rendez-vous.'
+
+  return truncateMetaDescription(
+    `${label} chez ${contact.name} à Bulle : ${durationMinutes} min, ${price}. ${details}`,
+  )
+}
 
 export const findServiceBySlug = async (
   slug: string,

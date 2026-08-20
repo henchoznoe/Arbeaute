@@ -91,9 +91,9 @@ export const ServiceCatalog = ({
                 }`}
                 style={{ backgroundColor: category.color }}
               >
-                <h3 className="font-heading text-xl font-bold uppercase">
+                <h2 className="font-heading text-xl font-bold uppercase">
                   {category.name}
-                </h3>
+                </h2>
                 {category.description ? (
                   <p
                     className="mt-1 text-sm"

@@ -148,6 +148,7 @@ const ContactPage = () => (
               width={1400}
               height={900}
               sizes="(min-width: 1024px) 55vw, 100vw"
+              priority
               unoptimized
               className="aspect-3/2 w-full object-cover"
             />

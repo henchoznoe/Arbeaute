@@ -47,6 +47,11 @@ interface BookableService extends CatalogService {
   categoryName: string
 }
 
+export interface PublicServiceSitemapEntry {
+  slug: string
+  lastModified: Date
+}
+
 const serviceFields = {
   id: true,
   slug: true,
@@ -122,4 +127,35 @@ export const getBookableServices = async (): Promise<BookableService[]> => {
       categoryName: category.name,
     })),
   )
+}
+
+/** Adresses et vraies dates d'édition utilisées exclusivement par le sitemap. */
+export const getPublicServiceSitemapEntries = async (): Promise<
+  PublicServiceSitemapEntry[]
+> => {
+  'use cache'
+  cacheLife('max')
+  cacheTag(CATALOG_TAG)
+
+  const services = await prisma.service.findMany({
+    where: {
+      isVisible: true,
+      isArchived: false,
+      category: { isActive: true },
+    },
+    orderBy: { slug: 'asc' },
+    select: {
+      slug: true,
+      updatedAt: true,
+      category: { select: { updatedAt: true } },
+    },
+  })
+
+  return services.map(service => ({
+    slug: service.slug,
+    lastModified:
+      service.category && service.category.updatedAt > service.updatedAt
+        ? service.category.updatedAt
+        : service.updatedAt,
+  }))
 }

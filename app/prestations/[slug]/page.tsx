@@ -7,6 +7,7 @@ import { PublicShell } from '@/components/layout/public-shell'
 import { Button } from '@/components/ui/button'
 import { getServiceCareContent } from '@/lib/catalog/service-content'
 import {
+  buildServiceMetaDescription,
   buildServiceStaticParams,
   findServiceBySlug,
   listServiceSlugs,
@@ -57,12 +58,24 @@ export const generateMetadata = async ({
     })
 
   const { service, category } = found
+  const serviceLabel = formatServiceLabel(service.name, category.name)
   return createPageMetadata({
-    title: formatServiceLabel(service.name, category.name),
-    description:
-      service.description ??
-      `${service.name} — ${category.name} chez ${contact.name}, à Bulle. ${service.durationMinutes} minutes, ${formatPrice(service.priceCents)}.`,
+    title: serviceLabel,
+    description: buildServiceMetaDescription({
+      serviceName: service.name,
+      categoryName: category.name,
+      description: service.description,
+      durationMinutes: service.durationMinutes,
+      priceCents: service.priceCents,
+      priceNote: service.priceNote,
+    }),
     path: `/prestations/${slug}`,
+    image: service.imageUrl
+      ? {
+          url: service.imageUrl,
+          alt: `${serviceLabel} chez ${contact.name}`,
+        }
+      : undefined,
   })
 }
 
@@ -101,7 +114,7 @@ const ServiceDetailPage = async ({ params }: ServicePageProps) => {
                   {category.name}
                 </Link>
                 <h1 className="mt-4 font-heading text-display font-semibold">
-                  {service.name}
+                  {formatServiceLabel(service.name, category.name)}
                 </h1>
                 {service.description ? (
                   <p className="mt-5 text-lg leading-relaxed text-muted-foreground">
