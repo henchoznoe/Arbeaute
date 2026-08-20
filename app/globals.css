@@ -38,6 +38,8 @@
   --color-brand-subtle: var(--brand-subtle);
   --color-brand-soft: var(--brand-soft);
   --color-brand-line: var(--brand-line);
+  --color-vera: var(--vera);
+  --color-vera-strong: var(--vera-strong);
   --color-price: var(--price);
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
@@ -138,6 +140,10 @@
   --brand-subtle: oklch(0.969 0.015 12.422);
   --brand-soft: oklch(0.941 0.03 12.58);
   --brand-line: oklch(0.892 0.058 10.001);
+  /* L'encart affilié reprend le bleu du visuel officiel Vera. Ces jetons le
+     gardent isolé de la palette d'Arbeauté, sans couleur littérale à l'écran. */
+  --vera: #3d5f84;
+  --vera-strong: #294667;
   /* Les deux seules encres qui ne dépendent pas du thème mais de ce qui passe
      dessous : une photo, ou une couleur choisie dans l'administration. Le blanc
      et le noir purs sont les seuls dont le meilleur des deux dépasse toujours
