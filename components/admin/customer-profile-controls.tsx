@@ -85,7 +85,6 @@ export const CustomerProfileForm = ({
         phone: String(form.get('phone') ?? ''),
         internalNote: String(form.get('internalNote') ?? ''),
         preferences: String(form.get('preferences') ?? ''),
-        propagateFuture: form.get('propagateFuture') === 'on',
       })
       setMessage(result.message)
       setIsError(!result.ok)
@@ -182,23 +181,16 @@ export const CustomerProfileForm = ({
         />
       </FormField>
 
-      <label className="mt-5 flex cursor-pointer items-start gap-3 rounded-2xl border border-warning-line bg-warning-subtle p-4 text-sm text-warning-strong">
-        <input
-          type="checkbox"
-          name="propagateFuture"
-          className="mt-0.5 size-5 shrink-0 accent-warning"
-        />
-        <span>
-          <span className="block font-semibold">
-            Reporter aussi sur ses rendez-vous à venir
-          </span>
-          <span className="mt-1 block text-xs leading-relaxed">
-            Seuls les rendez-vous à venir et confirmés sont corrigés. Les
-            rendez-vous passés, annulés, terminés ou notés absents gardent les
-            coordonnées d’alors.
-          </span>
-        </span>
-      </label>
+      {/* Ce n'est plus une question : une adresse ou un numéro corrigés servent
+          à joindre quelqu'un, et les e-mails de déplacement partent à l'adresse
+          portée par le rendez-vous. La phrase reste pour que le comportement se
+          lise, sans demander de le décider. */}
+      <p className="mt-5 rounded-2xl border bg-muted/40 p-4 text-xs leading-relaxed text-muted-foreground">
+        Les rendez-vous à venir suivront ces coordonnées : c’est à eux que sont
+        envoyés les messages de déplacement et d’annulation, et c’est ce numéro
+        que composera le bouton d’appel de l’agenda. Les rendez-vous passés,
+        annulés ou notés absents gardent les coordonnées d’alors.
+      </p>
 
       <Button
         type="submit"

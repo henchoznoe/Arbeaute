@@ -1,7 +1,7 @@
 import { Analytics } from '@vercel/analytics/next'
 import { SpeedInsights } from '@vercel/speed-insights/next'
 import type { Metadata, Viewport } from 'next'
-import { Geist, Plus_Jakarta_Sans } from 'next/font/google'
+import { Fraunces, Geist } from 'next/font/google'
 import { Suspense } from 'react'
 
 import './globals.css'
@@ -21,9 +21,20 @@ const geist = Geist({
   variable: '--font-sans',
 })
 
-const plusJakarta = Plus_Jakarta_Sans({
+/**
+ * Une serif pour les titres, une sans pour tout le reste — toujours deux
+ * familles, comme `docs/systeme-visuel.md` l'impose.
+ *
+ * Plus Jakarta Sans donnait des titres de la même matière que le corps de
+ * texte : la page n'avait qu'une seule voix, et tout se ressemblait du haut en
+ * bas. Fraunces est variable, donc une seule requête couvre toutes les
+ * graisses, et son axe optique `SOFT` arrondit les terminaisons — ce qui va à
+ * un institut de beauté sans tomber dans l'écriture manuscrite.
+ */
+const fraunces = Fraunces({
   subsets: ['latin'],
   variable: '--font-heading',
+  axes: ['SOFT', 'opsz'],
 })
 
 export const metadata: Metadata = {
@@ -127,7 +138,7 @@ export default async function RootLayout({
       className={cn(
         'overflow-x-clip antialiased',
         geist.variable,
-        plusJakarta.variable,
+        fraunces.variable,
       )}
     >
       <body suppressHydrationWarning>

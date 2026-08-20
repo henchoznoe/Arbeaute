@@ -82,6 +82,7 @@ export const createAppointmentsExport = async (
     },
     orderBy: [{ startsAt: 'asc' }, { id: 'asc' }],
     take: EXPORT_ROW_LIMIT,
+    include: { service: { select: { category: { select: { name: true } } } } },
   })
   return createCsv(
     [
@@ -90,6 +91,9 @@ export const createAppointmentsExport = async (
       { header: 'source', value: row => row.source },
       { header: 'debut', value: row => formatLocalDateTime(row.startsAt) },
       { header: 'fin', value: row => formatLocalDateTime(row.endsAt) },
+      // Le groupe dans sa propre colonne : un tableur trie et filtre dessus,
+      // ce qu'un libellé « Groupe — Prestation » lui interdirait.
+      { header: 'groupe', value: row => row.service.category?.name ?? '' },
       { header: 'prestation', value: row => row.serviceNameSnapshot },
       {
         header: 'prix_chf',

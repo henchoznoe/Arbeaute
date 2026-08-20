@@ -34,6 +34,7 @@ describe('CSV exports', () => {
         startsAt: new Date('2026-08-10T12:00:00.000Z'),
         endsAt: new Date('2026-08-10T13:00:00.000Z'),
         serviceNameSnapshot: 'Soin visage',
+        service: { category: { name: 'Soins visage' } },
         servicePriceCents: 12_000,
         serviceDurationMinutes: 60,
         customerFirstName: 'Marie',
@@ -64,7 +65,9 @@ describe('CSV exports', () => {
         take: 10_000,
       }),
     )
-    expect(csv).toContain('"Soin visage";"120.00";"60"')
+    // Le groupe a sa propre colonne : le tableur peut trier et filtrer dessus,
+    // et deux « Visage » de groupes différents cessent de se confondre.
+    expect(csv).toContain('"Soins visage";"Soin visage";"120.00";"60"')
     expect(csv).toContain('"2026-08-10 14:00"')
   })
 

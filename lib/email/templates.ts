@@ -1,6 +1,7 @@
 import { contact } from '@/lib/constants/contact'
 import { createGoogleCalendarUrl } from '@/lib/reservation/confirmation'
 import { RESERVATION_TIME_ZONE } from '@/lib/reservation/constants'
+import { buildManageUrl } from '@/lib/reservation/manage-link'
 import { formatLongDate } from '@/lib/reservation/time'
 import { formatPrice } from '@/lib/utils/format'
 
@@ -24,9 +25,17 @@ export interface AppointmentMailData {
   priceCents: number
   /** Ancien horaire, uniquement pour un déplacement. */
   previousStartsAt?: Date
+  /**
+   * L'adresse à laquelle le message part. Sert au lien « Déplacer ou annuler »,
+   * qui ouvre alors la session sans ressaisie.
+   *
+   * Obligatoire, et non facultative : une signature tolérante laisserait passer
+   * les appelants qui l'oublient, et le lien retomberait silencieusement sur
+   * l'écran d'identification — le défaut exact qu'on corrige.
+   */
+  customerEmail: string | null
 }
 
-const MANAGE_URL = `${contact.website}/mes-rendez-vous`
 const BOOKING_URL = `${contact.website}${contact.bookingUrl}`
 
 /**
@@ -73,10 +82,16 @@ const calendarAction = (data: AppointmentMailData): MailAction => ({
   }),
 })
 
-const manageAction: MailAction = {
+/**
+ * Le lien qui ramène à ses rendez-vous. Avec l'adresse du destinataire, il
+ * ouvre la session sans rien redemander — voir `lib/reservation/manage-link.ts`
+ * pour ce que cela coûte et pourquoi c'est accepté. Sans adresse, il retombe
+ * sur l'écran d'identification ordinaire.
+ */
+const manageAction = (email?: string | null): MailAction => ({
   label: 'Déplacer ou annuler',
-  url: MANAGE_URL,
-}
+  url: buildManageUrl(contact.website, email),
+})
 
 export interface MailContent {
   subject: string
@@ -171,7 +186,7 @@ export const buildConfirmationMail = (
   // l'adresse e-mail suffit, et la promettre en plus enverrait quelqu'un
   // chercher une information dont on n'a pas besoin.
   const closing = `Pour le déplacer ou l’annuler, votre adresse e-mail suffit.`
-  const actions = [calendarAction(data), manageAction]
+  const actions = [calendarAction(data), manageAction(data.customerEmail)]
 
   return {
     subject: `Rendez-vous confirmé — ${formatMailDate(data.startsAt)} à ${formatMailTime(data.startsAt)}`,
@@ -201,7 +216,7 @@ export const buildRescheduledMail = (
     ? `Ancien horaire : ${formatMailDate(data.previousStartsAt)} à ${formatMailTime(data.previousStartsAt)}.`
     : null
   const intro = `Bonjour ${greetingName(data)}, votre rendez-vous a bien été déplacé.`
-  const actions = [calendarAction(data), manageAction]
+  const actions = [calendarAction(data), manageAction(data.customerEmail)]
 
   return {
     subject: `Rendez-vous déplacé — ${formatMailDate(data.startsAt)} à ${formatMailTime(data.startsAt)}`,
@@ -274,7 +289,7 @@ export const buildSeriesConfirmationMail = (
   const intro = `Bonjour ${greetingName(data)}, vos ${occurrences.length} rendez-vous sont bien enregistrés.`
   const closing =
     'Pour en déplacer un ou l’annuler, votre adresse e-mail suffit.'
-  const actions = [manageAction]
+  const actions = [manageAction(data.customerEmail)]
   const lines = occurrences.map(
     occurrence =>
       `${formatMailDate(occurrence)} à ${formatMailTime(occurrence)}`,
@@ -412,6 +427,8 @@ export interface LateRequestMailData {
   requestedStartsAt: Date
   priceCents: number
   comment?: string | null
+  /** Voir `AppointmentMailData.customerEmail`. Obligatoire pour la même raison. */
+  customerEmail: string | null
 }
 
 const lateRequestSummaryText = (data: LateRequestMailData): string[] => [
@@ -503,6 +520,14 @@ export const buildLateRequestReceivedMail = (
   const warning =
     'Ce n’est pas encore un rendez-vous : l’heure demandée est trop proche pour être réservée en ligne. Vous recevrez un message dès qu’elle aura répondu.'
   const closing = `Si c’est urgent, appelez directement le ${contact.phone}.`
+  // « Mes rendez-vous » est l'endroit où l'on retire une demande : ne pas y
+  // renvoyer laissait sans issue quelqu'un qui change d'avis.
+  const actions = [
+    {
+      label: 'Voir ma demande',
+      url: buildManageUrl(contact.website, data.customerEmail),
+    },
+  ]
 
   return {
     subject: `Demande reçue — ${formatMailDate(data.requestedStartsAt)} à ${formatMailTime(data.requestedStartsAt)}`,
@@ -514,15 +539,20 @@ export const buildLateRequestReceivedMail = (
       ...lateRequestSummaryText(data),
       '',
       closing,
+      ...actionsText(actions),
       '',
       ...textFooter,
     ].join('\n'),
-    html: wrapHtml(title, [
-      escapeHtml(intro),
-      escapeHtml(warning),
-      ...lateRequestSummaryHtml(data),
-      escapeHtml(closing),
-    ]),
+    html: wrapHtml(
+      title,
+      [
+        escapeHtml(intro),
+        escapeHtml(warning),
+        ...lateRequestSummaryHtml(data),
+        escapeHtml(closing),
+      ],
+      actions,
+    ),
   }
 }
 
@@ -538,6 +568,10 @@ export const buildLateRequestDeclinedMail = (
 ): MailContent => {
   const title = 'Cette heure n’a pas pu être retenue'
   const intro = `Bonjour ${data.customerFirstName?.trim() || data.customerLastName.trim()}, ${contact.owner} ne peut malheureusement pas vous recevoir ${formatMailDate(data.requestedStartsAt)} à ${formatMailTime(data.requestedStartsAt)}.`
+  // Sans le soin, quelqu'un qui a deux demandes en attente le même jour ne
+  // sait pas laquelle est refusée. Une phrase suffit : un récapitulatif complet,
+  // prix compris, serait déplacé dans un message de refus.
+  const requested = `Votre demande portait sur ${data.serviceLabel}.`
   const reason = data.declineReason?.trim()
   const closing = `Il reste d’autres heures libres, et vous pouvez aussi appeler le ${contact.phone}.`
   const actions = [{ label: 'Voir les heures libres', url: BOOKING_URL }]
@@ -546,6 +580,7 @@ export const buildLateRequestDeclinedMail = (
     subject: `Demande non retenue — ${formatMailDate(data.requestedStartsAt)}`,
     text: [
       intro,
+      requested,
       ...(reason ? ['', reason] : []),
       '',
       closing,
@@ -557,6 +592,7 @@ export const buildLateRequestDeclinedMail = (
       title,
       [
         escapeHtml(intro),
+        escapeHtml(requested),
         ...(reason ? [escapeHtml(reason)] : []),
         escapeHtml(closing),
       ],

@@ -1,3 +1,4 @@
+import { formatServiceLabel } from '@/lib/reservation/service-label'
 import type { AppointmentStatus } from '@/prisma/generated/prisma/enums'
 
 /**
@@ -19,6 +20,13 @@ export interface WeeklySummaryAppointment {
   serviceDurationMinutes: number
   servicePriceCents: number
   serviceNameSnapshot: string
+  /**
+   * Le groupe de la prestation. Sans lui, les trois « Visage » du catalogue —
+   * Laser Erbium, Endosphères et Épilation laser — tombaient dans le même
+   * compteur : ce n'était pas seulement le libellé qui était ambigu, c'était le
+   * classement qui était faux.
+   */
+  categoryName: string | null
   status: AppointmentStatus
 }
 
@@ -49,11 +57,13 @@ export const buildWeeklySummary = (
   )
 
   const counts = new Map<string, number>()
-  for (const appointment of realised)
-    counts.set(
+  for (const appointment of realised) {
+    const label = formatServiceLabel(
       appointment.serviceNameSnapshot,
-      (counts.get(appointment.serviceNameSnapshot) ?? 0) + 1,
+      appointment.categoryName,
     )
+    counts.set(label, (counts.get(label) ?? 0) + 1)
+  }
   // À égalité, le premier par ordre alphabétique : un bilan ne doit pas changer
   // d'avis d'une lecture à l'autre.
   const topServiceLabel =

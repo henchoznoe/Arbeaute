@@ -183,7 +183,10 @@ const changeFieldLabels: Record<string, string> = {
   hadConsentForm: 'Consentement présent',
   hasConsentForm: 'Consentement présent',
   identityChanged: 'Coordonnées modifiées',
+  // `propagatedAppointments` est le nom d'avant la suppression du choix : des
+  // lignes d'historique le portent encore, les deux clés restent traduites.
   propagatedAppointments: 'Rendez-vous futurs actualisés',
+  updatedAppointments: 'Rendez-vous à venir actualisés',
   noteChanged: 'Note interne modifiée',
   preferencesChanged: 'Préférences modifiées',
   sourceCustomerId: 'Client source',

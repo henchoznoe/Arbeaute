@@ -46,6 +46,7 @@ const toMailData = (request: NotifiableRequest): LateRequestMailData => ({
   requestedStartsAt: request.requestedStartsAt,
   priceCents: request.servicePriceCents,
   comment: request.comment,
+  customerEmail: request.customerEmail,
 })
 
 /**

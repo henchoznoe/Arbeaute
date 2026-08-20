@@ -26,20 +26,22 @@ Deux familles seulement, chargées par `next/font/google` dans `app/layout.tsx` 
 | Rôle | Variable | Famille |
 | --- | --- | --- |
 | Corps de texte, interface | `--font-sans` | Geist |
-| Titres (`font-heading`) | `--font-heading` | Plus Jakarta Sans |
+| Titres (`font-heading`) | `--font-heading` | Fraunces |
 
 Les grandes tailles sont **fluides** et déclarées dans `app/globals.css`. Il ne
 faut plus écrire de suite `text-3xl sm:text-4xl` pour un titre de page :
 
 | Utilitaire | Usage | Bornes |
 | --- | --- | --- |
-| `text-display` | Titre du hero, une seule occurrence par page | 29,6 px → 72 px |
+| `text-display` | Titre de hero, un seul par page | 29,6 px → 72 px |
 | `text-title` | Titre de page et de section (`h1`, `h2`) | 25,6 px → 40 px |
 | `text-2xl` et en dessous | Sous-titres et titres de carte | échelle Tailwind |
 | `text-2xs` | Plancher de lisibilité : légendes, pastilles, chronologie | 11 px |
 
-Le réglage vise un téléphone de 360 px : à cette largeur, le titre du hero tient
-sur deux lignes au maximum.
+Le réglage vise un téléphone de 360 px. **Les interlignes ont été retendus avec
+l'arrivée de la serif** — 1,25 pour `text-display`, 1,3 pour `text-title` : les
+valeurs précédentes, 1,04 et 1,15, avaient été réglées sur Plus Jakarta Sans,
+dont les jambages sont courts, et un titre de trois lignes se chevauchait.
 
 **Aucun texte d’interface ne descend sous 11 px.** `text-2xs` est le plus petit
 palier autorisé ; les tailles arbitraires du type `text-[9px]` ne doivent pas

@@ -1,7 +1,10 @@
 import { LegalLayout } from '@/components/legal/legal-layout'
+import { LEGAL_LAST_UPDATED, VAT_REGISTERED } from '@/lib/config/legal'
 import { createPageMetadata } from '@/lib/config/seo'
 import { contact } from '@/lib/constants/contact'
 import {
+  formatBookingHorizon,
+  formatBookingNotice,
   formatCustomerChangeCutoff,
   getBookingSettings,
 } from '@/lib/reservation/booking-settings'
@@ -18,11 +21,15 @@ const TermsPage = async () => {
   const customerChangeCutoffLabel = formatCustomerChangeCutoff(
     settings.customerChangeCutoffHours,
   )
+  // Les trois valeurs viennent des réglages, jamais du texte : Arzu peut les
+  // changer depuis l'administration, et les conditions suivent.
+  const noticeLabel = formatBookingNotice(settings.minBookingNoticeHours)
+  const horizonLabel = formatBookingHorizon(settings.bookingHorizonMonths)
   return (
     <LegalLayout
       eyebrow="Informations légales"
       title="Conditions générales de réservation"
-      lastUpdated="7 août 2026"
+      lastUpdated={LEGAL_LAST_UPDATED}
     >
       <section>
         <h2>Objet</h2>
@@ -36,11 +43,37 @@ const TermsPage = async () => {
       <section>
         <h2>Réservation</h2>
         <p>
-          La réservation en ligne est confirmée immédiatement, sans validation
-          manuelle. Les prix affichés sont exprimés en francs suisses (CHF),
-          toutes taxes comprises le cas échéant. Aucun paiement n’est requis au
-          moment de la réservation ; le règlement s’effectue sur place, à
-          l’issue de la prestation.
+          Une heure proposée dans le calendrier est confirmée immédiatement,
+          sans validation manuelle. Les prix affichés sont exprimés en francs
+          suisses (CHF)
+          {VAT_REGISTERED
+            ? ', toutes taxes comprises'
+            : ' ; Arbeauté n’étant pas assujettie à la TVA, aucune taxe ne s’y ajoute'}
+          . Aucun paiement n’est requis au moment de la réservation ; le
+          règlement s’effectue sur place, à l’issue de la prestation.
+        </p>
+        <p>
+          Une réservation doit être prise au moins{' '}
+          <strong>{noticeLabel}</strong> à l’avance, et au plus tôt{' '}
+          <strong>{horizonLabel}</strong> avant la date souhaitée. Les heures
+          qui sortent de ces bornes n’apparaissent pas dans le calendrier.
+        </p>
+      </section>
+
+      <section>
+        <h2>Demandes de dernière minute</h2>
+        <p>
+          Une heure encore libre mais trop proche pour être réservée en ligne
+          peut, selon la période, être proposée « sur demande ». Dans ce cas :{' '}
+          <strong>une demande n’est pas un rendez-vous</strong>. Elle est
+          transmise à {contact.owner}, qui l’accepte ou la refuse ; tant qu’elle
+          n’a pas répondu, le créneau reste disponible pour d’autres, et rien
+          n’est réservé.
+        </p>
+        <p>
+          Vous êtes prévenu par e-mail dans les deux cas. Une demande peut être
+          retirée à tout moment depuis l’espace « Mes rendez-vous », et le
+          nombre de demandes simultanées est limité.
         </p>
       </section>
 

@@ -34,10 +34,14 @@ peut être enregistré, même en cas de réservations simultanées.
 
 ### Features
 
+- **Une vitrine en cinq pages** — l'accueil, le catalogue (`/prestations`), une
+  page par soin (`/prestations/[slug]`, avec préparation, contre-indications,
+  résultats et questions fréquentes), l'institut et le contact. Toutes
+  prérendues et servies depuis le CDN.
 - **Réservation en quatre étapes** — prestation, coordonnées, créneau et
-  vérification. Le calendrier charge la semaine entière d'un coup et grise les
-  jours complets ; un bouton « prochain créneau disponible » balaie les trois
-  mois à venir.
+  vérification. Le calendrier charge trois semaines d'un coup, pour le même coût
+  serveur qu'une seule, de sorte que les flèches sont instantanées ; un bouton
+  « prochain créneau disponible » balaie les trois mois à venir.
 - **Demandes de dernière minute** — quand le réglage est actif, une heure encore
   libre mais trop proche pour se réserver en ligne reste affichée et peut faire
   l'objet d'une demande. Trois demandes par 24 heures, deux demandes en attente

@@ -20,8 +20,23 @@ const updateSchema = z.object({
   phone: z.string().trim().min(1).max(40),
   internalNote: z.string().trim().max(2000).optional(),
   preferences: z.string().trim().max(500).optional(),
-  propagateFuture: z.boolean(),
 })
+
+/**
+ * Ce que l'enregistrement a touché, en clair.
+ *
+ * Le comportement n'est plus un choix : les rendez-vous à venir suivent
+ * toujours les coordonnées. Le message est donc le seul endroit qui l'explique,
+ * et il doit le faire sans nommer ni copie, ni propagation, ni snapshot.
+ */
+const describeCustomerSave = (updatedAppointments: number): string => {
+  if (updatedAppointments === 0) return 'Client enregistré.'
+  const subject =
+    updatedAppointments === 1
+      ? 'Son rendez-vous à venir porte'
+      : `Ses ${updatedAppointments} rendez-vous à venir portent`
+  return `Client enregistré. ${subject} les nouvelles coordonnées ; les rendez-vous passés gardent celles d’alors.`
+}
 
 export interface AdminCustomerActionResult {
   ok: boolean
@@ -64,14 +79,11 @@ export const saveAdminCustomerProfile = async (
       phone,
       internalNote: parsed.data.internalNote || null,
       preferences: parsed.data.preferences || null,
-      propagateFuture: parsed.data.propagateFuture,
     })
     refreshCustomerViews(parsed.data.customerId)
     return {
       ok: true,
-      message: parsed.data.propagateFuture
-        ? `Client enregistré et ${result.propagatedAppointments} rendez-vous futur${result.propagatedAppointments > 1 ? 's' : ''} actualisé${result.propagatedAppointments > 1 ? 's' : ''}.`
-        : 'Client enregistré. Les rendez-vous déjà pris gardent le nom et le prix d’alors.',
+      message: describeCustomerSave(result.updatedAppointments),
     }
   } catch (error) {
     if (

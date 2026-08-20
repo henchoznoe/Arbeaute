@@ -1,5 +1,6 @@
 import type { MetadataRoute } from 'next'
 import { cacheLife } from 'next/cache'
+import { listServiceSlugs } from '@/lib/catalog/service-page'
 import { siteConfig } from '@/lib/config/site'
 
 /**
@@ -17,6 +18,7 @@ const sitemap = async (): Promise<MetadataRoute.Sitemap> => {
   cacheLife('days')
 
   const lastModified = new Date()
+  const slugs = await listServiceSlugs()
 
   return [
     {
@@ -31,6 +33,33 @@ const sitemap = async (): Promise<MetadataRoute.Sitemap> => {
       changeFrequency: 'weekly',
       priority: 0.9,
     },
+    {
+      url: `${siteConfig.url}/prestations`,
+      lastModified,
+      changeFrequency: 'monthly',
+      priority: 0.9,
+    },
+    {
+      url: `${siteConfig.url}/institut`,
+      lastModified,
+      changeFrequency: 'yearly',
+      priority: 0.6,
+    },
+    {
+      url: `${siteConfig.url}/contact`,
+      lastModified,
+      changeFrequency: 'yearly',
+      priority: 0.7,
+    },
+    // Une page par soin : c'est là que vit le contenu qui fait venir du monde
+    // — « épilation laser Bulle », « microblading Bulle ». Le catalogue est
+    // déjà en cache, l'énumération ne coûte aucune requête de plus.
+    ...slugs.map(slug => ({
+      url: `${siteConfig.url}/prestations/${slug}`,
+      lastModified,
+      changeFrequency: 'monthly' as const,
+      priority: 0.8,
+    })),
   ]
 }
 

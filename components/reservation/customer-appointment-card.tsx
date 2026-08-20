@@ -23,6 +23,10 @@ import {
 } from '@/lib/reservation/calendar-view'
 import { describeConfirmationDelivery } from '@/lib/reservation/confirmation-wording'
 import { addLocalDays } from '@/lib/reservation/time'
+import {
+  hasCompleteWeek,
+  mergeAvailability,
+} from '@/lib/reservation/week-cache'
 import { capitalizeFirst } from '@/lib/utils/format'
 import { openCalendar } from './calendar-download'
 import { CancellationPolicy } from './cancellation-policy'
@@ -42,9 +46,6 @@ interface CustomerAppointmentCardProps {
   priceLabel: string
   serviceLabel: string
 }
-
-const weekCacheKey = (appointmentId: string, weekStart: string): string =>
-  `${appointmentId}|${weekStart}`
 
 export const CustomerAppointmentCard = ({
   bookingPath,
@@ -67,7 +68,9 @@ export const CustomerAppointmentCard = ({
   const [availability, setAvailability] = useState<
     Record<string, DayAvailability>
   >({})
-  const [loadedWeek, setLoadedWeek] = useState<string | null>(null)
+  // Le cache se lit dans une référence : le remettre dans les dépendances de
+  // l'effet relancerait une requête à chaque réponse reçue.
+  const availabilityRef = useRef<Record<string, DayAvailability>>({})
   const [startsAt, setStartsAt] = useState('')
   const [calendarAnnouncement, setCalendarAnnouncement] = useState('')
   const [nextSlotNotice, setNextSlotNotice] = useState<string | null>(null)
@@ -81,16 +84,24 @@ export const CustomerAppointmentCard = ({
   const lastCompleteWeekStart = addLocalDays(maxDate, -6)
   const maxViewStart =
     lastCompleteWeekStart < minDate ? minDate : lastCompleteWeekStart
-  const weekReady = loadedWeek === weekCacheKey(id, viewStart)
+  const weekReady = hasCompleteWeek(availability, viewStart)
 
+  // Le serveur renvoie trois semaines pour le prix d'une : la semaine voisine
+  // est déjà là quand on y arrive, et la requête qui part alors ne fait que la
+  // rafraîchir. Voir `lib/reservation/week-cache.ts`.
   useEffect(() => {
     if (!moving) return
-    startWeekTransition(async () => {
+
+    const known = hasCompleteWeek(availabilityRef.current, viewStart)
+    const run = async () => {
       const loaded = await getCustomerMoveWeekAvailability(id, viewStart)
       const pending = pendingSlotRef.current
       pendingSlotRef.current = null
-      setAvailability(loaded)
-      setLoadedWeek(weekCacheKey(id, viewStart))
+      availabilityRef.current = mergeAvailability(
+        availabilityRef.current,
+        loaded,
+      )
+      setAvailability(availabilityRef.current)
       setStartsAt(current => {
         const candidate = pending?.startsAt ?? current
         const stillAvailable = Object.values(loaded).some(day =>
@@ -98,7 +109,10 @@ export const CustomerAppointmentCard = ({
         )
         return stillAvailable ? candidate : ''
       })
-    })
+    }
+
+    if (known) void run()
+    else startWeekTransition(run)
   }, [id, moving, viewStart])
 
   const deliveryNotice = result?.ok

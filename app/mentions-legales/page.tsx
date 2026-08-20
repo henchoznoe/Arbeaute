@@ -1,4 +1,5 @@
 import { LegalLayout } from '@/components/legal/legal-layout'
+import { LEGAL_LAST_UPDATED, VAT_REGISTERED } from '@/lib/config/legal'
 import { createPageMetadata } from '@/lib/config/seo'
 import { contact } from '@/lib/constants/contact'
 
@@ -13,7 +14,7 @@ const LegalNoticePage = () => (
   <LegalLayout
     eyebrow="Informations légales"
     title="Mentions légales"
-    lastUpdated="7 août 2026"
+    lastUpdated={LEGAL_LAST_UPDATED}
   >
     <section>
       <h2>Éditeur du site</h2>
@@ -68,6 +69,26 @@ const LegalNoticePage = () => (
         </a>
         ), également via l’infrastructure Vercel. Les images et documents PDF
         des prestations sont stockés sur Vercel Blob.
+      </p>
+      <p>
+        Les e-mails de confirmation, de déplacement et d’annulation sont envoyés
+        par Resend (
+        <a href="https://resend.com" target="_blank" rel="noopener noreferrer">
+          resend.com
+        </a>
+        ). La carte affichée sur la page de contact est fournie par Google Maps.
+        Le détail de ce que chacun traite figure dans la{' '}
+        <a href="/politique-de-confidentialite">politique de confidentialité</a>
+        .
+      </p>
+    </section>
+
+    <section>
+      <h2>Taxe sur la valeur ajoutée</h2>
+      <p>
+        {VAT_REGISTERED
+          ? 'Arbeauté est assujettie à la TVA. Les prix affichés sur ce site s’entendent toutes taxes comprises.'
+          : 'Arbeauté n’est pas assujettie à la taxe sur la valeur ajoutée. Les prix affichés sur ce site sont nets, et aucune TVA n’est facturée.'}
       </p>
     </section>
 

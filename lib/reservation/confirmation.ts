@@ -36,7 +36,7 @@ export const createGoogleCalendarUrl = ({
     action: 'TEMPLATE',
     text: `${serviceLabel} — ${contact.name}`,
     dates: `${formatCalendarDate(startsAt)}/${formatCalendarDate(endsAt)}`,
-    details: `Rendez-vous chez ${contact.name}.\nTéléphone : ${contact.phone}\nGérer mes rendez-vous : ${contact.website}/mes-rendez-vous`,
+    details: `Rendez-vous chez ${contact.name}.\nTéléphone : ${contact.phone}\nMes rendez-vous : ${contact.website}/mes-rendez-vous`,
     location: contact.address,
   })
 

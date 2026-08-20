@@ -36,6 +36,7 @@ const appointmentSelect = {
   servicePriceCents: true,
   serviceNameSnapshot: true,
   status: true,
+  service: { select: { category: { select: { name: true } } } },
 } as const
 
 export const runWeeklyDigest = async (
@@ -70,7 +71,13 @@ export const runWeeklyDigest = async (
     }),
   ])
 
-  const summary = buildWeeklySummary(appointments, now)
+  const summary = buildWeeklySummary(
+    appointments.map(appointment => ({
+      ...appointment,
+      categoryName: appointment.service.category?.name ?? null,
+    })),
+    now,
+  )
 
   const recipient = env.ADMIN_NOTIFICATION_EMAIL
   if (!recipient)

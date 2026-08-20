@@ -8,7 +8,6 @@ import {
   CatalogEmptyState,
   CatalogFilters,
 } from '@/components/catalog/catalog-filters'
-import { ServiceDetails } from '@/components/catalog/service-details'
 import { Button } from '@/components/ui/button'
 import { filterCatalog } from '@/lib/catalog/filter'
 import type { CatalogCategory } from '@/lib/catalog/queries'
@@ -111,9 +110,13 @@ export const ServiceCatalog = ({
               </header>
               <div className="divide-y">
                 {category.services.map(service => (
+                  // La carte entière mène au soin, et le bouton reste une
+                  // cible distincte : le lien s'étend par un pseudo-élément
+                  // plutôt qu'en enveloppant la rangée, ce qui imbriquerait
+                  // deux liens l'un dans l'autre.
                   <div
                     key={service.id}
-                    className="flex items-start gap-4 px-4 py-4 even:bg-muted/45"
+                    className="group relative flex items-start gap-4 px-4 py-4 transition-colors even:bg-muted/45 hover:bg-brand-subtle/60 focus-within:bg-brand-subtle/60"
                   >
                     {service.imageUrl ? (
                       <Image
@@ -122,11 +125,18 @@ export const ServiceCatalog = ({
                         width={96}
                         height={96}
                         sizes="(min-width: 640px) 96px, 80px"
-                        className="size-20 shrink-0 rounded-xl object-cover sm:size-24"
+                        className="size-20 shrink-0 rounded-xl object-cover transition-transform duration-500 group-hover:scale-105 sm:size-24"
                       />
                     ) : null}
                     <div className="min-w-0 flex-1">
-                      <p className="font-medium">{service.name}</p>
+                      <p className="font-medium">
+                        <Link
+                          href={`/prestations/${service.slug}`}
+                          className="after:absolute after:inset-0 after:content-[''] hover:underline focus-visible:outline-none"
+                        >
+                          {service.name}
+                        </Link>
+                      </p>
                       {service.description ? (
                         <p className="mt-1 line-clamp-2 text-xs leading-relaxed text-muted-foreground">
                           {service.description}
@@ -146,10 +156,11 @@ export const ServiceCatalog = ({
                           <Button
                             asChild
                             size="lg"
-                            className="h-11 rounded-full px-4"
+                            className="relative z-10 h-11 rounded-full px-4"
                           >
                             <Link
                               href={buildServiceReservationPath(service.slug)}
+                              aria-label={`Réserver ${service.name}`}
                             >
                               <CalendarDays className="size-4" />
                               Réserver
@@ -160,7 +171,7 @@ export const ServiceCatalog = ({
                             asChild
                             variant="outline"
                             size="lg"
-                            className="h-11 rounded-full px-4"
+                            className="relative z-10 h-11 rounded-full px-4"
                           >
                             <a href={`tel:${contact.phoneRaw}`}>
                               <Phone className="size-4" />
@@ -169,7 +180,6 @@ export const ServiceCatalog = ({
                           </Button>
                         )}
                       </div>
-                      <ServiceDetails service={service} className="mt-3" />
                     </div>
                   </div>
                 ))}

@@ -1,5 +1,6 @@
 import { writeAuditEvent } from '@/lib/admin/audit'
 import { normalizeCustomerSearchName } from '@/lib/reservation/customers'
+import { formatServiceLabel } from '@/lib/reservation/service-label'
 import type { Prisma, PrismaClient } from '@/prisma/generated/prisma/client'
 import { AppointmentStatus } from '@/prisma/generated/prisma/enums'
 
@@ -123,12 +124,16 @@ export const getAdminCustomerProfile = async (
         appointment.status === 'COMPLETED') &&
       appointment.endsAt <= now,
   )
+  // Compté sur le couple groupe + prestation : le catalogue propose trois
+  // « Visage », et les additionner désignerait un soin habituel qui n'existe pas.
   const serviceCounts = new Map<string, number>()
-  for (const appointment of honoured)
-    serviceCounts.set(
+  for (const appointment of honoured) {
+    const label = formatServiceLabel(
       appointment.serviceNameSnapshot,
-      (serviceCounts.get(appointment.serviceNameSnapshot) ?? 0) + 1,
+      appointment.service.category?.name,
     )
+    serviceCounts.set(label, (serviceCounts.get(label) ?? 0) + 1)
+  }
 
   return {
     customer,
@@ -156,14 +161,13 @@ export interface UpdateAdminCustomerInput {
   phone: string
   internalNote: string | null
   preferences: string | null
-  propagateFuture: boolean
   now?: Date
 }
 
 export const updateAdminCustomer = async (
   database: PrismaClient,
   input: UpdateAdminCustomerInput,
-): Promise<{ propagatedAppointments: number }> =>
+): Promise<{ updatedAppointments: number }> =>
   database.$transaction(async transaction => {
     const current = await transaction.customer.findFirst({
       where: { id: input.customerId, anonymizedAt: null },
@@ -208,22 +212,29 @@ export const updateAdminCustomer = async (
         preferences: input.preferences,
       },
     })
-    const propagated = input.propagateFuture
-      ? await transaction.appointment.updateMany({
-          where: {
-            customerId: current.id,
-            status: 'CONFIRMED',
-            startsAt: { gte: input.now ?? new Date() },
-          },
-          data: {
-            customerFirstName: input.firstName,
-            customerLastName: input.lastName,
-            customerSearchName: searchName,
-            customerEmail: input.email,
-            customerPhone: input.phone,
-          },
-        })
-      : { count: 0 }
+    // Un rendez-vous porte une copie des coordonnées, et c'est cette copie —
+    // jamais la fiche — que lisent l'agenda, le bouton d'appel, la recherche et
+    // surtout les e-mails de déplacement et d'annulation. Ne pas la réaligner
+    // envoyait donc les messages à l'ancienne adresse, en silence. Une adresse
+    // et un numéro sont des moyens de joindre quelqu'un, pas des faits
+    // historiques : les rendez-vous à venir suivent toujours.
+    //
+    // Les rendez-vous passés, annulés, terminés ou notés absents gardent ce
+    // qu'ils avaient : eux sont bien des faits historiques.
+    const updated = await transaction.appointment.updateMany({
+      where: {
+        customerId: current.id,
+        status: 'CONFIRMED',
+        startsAt: { gte: input.now ?? new Date() },
+      },
+      data: {
+        customerFirstName: input.firstName,
+        customerLastName: input.lastName,
+        customerSearchName: searchName,
+        customerEmail: input.email,
+        customerPhone: input.phone,
+      },
+    })
     await writeAuditEvent(transaction, {
       actorType: 'ADMIN',
       actorId: 'admin',
@@ -232,10 +243,10 @@ export const updateAdminCustomer = async (
       action: 'UPDATED',
       after: {
         identityChanged,
-        propagatedAppointments: propagated.count,
+        updatedAppointments: updated.count,
         noteChanged: current.internalNote !== input.internalNote,
         preferencesChanged: current.preferences !== input.preferences,
       },
     })
-    return { propagatedAppointments: propagated.count }
+    return { updatedAppointments: updated.count }
   })

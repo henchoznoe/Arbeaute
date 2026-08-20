@@ -55,6 +55,16 @@ const nextConfig: NextConfig = {
         protocol: 'https',
         hostname: '**.blob.vercel-storage.com',
       },
+      /**
+       * Photos d'attente uniquement, le temps que celles de l'institut
+       * arrivent. Elles sont rendues `unoptimized` : aucune transformation
+       * n'est donc facturée. À retirer en même temps que
+       * `lib/config/placeholders.ts`.
+       */
+      {
+        protocol: 'https',
+        hostname: 'images.unsplash.com',
+      },
     ],
     /**
      * Vercel facture une transformation à chaque MISS *et* à chaque STALE du

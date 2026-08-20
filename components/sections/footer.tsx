@@ -45,19 +45,19 @@ export function Footer() {
 
             <nav className="flex flex-wrap justify-center gap-6 text-sm text-muted-foreground">
               <Link
-                href="#services"
+                href="/prestations"
                 className="transition-colors hover:text-foreground"
               >
                 Prestations
               </Link>
               <Link
-                href="#about"
+                href="/institut"
                 className="transition-colors hover:text-foreground"
               >
-                À propos
+                L’institut
               </Link>
               <Link
-                href="#contact"
+                href="/contact"
                 className="transition-colors hover:text-foreground"
               >
                 Contact

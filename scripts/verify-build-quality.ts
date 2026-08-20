@@ -8,15 +8,20 @@ const publicDirectory = path.resolve('public')
 const publicRoutes = [
   '/',
   '/conditions-generales',
+  '/contact',
+  '/institut',
   '/mentions-legales',
   '/mes-rendez-vous',
   '/offline',
   '/politique-de-confidentialite',
+  '/prestations',
   '/reservation',
 ] as const
 
 const routeJavascriptBudgets = {
-  '/': 450 * 1024,
+  // L'accueil a rendu le catalogue à `/prestations` : son budget suit.
+  '/': 400 * 1024,
+  '/prestations': 450 * 1024,
   '/mes-rendez-vous': 500 * 1024,
   '/reservation': 650 * 1024,
 } as const

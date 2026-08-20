@@ -70,6 +70,11 @@ import {
 import { formatPhoneForDisplay } from '@/lib/reservation/identity'
 import { formatServiceLabel } from '@/lib/reservation/service-label'
 import { formatAppointmentDate } from '@/lib/reservation/time'
+import {
+  hasCompleteWeek,
+  mergeAvailability,
+  weekDateKeys,
+} from '@/lib/reservation/week-cache'
 import { cn } from '@/lib/utils/cn'
 import { capitalizeFirst, formatPrice } from '@/lib/utils/format'
 import { CancellationPolicy } from './cancellation-policy'
@@ -101,10 +106,6 @@ const addDateKeyDays = (dateKey: string, amount: number): string => {
     .toISOString()
     .slice(0, 10)
 }
-
-/** Identifie la semaine chargée : les créneaux dépendent aussi de la prestation. */
-const weekCacheKey = (serviceId: string, weekStart: string): string =>
-  `${serviceId}|${weekStart}`
 
 const ConsentFormNotice = ({ url }: Readonly<{ url: string }>) => (
   <div className="mt-5 rounded-xl border border-warning-accent bg-warning-subtle p-4 text-sm text-warning-strong">
@@ -175,7 +176,11 @@ export const ReservationWizard = ({
   const [weekAvailability, setWeekAvailability] = useState<
     Record<string, DayAvailability>
   >({})
-  const [loadedWeek, setLoadedWeek] = useState<string | null>(null)
+  // La prestation fait partie de l'identité du cache : changer de soin change
+  // les durées, donc les créneaux. `cachedServiceRef` le vide sans attendre un
+  // rendu, pour qu'aucune image n'affiche les heures du soin précédent.
+  const cachedServiceRef = useRef('')
+  const availabilityRef = useRef<Record<string, DayAvailability>>({})
   const [startsAt, setStartsAt] = useState('')
   const [loadingSlots, startSlotsTransition] = useTransition()
   const [submitting, startSubmitTransition] = useTransition()
@@ -251,7 +256,8 @@ export const ReservationWizard = ({
   const lastCompleteWeekStart = addDateKeyDays(maxDate, -6)
   const maxViewStart =
     lastCompleteWeekStart < minDate ? minDate : lastCompleteWeekStart
-  const weekReady = loadedWeek === weekCacheKey(serviceId, viewStart)
+  const weekReady =
+    Boolean(serviceId) && hasCompleteWeek(weekAvailability, viewStart)
   // L'heure choisie décide de tout l'écran de vérification : réserver, ou
   // demander. Elle se relit dans la semaine chargée, jamais dans un état à part
   // qui pourrait se désynchroniser du calendrier.
@@ -384,17 +390,35 @@ export const ReservationWizard = ({
     requestedServiceSlug,
   ])
 
-  // Une seule requête par semaine affichée : passer d'un jour à l'autre à
-  // l'intérieur de la semaine ne touche plus le serveur.
+  // Le serveur renvoie trois semaines pour le prix d'une : la semaine voisine
+  // s'affiche donc sans attendre, et une requête de rafraîchissement part en
+  // arrière-plan pour cette semaine-là. Le chargement visible n'apparaît que
+  // lorsque la semaine demandée est réellement inconnue.
   useEffect(() => {
     if (step !== STEPS.slot || !serviceId) return
-    startSlotsTransition(async () => {
+    if (cachedServiceRef.current !== serviceId) {
+      cachedServiceRef.current = serviceId
+      availabilityRef.current = {}
+      setWeekAvailability({})
+    }
+
+    // Le cache se lit dans une référence et non dans l'état : le remettre dans
+    // les dépendances relancerait une requête à chaque réponse reçue.
+    const known = hasCompleteWeek(availabilityRef.current, viewStart)
+    const run = async () => {
       const loaded = await getPublicWeekAvailability(serviceId, viewStart)
       const pending = pendingSlotRef.current
       pendingSlotRef.current = null
 
-      setWeekAvailability(loaded)
-      setLoadedWeek(weekCacheKey(serviceId, viewStart))
+      // Une réponse arrivée après un changement de prestation ne doit rien
+      // écrire : elle décrit un autre soin.
+      if (cachedServiceRef.current !== serviceId) return
+
+      availabilityRef.current = mergeAvailability(
+        availabilityRef.current,
+        loaded,
+      )
+      setWeekAvailability(availabilityRef.current)
       setStartsAt(current => {
         const candidate = pending?.startsAt ?? current
         const stillAvailable = Object.values(loaded).some(day =>
@@ -408,9 +432,11 @@ export const ReservationWizard = ({
       // lui annoncer « L'institut est fermé ce jour-là ».
       if (customerChoseDayRef.current || pending) return
 
-      const firstOpenDay = Object.keys(loaded)
-        .sort()
-        .find(dateKey => loaded[dateKey].slots.length > 0)
+      // Dans la semaine affichée seulement : la fenêtre en contient trois, et
+      // ouvrir sur un jour de la semaine précédente serait incompréhensible.
+      const firstOpenDay = weekDateKeys(viewStart).find(
+        dateKey => (loaded[dateKey]?.slots.length ?? 0) > 0,
+      )
       if (firstOpenDay) {
         setDate(firstOpenDay)
         return
@@ -434,7 +460,13 @@ export const ReservationWizard = ({
       )
       setDate(found.dateKey)
       setViewStart(found.dateKey > maxViewStart ? maxViewStart : found.dateKey)
-    })
+    }
+
+    // Semaine déjà connue : elle est à l'écran, la requête ne fait que la
+    // rafraîchir et ne doit donc rien griser. Semaine inconnue : la transition
+    // signale l'attente.
+    if (known) void run()
+    else startSlotsTransition(run)
   }, [maxViewStart, serviceId, step, viewStart])
 
   const findNextSlot = () => {
@@ -678,7 +710,7 @@ export const ReservationWizard = ({
             <a href={`tel:${contact.phoneRaw}`}>Appeler l’institut</a>
           </Button>
           <Button asChild variant="outline">
-            <a href="/mes-rendez-vous">Voir mes rendez-vous</a>
+            <a href="/mes-rendez-vous">Mes rendez-vous</a>
           </Button>
         </div>
       </section>
@@ -763,7 +795,7 @@ export const ReservationWizard = ({
             prochaine visite, votre adresse e-mail suffira pour y accéder.
           </p>
           <Button asChild variant="outline" className="mt-4 w-full">
-            <a href="/mes-rendez-vous">Accéder à mes rendez-vous</a>
+            <a href="/mes-rendez-vous">Mes rendez-vous</a>
           </Button>
         </div>
       </section>
