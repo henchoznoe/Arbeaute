@@ -33,6 +33,16 @@ export const DEFAULT_BOOKING_SETTINGS: BookingSettingsValues = {
 export const formatCustomerChangeCutoff = (hours: number): string =>
   `${hours} heure${hours > 1 ? 's' : ''} ouvrable${hours > 1 ? 's' : ''}`
 
+/** « 12 heures », « 2 jours » — le préavis, lisible dans une phrase. */
+export const formatBookingNotice = (hours: number): string => {
+  if (hours < 24) return `${hours} heure${hours > 1 ? 's' : ''}`
+  const days = Math.round(hours / 24)
+  return `${days} jour${days > 1 ? 's' : ''}`
+}
+
+/** « 3 mois » — jusqu'à quand le calendrier va. */
+export const formatBookingHorizon = (months: number): string => `${months} mois`
+
 /** Source unique mise en cache pour les règles de réservation publiques. */
 export const getBookingSettings = async (): Promise<BookingSettingsValues> => {
   'use cache'

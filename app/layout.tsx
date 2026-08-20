@@ -1,7 +1,7 @@
 import { Analytics } from '@vercel/analytics/next'
 import { SpeedInsights } from '@vercel/speed-insights/next'
 import type { Metadata, Viewport } from 'next'
-import { Geist, Plus_Jakarta_Sans } from 'next/font/google'
+import { Fraunces, Geist } from 'next/font/google'
 import { Suspense } from 'react'
 
 import './globals.css'
@@ -9,8 +9,12 @@ import { InstallPrompt } from '@/components/pwa/install-prompt'
 import { ServiceWorkerRegistration } from '@/components/pwa/service-worker-registration'
 import { JsonLd } from '@/components/seo/json-ld'
 import { SkipLink } from '@/components/ui/skip-link'
+import { getPublicCatalog } from '@/lib/catalog/queries'
 import { installTargets } from '@/lib/config/pwa'
-import { createLocalBusinessJsonLd } from '@/lib/config/seo'
+import {
+  createCatalogPriceRange,
+  createLocalBusinessJsonLd,
+} from '@/lib/config/seo'
 import { siteConfig } from '@/lib/config/site'
 import { contact } from '@/lib/constants/contact'
 import { getOpeningHours } from '@/lib/reservation/opening-hours'
@@ -21,9 +25,20 @@ const geist = Geist({
   variable: '--font-sans',
 })
 
-const plusJakarta = Plus_Jakarta_Sans({
+/**
+ * Une serif pour les titres, une sans pour tout le reste — toujours deux
+ * familles, comme `docs/systeme-visuel.md` l'impose.
+ *
+ * Plus Jakarta Sans donnait des titres de la même matière que le corps de
+ * texte : la page n'avait qu'une seule voix, et tout se ressemblait du haut en
+ * bas. Fraunces est variable, donc une seule requête couvre toutes les
+ * graisses, et son axe optique `SOFT` arrondit les terminaisons — ce qui va à
+ * un institut de beauté sans tomber dans l'écriture manuscrite.
+ */
+const fraunces = Fraunces({
   subsets: ['latin'],
   variable: '--font-heading',
+  axes: ['SOFT', 'opsz'],
 })
 
 export const metadata: Metadata = {
@@ -65,11 +80,23 @@ export const metadata: Metadata = {
     siteName: siteConfig.name,
     title: 'Arbeauté | Soins esthétiques à Bulle',
     description: siteConfig.description,
+    images: [
+      {
+        url: siteConfig.ogImage,
+        alt: 'Arbeauté — Soins esthétiques à Bulle',
+      },
+    ],
   },
   twitter: {
     card: 'summary_large_image',
     title: 'Arbeauté | Soins esthétiques à Bulle',
     description: siteConfig.description,
+    images: [
+      {
+        url: siteConfig.ogImage,
+        alt: 'Arbeauté — Soins esthétiques à Bulle',
+      },
+    ],
   },
   robots: {
     index: true,
@@ -117,7 +144,17 @@ export default async function RootLayout({
 }: Readonly<{
   children: React.ReactNode
 }>) {
-  const openingHours = await getOpeningHours()
+  const [openingHours, categories] = await Promise.all([
+    getOpeningHours(),
+    getPublicCatalog(),
+  ])
+  const priceRange = createCatalogPriceRange(
+    categories.flatMap(category =>
+      category.services
+        .filter(service => service.priceNote !== '/ min')
+        .map(service => service.priceCents),
+    ),
+  )
 
   return (
     <html
@@ -127,7 +164,7 @@ export default async function RootLayout({
       className={cn(
         'overflow-x-clip antialiased',
         geist.variable,
-        plusJakarta.variable,
+        fraunces.variable,
       )}
     >
       <body suppressHydrationWarning>
@@ -135,7 +172,7 @@ export default async function RootLayout({
           // biome-ignore lint/security/noDangerouslySetInnerHtml: constante littérale, sans donnée externe.
           dangerouslySetInnerHTML={{ __html: captureInstallPrompt }}
         />
-        <JsonLd data={createLocalBusinessJsonLd(openingHours)} />
+        <JsonLd data={createLocalBusinessJsonLd(openingHours, priceRange)} />
         <SkipLink />
         {children}
         {/*

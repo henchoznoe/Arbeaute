@@ -116,13 +116,35 @@ const refreshAdminActivity = () => {
   revalidatePath('/admin/activity')
 }
 
-/** Nombre de jours affichés d'un coup par le calendrier public. */
+/** Jours affichés d'un coup par le calendrier public. */
 const PUBLIC_WEEK_LENGTH = 7
 
 /**
- * Créneaux de la semaine affichée, en un seul aller-retour. Le calendrier
- * changeant de jour bien plus souvent que de semaine, charger les sept jours
- * ensemble divise d'autant les appels serveur — sans jamais mettre les
+ * Jours réellement demandés : la semaine affichée, plus celle d'avant et celle
+ * d'après.
+ *
+ * `loadAvailabilityWindow` fait **quatre requêtes quelle que soit la longueur
+ * de la fenêtre** : trois semaines coûtent donc exactement ce que coûtait une
+ * seule, en un aller-retour identique. En échange, les deux flèches du
+ * calendrier deviennent instantanées au lieu d'attendre le réseau.
+ *
+ * Ce n'est pas un cache serveur — les créneaux n'en ont jamais et n'en auront
+ * jamais. C'est un affichage optimiste : en arrivant sur une semaine voisine,
+ * le client redemande cette semaine-là en arrière-plan. Un créneau devenu
+ * indisponible entre-temps produit au pire « Ce créneau vient d'être réservé »,
+ * message qui existe déjà, et l'écriture reste protégée par la transaction
+ * sérialisable et la contrainte `appointment_no_confirmed_overlap`.
+ */
+const PUBLIC_WINDOW_LENGTH = PUBLIC_WEEK_LENGTH * 3
+
+/** Premier jour de la fenêtre : une semaine avant celle qui est affichée. */
+const windowStart = (fromDateKey: string): string =>
+  addLocalDays(fromDateKey, -PUBLIC_WEEK_LENGTH)
+
+/**
+ * Créneaux autour de la semaine affichée, en un seul aller-retour. Le
+ * calendrier changeant de jour bien plus souvent que de semaine, charger la
+ * fenêtre entière divise d'autant les appels serveur — sans jamais mettre les
  * créneaux en cache, qui doivent rester exacts.
  */
 export const getPublicWeekAvailability = async (
@@ -130,13 +152,13 @@ export const getPublicWeekAvailability = async (
   fromDateKey: string,
 ): Promise<Record<string, DayAvailability>> => {
   try {
-    const from = z.string().min(1).parse(fromDateKey)
+    const from = windowStart(z.string().min(1).parse(fromDateKey))
     const settings = await getBookingSettings()
     return await getAvailabilityByDate({
       database: prisma,
       serviceId: z.string().min(1).parse(serviceId),
       fromDateKey: from,
-      toDateKey: addLocalDays(from, PUBLIC_WEEK_LENGTH - 1),
+      toDateKey: addLocalDays(from, PUBLIC_WINDOW_LENGTH - 1),
       settings,
     })
   } catch {
@@ -409,11 +431,12 @@ export const getCustomerMoveWeekAvailability = async (
       )
     )
       return {}
+    const from = windowStart(fromDateKey)
     return getAvailabilityByDate({
       database: prisma,
       serviceId: appointment.serviceId,
-      fromDateKey,
-      toDateKey: addLocalDays(fromDateKey, PUBLIC_WEEK_LENGTH - 1),
+      fromDateKey: from,
+      toDateKey: addLocalDays(from, PUBLIC_WINDOW_LENGTH - 1),
       excludeAppointmentId: appointment.id,
       // Déplacer un rendez-vous acquis n'ouvre pas droit aux heures sur
       // demande : le calendrier de déplacement ne montre que le réservable.

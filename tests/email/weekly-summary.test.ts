@@ -15,6 +15,7 @@ const appointment = (
   serviceDurationMinutes: 60,
   servicePriceCents: 12_000,
   serviceNameSnapshot: 'Soin visage bio',
+  categoryName: 'Soins visage',
   status: 'CONFIRMED',
   ...overrides,
 })
@@ -63,15 +64,50 @@ describe('buildWeeklySummary', () => {
   it('désigne le soin le plus donné, et tranche les égalités sans hésiter', () => {
     const summary = buildWeeklySummary(
       [
-        appointment({ serviceNameSnapshot: 'Épilation' }),
-        appointment({ serviceNameSnapshot: 'Soin visage bio' }),
+        appointment({
+          serviceNameSnapshot: 'Sourcils',
+          categoryName: 'Épilation au fil',
+        }),
+        appointment(),
       ],
       now,
     )
 
     // À égalité, l'ordre alphabétique : un bilan ne change pas d'avis d'une
     // lecture à l'autre.
-    expect(summary.topServiceLabel).toBe('Épilation')
+    expect(summary.topServiceLabel).toBe('Épilation au fil — Sourcils')
+  })
+
+  it('ne confond pas deux prestations de même nom dans des groupes différents', () => {
+    // Le catalogue propose « Visage » en Laser Erbium, en Endosphères et en
+    // épilation laser. Agréger sur le nom seul additionnait les trois : le
+    // classement lui-même était faux, pas seulement son libellé.
+    const summary = buildWeeklySummary(
+      [
+        appointment({
+          serviceNameSnapshot: 'Visage',
+          categoryName: 'Laser Erbium',
+        }),
+        appointment({
+          serviceNameSnapshot: 'Visage',
+          categoryName: 'Endosphères Therapy',
+        }),
+        appointment(),
+        appointment(),
+      ],
+      now,
+    )
+
+    expect(summary.topServiceLabel).toBe('Soins visage — Soin visage bio')
+  })
+
+  it('se contente du nom quand la prestation n’a plus de groupe', () => {
+    const summary = buildWeeklySummary(
+      [appointment({ categoryName: null })],
+      now,
+    )
+
+    expect(summary.topServiceLabel).toBe('Soin visage bio')
   })
 
   it('reste calme sur une semaine vide', () => {

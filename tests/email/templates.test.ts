@@ -16,6 +16,7 @@ const base: AppointmentMailData = {
   customerFirstName: 'Marie',
   customerLastName: 'Dupont',
   serviceLabel: 'Soins visage — Soin visage bio',
+  customerEmail: 'marie@example.com',
   startsAt: new Date('2026-08-17T11:30:00.000Z'),
   endsAt: new Date('2026-08-17T12:30:00.000Z'),
   priceCents: 12_000,
@@ -61,8 +62,10 @@ describe('buildConfirmationMail', () => {
     expect(mail.html).toContain('Ajouter à mon agenda')
     expect(mail.html).toContain('Déplacer ou annuler')
     // La version texte porte les mêmes adresses, écrites en toutes lettres.
+    // Le lien porte l'adresse du destinataire : un clic ouvre ses rendez-vous
+    // sans rien redemander, et la route retire ensuite le paramètre de l'URL.
     expect(mail.text).toContain(
-      'Déplacer ou annuler : https://www.arbeaute-bulle.ch/mes-rendez-vous',
+      'Déplacer ou annuler : https://www.arbeaute-bulle.ch/mes-rendez-vous/connexion?email=marie%40example.com',
     )
     expect(mail.text).toContain(
       'Ajouter à mon agenda : https://calendar.google.com/',
@@ -90,6 +93,28 @@ describe('échappement HTML', () => {
     })
     expect(mail.html).not.toContain('<script>')
     expect(mail.html).toContain('&lt;script&gt;')
+  })
+})
+
+describe('le lien « Déplacer ou annuler »', () => {
+  it('retombe sur l’écran d’identification quand l’adresse manque', () => {
+    // Un rendez-vous ancien peut n'avoir aucune adresse, et l'effacement des
+    // coordonnées en écrit NULL : le lien doit rester valide, pas disparaître.
+    const mail = buildConfirmationMail({ ...base, customerEmail: null })
+
+    expect(mail.text).toContain(
+      'Déplacer ou annuler : https://www.arbeaute-bulle.ch/mes-rendez-vous',
+    )
+    expect(mail.text).not.toContain('connexion?email=')
+  })
+
+  it('encode une adresse qui contient un signe plus', () => {
+    const mail = buildConfirmationMail({
+      ...base,
+      customerEmail: 'marie+institut@example.com',
+    })
+
+    expect(mail.text).toContain('email=marie%2Binstitut%40example.com')
   })
 })
 
@@ -208,6 +233,7 @@ const lateRequestBase: LateRequestMailData = {
   customerLastName: 'Dupont',
   customerPhone: '+41791234567',
   serviceLabel: 'Soins visage — Soin visage bio',
+  customerEmail: 'marie@example.com',
   requestedStartsAt: new Date('2026-08-17T11:30:00.000Z'),
   priceCents: 12_000,
 }
@@ -267,5 +293,18 @@ describe('buildLateRequestDeclinedMail', () => {
     })
     expect(mail.text).toContain('/reservation')
     expect(mail.text).toContain('+41 79 675 67 66')
+  })
+
+  it('nomme le soin demandé, groupe compris', () => {
+    // Deux demandes en attente le même jour : sans le soin, on ne sait pas
+    // laquelle est refusée.
+    const mail = buildLateRequestDeclinedMail({
+      ...lateRequestBase,
+      declineReason: null,
+    })
+    expect(mail.text).toContain(
+      `Votre demande portait sur ${lateRequestBase.serviceLabel}.`,
+    )
+    expect(mail.html).toContain(lateRequestBase.serviceLabel)
   })
 })

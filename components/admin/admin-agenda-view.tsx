@@ -11,6 +11,7 @@ import Link from 'next/link'
 import { useEffect, useState } from 'react'
 import { AdminDayTimeline } from '@/components/admin/admin-day-timeline'
 import { AdminWeekGrid } from '@/components/admin/admin-week-grid'
+import { AdminWeekLink } from '@/components/admin/admin-week-link'
 import { Button } from '@/components/ui/button'
 import type { AdminTimelineDay } from '@/lib/admin/agenda-timeline'
 import { ADMIN_AGENDA_DATE_EVENT } from '@/lib/admin/navigation'
@@ -65,14 +66,12 @@ export const AdminAgendaView = ({
       <section className="mt-4 md:hidden">
         <div className="rounded-2xl border bg-card p-3">
           <div className="flex items-center justify-between gap-2">
-            <Button asChild variant="ghost" size="icon">
-              <Link
-                href={`/admin?date=${previousWeek}`}
-                aria-label="Semaine précédente"
-              >
-                <ChevronLeft className="size-5" />
-              </Link>
-            </Button>
+            <AdminWeekLink
+              href={`/admin?date=${previousWeek}`}
+              label="Semaine précédente"
+            >
+              <ChevronLeft className="size-5" />
+            </AdminWeekLink>
             <div className="text-center">
               <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
                 Semaine
@@ -82,14 +81,12 @@ export const AdminAgendaView = ({
                 {days.at(-1)?.label.replace(/^\S+\s/, '')}
               </p>
             </div>
-            <Button asChild variant="ghost" size="icon">
-              <Link
-                href={`/admin?date=${nextWeek}`}
-                aria-label="Semaine suivante"
-              >
-                <ChevronRight className="size-5" />
-              </Link>
-            </Button>
+            <AdminWeekLink
+              href={`/admin?date=${nextWeek}`}
+              label="Semaine suivante"
+            >
+              <ChevronRight className="size-5" />
+            </AdminWeekLink>
           </div>
 
           {/* Des boutons, pas des onglets. Le motif ARIA `tablist` promet une
@@ -169,27 +166,25 @@ export const AdminAgendaView = ({
             </p>
           </div>
           <div className="flex items-center gap-2">
-            <Button asChild variant="outline" size="icon">
-              <Link
-                href={`/admin?date=${previousWeek}`}
-                aria-label="Semaine précédente"
-              >
-                <ChevronLeft className="size-4" />
-              </Link>
-            </Button>
+            <AdminWeekLink
+              href={`/admin?date=${previousWeek}`}
+              label="Semaine précédente"
+              variant="outline"
+            >
+              <ChevronLeft className="size-4" />
+            </AdminWeekLink>
             <Button asChild variant="outline">
               <Link href="/admin">
                 <CalendarClock className="size-4" /> Aujourd’hui
               </Link>
             </Button>
-            <Button asChild variant="outline" size="icon">
-              <Link
-                href={`/admin?date=${nextWeek}`}
-                aria-label="Semaine suivante"
-              >
-                <ChevronRight className="size-4" />
-              </Link>
-            </Button>
+            <AdminWeekLink
+              href={`/admin?date=${nextWeek}`}
+              label="Semaine suivante"
+              variant="outline"
+            >
+              <ChevronRight className="size-4" />
+            </AdminWeekLink>
           </div>
         </div>
 

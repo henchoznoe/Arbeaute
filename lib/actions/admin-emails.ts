@@ -102,6 +102,7 @@ export const resendFailedEmail = async (
     startsAt: appointment.startsAt,
     endsAt: appointment.endsAt,
     priceCents: appointment.servicePriceCents,
+    customerEmail: appointment.customerEmail,
   })
 
   const attachment =

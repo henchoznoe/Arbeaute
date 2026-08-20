@@ -2,6 +2,7 @@
 
 import { Menu, X } from 'lucide-react'
 import Link from 'next/link'
+import { usePathname } from 'next/navigation'
 import type { ReactNode } from 'react'
 import { useState } from 'react'
 import { Button } from '@/components/ui/button'
@@ -19,6 +20,12 @@ export const SiteHeader = ({
   className,
 }: Readonly<SiteHeaderProps>) => {
   const [open, setOpen] = useState(false)
+  const pathname = usePathname()
+  // La vitrine compte désormais plusieurs pages : sans repère, on ne sait plus
+  // où l'on est. `/` ne vaut que pour lui-même, sinon toutes les pages
+  // seraient actives en même temps.
+  const isCurrent = (href: string): boolean =>
+    href === '/' ? pathname === '/' : pathname.startsWith(href)
 
   return (
     <header
@@ -42,7 +49,12 @@ export const SiteHeader = ({
                 <Link
                   key={link.href}
                   href={link.href}
-                  className="transition-colors hover:text-brand"
+                  aria-current={isCurrent(link.href) ? 'page' : undefined}
+                  className={cn(
+                    'transition-colors hover:text-brand',
+                    isCurrent(link.href) &&
+                      'text-brand underline decoration-2 underline-offset-8',
+                  )}
                 >
                   {link.label}
                 </Link>
@@ -76,7 +88,11 @@ export const SiteHeader = ({
               key={link.href}
               href={link.href}
               onClick={() => setOpen(false)}
-              className="rounded-lg px-3 py-2.5 text-sm font-medium hover:bg-muted"
+              aria-current={isCurrent(link.href) ? 'page' : undefined}
+              className={cn(
+                'rounded-lg px-3 py-3 text-sm font-medium hover:bg-muted',
+                isCurrent(link.href) && 'bg-brand-subtle text-brand-strong',
+              )}
             >
               {link.label}
             </Link>

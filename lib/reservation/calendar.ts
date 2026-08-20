@@ -61,7 +61,7 @@ export const createAppointmentCalendar = ({
     `Rendez-vous chez ${contact.name}.`,
     `Adresse : ${contact.address}`,
     `Téléphone : ${contact.phone}`,
-    `Gérer mes rendez-vous : ${contact.website}/mes-rendez-vous`,
+    `Mes rendez-vous : ${contact.website}/mes-rendez-vous`,
   ].join('\n')
 
   return [

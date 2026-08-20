@@ -11,6 +11,7 @@ import {
   X,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { Skeleton, skeletonKeys } from '@/components/ui/skeleton'
 import { contact } from '@/lib/constants/contact'
 import type {
   AvailabilityDayState,
@@ -49,6 +50,9 @@ const stateIcon = {
   CLOSED: Minus,
 } satisfies Record<AvailabilityDayState, typeof CircleCheck>
 
+/** Assez d'heures pour que la zone garde à peu près sa taille habituelle. */
+const slotSkeletonKeys = skeletonKeys(9)
+
 export const WeekAvailabilityPicker = ({
   announcement,
   availability,
@@ -63,6 +67,10 @@ export const WeekAvailabilityPicker = ({
   startsAt,
   viewStart,
 }: Readonly<WeekAvailabilityPickerProps>) => {
+  // Les flèches ne réagissaient à rien : on cliquait, l'écran restait tel quel,
+  // et le réflexe était de recliquer — ce que Next sérialise, donc ce qui
+  // doublait l'attente. Elles disent maintenant qu'elles ont été pressées.
+  const busy = loading || !ready
   const weekEnd = addLocalDays(viewStart, 6)
   const weekDates = Array.from({ length: 7 }, (_, index) =>
     addLocalDays(viewStart, index),
@@ -90,7 +98,8 @@ export const WeekAvailabilityPicker = ({
             variant="outline"
             size="icon"
             onClick={() => onChangeWeek(-7)}
-            disabled={viewStart <= minDate}
+            disabled={busy || viewStart <= minDate}
+            aria-busy={busy}
             aria-label="Période précédente"
             className="rounded-full"
           >
@@ -105,7 +114,8 @@ export const WeekAvailabilityPicker = ({
             variant="outline"
             size="icon"
             onClick={() => onChangeWeek(7)}
-            disabled={viewStart >= maxViewStart}
+            disabled={busy || viewStart >= maxViewStart}
+            aria-busy={busy}
             aria-label="Période suivante"
             className="rounded-full"
           >
@@ -198,9 +208,17 @@ export const WeekAvailabilityPicker = ({
           <Clock className="size-4" /> Heures disponibles
         </p>
         {loading || !ready ? (
-          <p className="mt-4 text-sm text-muted-foreground">
-            Recherche des créneaux…
-          </p>
+          // Un squelette à la place d'une ligne de texte : la zone gardait sa
+          // hauteur seulement quand des heures s'y trouvaient, et la page
+          // sautait à chaque changement de semaine.
+          <div
+            aria-hidden="true"
+            className="mt-3 grid grid-cols-3 gap-2 sm:grid-cols-5"
+          >
+            {slotSkeletonKeys.map(key => (
+              <Skeleton key={key} className="h-11 rounded-xl" />
+            ))}
+          </div>
         ) : slots.length > 0 ? (
           <>
             {openSlots.length > 0 ? (

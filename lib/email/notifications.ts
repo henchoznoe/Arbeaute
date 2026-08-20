@@ -50,6 +50,7 @@ const toMailData = (
   endsAt: appointment.endsAt,
   priceCents: appointment.servicePriceCents,
   previousStartsAt,
+  customerEmail: appointment.customerEmail,
 })
 
 const queue = (

@@ -46,7 +46,6 @@ explication l’emporte, même si elle est plus longue.
 | Hors horaires | Hors ouverture |
 | Chevauche | Se superpose à |
 | Snapshot | Le nom et le prix d’alors |
-| Propager les coordonnées | Reporter sur ses rendez-vous à venir |
 | Exception (bouton, phrase) | Jour particulier |
 | Email | E-mail |
 

@@ -135,11 +135,12 @@ describe('légendes posées sur une photo', () => {
     const scrim = parseColor(INK_COLORS.dark)
     const ink = parseColor(INK_COLORS.light)
 
+    // Le hero ne figure plus ici : depuis la refonte, sa photo est posée à
+    // côté du titre et ne porte aucun texte. Seule la galerie écrit encore par
+    // dessus une image, et c'est son voile que ce test protège.
     const captions = [
       { name: 'galerie, titre', veil: 0.75, opacity: 1 },
       { name: 'galerie, légende', veil: 0.75, opacity: 0.75 },
-      { name: 'hero, titre', veil: 0.7, opacity: 1 },
-      { name: 'hero, légende', veil: 0.7, opacity: 0.85 },
     ]
 
     for (const caption of captions) {
@@ -152,12 +153,9 @@ describe('légendes posées sur une photo', () => {
     }
   })
 
-  it('applique bien ces voiles dans les deux sections', () => {
+  it('applique bien ce voile dans la galerie', () => {
     expect(readFileSync('components/sections/gallery.tsx', 'utf8')).toContain(
       'from-ink-dark/75',
-    )
-    expect(readFileSync('components/sections/hero.tsx', 'utf8')).toContain(
-      'from-ink-dark/70',
     )
   })
 })

@@ -14,8 +14,10 @@ This file provides guidance to AI coding agents (Claude Code, Copilot, Cursor, e
 - All user-facing copy is in **French (fr-CH)**, and so are the code comments.
   Match that when adding anything.
 - Boundaries:
-  - `app/` — routes; `app/admin/` is gated by `proxy.ts`
-  - `components/sections/` — public landing sections; `components/reservation/` —
+  - `app/` — routes; `app/admin/` is gated by `proxy.ts`. The vitrine is five
+    pages — `/`, `/prestations`, `/prestations/[slug]`, `/institut`, `/contact` —
+    all wrapped in `components/layout/public-shell.tsx`
+  - `components/sections/` — public page sections; `components/reservation/` —
     booking wizard and customer cards; `components/admin/` — admin forms;
     `components/ui/` — shadcn primitives; `components/pwa/` — install banner + SW
   - `lib/actions/` — Server Actions (mutations, all origin- and session-checked)

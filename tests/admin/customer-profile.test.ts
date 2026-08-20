@@ -77,7 +77,7 @@ describe('admin customer profile', () => {
     })
   })
 
-  it('propagates corrected details only to future confirmed snapshots', async () => {
+  it('réaligne toujours les rendez-vous à venir confirmés', async () => {
     const transaction = {
       customer: {
         findFirst: vi
@@ -102,10 +102,9 @@ describe('admin customer profile', () => {
         phone: '+41791234567',
         internalNote: 'Préfère le calme',
         preferences: 'Matin',
-        propagateFuture: true,
         now,
       }),
-    ).resolves.toEqual({ propagatedAppointments: 2 })
+    ).resolves.toEqual({ updatedAppointments: 2 })
     expect(transaction.appointment.updateMany).toHaveBeenCalledWith({
       where: {
         customerId: customer.id,
@@ -125,7 +124,10 @@ describe('admin customer profile', () => {
     ).not.toContain('maria@example.com')
   })
 
-  it('preserves every appointment snapshot without explicit propagation', async () => {
+  it('laisse intacts les rendez-vous passés et ceux qui ne sont plus confirmés', async () => {
+    // La copie portée par un rendez-vous passé est un fait historique : elle dit
+    // sous quel nom on avait réservé. Seuls les rendez-vous encore à venir, et
+    // encore confirmés, suivent les nouvelles coordonnées.
     const transaction = {
       customer: {
         findFirst: vi
@@ -134,7 +136,7 @@ describe('admin customer profile', () => {
           .mockResolvedValueOnce(null),
         update: vi.fn().mockResolvedValue({ id: 'customer-1' }),
       },
-      appointment: { updateMany: vi.fn() },
+      appointment: { updateMany: vi.fn().mockResolvedValue({ count: 0 }) },
       auditEvent: { create: vi.fn().mockResolvedValue({ id: 'audit-1' }) },
     }
     const database = {
@@ -149,11 +151,18 @@ describe('admin customer profile', () => {
       phone: customer.phone,
       internalNote: null,
       preferences: null,
-      propagateFuture: false,
       now,
     })
 
-    expect(transaction.appointment.updateMany).not.toHaveBeenCalled()
+    expect(transaction.appointment.updateMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: {
+          customerId: customer.id,
+          status: 'CONFIRMED',
+          startsAt: { gte: now },
+        },
+      }),
+    )
   })
 
   it('rejects an e-mail already used by another record', async () => {
@@ -180,7 +189,6 @@ describe('admin customer profile', () => {
         phone: customer.phone,
         internalNote: null,
         preferences: null,
-        propagateFuture: false,
       }),
     ).rejects.toMatchObject({
       code: 'IDENTITY_CONFLICT',

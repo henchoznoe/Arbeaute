@@ -2,7 +2,7 @@ import { contact } from '@/lib/constants/contact'
 
 /**
  * www.arbeaute-bulle.ch est la version canonique : Vercel redirige
- * l'apex (arbeaute-bulle.ch) vers www avec un 307. Toutes les URLs
+ * l'apex (arbeaute-bulle.ch) vers www avec un 308. Toutes les URLs
  * publiques (métadonnées, sitemap, JSON-LD) doivent utiliser ce domaine
  * pour éviter tout contenu dupliqué aux yeux de Google.
  */
