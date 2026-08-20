@@ -1,3 +1,10 @@
+# [1.14.0](https://github.com/henchoznoe/Arbeaute/compare/v1.13.0...v1.14.0) (2026-08-20)
+
+
+### Features
+
+* add Vera affiliated link ([c1fc283](https://github.com/henchoznoe/Arbeaute/commit/c1fc2830cf94bdacf5ddd6dc2a96ba1539dc4234))
+
 # [1.13.0](https://github.com/henchoznoe/Arbeaute/compare/v1.12.0...v1.13.0) (2026-08-20)
 
 
