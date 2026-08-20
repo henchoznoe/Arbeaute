@@ -6,7 +6,12 @@ import { notFound } from 'next/navigation'
 import { PublicShell } from '@/components/layout/public-shell'
 import { Button } from '@/components/ui/button'
 import { getServiceCareContent } from '@/lib/catalog/service-content'
-import { findServiceBySlug, listServiceSlugs } from '@/lib/catalog/service-page'
+import {
+  buildServiceStaticParams,
+  findServiceBySlug,
+  listServiceSlugs,
+  SERVICE_PAGE_VALIDATION_SLUG,
+} from '@/lib/catalog/service-page'
 import { createPageMetadata } from '@/lib/config/seo'
 import { contact } from '@/lib/constants/contact'
 import { buildServiceReservationPath } from '@/lib/reservation/deep-link'
@@ -34,14 +39,15 @@ interface ServicePageProps {
  */
 export const generateStaticParams = async (): Promise<{ slug: string }[]> => {
   const slugs = await listServiceSlugs()
-  return slugs.map(slug => ({ slug }))
+  return buildServiceStaticParams(slugs)
 }
 
 export const generateMetadata = async ({
   params,
 }: ServicePageProps): Promise<Metadata> => {
   const { slug } = await params
-  const found = await findServiceBySlug(slug)
+  const found =
+    slug === SERVICE_PAGE_VALIDATION_SLUG ? null : await findServiceBySlug(slug)
   if (!found)
     return createPageMetadata({
       title: 'Prestation introuvable',
@@ -62,6 +68,8 @@ export const generateMetadata = async ({
 
 const ServiceDetailPage = async ({ params }: ServicePageProps) => {
   const { slug } = await params
+  if (slug === SERVICE_PAGE_VALIDATION_SLUG) notFound()
+
   const found = await findServiceBySlug(slug)
   if (!found) notFound()
 

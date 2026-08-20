@@ -19,6 +19,19 @@ export interface ServicePageData {
   siblings: CatalogService[]
 }
 
+/**
+ * Cache Components exige au moins une adresse pour valider une route
+ * dynamique. Les traits de soulignement rendent celle-ci impossible à créer
+ * depuis l'administration, dont les adresses n'utilisent que lettres, chiffres
+ * et tirets.
+ */
+export const SERVICE_PAGE_VALIDATION_SLUG = '__catalogue-vide__'
+
+export const buildServiceStaticParams = (slugs: string[]): { slug: string }[] =>
+  (slugs.length > 0 ? slugs : [SERVICE_PAGE_VALIDATION_SLUG]).map(slug => ({
+    slug,
+  }))
+
 export const findServiceBySlug = async (
   slug: string,
 ): Promise<ServicePageData | null> => {
