@@ -1,3 +1,16 @@
+# [1.13.0](https://github.com/henchoznoe/Arbeaute/compare/v1.12.0...v1.13.0) (2026-08-20)
+
+
+### Bug Fixes
+
+* CI presta empty ([1324044](https://github.com/henchoznoe/Arbeaute/commit/13240448c4922f083da8bafb2cf1a0963a480c53))
+* **seo:** renforcer l’indexation du site public ([3dec39b](https://github.com/henchoznoe/Arbeaute/commit/3dec39b6cc5d9f3b94515e8b3e7327335d0a3cda))
+
+
+### Features
+
+* update UI ([d14e094](https://github.com/henchoznoe/Arbeaute/commit/d14e094d6535ac5070d4c53cd27eebcd76b0dd86))
+
 # [1.12.0](https://github.com/henchoznoe/Arbeaute/compare/v1.11.0...v1.12.0) (2026-08-19)
 
 
