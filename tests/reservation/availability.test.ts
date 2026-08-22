@@ -184,7 +184,6 @@ describe('public availability', () => {
       settings: withSettings({
         minBookingNoticeHours: 0,
         bookingHorizonMonths: 1,
-        customerChangeCutoffHours: 24,
         slotIntervalMinutes: 20,
       }),
     })
@@ -209,7 +208,6 @@ describe('public availability', () => {
       settings: withSettings({
         minBookingNoticeHours: 0,
         bookingHorizonMonths: 1,
-        customerChangeCutoffHours: 24,
         slotIntervalMinutes: 20,
       }),
     })

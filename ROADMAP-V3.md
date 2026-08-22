@@ -1,5 +1,11 @@
 # Roadmap V3 — le parcours, les e-mails, et les fondations
 
+> **Document historique.** La suppression du rappel décrite dans cette V3 a été
+> remplacée le 22 août 2026, avec l’accord d’Arzu, par le plan
+> [RAPPEL-MAIL.md](RAPPEL-MAIL.md). Les décisions de la V3 restent écrites ici
+> pour expliquer l’évolution du produit ; elles ne décrivent plus l’état actuel
+> des rappels ni les limites actuelles des crons Vercel Hobby.
+
 ## Objectif
 
 La [roadmap v1](ROADMAP.md) a construit les capacités du produit. La

@@ -1,9 +1,11 @@
-import { MailCheck, MailX } from 'lucide-react'
+import { Clock3, MailCheck, MailX } from 'lucide-react'
 import { EmailResendButton } from '@/components/admin/email-resend-button'
 import { StatusBadge } from '@/components/ui/status-badge'
 import {
   describeEmailError,
   emailKindLabels,
+  emailStatusLabels,
+  emailStatusVariants,
   isResendableKind,
 } from '@/lib/admin/emails'
 import { formatShortMoment } from '@/lib/reservation/time'
@@ -43,11 +45,14 @@ export const AppointmentEmailStatus = ({
       <ul className="mt-3 space-y-3">
         {deliveries.map(delivery => {
           const sent = delivery.status === 'SENT'
+          const pending = delivery.status === 'PENDING'
           const advice = describeEmailError(delivery.error)
           return (
             <li key={delivery.id} className="rounded-2xl border p-3">
               <div className="flex flex-wrap items-center gap-2">
-                {sent ? (
+                {pending ? (
+                  <Clock3 className="size-4 shrink-0 text-warning-strong" />
+                ) : sent ? (
                   <MailCheck className="size-4 shrink-0 text-success" />
                 ) : (
                   <MailX className="size-4 shrink-0 text-destructive" />
@@ -55,12 +60,12 @@ export const AppointmentEmailStatus = ({
                 <span className="text-sm font-semibold">
                   {emailKindLabels[delivery.kind]}
                 </span>
-                <StatusBadge variant={sent ? 'success' : 'danger'}>
-                  {sent ? 'Parti' : 'Pas parti'}
+                <StatusBadge variant={emailStatusVariants[delivery.status]}>
+                  {emailStatusLabels[delivery.status]}
                 </StatusBadge>
               </div>
               <p className="mt-1 text-xs text-muted-foreground">
-                {sent ? 'Envoyé le' : 'Tenté le'}{' '}
+                {sent ? 'Envoyé le' : pending ? 'Préparé le' : 'Tenté le'}{' '}
                 {formatShortMoment(delivery.createdAt)} · {delivery.recipient}
               </p>
 
@@ -83,7 +88,8 @@ export const AppointmentEmailStatus = ({
                 </details>
               ) : null}
 
-              {!sent && isResendableKind(delivery.kind) ? (
+              {delivery.status === 'FAILED' &&
+              isResendableKind(delivery.kind) ? (
                 <div className="mt-3">
                   <EmailResendButton deliveryId={delivery.id} />
                 </div>

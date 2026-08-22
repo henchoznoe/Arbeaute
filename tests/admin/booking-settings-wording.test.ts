@@ -2,7 +2,6 @@ import { describe, expect, it } from 'vitest'
 import {
   describeBookingHorizon,
   describeBookingNotice,
-  describeChangeCutoff,
   describeLateRequestFloor,
   describeLateRequests,
   describeSlotInterval,
@@ -35,18 +34,6 @@ describe('describeBookingHorizon', () => {
   it('garde « mois » invariable', () => {
     expect(describeBookingHorizon(1)).toContain('après 1 mois')
     expect(describeBookingHorizon(3)).toContain('après 3 mois')
-  })
-})
-
-describe('describeChangeCutoff', () => {
-  it('dit qu’aucun verrou ne s’applique quand la valeur est nulle', () => {
-    expect(describeChangeCutoff(0)).toContain('Aucun verrou')
-  })
-
-  it('rappelle que le week-end ne compte pas', () => {
-    const phrase = describeChangeCutoff(48)
-    expect(phrase).toContain('48 dernières heures')
-    expect(phrase).toContain('week-end ne compte pas')
   })
 })
 

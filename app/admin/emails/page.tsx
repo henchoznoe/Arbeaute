@@ -14,6 +14,8 @@ import { StatusBadge } from '@/components/ui/status-badge'
 import {
   describeEmailError,
   emailKindLabels,
+  emailStatusLabels,
+  emailStatusVariants,
   getEmailOverview,
   isResendableKind,
 } from '@/lib/admin/emails'
@@ -40,7 +42,7 @@ const Emails = async () => {
         eyebrow="Arbeauté"
         title="E-mails envoyés"
         icon={Mail}
-        description="Confirmations, déplacements, annulations et bilan de la semaine. Un e-mail qui ne part pas n’empêche jamais un rendez-vous : il apparaît simplement ici, et vous pouvez le renvoyer."
+        description="Confirmations, rappels, déplacements, annulations et bilan de la semaine. Un e-mail qui ne part pas n’empêche jamais un rendez-vous : son résultat apparaît simplement ici."
       />
 
       {/* Les compteurs restent à gauche pendant qu'on descend la liste : ce
@@ -92,8 +94,8 @@ const Emails = async () => {
             >
               {failedCount} e-mail{failedCount > 1 ? 's' : ''} ne{' '}
               {failedCount > 1 ? 'sont' : 's’est'} pas parti
-              {failedCount > 1 ? 's' : ''}. Vous pouvez{' '}
-              {failedCount > 1 ? 'les' : 'le'} renvoyer depuis la liste.
+              {failedCount > 1 ? 's' : ''}. Le détail ci-dessous indique quoi
+              faire ; les confirmations peuvent être renvoyées.
             </p>
           ) : null}
 
@@ -105,6 +107,7 @@ const Emails = async () => {
               <li>· la confirmation, dès qu’un rendez-vous est pris ;</li>
               <li>· le déplacement, quand la date change ;</li>
               <li>· l’annulation, quand le rendez-vous est retiré ;</li>
+              <li>· le rappel, le matin de la veille ;</li>
               <li>
                 · l’accusé de réception d’une demande de dernière minute, et
                 votre alerte pour y répondre ;
@@ -133,12 +136,10 @@ const Emails = async () => {
                       </p>
                     </div>
                     <StatusBadge
-                      variant={
-                        delivery.status === 'SENT' ? 'success' : 'danger'
-                      }
+                      variant={emailStatusVariants[delivery.status]}
                       className="shrink-0"
                     >
-                      {delivery.status === 'SENT' ? 'Parti' : 'Pas parti'}
+                      {emailStatusLabels[delivery.status]}
                     </StatusBadge>
                   </div>
 

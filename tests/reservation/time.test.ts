@@ -48,13 +48,11 @@ describe('Europe/Zurich date conversion', () => {
     ])
   })
 
-  it('skips the weekend when counting the 48 business hours', () => {
+  it('uses a fixed 24-hour cutoff, weekend included', () => {
     // Lundi 10 août 2026, 10:00 à Zurich (08:00 UTC).
     const startsAt = new Date('2026-08-10T08:00:00.000Z')
-    // 10 h le lundi + 24 h le vendredi + 14 h le jeudi = 48 h ouvrables,
-    // samedi et dimanche ne comptant pas.
     expect(getCustomerChangeDeadline(startsAt).toISOString()).toBe(
-      '2026-08-06T08:00:00.000Z',
+      '2026-08-09T08:00:00.000Z',
     )
   })
 
@@ -63,29 +61,21 @@ describe('Europe/Zurich date conversion', () => {
     expect(
       canCustomerChangeAppointment(
         startsAt,
-        new Date('2026-08-06T07:59:59.999Z'),
+        new Date('2026-08-09T07:59:59.999Z'),
       ),
     ).toBe(true)
     expect(
       canCustomerChangeAppointment(
         startsAt,
-        new Date('2026-08-06T08:00:00.000Z'),
+        new Date('2026-08-09T08:00:00.000Z'),
       ),
     ).toBe(false)
   })
 
-  it('does not count Saturday or Sunday as business time', () => {
-    // Mercredi 12 août 2026, 10:00 à Zurich : aucun week-end sur les 48 h.
-    const midweek = new Date('2026-08-12T08:00:00.000Z')
-    expect(getCustomerChangeDeadline(midweek).toISOString()).toBe(
-      '2026-08-10T08:00:00.000Z',
-    )
-  })
-
-  it('applies a configurable business-hour cutoff across DST', () => {
+  it('subtracts 24 real hours across daylight saving changes', () => {
     const startsAt = new Date('2026-10-26T09:00:00.000Z')
-    expect(getCustomerChangeDeadline(startsAt, 24).toISOString()).toBe(
-      '2026-10-23T08:00:00.000Z',
+    expect(getCustomerChangeDeadline(startsAt).toISOString()).toBe(
+      '2026-10-25T09:00:00.000Z',
     )
   })
 
@@ -115,15 +105,13 @@ describe('Europe/Zurich date conversion', () => {
     expect(() => getDateKeysInRange('2026-02-30', '2026-08-20')).toThrow()
   })
 
-  it('keeps a Monday appointment cancellable during the previous week', () => {
+  it('keeps a Monday appointment cancellable during Sunday morning', () => {
     const startsAt = new Date('2026-08-10T08:00:00.000Z')
-    // Le samedi précédent, le délai n'est pas encore écoulé côté calendaire,
-    // mais il l'est déjà en heures ouvrables.
     expect(
       canCustomerChangeAppointment(
         startsAt,
-        new Date('2026-08-08T10:00:00.000Z'),
+        new Date('2026-08-09T07:59:59.999Z'),
       ),
-    ).toBe(false)
+    ).toBe(true)
   })
 })

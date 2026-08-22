@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
   type AppointmentMailData,
+  buildAppointmentReminderMail,
   buildCancelledMail,
   buildConfirmationMail,
   buildLateRequestDeclinedMail,
@@ -147,6 +148,36 @@ describe('buildCancelledMail', () => {
 
   it('ne propose pas d’ajouter à un agenda un rendez-vous annulé', () => {
     expect(mail.text).not.toContain('Ajouter à mon agenda')
+  })
+})
+
+describe('buildAppointmentReminderMail', () => {
+  it('rappelle la date exacte et propose le changement avant l’échéance', () => {
+    const mail = buildAppointmentReminderMail({
+      ...base,
+      changeDeadline: new Date('2026-08-16T11:30:00.000Z'),
+    })
+
+    expect(mail.subject).toBe(
+      'Rappel — votre rendez-vous lundi 17 août 2026 à 13:30',
+    )
+    expect(mail.subject).not.toContain('demain')
+    expect(mail.text).toContain('dimanche 16 août 2026 à 13:30')
+    expect(mail.text).toContain('Déplacer ou annuler :')
+    expect(mail.html).toContain('Déplacer ou annuler')
+    expect(mail.text).not.toContain('Ajouter à mon agenda')
+  })
+
+  it('invite à contacter l’institut quand le changement en ligne est fermé', () => {
+    const mail = buildAppointmentReminderMail({
+      ...base,
+      changeDeadline: null,
+    })
+
+    expect(mail.text).toContain('Répondez à ce message')
+    expect(mail.text).toContain('+41 79 675 67 66')
+    expect(mail.text).not.toContain('Déplacer ou annuler :')
+    expect(mail.html).not.toContain('Déplacer ou annuler')
   })
 })
 

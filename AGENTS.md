@@ -157,17 +157,19 @@ accurate after a catalogue edit.
 Everything is anchored to `RESERVATION_TIME_ZONE` (`Europe/Zurich`), never the
 visitor's zone. Dates are passed around as **date keys** (`'YYYY-MM-DD'` strings)
 and converted with `localDateMinuteToUtc` / `getLocalDayBounds`. The customer
-change deadline is counted in *business* hours (weekends skipped) by
-`getCustomerChangeDeadline`.
+change deadline is a fixed **24 real hours** before `startsAt`, weekends
+included, and is calculated by `getCustomerChangeDeadline`.
 
 ### Booking settings
 
-The singleton `BookingSettings` row is the source of truth for **six** settings:
-`minBookingNoticeHours`, `bookingHorizonMonths`, `customerChangeCutoffHours`,
-`slotIntervalMinutes`, and — added by late booking phase 1 —
+The singleton `BookingSettings` row is the source of truth for **five** settings:
+`minBookingNoticeHours`, `bookingHorizonMonths`, `slotIntervalMinutes`,
 `lateRequestsEnabled` and `lateRequestFloorHours`. Public reads go through the
 tagged cache in `lib/reservation/booking-settings.ts`; the admin mutation updates
 the row and audit event in one transaction, then invalidates every public view.
+The database column `customerChangeCutoffHours` is deliberately still present
+but ignored: removing it is the second deployment of the destructive-change
+sequence, after every live instance has stopped reading it.
 
 ### Last-minute requests (`lib/reservation/late-requests.ts`)
 
@@ -185,9 +187,8 @@ her mail.
   itself.
 - **Statuses** are `PENDING`, `ACCEPTED`, `DECLINED`, `WITHDRAWN`. A fifth state
   — expired — is **deduced at read time** by `isLateRequestExpired` (pending, and
-  the requested hour has passed). **No job sweeps expired requests**: the only
-  cron slot the Hobby plan gives is already taken by the Sunday digest, and a
-  comparison is enough.
+  the requested hour has passed). **No job sweeps expired requests**: a
+  comparison is enough and avoids a useless scheduled write.
 - **Two limits.** `checkRateLimit` allows **three requests per 24 hours**, keyed
   by IP *and* by e-mail address (`lib/actions/late-requests.ts`); on top of that,
   a customer may have at most **two pending requests**
@@ -259,28 +260,23 @@ counted from successful sends and surfaced at `/admin/emails`, where a failed
 message can be resent — its body is rebuilt from the appointment rather than
 stored.
 
-**Eight templates exist** in `lib/email/templates.ts`. Four are triggered by a
+**Nine templates exist** in `lib/email/templates.ts`. Four are triggered by a
 booking — confirmation, series confirmation, reschedule, cancellation — three by
-a last-minute request (see below), and one by the clock: Arzu's weekly summary,
-sent Sunday evening by the single cron in `vercel.json`. The day-before reminder
-and the nightly digest were removed in v3: the owner does not want a daily
-message.
-`APPOINTMENT_REMINDER` and `DAILY_DIGEST` remain in the `EmailKind` enum because
-past `EmailDelivery` rows carry them and dropping an enum value would be a
-destructive migration; `emailKindLabels` still translates them so the history
-reads in French, but `isResendableKind` excludes them — no template can rebuild
-them any more. The three `LATE_REQUEST_*` kinds are excluded too, for a
-different reason: their body depends on the request, not on an appointment, so
-`/admin/emails` cannot rebuild them either. Only the three `BOOKING_*` kinds are
-resendable.
+a last-minute request, one is the customer's morning reminder, and one is
+Arzu's weekly summary. The reminder is claimed in `EmailDelivery` before the
+network call and deduplicated by appointment plus start time, locally and at
+Resend. `DAILY_DIGEST` remains in `EmailKind` only because past rows carry it.
+`isResendableKind` excludes reminders, digests and the three `LATE_REQUEST_*`
+kinds: a late manual resend could announce a past time or content that no longer
+matches its original request. Only the three `BOOKING_*` kinds are resendable.
 
-**Cron schedules are UTC and ignore daylight saving.** `0 18 * * 0` fires at
-20:00 in Bulle in summer and 19:00 in winter, and Hobby triggers within the hour
-rather than to the minute — so nothing in `runWeeklyDigest` depends on an exact
-time: the covered week comes from local date keys, never from "the last 168
-hours". Vercel injects `CRON_SECRET` only while a cron is declared in
-`vercel.json`; without it the route answers 503 rather than running
-unauthenticated.
+**Cron schedules are UTC and ignore daylight saving.** `0 5 * * *` runs the
+reminders around 07:00–08:00 in summer and 06:00–07:00 in winter; `0 18 * * 0`
+runs the Sunday digest around 20:00 in summer and 19:00 in winter. Hobby
+triggers within the hour rather than to the minute, so both jobs calculate with
+local date keys and never depend on an exact trigger time. Vercel injects
+`CRON_SECRET` while crons are declared in `vercel.json`; without it either route
+answers 503 rather than running unauthenticated.
 
 **A blank optional env var means "absent".** `lib/core/env.ts` wraps optional
 variables in a helper mapping `''` to `undefined`: `.optional()` alone only

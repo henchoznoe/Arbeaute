@@ -99,7 +99,6 @@ describe('customer appointment activity', () => {
     mocks.getBookingSettings.mockResolvedValue({
       minBookingNoticeHours: 12,
       bookingHorizonMonths: 3,
-      customerChangeCutoffHours: 48,
       slotIntervalMinutes: 15,
       lateRequestsEnabled: false,
       lateRequestFloorHours: 2,

@@ -48,7 +48,7 @@ peut être enregistré, même en cas de réservations simultanées.
   au maximum ; c'est l'institut qui tranche depuis `/admin/demandes`.
 - **Espace personnel sans mot de passe** — identification par adresse e-mail
   seule, session de quinze minutes, déplacement et annulation libres jusqu'à
-  48 heures ouvrables avant la séance. Le compromis de sécurité est expliqué dans
+  24 heures calendaires avant la séance. Le compromis de sécurité est expliqué dans
   [SECURITY.md](SECURITY.md).
 - **Administration** — agenda semaine et jour, création de rendez-vous hors
   horaires publics avec confirmation explicite, exceptions d'ouverture et de

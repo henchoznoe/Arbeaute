@@ -2,7 +2,8 @@ export const RESERVATION_TIME_ZONE = 'Europe/Zurich'
 export const DEFAULT_SLOT_INTERVAL_MINUTES = 15
 export const DEFAULT_MIN_BOOKING_NOTICE_HOURS = 12
 export const DEFAULT_BOOKING_HORIZON_MONTHS = 3
-export const DEFAULT_CUSTOMER_CHANGE_CUTOFF_HOURS = 48
+/** Règle publique stable : un rendez-vous reste modifiable jusqu'à 24 h avant. */
+export const CUSTOMER_CHANGE_CUTOFF_HOURS = 24
 export const DEFAULT_LATE_REQUESTS_ENABLED = false
 export const DEFAULT_LATE_REQUEST_FLOOR_HOURS = 2
 export const CUSTOMER_SESSION_MUTATION_LIMIT = 10

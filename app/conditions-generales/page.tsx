@@ -5,9 +5,9 @@ import { contact } from '@/lib/constants/contact'
 import {
   formatBookingHorizon,
   formatBookingNotice,
-  formatCustomerChangeCutoff,
   getBookingSettings,
 } from '@/lib/reservation/booking-settings'
+import { CUSTOMER_CHANGE_CUTOFF_HOURS } from '@/lib/reservation/constants'
 
 export const metadata = createPageMetadata({
   title: 'Conditions générales',
@@ -18,11 +18,9 @@ export const metadata = createPageMetadata({
 
 const TermsPage = async () => {
   const settings = await getBookingSettings()
-  const customerChangeCutoffLabel = formatCustomerChangeCutoff(
-    settings.customerChangeCutoffHours,
-  )
-  // Les trois valeurs viennent des réglages, jamais du texte : Arzu peut les
-  // changer depuis l'administration, et les conditions suivent.
+  const customerChangeCutoffLabel = `${CUSTOMER_CHANGE_CUTOFF_HOURS} heures`
+  // Les deux bornes variables viennent des réglages. Le délai de changement,
+  // lui, est fixe : une promesse déjà lue ne doit jamais changer ensuite.
   const noticeLabel = formatBookingNotice(settings.minBookingNoticeHours)
   const horizonLabel = formatBookingHorizon(settings.bookingHorizonMonths)
   return (

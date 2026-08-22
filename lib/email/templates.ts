@@ -274,6 +274,48 @@ export const buildCancelledMail = (data: AppointmentMailData): MailContent => {
   }
 }
 
+export interface AppointmentReminderMailData extends AppointmentMailData {
+  /** Présente uniquement tant que le changement en ligne reste ouvert. */
+  changeDeadline: Date | null
+}
+
+/**
+ * Le rappel du matin de la veille, qui reste exact lors d'un rattrapage.
+ *
+ * « Demain » est volontairement absent : après une panne du cron, le même
+ * gabarit peut partir le jour du rendez-vous sans annoncer une fausse date.
+ */
+export const buildAppointmentReminderMail = (
+  data: AppointmentReminderMailData,
+): MailContent => {
+  const title = 'Votre rendez-vous approche'
+  const intro = `Bonjour ${greetingName(data)}, un petit rappel pour votre rendez-vous chez ${contact.name}.`
+  const canChange = data.changeDeadline !== null
+  const closing = canChange
+    ? `Vous pouvez le déplacer ou l’annuler en ligne jusqu’au ${formatMailDate(data.changeDeadline as Date)} à ${formatMailTime(data.changeDeadline as Date)}.`
+    : `Un empêchement ? Répondez à ce message ou appelez-nous dès que possible au ${contact.phone}.`
+  const actions = canChange ? [manageAction(data.customerEmail)] : []
+
+  return {
+    subject: `Rappel — votre rendez-vous ${formatMailDate(data.startsAt)} à ${formatMailTime(data.startsAt)}`,
+    text: [
+      intro,
+      '',
+      ...appointmentSummaryText(data),
+      '',
+      closing,
+      ...actionsText(actions),
+      '',
+      ...textFooter,
+    ].join('\n'),
+    html: wrapHtml(
+      title,
+      [escapeHtml(intro), ...appointmentSummaryHtml(data), escapeHtml(closing)],
+      actions,
+    ),
+  }
+}
+
 /**
  * Une série de rendez-vous, en **un** message.
  *
