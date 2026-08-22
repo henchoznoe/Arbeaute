@@ -1,3 +1,10 @@
+# [1.15.0](https://github.com/henchoznoe/Arbeaute/compare/v1.14.0...v1.15.0) (2026-08-22)
+
+
+### Features
+
+* ajouter les rappels de rendez-vous par e-mail ([efbdebc](https://github.com/henchoznoe/Arbeaute/commit/efbdebcadf6b056ad343890e77b94db0e8c99b24))
+
 # [1.14.0](https://github.com/henchoznoe/Arbeaute/compare/v1.13.0...v1.14.0) (2026-08-20)
 
 
