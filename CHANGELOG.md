@@ -1,3 +1,10 @@
+## [1.15.1](https://github.com/henchoznoe/Arbeaute/compare/v1.15.0...v1.15.1) (2026-08-22)
+
+
+### Bug Fixes
+
+* update Vera section ([3f6ae81](https://github.com/henchoznoe/Arbeaute/commit/3f6ae81557c56702c407de1c415f958fb192f05a))
+
 # [1.15.0](https://github.com/henchoznoe/Arbeaute/compare/v1.14.0...v1.15.0) (2026-08-22)
 
 
