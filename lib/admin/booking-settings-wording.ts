@@ -27,12 +27,6 @@ export const describeBookingNotice = (hours: number): string => {
 export const describeBookingHorizon = (months: number): string =>
   `Le calendrier s’arrête après ${plural(months, 'mois', 'mois')}. Au-delà, plus aucune date ne s’affiche et il faut vous appeler.`
 
-export const describeChangeCutoff = (hours: number): string => {
-  if (hours === 0)
-    return 'Aucun verrou : un rendez-vous peut être déplacé ou annulé jusqu’à la dernière minute.'
-  return `Un rendez-vous ne peut plus être déplacé ni annulé sans vous dans les ${plural(hours, 'dernière heure', 'dernières heures')} qui le précèdent. Le week-end ne compte pas dans ce décompte, il repousse donc le verrou d’autant.`
-}
-
 export const describeSlotInterval = (minutes: number): string => {
   const first = 9 * 60
   const times = [0, 1, 2]

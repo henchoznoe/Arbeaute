@@ -1,15 +1,10 @@
 import prisma from '@/lib/core/prisma'
 import { buildQuotaStatus } from '@/lib/email/quota'
-import type { EmailKind } from '@/prisma/generated/prisma/enums'
+import type { EmailKind, EmailStatus } from '@/prisma/generated/prisma/enums'
 
 const EMAIL_PAGE_SIZE = 25
 
-/**
- * Les deux derniers libellés ne désignent plus rien d'envoyable : le rappel de
- * la veille et le récapitulatif quotidien ont été supprimés. Ils restent
- * traduits parce que des envois passés les portent encore, et que l'historique
- * doit se lire en français plutôt qu'en noms d'énumération.
- */
+/** Le récapitulatif quotidien reste traduit pour les anciennes lignes. */
 export const emailKindLabels: Record<EmailKind, string> = {
   BOOKING_CONFIRMATION: 'Confirmation de rendez-vous',
   BOOKING_RESCHEDULED: 'Rendez-vous déplacé',
@@ -21,6 +16,18 @@ export const emailKindLabels: Record<EmailKind, string> = {
   LATE_REQUEST_RECEIVED: 'Accusé de demande de dernière minute',
   LATE_REQUEST_DECLINED: 'Demande de dernière minute refusée',
 }
+
+export const emailStatusLabels: Record<EmailStatus, string> = {
+  PENDING: 'En cours',
+  SENT: 'Parti',
+  FAILED: 'Pas parti',
+}
+
+export const emailStatusVariants = {
+  PENDING: 'warning',
+  SENT: 'success',
+  FAILED: 'danger',
+} as const satisfies Record<EmailStatus, 'warning' | 'success' | 'danger'>
 
 /**
  * Seuls les messages déclenchés par une réservation peuvent être reconstruits :

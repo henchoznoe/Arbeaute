@@ -19,6 +19,10 @@ interface DeliveryRequest extends MailEnvelope {
   appointmentId?: string | null
 }
 
+interface ClaimedDeliveryRequest extends MailEnvelope {
+  deliveryId: string
+}
+
 const startOfLocalDay = (now: Date): Date => {
   const parts = new Intl.DateTimeFormat('fr-CH', {
     timeZone: RESERVATION_TIME_ZONE,
@@ -87,6 +91,55 @@ export const deliverEmail = async (
     return result.ok ? 'sent' : 'failed'
   } catch {
     // Dernier filet : même une base indisponible ne doit pas remonter ici.
+    return 'failed'
+  }
+}
+
+/**
+ * Finalise un envoi automatique déjà réclamé en base.
+ *
+ * Le rappel crée sa ligne `PENDING` avant le réseau : deux crons concurrents
+ * ne peuvent donc jamais tous deux décider qu'il reste à envoyer.
+ */
+export const deliverClaimedEmail = async (
+  request: ClaimedDeliveryRequest,
+): Promise<'sent' | 'failed' | 'skipped'> => {
+  const fail = async (error: string) => {
+    await prisma.emailDelivery.update({
+      where: { id: request.deliveryId },
+      data: { status: 'FAILED', error },
+    })
+  }
+
+  try {
+    if (!isEmailConfigured || !request.to) {
+      await fail('Envoi désactivé : configuration Resend absente.')
+      return 'skipped'
+    }
+
+    const now = new Date()
+    if (!canSendWithinQuota(await readUsage(now))) {
+      await fail(
+        'Limite de l’offre gratuite atteinte : l’envoi n’a pas été tenté.',
+      )
+      return 'failed'
+    }
+
+    const result = await sendMailThroughResend(request)
+    await prisma.emailDelivery.update({
+      where: { id: request.deliveryId },
+      data: {
+        status: result.ok ? 'SENT' : 'FAILED',
+        providerId: result.ok ? result.providerId : null,
+        error: result.ok ? null : result.error,
+        sentAt: result.ok ? new Date() : null,
+      },
+    })
+    return result.ok ? 'sent' : 'failed'
+  } catch {
+    try {
+      await fail('L’envoi a été interrompu avant sa confirmation.')
+    } catch {}
     return 'failed'
   }
 }

@@ -1,8 +1,8 @@
 import { addMonths } from 'date-fns'
 import { formatInTimeZone, fromZonedTime } from 'date-fns-tz'
 import {
+  CUSTOMER_CHANGE_CUTOFF_HOURS,
   DEFAULT_BOOKING_HORIZON_MONTHS,
-  DEFAULT_CUSTOMER_CHANGE_CUTOFF_HOURS,
   RESERVATION_TIME_ZONE,
 } from '@/lib/reservation/constants'
 
@@ -90,56 +90,19 @@ export const getBookingDateLimits = (
   }
 }
 
-const isBusinessDateKey = (dateKey: string): boolean => {
-  const dayOfWeek = getLocalDayOfWeek(dateKey)
-  return dayOfWeek >= 1 && dayOfWeek <= 5
-}
-
-/**
- * Recule d'une durée exprimée en heures ouvrables : seules les heures tombant
- * du lundi au vendredi (fuseau de l'institut) sont décomptées.
- */
-const subtractBusinessTime = (target: Date, ms: number): Date => {
-  if (ms <= 0) return new Date(target.getTime())
-  let remaining = ms
-  // Fin (exclusive) de la tranche de journée en cours d'examen.
-  let sliceEnd = new Date(target.getTime())
-  let dateKey = getLocalDateKey(target)
-
-  // Borne de sécurité : 48 h ouvrables couvrent au plus ~10 jours calendaires.
-  for (let guard = 0; guard < 400; guard += 1) {
-    const dayStart = localDateMinuteToUtc(dateKey, 0)
-
-    if (isBusinessDateKey(dateKey)) {
-      const availableInDay = sliceEnd.getTime() - dayStart.getTime()
-      if (availableInDay >= remaining)
-        return new Date(sliceEnd.getTime() - remaining)
-      remaining -= availableInDay
-    }
-
-    // La fin du jour précédent est exactement le début du jour courant.
-    sliceEnd = dayStart
-    dateKey = addLocalDays(dateKey, -1)
-  }
-
-  return sliceEnd
-}
-
 /**
  * Dernier instant auquel le client peut encore déplacer ou annuler lui-même.
+ *
+ * La règle est fixe et calendaire : le week-end comme les changements d'heure
+ * ne changent jamais la promesse lisible « jusqu'à 24 heures avant ».
  */
-export const getCustomerChangeDeadline = (
-  startsAt: Date,
-  cutoffBusinessHours = DEFAULT_CUSTOMER_CHANGE_CUTOFF_HOURS,
-): Date => subtractBusinessTime(startsAt, cutoffBusinessHours * 60 * 60 * 1000)
+export const getCustomerChangeDeadline = (startsAt: Date): Date =>
+  new Date(startsAt.getTime() - CUSTOMER_CHANGE_CUTOFF_HOURS * 60 * 60_000)
 
 export const canCustomerChangeAppointment = (
   startsAt: Date,
   now = new Date(),
-  cutoffBusinessHours = DEFAULT_CUSTOMER_CHANGE_CUTOFF_HOURS,
-): boolean =>
-  now.getTime() <
-  getCustomerChangeDeadline(startsAt, cutoffBusinessHours).getTime()
+): boolean => now.getTime() < getCustomerChangeDeadline(startsAt).getTime()
 
 /**
  * Deux gabarits de date, et deux seulement.

@@ -24,6 +24,8 @@ export interface MailEnvelope {
   text: string
   html: string
   attachments?: MailAttachment[]
+  /** Déduplique chez Resend un envoi automatique rejoué. */
+  idempotencyKey?: string
 }
 
 export type MailResult =
@@ -47,6 +49,9 @@ export const sendMailThroughResend = async (
       headers: {
         Authorization: `Bearer ${apiKey}`,
         'Content-Type': 'application/json',
+        ...(envelope.idempotencyKey
+          ? { 'Idempotency-Key': envelope.idempotencyKey }
+          : {}),
       },
       body: JSON.stringify({
         from,

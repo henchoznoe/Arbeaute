@@ -8,7 +8,6 @@ import type { PrismaClient } from '@/prisma/generated/prisma/client'
 const settings = {
   minBookingNoticeHours: 12,
   bookingHorizonMonths: 3,
-  customerChangeCutoffHours: 48,
   slotIntervalMinutes: 15,
   lateRequestsEnabled: false,
   lateRequestFloorHours: 2,

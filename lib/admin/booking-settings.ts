@@ -9,7 +9,6 @@ export const bookingSettingsSchema = z
   .object({
     minBookingNoticeHours: z.coerce.number().int().min(0).max(720),
     bookingHorizonMonths: z.coerce.number().int().min(1).max(12),
-    customerChangeCutoffHours: z.coerce.number().int().min(0).max(240),
     slotIntervalMinutes: z.coerce
       .number()
       .int()
@@ -24,13 +23,6 @@ export const bookingSettingsSchema = z
       context.addIssue({
         code: 'custom',
         path: ['minBookingNoticeHours'],
-        message:
-          'Ce délai doit rester plus court que la période pendant laquelle on peut réserver.',
-      })
-    if (settings.customerChangeCutoffHours >= minimumHorizonHours)
-      context.addIssue({
-        code: 'custom',
-        path: ['customerChangeCutoffHours'],
         message:
           'Ce délai doit rester plus court que la période pendant laquelle on peut réserver.',
       })
@@ -62,7 +54,6 @@ export const saveBookingSettingsAudited = async (
         ? {
             minBookingNoticeHours: previous.minBookingNoticeHours,
             bookingHorizonMonths: previous.bookingHorizonMonths,
-            customerChangeCutoffHours: previous.customerChangeCutoffHours,
             slotIntervalMinutes: previous.slotIntervalMinutes,
             lateRequestsEnabled: previous.lateRequestsEnabled,
             lateRequestFloorHours: previous.lateRequestFloorHours,

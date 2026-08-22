@@ -424,11 +424,7 @@ export const getCustomerMoveWeekAvailability = async (
     const settings = await getBookingSettings()
     if (
       !appointment ||
-      !canCustomerChangeAppointment(
-        appointment.startsAt,
-        new Date(),
-        settings.customerChangeCutoffHours,
-      )
+      !canCustomerChangeAppointment(appointment.startsAt, new Date())
     )
       return {}
     const from = windowStart(fromDateKey)
@@ -465,11 +461,7 @@ export const getNextCustomerMoveAvailableSlot = async (
     const settings = await getBookingSettings()
     if (
       !appointment ||
-      !canCustomerChangeAppointment(
-        appointment.startsAt,
-        new Date(),
-        settings.customerChangeCutoffHours,
-      )
+      !canCustomerChangeAppointment(appointment.startsAt, new Date())
     )
       return null
     return findNextAvailableSlot({

@@ -15,7 +15,6 @@ import { SLOT_INTERVAL_OPTIONS } from '@/lib/admin/booking-settings'
 import {
   describeBookingHorizon,
   describeBookingNotice,
-  describeChangeCutoff,
   describeLateRequestFloor,
   describeLateRequests,
   describeSlotInterval,
@@ -53,7 +52,7 @@ const BookingSettingsForm = async ({
         eyebrow="Arbeauté"
         title="Règles de réservation"
         icon={SlidersHorizontal}
-        description="Ces réglages décident de ce qui peut être réservé en ligne, de ce que vous préférez décider vous-même, et jusqu’à quand un rendez-vous peut être modifié sans vous."
+        description="Ces réglages décident de ce qui peut être réservé en ligne et de ce que vous préférez décider vous-même. Un rendez-vous reste toujours modifiable jusqu’à 24 heures avant."
       />
 
       <AdminPageColumns>
@@ -71,9 +70,9 @@ const BookingSettingsForm = async ({
               role="alert"
               className="rounded-2xl border border-destructive/30 bg-destructive/10 p-4 text-sm leading-relaxed text-destructive"
             >
-              Rien n’a été enregistré. Les deux délais en heures doivent rester
-              plus courts que la période pendant laquelle on peut réserver.
-              Réduisez l’un des deux délais, ou augmentez le nombre de mois.
+              Rien n’a été enregistré. Le délai en heures doit rester plus court
+              que la période pendant laquelle on peut réserver. Réduisez-le, ou
+              augmentez le nombre de mois.
             </p>
           ) : null}
           <div className="rounded-2xl border bg-card p-4 text-sm leading-relaxed text-muted-foreground">
@@ -136,30 +135,6 @@ const BookingSettingsForm = async ({
                 />
                 <span className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-sm text-muted-foreground">
                   mois
-                </span>
-              </div>
-            </FormField>
-
-            <FormField
-              controlId="change-cutoff"
-              label="Jusqu’à quand un rendez-vous peut être changé"
-              help={describeChangeCutoff(settings.customerChangeCutoffHours)}
-              helpId="change-cutoff-help"
-            >
-              <div className="relative">
-                <input
-                  id="change-cutoff"
-                  name="customerChangeCutoffHours"
-                  type="number"
-                  min={0}
-                  max={240}
-                  required
-                  defaultValue={settings.customerChangeCutoffHours}
-                  aria-describedby="change-cutoff-help"
-                  className={`${formControlClass} w-full pr-20`}
-                />
-                <span className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-sm text-muted-foreground">
-                  heures
                 </span>
               </div>
             </FormField>

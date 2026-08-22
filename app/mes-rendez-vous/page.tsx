@@ -12,11 +12,9 @@ import { identifyCustomer, logoutCustomer } from '@/lib/actions/reservation'
 import { createPageMetadata } from '@/lib/config/seo'
 import prisma from '@/lib/core/prisma'
 import { getCustomerSession } from '@/lib/core/session-cookies'
-import {
-  formatCustomerChangeCutoff,
-  getBookingSettings,
-} from '@/lib/reservation/booking-settings'
+import { getBookingSettings } from '@/lib/reservation/booking-settings'
 import { createAppointmentCalendar } from '@/lib/reservation/calendar'
+import { CUSTOMER_CHANGE_CUTOFF_HOURS } from '@/lib/reservation/constants'
 import {
   CUSTOMER_HISTORY_LIMIT,
   getCustomerAppointmentState,
@@ -202,9 +200,7 @@ const CustomerAppointments = async ({
       getPendingLateRequestsForCustomer(customer.id),
     ])
   const limits = getBookingDateLimits(now, settings.bookingHorizonMonths)
-  const customerChangeCutoffLabel = formatCustomerChangeCutoff(
-    settings.customerChangeCutoffHours,
-  )
+  const customerChangeCutoffLabel = `${CUSTOMER_CHANGE_CUTOFF_HOURS} heures`
 
   return (
     <>
@@ -287,13 +283,9 @@ const CustomerAppointments = async ({
                     canChange={canCustomerChangeAppointment(
                       appointment.startsAt,
                       now,
-                      settings.customerChangeCutoffHours,
                     )}
                     changeDeadlineLabel={formatAppointmentDate(
-                      getCustomerChangeDeadline(
-                        appointment.startsAt,
-                        settings.customerChangeCutoffHours,
-                      ),
+                      getCustomerChangeDeadline(appointment.startsAt),
                     )}
                     customerChangeCutoffLabel={customerChangeCutoffLabel}
                     calendar={createAppointmentCalendar({

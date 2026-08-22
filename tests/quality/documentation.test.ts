@@ -15,7 +15,10 @@ import { describe, expect, it } from 'vitest'
 const AGENTS = readFileSync('AGENTS.md', 'utf8')
 const README = readFileSync('README.md', 'utf8')
 const TEMPLATES = readFileSync('lib/email/templates.ts', 'utf8')
-const SCHEMA = readFileSync('prisma/schema.prisma', 'utf8')
+const BOOKING_SETTINGS = readFileSync(
+  'lib/reservation/booking-settings.ts',
+  'utf8',
+)
 const LATE_REQUEST_ACTIONS = readFileSync(
   'lib/actions/late-requests.ts',
   'utf8',
@@ -55,17 +58,18 @@ describe('documentation d’accord avec le code', () => {
   })
 
   it('nomme chacun des réglages de réservation', () => {
-    const model = SCHEMA.match(/model BookingSettings \{([\s\S]*?)\n\}/)?.[1]
-    expect(model).toBeDefined()
+    const values = BOOKING_SETTINGS.match(
+      /export interface BookingSettingsValues \{([\s\S]*?)\n\}/,
+    )?.[1]
+    expect(values).toBeDefined()
 
-    // `id`, `createdAt` et `updatedAt` sont de la plomberie Prisma, pas des
-    // réglages : ce sont les autres colonnes qu'Arzu voit dans un écran.
-    const settings = (model as string)
+    // L'interface publique est la vérité active. La colonne de l'ancien délai
+    // subsiste un déploiement en base, mais le code l'ignore déjà.
+    const settings = (values as string)
       .split('\n')
-      .flatMap(line => line.match(/^ {2}(\w+) +\w/)?.[1] ?? [])
-      .filter(field => !['id', 'createdAt', 'updatedAt'].includes(field))
+      .flatMap(line => line.match(/^ {2}(\w+):/)?.[1] ?? [])
 
-    expect(settings).toHaveLength(6)
+    expect(settings).toHaveLength(5)
     expect(AGENTS).toContain(
       `source of truth for **${NUMBER_WORDS[settings.length]}** settings`,
     )

@@ -1,9 +1,9 @@
 import { cacheLife, cacheTag } from 'next/cache'
 import {
   BOOKING_SETTINGS_TAG,
-  formatCustomerChangeCutoff,
   getBookingSettings,
 } from '@/lib/reservation/booking-settings'
+import { CUSTOMER_CHANGE_CUTOFF_HOURS } from '@/lib/reservation/constants'
 import { getBookingDateLimits } from '@/lib/reservation/time'
 
 export interface BookingWindow {
@@ -32,8 +32,6 @@ export const getPublicBookingWindow = async (): Promise<BookingWindow> => {
   return {
     min,
     max,
-    customerChangeCutoffLabel: formatCustomerChangeCutoff(
-      settings.customerChangeCutoffHours,
-    ),
+    customerChangeCutoffLabel: `${CUSTOMER_CHANGE_CUTOFF_HOURS} heures`,
   }
 }

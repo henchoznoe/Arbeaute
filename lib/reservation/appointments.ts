@@ -195,11 +195,7 @@ export const moveAppointmentSerializable = async (
           })
           if (
             !appointment ||
-            !canCustomerChangeAppointment(
-              appointment.startsAt,
-              now,
-              settings.customerChangeCutoffHours,
-            )
+            !canCustomerChangeAppointment(appointment.startsAt, now)
           )
             throw new ReservationError('APPOINTMENT_UNAVAILABLE')
 
@@ -292,7 +288,6 @@ export const cancelAppointmentSerializable = async (
   customerId: string,
   now = new Date(),
 ) => {
-  const settings = await getBookingSettings()
   return prisma.$transaction(
     async transaction => {
       const appointment = await transaction.appointment.findFirst({
@@ -304,11 +299,7 @@ export const cancelAppointmentSerializable = async (
       })
       if (
         !appointment ||
-        !canCustomerChangeAppointment(
-          appointment.startsAt,
-          now,
-          settings.customerChangeCutoffHours,
-        )
+        !canCustomerChangeAppointment(appointment.startsAt, now)
       )
         throw new ReservationError('APPOINTMENT_UNAVAILABLE')
 

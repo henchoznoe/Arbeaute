@@ -61,10 +61,10 @@ enum EmailKind {
   BOOKING_CONFIRMATION
   BOOKING_RESCHEDULED
   BOOKING_CANCELLED
-  /// Plus jamais écrits : les rappels et le récapitulatif quotidiens ont été
-  /// supprimés en v3. Les valeurs restent parce que des envois passés les
-  /// portent, et qu'une suppression d'énumération serait destructive.
+  /// Réactivé après la v3 : un passage quotidien rappelle les rendez-vous.
   APPOINTMENT_REMINDER
+  /// Plus jamais écrit : le récapitulatif quotidien a été supprimé en v3. La
+  /// valeur reste parce que des envois passés la portent.
   DAILY_DIGEST
   WEEKLY_DIGEST
   LATE_REQUEST_SUBMITTED
@@ -73,6 +73,7 @@ enum EmailKind {
 }
 
 enum EmailStatus {
+  PENDING
   SENT
   FAILED
 }
@@ -373,19 +374,23 @@ model AuditEvent {
 /// — destinataire, objet, et le rendez-vous d'origine — le corps du message
 /// étant reconstruit à la demande plutôt que dupliqué ici.
 model EmailDelivery {
-  id            String       @id @default(cuid())
-  kind          EmailKind
-  status        EmailStatus
-  recipient     String
-  subject       String
-  appointmentId String?
-  providerId    String?
-  error         String?
-  attempts      Int          @default(1)
-  sentAt        DateTime?
-  createdAt     DateTime     @default(now())
-  updatedAt     DateTime     @updatedAt
-  appointment   Appointment? @relation(fields: [appointmentId], references: [id], onDelete: SetNull)
+  id                  String       @id @default(cuid())
+  kind                EmailKind
+  status              EmailStatus
+  recipient           String
+  subject             String
+  appointmentId       String?
+  /// Horaire annoncé par un rappel : un déplacement produit une nouvelle clé.
+  appointmentStartsAt DateTime?
+  /// Clé durable des envois automatiques, également transmise à Resend.
+  deduplicationKey    String?      @unique
+  providerId          String?
+  error               String?
+  attempts            Int          @default(1)
+  sentAt              DateTime?
+  createdAt           DateTime     @default(now())
+  updatedAt           DateTime     @updatedAt
+  appointment         Appointment? @relation(fields: [appointmentId], references: [id], onDelete: SetNull)
 
   @@index([status, createdAt])
   @@index([createdAt])

@@ -99,3 +99,15 @@ toujours : l’effacement des coordonnées y écrit `NULL`. Les rendez-vous anci
 sans téléphone ne doivent pas être « complétés » par une valeur de remplissage —
 une adresse partagée fusionnerait des personnes distinctes en une seule identité,
 que n’importe qui pourrait ouvrir depuis « Mes rendez-vous ».
+
+## Délai de changement fixe : retrait en deux temps
+
+La livraison du rappel du 22 août 2026 fixe le déplacement et l’annulation à 24
+heures calendaires. Le code, les conditions générales et l’administration ont
+cessé de lire et d’écrire `BookingSettings.customerChangeCutoffHours`, mais la
+colonne reste volontairement dans le schéma de cette première livraison.
+
+Après mise en production de cette version, une seconde livraison pourra retirer
+la colonne avec une migration dédiée. La migration ne doit pas être ajoutée à la
+première : Vercel l’appliquerait alors pendant que l’ancienne version en ligne
+lit encore ce champ.
