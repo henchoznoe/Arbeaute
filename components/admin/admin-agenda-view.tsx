@@ -4,6 +4,7 @@ import {
   CalendarClock,
   ChevronLeft,
   ChevronRight,
+  CircleHelp,
   Plus,
   SlidersHorizontal,
 } from 'lucide-react'
@@ -143,15 +144,28 @@ export const AdminAgendaView = ({
                 {capitalizeFirst(selectedDay.label)}
               </h2>
             </div>
-            <Button asChild size="icon">
+            <Button asChild size="sm" className="rounded-full">
               <Link
                 href={`/admin/appointments/new?date=${selectedDay.dateKey}`}
                 aria-label={`Ajouter un rendez-vous le ${selectedDay.label}`}
               >
-                <Plus className="size-5" />
+                <Plus className="size-4" /> Ajouter
               </Link>
             </Button>
           </div>
+          <p className="mt-2 flex items-start gap-2 text-xs leading-relaxed text-muted-foreground">
+            <CircleHelp className="mt-0.5 size-4 shrink-0 text-primary" />
+            <span>
+              Touchez un rendez-vous pour l’ouvrir et le modifier.{' '}
+              <Link
+                href="/admin/aide"
+                className="font-medium text-foreground underline underline-offset-4"
+              >
+                Voir l’aide rapide
+              </Link>
+              .
+            </span>
+          </p>
           <AdminDayTimeline day={selectedDay} />
         </div>
       </section>
@@ -187,6 +201,21 @@ export const AdminAgendaView = ({
             </AdminWeekLink>
           </div>
         </div>
+
+        <p className="mt-3 flex items-start gap-2 text-sm text-muted-foreground">
+          <CircleHelp className="mt-0.5 size-4 shrink-0 text-primary" />
+          <span>
+            Cliquez sur un rendez-vous pour le modifier, ou sur une heure libre
+            pour en ajouter un.{' '}
+            <Link
+              href="/admin/aide"
+              className="font-medium text-foreground underline underline-offset-4"
+            >
+              Voir l’aide rapide
+            </Link>
+            .
+          </span>
+        </p>
 
         <AdminWeekGrid days={days} visibleIndexes={visibleIndexes} />
 

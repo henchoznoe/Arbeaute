@@ -3,6 +3,7 @@
 import {
   Activity,
   CalendarDays,
+  CircleHelp,
   CirclePlus,
   Clock,
   House,
@@ -107,6 +108,7 @@ export const AdminNavigation = ({
   const pathname = usePathname()
   const searchParams = useSearchParams()
   const activeItem = getActiveAdminNavigationItem(pathname)
+  const helpIsActive = pathname.startsWith('/admin/aide')
   const fallbackDate = getLocalDateKey(new Date())
   const [agendaDate, setAgendaDate] = useState(
     searchParams.get('date') ?? fallbackDate,
@@ -202,10 +204,25 @@ export const AdminNavigation = ({
             })}
           </nav>
 
-          {/* Deux gestes fréquents, deux boutons : le menu déroulant n'abritait
-              qu'une déconnexion, et revenir au site public demandait de retaper
-              l'adresse. */}
+          {/* Les raccourcis qui restent utiles depuis chaque écran : l'aide,
+              le site public et la déconnexion. */}
           <div className="flex items-center gap-2">
+            <Button
+              asChild
+              variant={helpIsActive ? 'default' : 'outline'}
+              size="icon"
+              className="gap-2 sm:w-auto sm:px-3"
+              title="Aide rapide"
+            >
+              <Link
+                href="/admin/aide"
+                aria-current={helpIsActive ? 'page' : undefined}
+              >
+                <CircleHelp className="size-5" />
+                <span className="hidden sm:inline">Aide</span>
+                <span className="sr-only sm:hidden">Aide rapide</span>
+              </Link>
+            </Button>
             <Button asChild variant="outline" size="icon" title="Voir le site">
               <Link href="/">
                 <House className="size-5" />

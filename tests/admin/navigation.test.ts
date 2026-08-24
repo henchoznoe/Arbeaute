@@ -17,6 +17,7 @@ describe('admin navigation', () => {
     ['/admin/activity', 'activity'],
     ['/admin/activity?page=2', 'activity'],
     ['/admin/appointments/new', 'create'],
+    ['/admin/aide', null],
     ['/admin/settings', 'settings'],
     ['/admin/availability', 'settings'],
     ['/admin/emails', 'settings'],

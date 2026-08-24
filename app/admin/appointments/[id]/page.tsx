@@ -129,7 +129,7 @@ const EditAppointment = async ({
         }
         description={
           appointment.status === 'CONFIRMED'
-            ? 'Si vous changez de soin, la durée et le prix de ce rendez-vous sont mis à jour automatiquement.'
+            ? 'Pour déplacer ce rendez-vous, changez la date ou l’heure ci-dessous, puis appuyez sur « Enregistrer les modifications ». La personne sera prévenue par e-mail si une adresse est enregistrée. Si vous changez de soin, la durée et le prix sont mis à jour automatiquement.'
             : 'Ce rendez-vous n’est plus actif. Vous pouvez le consulter, mais pas le modifier tant que vous ne l’avez pas rétabli.'
         }
         actions={
@@ -142,7 +142,7 @@ const EditAppointment = async ({
       />
 
       <AdminPageColumns>
-        <AdminPageAside>
+        <AdminPageAside className="order-2 lg:order-1">
           {/* Même trio d'actions que dans la liste du jour — appeler, puis changer
           le statut — pour qu'Arzu n'ait qu'un seul geste à mémoriser. */}
           <section className="rounded-3xl border bg-card p-5 shadow-sm sm:p-6">
@@ -190,7 +190,7 @@ const EditAppointment = async ({
           <AppointmentEmailStatus deliveries={emailDeliveries} />
         </AdminPageAside>
 
-        <div className="min-w-0">
+        <div className="order-1 min-w-0 lg:order-2">
           {appointment.status === 'CONFIRMED' ? (
             <div>
               <AppointmentForm

@@ -12,7 +12,8 @@ export const ADMIN_AGENDA_DATE_EVENT = 'admin-agenda-date-change'
 
 export const getActiveAdminNavigationItem = (
   pathname: string,
-): AdminNavigationItem => {
+): AdminNavigationItem | null => {
+  if (pathname.startsWith('/admin/aide')) return null
   if (pathname.startsWith('/admin/demandes')) return 'requests'
   if (
     pathname.startsWith('/admin/search') ||
