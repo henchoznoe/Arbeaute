@@ -1219,7 +1219,11 @@ export const ReservationWizard = ({
             onClick={() => goToStep(STEPS.review)}
             className="mt-7 w-full"
           >
-            Vérifier ma réservation
+            {!startsAt
+              ? 'Choisissez une heure pour continuer'
+              : isOnRequestSlot
+                ? 'Vérifier ma demande'
+                : 'Vérifier ma réservation'}
           </Button>
         </div>
       ) : null}
@@ -1384,10 +1388,25 @@ export const ReservationWizard = ({
             <ConsentFormNotice url={selectedService.consentFormUrl} />
           ) : null}
 
-          <CancellationPolicy
-            className="mt-5"
-            cutoffLabel={customerChangeCutoffLabel}
-          />
+          {isOnRequestSlot ? (
+            <p className="mt-5 flex items-start gap-2 rounded-xl border border-primary/25 bg-primary/5 p-4 text-sm">
+              <Clock className="mt-0.5 size-4 shrink-0 text-primary" />
+              <span>
+                <strong className="font-semibold">
+                  Si {contact.owner} accepte votre demande,
+                </strong>{' '}
+                les conditions d’annulation s’appliqueront alors au rendez-vous
+                : toute annulation ou modification devra intervenir au moins{' '}
+                {customerChangeCutoffLabel} avant l’heure prévue. Passé ce
+                délai, la séance est due à 100 %.
+              </span>
+            </p>
+          ) : (
+            <CancellationPolicy
+              className="mt-5"
+              cutoffLabel={customerChangeCutoffLabel}
+            />
+          )}
 
           {/* L'accord se donne ici, à la dernière étape : c'est le seul écran
               que tout le monde traverse, qu'un client existe déjà ou non. */}
@@ -1407,8 +1426,11 @@ export const ReservationWizard = ({
               className="mt-1 size-4"
             />
             <span>
-              J’accepte que mes données soient utilisées pour gérer mon
-              rendez-vous, conformément à la{' '}
+              J’accepte que mes données soient utilisées pour gérer{' '}
+              {isOnRequestSlot
+                ? 'ma demande et, si elle est acceptée, mon rendez-vous'
+                : 'mon rendez-vous'}
+              , conformément à la{' '}
               <a href="/politique-de-confidentialite" className="underline">
                 politique de confidentialité
               </a>{' '}

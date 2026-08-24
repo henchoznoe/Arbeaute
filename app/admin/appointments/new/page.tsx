@@ -115,7 +115,7 @@ const NewAppointment = async ({
             ? 'Le soin et les coordonnées ont été repris. Choisissez un nouveau créneau avant de créer le rendez-vous.'
             : customer
               ? 'Les coordonnées ont été reprises. Choisissez le soin et le créneau.'
-              : 'Nom, e-mail et téléphone sont nécessaires. Les heures hors ouverture sont possibles après confirmation.'
+              : '1. Choisissez le soin, la date et l’heure. 2. Recherchez un client déjà connu ou saisissez ses coordonnées. 3. Appuyez sur « Créer le rendez-vous ».'
         }
       />
       <div className="mt-6">

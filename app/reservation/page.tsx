@@ -12,7 +12,7 @@ import { getPublicBookingWindow } from '@/lib/reservation/booking-window'
 export const metadata = createPageMetadata({
   title: 'Prendre rendez-vous en ligne',
   description:
-    'Réservez votre soin esthétique à Bulle en quelques clics : choisissez votre prestation, un créneau disponible et confirmez immédiatement.',
+    'Choisissez votre soin esthétique à Bulle et une heure disponible. Les heures de dernière minute peuvent aussi être envoyées sur demande.',
   path: '/reservation',
 })
 
@@ -70,9 +70,10 @@ const ReservationPage = async () => {
             Prendre rendez-vous
           </h1>
           <p className="mt-3 text-muted-foreground">
-            Choisissez votre soin et un créneau disponible. La réservation est
+            Choisissez votre soin et une heure disponible. Une réservation est
             confirmée immédiatement à l’écran
-            {isEmailConfigured ? ', puis par e-mail' : null}.
+            {isEmailConfigured ? ', puis par e-mail' : null}. Les heures
+            proposées « sur demande » doivent d’abord être acceptées par Arzu.
           </p>
         </div>
         <Suspense fallback={<WizardSkeleton />}>

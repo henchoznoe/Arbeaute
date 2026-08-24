@@ -8,6 +8,7 @@ import {
   Clock,
   Minus,
   Phone,
+  Send,
   X,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -228,6 +229,7 @@ export const WeekAvailabilityPicker = ({
                     key={slot.startsAt}
                     type="button"
                     onClick={() => onSelectSlot(slot.startsAt)}
+                    aria-pressed={startsAt === slot.startsAt}
                     className={cn(
                       'h-11 rounded-xl border text-sm font-medium',
                       startsAt === slot.startsAt
@@ -241,19 +243,50 @@ export const WeekAvailabilityPicker = ({
               </div>
             ) : null}
             {requestSlots.length > 0 ? (
-              <div className={openSlots.length > 0 ? 'mt-6' : 'mt-3'}>
-                {openSlots.length > 0 ? (
-                  <p className="flex items-center gap-2 text-sm font-medium">
-                    <Phone className="size-4" /> Trop tard pour réserver en
-                    ligne
-                  </p>
-                ) : null}
+              <section
+                aria-labelledby="request-slots-title"
+                className={cn(
+                  'rounded-2xl border border-primary/25 bg-primary/5 p-4',
+                  openSlots.length > 0 ? 'mt-6' : 'mt-3',
+                )}
+              >
+                <h3
+                  id="request-slots-title"
+                  className="flex items-center gap-2 text-sm font-semibold"
+                >
+                  <Send className="size-4 text-primary" /> Heures disponibles
+                  sur demande
+                </h3>
+                <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
+                  Choisissez une heure ci-dessous, puis continuez jusqu’à «
+                  Envoyer ma demande ». {contact.owner} vous répondra par
+                  e-mail. Rien n’est réservé tant qu’elle n’a pas accepté.
+                </p>
+                <ol className="mt-4 grid grid-cols-3 gap-2 text-center text-xs">
+                  {[
+                    'Choisissez une heure',
+                    'Vérifiez',
+                    'Envoyez la demande',
+                  ].map((label, index) => (
+                    <li
+                      key={label}
+                      className="flex min-w-0 flex-col items-center gap-1.5 rounded-xl bg-background/80 px-1.5 py-2"
+                    >
+                      <span className="grid size-5 place-items-center rounded-full bg-primary text-2xs font-bold text-primary-foreground">
+                        {index + 1}
+                      </span>
+                      <span className="leading-tight font-medium">{label}</span>
+                    </li>
+                  ))}
+                </ol>
                 <div className="mt-3 grid grid-cols-3 gap-2 sm:grid-cols-5">
                   {requestSlots.map(slot => (
                     <button
                       key={slot.startsAt}
                       type="button"
                       onClick={() => onSelectSlot(slot.startsAt)}
+                      aria-label={`${slot.label}, sur demande`}
+                      aria-pressed={startsAt === slot.startsAt}
                       className={cn(
                         'h-11 rounded-xl border text-sm font-medium',
                         startsAt === slot.startsAt
@@ -265,22 +298,17 @@ export const WeekAvailabilityPicker = ({
                     </button>
                   ))}
                 </div>
-                <p className="mt-3 text-sm text-muted-foreground">
-                  Ces heures sont encore libres, mais il est trop tard pour les
-                  réserver en ligne. Demandez-en une à {contact.owner} : elle
-                  vous répond, ou appelez directement.
-                </p>
-                <Button
-                  asChild
-                  variant="secondary"
-                  className="mt-3 w-full sm:w-auto"
-                >
-                  <a href={`tel:${contact.phoneRaw}`}>
-                    <Phone className="size-4 shrink-0" />
+                <p className="mt-4 text-xs leading-relaxed text-muted-foreground">
+                  Besoin d’une réponse rapide ?{' '}
+                  <a
+                    href={`tel:${contact.phoneRaw}`}
+                    className="font-medium text-foreground underline underline-offset-4"
+                  >
                     Appeler le {contact.phone}
                   </a>
-                </Button>
-              </div>
+                  .
+                </p>
+              </section>
             ) : null}
           </>
         ) : selectedDay?.state === 'FULL' ? (
