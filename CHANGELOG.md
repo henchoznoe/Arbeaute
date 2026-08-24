@@ -1,3 +1,10 @@
+## [1.15.2](https://github.com/henchoznoe/Arbeaute/compare/v1.15.1...v1.15.2) (2026-08-24)
+
+
+### Bug Fixes
+
+* add small help block ([b3bc17d](https://github.com/henchoznoe/Arbeaute/commit/b3bc17df047d0f25c8d335e7883e6123ca101f86))
+
 ## [1.15.1](https://github.com/henchoznoe/Arbeaute/compare/v1.15.0...v1.15.1) (2026-08-22)
 
 
