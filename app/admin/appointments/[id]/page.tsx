@@ -129,7 +129,7 @@ const EditAppointment = async ({
         }
         description={
           appointment.status === 'CONFIRMED'
-            ? 'Pour déplacer ce rendez-vous, changez la date ou l’heure ci-dessous, puis appuyez sur « Enregistrer les modifications ». La personne sera prévenue par e-mail si une adresse est enregistrée. Si vous changez de soin, la durée et le prix sont mis à jour automatiquement.'
+            ? 'Choisissez « Déplacer le rendez-vous » pour trouver une heure libre. Les autres informations se corrigent ci-dessous. Changer de soin actualise la durée et le prix.'
             : 'Ce rendez-vous n’est plus actif. Vous pouvez le consulter, mais pas le modifier tant que vous ne l’avez pas rétabli.'
         }
         actions={
@@ -140,6 +140,27 @@ const EditAppointment = async ({
           </Button>
         }
       />
+
+      <section className="mb-5 rounded-2xl border bg-card p-4">
+        <h2 className="font-semibold">{customerName}</h2>
+        <p className="text-sm">
+          {formatAppointmentDate(appointment.startsAt)} ·{' '}
+          {appointment.serviceNameSnapshot}
+        </p>
+        <div className="mt-3 grid gap-2 sm:grid-cols-2">
+          <CustomerCallButton
+            phone={appointment.customerPhone}
+            customerName={customerName}
+          />
+          {appointment.status === 'CONFIRMED' ? (
+            <Button asChild>
+              <Link href={`/admin/appointments/${appointment.id}/deplacer`}>
+                Déplacer le rendez-vous
+              </Link>
+            </Button>
+          ) : null}
+        </div>
+      </section>
 
       <AdminPageColumns>
         <AdminPageAside className="order-2 lg:order-1">

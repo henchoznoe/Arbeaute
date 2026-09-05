@@ -1,4 +1,4 @@
-import { writeAuditEvent } from '@/lib/admin/audit'
+import { appointmentAuditValues, writeAuditEvent } from '@/lib/admin/audit'
 import { getAvailableSlots } from '@/lib/reservation/availability'
 import { getBookingSettings } from '@/lib/reservation/booking-settings'
 import { MAX_SERIALIZABLE_ATTEMPTS } from '@/lib/reservation/constants'
@@ -121,7 +121,7 @@ export const createAppointmentSerializable = async (
               status: 'CONFIRMED',
             },
           })
-          await transaction.appointmentActivity.create({
+          const activity = await transaction.appointmentActivity.create({
             data: {
               type: 'CREATED',
               appointmentId: appointment.id,
@@ -140,7 +140,8 @@ export const createAppointmentSerializable = async (
             action: 'CREATED',
             after: {
               serviceId: appointment.serviceId,
-              startsAt: appointment.startsAt.toISOString(),
+              ...appointmentAuditValues(appointment),
+              activityId: activity.id,
               status: appointment.status,
             },
           })
@@ -240,7 +241,7 @@ export const moveAppointmentSerializable = async (
               ),
             },
           })
-          await transaction.appointmentActivity.create({
+          const activity = await transaction.appointmentActivity.create({
             data: {
               type: 'RESCHEDULED',
               appointmentId: updated.id,
@@ -258,8 +259,11 @@ export const moveAppointmentSerializable = async (
             entityId: updated.id,
             entityLabel: updated.serviceNameSnapshot,
             action: 'RESCHEDULED',
-            before: { startsAt: appointment.startsAt.toISOString() },
-            after: { startsAt: updated.startsAt.toISOString() },
+            before: { ...appointmentAuditValues(appointment) },
+            after: {
+              ...appointmentAuditValues(updated),
+              activityId: activity.id,
+            },
           })
           // L'ancien horaire remonte pour que l'e-mail de déplacement puisse
           // le rappeler dans le message.
@@ -310,7 +314,7 @@ export const cancelAppointmentSerializable = async (
         },
         data: { status: 'CANCELLED', cancelledAt: now },
       })
-      await transaction.appointmentActivity.create({
+      const activity = await transaction.appointmentActivity.create({
         data: {
           type: 'CANCELLED',
           appointmentId: cancelled.id,
@@ -327,8 +331,15 @@ export const cancelAppointmentSerializable = async (
         entityId: cancelled.id,
         entityLabel: cancelled.serviceNameSnapshot,
         action: 'CANCELLED',
-        before: { status: appointment.status },
-        after: { status: cancelled.status },
+        before: {
+          ...appointmentAuditValues(appointment),
+          status: appointment.status,
+        },
+        after: {
+          ...appointmentAuditValues(cancelled),
+          activityId: activity.id,
+          status: cancelled.status,
+        },
       })
       return {
         ...cancelled,

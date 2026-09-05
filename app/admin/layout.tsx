@@ -1,10 +1,10 @@
 import type { Metadata, Viewport } from 'next'
 import { Suspense } from 'react'
+import { AdminFocusRefresh } from '@/components/admin/admin-focus-refresh'
 import {
   AdminContent,
   AdminNavigation,
 } from '@/components/admin/admin-navigation'
-import { getUnreadActivityCount } from '@/lib/admin/activity'
 import { installTargets } from '@/lib/config/pwa'
 import { getAdminSession } from '@/lib/core/session-cookies'
 import { getPendingLateRequestCount } from '@/lib/reservation/late-requests'
@@ -50,15 +50,12 @@ export const viewport: Viewport = {
 
 const AuthenticatedAdminNavigation = async () => {
   if (!(await getAdminSession())) return null
-  const [unreadActivityCount, pendingRequestCount] = await Promise.all([
-    getUnreadActivityCount(),
-    getPendingLateRequestCount(),
-  ])
+  const pendingRequestCount = await getPendingLateRequestCount()
   return (
-    <AdminNavigation
-      unreadActivityCount={unreadActivityCount}
-      pendingRequestCount={pendingRequestCount}
-    />
+    <>
+      <AdminFocusRefresh />
+      <AdminNavigation pendingRequestCount={pendingRequestCount} />
+    </>
   )
 }
 

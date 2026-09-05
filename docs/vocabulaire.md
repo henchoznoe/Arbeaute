@@ -26,7 +26,7 @@ explication l’emporte, même si elle est plus longue.
 | Prépa / rangement | Installation et rangement |
 | Statut métier | Appeler ou noter ce qui s’est passé |
 | Journal d’audit | Historique des modifications |
-| Journal admin | Mes modifications |
+| Journal admin | Activité |
 | Acteur · Entité | Qui · Quoi |
 | Anonymiser une cliente | Effacer les coordonnées d’une personne |
 | Anonymisation | Coordonnées effacées |

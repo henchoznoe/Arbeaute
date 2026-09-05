@@ -85,6 +85,7 @@ interface WindowOptions {
   fromDateKey: string
   toDateKey: string
   excludeAppointmentId?: string
+  timings?: AvailabilityWindow['service']
 }
 
 interface AvailabilityOptions {
@@ -137,20 +138,23 @@ const loadAvailabilityWindow = async ({
   fromDateKey,
   toDateKey,
   excludeAppointmentId,
+  timings,
 }: WindowOptions): Promise<AvailabilityWindow | null> => {
-  const service = await database.service.findFirst({
-    where: {
-      id: serviceId,
-      isBookable: true,
-      isVisible: true,
-      isArchived: false,
-    },
-    select: {
-      durationMinutes: true,
-      preparationMinutes: true,
-      cleanupMinutes: true,
-    },
-  })
+  const service =
+    timings ??
+    (await database.service.findFirst({
+      where: {
+        id: serviceId,
+        isBookable: true,
+        isVisible: true,
+        isArchived: false,
+      },
+      select: {
+        durationMinutes: true,
+        preparationMinutes: true,
+        cleanupMinutes: true,
+      },
+    }))
   if (!service) return null
 
   const rangeStart = getLocalDayBounds(fromDateKey).start
@@ -186,6 +190,7 @@ const computeAvailabilityForDay = (
   dateKey: string,
   now: Date,
   settings: BookingSettingsValues,
+  admin = false,
 ): DayAvailability => {
   if (!isDateKey(dateKey)) return { state: 'CLOSED', slots: [] }
 
@@ -265,14 +270,15 @@ const computeAvailabilityForDay = (
 
     // L'horizon et le plancher restent des filtres durs : au-delà, et en
     // deçà, rien n'est proposé, pas même sur demande.
-    if (startsAt < floor || startsAt > latest) continue
+    if (admin ? startsAt <= now : startsAt < floor || startsAt > latest)
+      continue
     if (!openings.some(opening => contains(opening, occupied))) continue
     if (blocked.some(interval => overlaps(interval, occupied))) continue
 
     slots.push({
       startsAt: startsAt.toISOString(),
       label: formatSlotTime(startsAt),
-      state: startsAt < earliest ? 'ON_REQUEST' : 'OPEN',
+      state: !admin && startsAt < earliest ? 'ON_REQUEST' : 'OPEN',
     })
   }
 
@@ -297,8 +303,9 @@ const computeSlotsForDay = (
   dateKey: string,
   now: Date,
   settings: BookingSettingsValues,
+  admin = false,
 ): AvailableSlot[] =>
-  computeAvailabilityForDay(window, dateKey, now, settings).slots
+  computeAvailabilityForDay(window, dateKey, now, settings, admin).slots
 
 export const getAvailableSlots = async ({
   database,
@@ -434,4 +441,54 @@ export const findNextAvailableSlot = async ({
   }
 
   return null
+}
+
+/** Les rendez-vous admin gardent leurs durées enregistrées, même pour un soin mis de côté. */
+export const getAdminRescheduleSlots = async ({
+  database,
+  appointment,
+  fromDateKey,
+  toDateKey,
+  now = new Date(),
+}: {
+  database: DatabaseClient
+  appointment: {
+    id: string
+    serviceId: string
+    serviceDurationMinutes: number
+    preparationMinutes: number
+    cleanupMinutes: number
+  }
+  fromDateKey: string
+  toDateKey: string
+  now?: Date
+}): Promise<AvailableSlot[]> => {
+  if (
+    !isDateKey(fromDateKey) ||
+    !isDateKey(toDateKey) ||
+    fromDateKey > toDateKey
+  )
+    return []
+  const window = await loadAvailabilityWindow({
+    database,
+    serviceId: appointment.serviceId,
+    excludeAppointmentId: appointment.id,
+    fromDateKey,
+    toDateKey,
+    timings: {
+      durationMinutes: appointment.serviceDurationMinutes,
+      preparationMinutes: appointment.preparationMinutes,
+      cleanupMinutes: appointment.cleanupMinutes,
+    },
+  })
+  if (!window) return []
+  return getDateKeysInRange(fromDateKey, toDateKey).flatMap(dateKey =>
+    computeSlotsForDay(
+      window,
+      dateKey,
+      now,
+      { ...DEFAULT_BOOKING_SETTINGS, slotIntervalMinutes: 15 },
+      true,
+    ),
+  )
 }

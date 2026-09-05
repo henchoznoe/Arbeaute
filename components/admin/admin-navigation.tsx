@@ -29,7 +29,6 @@ import {
 import { getLocalDateKey } from '@/lib/reservation/time'
 
 interface AdminNavigationProps {
-  unreadActivityCount: number
   pendingRequestCount: number
 }
 
@@ -95,14 +94,10 @@ const countBadge = (
   )
 }
 
-const describeUnreadActivity = (count: number): string =>
-  `${count} activité${count > 1 ? 's' : ''} non lue${count > 1 ? 's' : ''}`
-
 const describePendingRequests = (count: number): string =>
   `${count} demande${count > 1 ? 's' : ''} de dernière minute en attente`
 
 export const AdminNavigation = ({
-  unreadActivityCount,
   pendingRequestCount,
 }: Readonly<AdminNavigationProps>) => {
   const pathname = usePathname()
@@ -185,13 +180,7 @@ export const AdminNavigation = ({
                 >
                   <Icon className="size-4" />
                   {item.label}
-                  {item.key === 'activity'
-                    ? countBadge(
-                        unreadActivityCount,
-                        '-right-1.5 -top-1',
-                        describeUnreadActivity,
-                      )
-                    : null}
+
                   {item.key === 'requests'
                     ? countBadge(
                         pendingRequestCount,
@@ -274,13 +263,7 @@ export const AdminNavigation = ({
                   className={`relative grid h-7 min-w-10 place-items-center rounded-full px-2 ${isActive ? 'bg-primary/15' : ''}`}
                 >
                   <Icon className="size-5" />
-                  {item.key === 'activity'
-                    ? countBadge(
-                        unreadActivityCount,
-                        '-right-1 -top-1',
-                        describeUnreadActivity,
-                      )
-                    : null}
+
                   {item.key === 'requests'
                     ? countBadge(
                         pendingRequestCount,

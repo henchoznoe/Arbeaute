@@ -1,4 +1,4 @@
-import { writeAuditEvent } from '@/lib/admin/audit'
+import { appointmentAuditValues, writeAuditEvent } from '@/lib/admin/audit'
 import {
   MAX_SERIALIZABLE_ATTEMPTS,
   RESERVATION_TIME_ZONE,
@@ -477,12 +477,16 @@ export const saveAdminAppointmentSerializable = async (
               formatLocalTime(conflict.startsAt),
             )
 
-          const customer = await upsertCustomerIdentity(transaction, {
-            firstName: input.firstName,
-            lastName: input.lastName,
-            email: input.email,
-            phone: input.phone,
-          })
+          const customer = await upsertCustomerIdentity(
+            transaction,
+            {
+              firstName: input.firstName,
+              lastName: input.lastName,
+              email: input.email,
+              phone: input.phone,
+            },
+            'ADMIN',
+          )
 
           const data = {
             serviceId: service.id,
@@ -524,7 +528,7 @@ export const saveAdminAppointmentSerializable = async (
               action: 'CREATED',
               after: {
                 serviceId: created.serviceId,
-                startsAt: created.startsAt.toISOString(),
+                ...appointmentAuditValues(created),
                 status: created.status,
                 // Une superposition assumée laisse une trace : c'est une
                 // décision, pas un accident, et elle doit se relire.
@@ -553,11 +557,22 @@ export const saveAdminAppointmentSerializable = async (
             action: 'UPDATED',
             before: {
               serviceId: current.serviceId,
-              startsAt: current.startsAt.toISOString(),
+              ...appointmentAuditValues(current),
             },
             after: {
               serviceId: updated.serviceId,
-              startsAt: updated.startsAt.toISOString(),
+              ...appointmentAuditValues(updated),
+              ...([
+                current.customerFirstName !== updated.customerFirstName,
+                current.customerLastName !== updated.customerLastName,
+                current.customerEmail !== updated.customerEmail,
+                current.customerPhone !== updated.customerPhone,
+              ].some(Boolean)
+                ? { identityChanged: true }
+                : {}),
+              ...(current.comment !== updated.comment
+                ? { noteChanged: true }
+                : {}),
               ...(updated.allowsOverlap ? { allowsOverlap: true } : {}),
             },
           })
@@ -610,12 +625,16 @@ export const createAdminAppointmentSeriesSerializable = async (
               validation.preview,
             )
 
-          const customer = await upsertCustomerIdentity(transaction, {
-            firstName: input.firstName,
-            lastName: input.lastName,
-            email: input.email,
-            phone: input.phone,
-          })
+          const customer = await upsertCustomerIdentity(
+            transaction,
+            {
+              firstName: input.firstName,
+              lastName: input.lastName,
+              email: input.email,
+              phone: input.phone,
+            },
+            'ADMIN',
+          )
           const created = []
           for (const startsAt of validation.startsAt) {
             const endsAt = new Date(
@@ -661,7 +680,7 @@ export const createAdminAppointmentSeriesSerializable = async (
               action: 'CREATED',
               after: {
                 serviceId: appointment.serviceId,
-                startsAt: appointment.startsAt.toISOString(),
+                ...appointmentAuditValues(appointment),
                 status: appointment.status,
                 series: true,
               },
@@ -700,7 +719,15 @@ export const cancelAdminAppointmentSerializable = async (
     async transaction => {
       const appointment = await transaction.appointment.findFirst({
         where: { id: appointmentId, status: 'CONFIRMED' },
-        select: { id: true, status: true, serviceNameSnapshot: true },
+        select: {
+          id: true,
+          status: true,
+          serviceNameSnapshot: true,
+          startsAt: true,
+          endsAt: true,
+          serviceDurationMinutes: true,
+          servicePriceCents: true,
+        },
       })
       if (!appointment) throw new AdminAgendaError('APPOINTMENT_NOT_FOUND')
       const cancelled = await transaction.appointment.update({
@@ -717,8 +744,14 @@ export const cancelAdminAppointmentSerializable = async (
         entityId: cancelled.id,
         entityLabel: cancelled.serviceNameSnapshot,
         action: 'CANCELLED',
-        before: { status: appointment.status },
-        after: { status: cancelled.status },
+        before: {
+          ...appointmentAuditValues(appointment),
+          status: appointment.status,
+        },
+        after: {
+          ...appointmentAuditValues(cancelled),
+          status: cancelled.status,
+        },
       })
       return {
         ...cancelled,

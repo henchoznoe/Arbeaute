@@ -101,6 +101,36 @@ describe('normalized customers', () => {
     })
   })
 
+  it('n’annonce aucune modification quand les coordonnées sont identiques', async () => {
+    const transaction = makeTransaction({ id: 'customer-1' })
+    vi.mocked(transaction.customer.findUnique).mockResolvedValue({
+      id: 'customer-1',
+      firstName: 'Élodie',
+      lastName: 'Du Chêne',
+      phoneNormalized: '+41791234567',
+    } as never)
+    await upsertCustomerIdentity(transaction, identity)
+    expect(transaction.auditEvent.create).not.toHaveBeenCalled()
+  })
+
+  it('attribue correctement les modifications faites par Arzu sans copier les coordonnées', async () => {
+    const transaction = makeTransaction({ id: 'customer-1' })
+    vi.mocked(transaction.customer.findUnique).mockResolvedValue({
+      id: 'customer-1',
+      firstName: 'Élodie',
+      lastName: 'Du Chêne',
+      phoneNormalized: '+41790000000',
+    } as never)
+    await upsertCustomerIdentity(transaction, identity, 'ADMIN')
+    expect(transaction.auditEvent.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        actorType: 'ADMIN',
+        actorId: 'admin',
+        changes: { before: {}, after: { phoneChanged: true } },
+      }),
+    })
+  })
+
   it('rejects a session whose identity version is obsolete', async () => {
     const findFirst = vi.fn().mockResolvedValue(null)
     const transaction = { customer: { findFirst } } as unknown as Pick<

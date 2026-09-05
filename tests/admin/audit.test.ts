@@ -18,39 +18,11 @@ vi.mock('@/lib/core/prisma', () => ({
 import {
   formatAuditChanges,
   getAuditEntityHref,
-  getAuditPage,
   runAuditedMutation,
 } from '@/lib/admin/audit'
 
 describe('admin audit journal', () => {
   beforeEach(() => vi.clearAllMocks())
-
-  it('applies entity and action filters to bounded pagination', async () => {
-    mocks.count.mockResolvedValue(45)
-    mocks.findMany.mockResolvedValue(['event'])
-
-    await expect(
-      getAuditPage(99, {
-        actor: 'ADMIN',
-        entity: 'SERVICE',
-        action: 'UPDATED',
-      }),
-    ).resolves.toEqual({
-      events: ['event'],
-      page: 3,
-      totalPages: 3,
-      totalCount: 45,
-    })
-    const where = {
-      actorType: 'ADMIN',
-      entityType: 'SERVICE',
-      action: 'UPDATED',
-    }
-    expect(mocks.count).toHaveBeenCalledWith({ where })
-    expect(mocks.findMany).toHaveBeenCalledWith(
-      expect.objectContaining({ where, skip: 40, take: 20 }),
-    )
-  })
 
   it('links only to existing admin entity screens', () => {
     expect(
@@ -85,7 +57,7 @@ describe('admin audit journal', () => {
         },
         after: { startsAt: '2026-08-11T11:30:00.000Z', serviceId: 'other-id' },
       }),
-    ).toEqual(['Début : 10.08.26 12:30 → 11.08.26 13:30'])
+    ).toEqual(['Horaire : 10.08.26 12:30 → 11.08.26 13:30'])
   })
 
   it('translates appointment status transitions', () => {

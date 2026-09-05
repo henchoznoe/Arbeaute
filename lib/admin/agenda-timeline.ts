@@ -1,4 +1,5 @@
 import { formatInTimeZone } from 'date-fns-tz'
+import { findAppointmentConflicts } from '@/lib/admin/conflicts'
 import { RESERVATION_TIME_ZONE } from '@/lib/reservation/constants'
 import { getLocalDayBounds, getLocalDayOfWeek } from '@/lib/reservation/time'
 import type { AppointmentStatus } from '@/prisma/generated/prisma/enums'
@@ -29,6 +30,7 @@ interface AdminTimelineAppointment extends TimelineInterval {
   serviceColor: string
   source: 'PUBLIC' | 'ADMIN'
   status: AppointmentStatus
+  conflicts: { appointmentId: string; buffersOnly: boolean }[]
   hasVisualOverlap: boolean
 }
 
@@ -196,26 +198,27 @@ export const buildAdminTimelineDay = ({
       status: appointment.status,
       hasVisualOverlap: false,
     }))
-  const timelineAppointments = mappedAppointments.map((appointment, index) => ({
-    ...appointment,
-    hasVisualOverlap:
-      appointment.status === 'CONFIRMED' &&
-      mappedAppointments.some(
-        (other, otherIndex) =>
-          other.status === 'CONFIRMED' &&
-          otherIndex !== index &&
-          overlaps(
-            {
-              startMinute: appointment.occupiedStartMinute,
-              endMinute: appointment.occupiedEndMinute,
-            },
-            {
-              startMinute: other.occupiedStartMinute,
-              endMinute: other.occupiedEndMinute,
-            },
-          ),
-      ),
-  }))
+  const conflicts = findAppointmentConflicts(appointments)
+  const timelineAppointments = mappedAppointments.map(appointment => {
+    const related = conflicts.filter(
+      conflict =>
+        (conflict.firstId === appointment.id ||
+          conflict.secondId === appointment.id) &&
+        conflict.startsAt < end &&
+        conflict.endsAt > start,
+    )
+    return {
+      ...appointment,
+      hasVisualOverlap: related.length > 0,
+      conflicts: related.map(conflict => ({
+        appointmentId:
+          conflict.firstId === appointment.id
+            ? conflict.secondId
+            : conflict.firstId,
+        buffersOnly: conflict.buffersOnly,
+      })),
+    }
+  })
   const bounds = getTimelineBounds(openings, timelineAppointments)
 
   return {

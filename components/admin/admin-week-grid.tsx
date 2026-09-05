@@ -1,4 +1,4 @@
-import { Plus } from 'lucide-react'
+import { AlertTriangle, Plus } from 'lucide-react'
 import Link from 'next/link'
 import type { CSSProperties } from 'react'
 import {
@@ -108,6 +108,12 @@ export const AdminWeekGrid = ({
                 <div className="flex h-11 items-center justify-between gap-1 border-b px-2">
                   <h3 className="truncate text-sm font-semibold">
                     {capitalizeFirst(day.label.replace(/\s\d{4}$/, ''))}
+                    {day.appointments.some(a => a.hasVisualOverlap) ? (
+                      <span className="flex items-center gap-1 text-xs text-destructive">
+                        <AlertTriangle className="size-3 shrink-0" />{' '}
+                        Superposition
+                      </span>
+                    ) : null}
                   </h3>
                   {/* 44 px comme partout ailleurs : c'était le seul raccourci
                       de l'agenda qu'on ne pouvait pas viser au doigt. */}

@@ -81,7 +81,7 @@ describe('aide aux actions de l’administration', () => {
       '<div className="order-1 min-w-0 lg:order-2">',
     )
     expect(APPOINTMENT_PAGE).toContain(
-      'Pour déplacer ce rendez-vous, changez la date ou l’heure',
+      'Choisissez « Déplacer le rendez-vous » pour trouver une heure libre',
     )
   })
 

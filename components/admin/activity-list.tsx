@@ -1,92 +1,92 @@
-import {
-  CalendarClock,
-  CalendarPlus2,
-  CalendarX2,
-  ChevronRight,
-} from 'lucide-react'
+import { Activity } from 'lucide-react'
 import Link from 'next/link'
 import { EmptyState } from '@/components/ui/empty-state'
+import type { ActivityItem } from '@/lib/admin/activity'
 import {
-  type AppointmentActivityItem,
-  formatActivityMessage,
-} from '@/lib/admin/activity'
-import { formatShortMoment, getLocalDateKey } from '@/lib/reservation/time'
-
-const ActivityIcon = ({
-  type,
-}: Readonly<{ type: AppointmentActivityItem['type'] }>) => {
-  const className = 'size-4'
-  if (type === 'RESCHEDULED') return <CalendarClock className={className} />
-  if (type === 'CANCELLED') return <CalendarX2 className={className} />
-  return <CalendarPlus2 className={className} />
-}
+  formatLongDate,
+  formatSlotTime,
+  getLocalDateKey,
+} from '@/lib/reservation/time'
 
 export const ActivityList = ({
   activities,
-  showAppointmentLinks = false,
-}: Readonly<{
-  activities: AppointmentActivityItem[]
-  showAppointmentLinks?: boolean
-}>) => {
+}: {
+  activities: ActivityItem[]
+}) => {
   if (!activities.length)
     return (
       <EmptyState
         title="Aucune activité"
-        description="Les nouvelles réservations et modifications apparaîtront ici."
+        description="Les réservations et les changements apparaîtront ici."
         className="border-0 bg-muted/60 py-6"
       />
     )
-
+  const groups = Map.groupBy(activities, activity =>
+    getLocalDateKey(activity.createdAt),
+  )
   return (
-    <ol className="space-y-2">
-      {activities.map(activity => {
-        const isUnread = activity.readAt === null
-        const canOpenAppointment =
-          showAppointmentLinks && activity.appointment?.status === 'CONFIRMED'
-        return (
-          <li
-            key={activity.id}
-            className={`min-w-0 rounded-xl border p-3 ${isUnread ? 'border-brand-line bg-brand-subtle/70' : 'bg-background'}`}
-          >
-            <div className="flex min-w-0 items-start gap-3">
-              <span
-                className={`mt-0.5 grid size-8 shrink-0 place-items-center rounded-full ${isUnread ? 'bg-brand-soft text-brand-strong' : 'bg-muted text-muted-foreground'}`}
-                aria-hidden="true"
+    <div className="space-y-5">
+      {[...groups].map(([date, items]) => (
+        <section key={date} aria-label={formatLongDate(items[0].createdAt)}>
+          <h3 className="mb-2 text-sm font-semibold">
+            {formatLongDate(items[0].createdAt)}
+          </h3>
+          <ol className="space-y-3">
+            {items.map(activity => (
+              <li
+                key={activity.id}
+                className="min-w-0 rounded-xl border bg-card p-3"
               >
-                <ActivityIcon type={activity.type} />
-              </span>
-              <div className="min-w-0 flex-1">
-                {isUnread ? (
-                  <p className="mb-1 flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-brand-strong">
-                    <span className="size-1.5 rounded-full bg-brand-strong" />
-                    Nouveau
-                  </p>
-                ) : null}
-                <p className="break-words text-sm leading-relaxed">
-                  {formatActivityMessage(activity)}
-                </p>
-                <div className="mt-2 flex min-h-6 flex-wrap items-center justify-between gap-x-3 gap-y-1">
-                  <time
-                    dateTime={activity.createdAt.toISOString()}
-                    className="text-xs text-muted-foreground"
-                  >
-                    Action le {formatShortMoment(activity.createdAt)}
-                  </time>
-                  {canOpenAppointment ? (
-                    <Link
-                      href={`/admin/appointments/${activity.appointmentId}?date=${getLocalDateKey(activity.appointmentStartsAt)}`}
-                      className="inline-flex min-h-11 items-center gap-1 text-xs font-semibold text-primary"
-                    >
-                      Voir le rendez-vous
-                      <ChevronRight className="size-3.5" />
-                    </Link>
-                  ) : null}
+                <div className="flex items-start gap-2">
+                  <Activity
+                    className="mt-0.5 size-4 shrink-0 text-primary"
+                    aria-hidden="true"
+                  />
+                  <div className="min-w-0 flex-1">
+                    <p className="font-semibold">{activity.title}</p>
+                    <p className="mt-1 break-words text-sm">
+                      {activity.subject}
+                    </p>
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      {activity.actor} ·{' '}
+                      <time dateTime={activity.createdAt.toISOString()}>
+                        {formatSlotTime(activity.createdAt)}
+                      </time>
+                    </p>
+                    {activity.details.length ? (
+                      <ul className="mt-3 space-y-1 text-sm text-muted-foreground">
+                        {activity.details.slice(0, 3).map(detail => (
+                          <li key={detail}>{detail}</li>
+                        ))}
+                      </ul>
+                    ) : null}
+                    {activity.details.length > 3 ? (
+                      <details className="mt-2 text-sm">
+                        <summary className="flex min-h-11 cursor-pointer items-center font-medium text-primary">
+                          Voir les détails ({activity.details.length - 3})
+                        </summary>
+                        <ul className="space-y-1 text-muted-foreground">
+                          {activity.details.slice(3).map(detail => (
+                            <li key={detail}>{detail}</li>
+                          ))}
+                        </ul>
+                      </details>
+                    ) : null}
+                    {activity.href ? (
+                      <Link
+                        href={activity.href}
+                        className="mt-2 inline-flex min-h-11 items-center text-sm font-semibold text-primary underline underline-offset-4"
+                      >
+                        {activity.linkLabel}
+                      </Link>
+                    ) : null}
+                  </div>
                 </div>
-              </div>
-            </div>
-          </li>
-        )
-      })}
-    </ol>
+              </li>
+            ))}
+          </ol>
+        </section>
+      ))}
+    </div>
   )
 }

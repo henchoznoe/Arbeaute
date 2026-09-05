@@ -1,6 +1,7 @@
 'use client'
 
 import {
+  AlertTriangle,
   CalendarClock,
   ChevronLeft,
   ChevronRight,
@@ -102,7 +103,7 @@ export const AdminAgendaView = ({
                   key={day.dateKey}
                   type="button"
                   aria-pressed={isSelected}
-                  aria-label={`${day.label}${day.appointments.length ? `, ${day.appointments.length} rendez-vous` : ''}`}
+                  aria-label={`${day.label}${day.appointments.length ? `, ${day.appointments.length} rendez-vous` : ''}${day.appointments.some(a => a.hasVisualOverlap) ? ', rendez-vous superposés' : ''}`}
                   onClick={() => selectDate(day.dateKey)}
                   className={`relative flex min-h-14 flex-col items-center justify-center rounded-xl text-xs font-semibold transition ${
                     isSelected
@@ -114,6 +115,12 @@ export const AdminAgendaView = ({
                 >
                   <span className="text-2xs uppercase">{day.shortLabel}</span>
                   <span className="mt-0.5 text-sm">{day.dayNumber}</span>
+                  {day.appointments.some(a => a.hasVisualOverlap) ? (
+                    <AlertTriangle
+                      aria-hidden="true"
+                      className={`absolute right-0 top-0 size-3.5 ${isSelected ? 'text-primary-foreground' : 'text-destructive'}`}
+                    />
+                  ) : null}
                   {day.appointments.length > 0 ? (
                     <span
                       aria-hidden="true"

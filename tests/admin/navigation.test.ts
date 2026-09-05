@@ -126,7 +126,7 @@ describe('ce que la navigation annonce', () => {
   it('donne aux demandes leur propre texte caché', () => {
     expect(NAVIGATION).toContain('de dernière minute en attente')
     // Le texte des activités n'est plus réemployé pour les demandes.
-    expect(NAVIGATION.match(/activité\$\{count > 1/g)).toHaveLength(1)
+    expect(NAVIGATION).not.toContain('unreadActivityCount')
   })
 
   it('nomme les deux repères de navigation différemment', () => {

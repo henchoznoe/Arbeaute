@@ -163,6 +163,8 @@ export const createLateRequestSerializable = async (
             after: {
               serviceId: request.serviceId,
               requestedStartsAt: request.requestedStartsAt.toISOString(),
+              durationMinutes: request.serviceDurationMinutes,
+              priceCents: request.servicePriceCents,
               status: request.status,
             },
           })
@@ -259,7 +261,7 @@ export const acceptLateRequestSerializable = async (
               status: 'CONFIRMED',
             },
           })
-          await transaction.appointmentActivity.create({
+          const activity = await transaction.appointmentActivity.create({
             data: {
               type: 'CREATED',
               appointmentId: appointment.id,
@@ -287,8 +289,11 @@ export const acceptLateRequestSerializable = async (
             action: 'ACCEPTED',
             before: { status: request.status },
             after: {
+              activityId: activity.id,
               status: updated.status,
               requestedStartsAt: request.requestedStartsAt.toISOString(),
+              durationMinutes: request.serviceDurationMinutes,
+              priceCents: request.servicePriceCents,
             },
           })
           return {

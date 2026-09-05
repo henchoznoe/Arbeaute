@@ -48,13 +48,13 @@ describe('describeAdminAppointmentChange', () => {
 describe('describeAdminNotification', () => {
   it('nomme l’adresse prévenue', () => {
     expect(describeAdminNotification('marie@example.ch', true)).toContain(
-      'marie@example.ch a été prévenu',
+      'Envoi d’un e-mail à marie@example.ch prévu',
     )
   })
 
   it('dit clairement que personne ne sera prévenu, faute d’adresse', () => {
     expect(describeAdminNotification(null, true)).toContain(
-      'Personne n’a été prévenu',
+      'Aucun e-mail ne sera envoyé',
     )
   })
 
