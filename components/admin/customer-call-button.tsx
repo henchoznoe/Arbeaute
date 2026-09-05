@@ -38,8 +38,8 @@ export const CustomerCallButton = ({
     <Button asChild variant={variant} className={className}>
       <a href={`tel:${phone.replace(/\s/g, '')}`}>
         <Phone className="size-4 shrink-0" aria-hidden="true" />
-        <span className="sr-only">Appeler {customerName} au </span>
-        {phone}
+        <span className="sr-only">{customerName} : </span>
+        Appeler · {phone}
       </a>
     </Button>
   )

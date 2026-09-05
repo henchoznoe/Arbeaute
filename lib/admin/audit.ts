@@ -1,4 +1,3 @@
-import prisma from '@/lib/core/prisma'
 import { formatShortMoment } from '@/lib/reservation/time'
 import { formatPrice } from '@/lib/utils/format'
 import type { Prisma, PrismaClient } from '@/prisma/generated/prisma/client'
@@ -9,6 +8,27 @@ import type {
 } from '@/prisma/generated/prisma/enums'
 
 type AuditValue = string | number | boolean | null
+
+/** Le contexte historique ne contient aucune coordonnée personnelle. */
+export const appointmentAuditValues = (appointment: {
+  startsAt: Date
+  endsAt?: Date
+  serviceNameSnapshot?: string
+  serviceDurationMinutes?: number
+  servicePriceCents?: number
+}) => ({
+  startsAt: appointment.startsAt.toISOString(),
+  ...(appointment.endsAt ? { endsAt: appointment.endsAt.toISOString() } : {}),
+  ...(appointment.serviceNameSnapshot
+    ? { serviceName: appointment.serviceNameSnapshot }
+    : {}),
+  ...(appointment.serviceDurationMinutes !== undefined
+    ? { durationMinutes: appointment.serviceDurationMinutes }
+    : {}),
+  ...(appointment.servicePriceCents !== undefined
+    ? { priceCents: appointment.servicePriceCents }
+    : {}),
+})
 
 export interface AuditEventInput {
   actorType: AuditActorType
@@ -45,52 +65,6 @@ export const runAuditedMutation = async <Result>(
     await writeAuditEvent(transaction, event(result))
     return result
   })
-
-const AUDIT_PAGE_SIZE = 20
-
-export interface AuditFilters {
-  actor?: AuditActorType
-  entity?: AuditEntityType
-  action?: AuditActionType
-}
-
-const auditEventSelect = {
-  id: true,
-  actorType: true,
-  actorId: true,
-  entityType: true,
-  entityId: true,
-  entityLabel: true,
-  action: true,
-  changes: true,
-  createdAt: true,
-} satisfies Prisma.AuditEventSelect
-
-export type AuditEventItem = Prisma.AuditEventGetPayload<{
-  select: typeof auditEventSelect
-}>
-
-export const getAuditPage = async (
-  requestedPage: number,
-  filters: AuditFilters,
-) => {
-  const where = {
-    actorType: filters.actor,
-    entityType: filters.entity,
-    action: filters.action,
-  }
-  const totalCount = await prisma.auditEvent.count({ where })
-  const totalPages = Math.max(1, Math.ceil(totalCount / AUDIT_PAGE_SIZE))
-  const page = Math.min(Math.max(1, requestedPage), totalPages)
-  const events = await prisma.auditEvent.findMany({
-    where,
-    orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
-    skip: (page - 1) * AUDIT_PAGE_SIZE,
-    take: AUDIT_PAGE_SIZE,
-    select: auditEventSelect,
-  })
-  return { events, page, totalPages, totalCount }
-}
 
 export const auditActorLabels: Record<AuditActorType, string> = {
   ADMIN: 'Arzu',
@@ -129,9 +103,10 @@ export const auditActionLabels: Record<AuditActionType, string> = {
   DECLINED: 'Demande refusée',
 }
 
-export const getAuditEntityHref = (
-  event: Pick<AuditEventItem, 'entityType' | 'entityId'>,
-): string | null => {
+export const getAuditEntityHref = (event: {
+  entityType: AuditEntityType
+  entityId: string
+}): string | null => {
   if (event.entityType === 'APPOINTMENT_REQUEST') return '/admin/demandes'
   if (event.entityType === 'APPOINTMENT')
     return `/admin/appointments/${event.entityId}`
@@ -151,7 +126,10 @@ export const getAuditEntityHref = (
 
 const changeFieldLabels: Record<string, string> = {
   name: 'Nom',
-  startsAt: 'Début',
+  startsAt: 'Horaire',
+  endsAt: 'Fin du soin',
+  serviceName: 'Soin',
+  allowsOverlap: 'Superposition acceptée',
   status: 'Statut',
   priceCents: 'Prix',
   durationMinutes: 'Durée',
@@ -168,10 +146,10 @@ const changeFieldLabels: Record<string, string> = {
   from: 'Du',
   to: 'Au',
   count: 'Nombre de jours',
-  minBookingNoticeHours: 'Préavis minimum',
-  bookingHorizonMonths: 'Horizon de réservation',
-  customerChangeCutoffHours: 'Délai de modification',
-  slotIntervalMinutes: 'Pas des créneaux',
+  minBookingNoticeHours: 'Réserver au moins à l’avance',
+  bookingHorizonMonths: 'Réserver jusqu’à',
+  customerChangeCutoffHours: 'Changer un rendez-vous jusqu’à',
+  slotIntervalMinutes: 'Espacement des heures proposées',
   lateRequestsEnabled: 'Demandes de dernière minute',
   requestedStartsAt: 'Heure demandée',
   declineReason: 'Motif du refus',
@@ -183,6 +161,8 @@ const changeFieldLabels: Record<string, string> = {
   hadConsentForm: 'Consentement présent',
   hasConsentForm: 'Consentement présent',
   identityChanged: 'Coordonnées modifiées',
+  nameChanged: 'Nom modifié',
+  phoneChanged: 'Téléphone modifié',
   // `propagatedAppointments` est le nom d'avant la suppression du choix : des
   // lignes d'historique le portent encore, les deux clés restent traduites.
   propagatedAppointments: 'Rendez-vous futurs actualisés',
@@ -209,7 +189,22 @@ const formatAuditValue = (key: string, value: Prisma.JsonValue): string => {
   if (value === null) return '—'
   if (typeof value === 'boolean') return value ? 'Oui' : 'Non'
   if (key === 'status' && typeof value === 'string')
-    return appointmentStatusLabels[value] ?? value
+    return (
+      appointmentStatusLabels[value] ??
+      {
+        PENDING: 'En attente',
+        ACCEPTED: 'Acceptée',
+        DECLINED: 'Refusée',
+        WITHDRAWN: 'Retirée',
+      }[value] ??
+      'Modifié'
+    )
+  if (key === 'type' && typeof value === 'string')
+    return value === 'AVAILABLE'
+      ? 'Ouverture'
+      : value === 'UNAVAILABLE'
+        ? 'Fermeture'
+        : 'Modifié'
   if (key === 'priceCents' && typeof value === 'number')
     return formatPrice(value)
   if (
@@ -233,7 +228,7 @@ const formatAuditValue = (key: string, value: Prisma.JsonValue): string => {
   if (key === 'slotIntervalMinutes' && typeof value === 'number')
     return `${value} min`
   if (
-    ['startsAt', 'requestedStartsAt', 'from', 'to'].includes(key) &&
+    ['startsAt', 'endsAt', 'requestedStartsAt', 'from', 'to'].includes(key) &&
     typeof value === 'string' &&
     !Number.isNaN(Date.parse(value))
   )
@@ -252,7 +247,6 @@ export const formatAuditChanges = (
   const keys = [...new Set([...Object.keys(before), ...Object.keys(after)])]
   return keys
     .filter(key => key in changeFieldLabels && before[key] !== after[key])
-    .slice(0, 4)
     .map(key => {
       const label = changeFieldLabels[key]
       const previous = before[key]

@@ -81,11 +81,11 @@ export const AdminDayTimeline = ({
       {hasOverlap ? (
         <p
           role="alert"
-          className="mt-3 flex items-start gap-2 rounded-xl border border-destructive/30 bg-destructive/10 px-3 py-2 text-xs text-destructive"
+          className="mt-3 mb-4 flex items-start gap-2 rounded-xl border border-destructive/30 bg-destructive/10 px-3 py-2 text-xs text-destructive"
         >
           <AlertTriangle className="mt-0.5 size-4 shrink-0" />
-          Deux rendez-vous se superposent. Ouvrez l’un des deux pour corriger
-          son heure.
+          Des rendez-vous se superposent. Choisissez « Déplacer » sur l’un des
+          rendez-vous signalés.
         </p>
       ) : null}
 
@@ -98,7 +98,7 @@ export const AdminDayTimeline = ({
             {day.appointments.map(appointment => (
               <li
                 key={appointment.id}
-                className="rounded-xl border bg-background p-3"
+                className={`rounded-xl border bg-background p-3 ${appointment.hasVisualOverlap ? 'border-destructive ring-1 ring-destructive/40' : ''}`}
               >
                 <Link
                   href={`/admin/appointments/${appointment.id}?date=${day.dateKey}`}
@@ -106,7 +106,8 @@ export const AdminDayTimeline = ({
                 >
                   <span className="min-w-0">
                     <span className="block text-sm font-semibold">
-                      {formatTimelineMinute(appointment.startMinute)} ·{' '}
+                      {formatTimelineMinute(appointment.startMinute)}–
+                      {formatTimelineMinute(appointment.endMinute)} ·{' '}
                       {appointment.customerName}
                     </span>
                     <span className="mt-0.5 block truncate text-xs text-muted-foreground">
@@ -120,6 +121,39 @@ export const AdminDayTimeline = ({
                     {statusLabels[appointment.status]}
                   </StatusBadge>
                 </Link>
+                {appointment.conflicts.map(conflict => {
+                  const other = day.appointments.find(
+                    item => item.id === conflict.appointmentId,
+                  )
+                  return other ? (
+                    <p
+                      key={other.id}
+                      className="mt-2 flex items-start gap-2 text-sm text-destructive"
+                    >
+                      <AlertTriangle
+                        className="mt-0.5 size-4 shrink-0"
+                        aria-hidden="true"
+                      />
+                      <span>
+                        {conflict.buffersOnly
+                          ? 'Installation ou rangement : se superpose à '
+                          : 'Se superpose à '}
+                        {other.customerName},{' '}
+                        {formatTimelineMinute(other.startMinute)}–
+                        {formatTimelineMinute(other.endMinute)}.
+                      </span>
+                    </p>
+                  ) : null
+                })}
+                {appointment.hasVisualOverlap ? (
+                  <Button asChild className="mt-3 w-full">
+                    <Link
+                      href={`/admin/appointments/${appointment.id}/deplacer`}
+                    >
+                      Déplacer ce rendez-vous
+                    </Link>
+                  </Button>
+                ) : null}
                 {/* Appeler et ouvrir le client côte à côte : les deux gestes
                     qu'Arzu fait en regardant un nom. Un rendez-vous ancien
                     rattaché à personne n'affiche pas de lien mort. */}

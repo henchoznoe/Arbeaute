@@ -38,6 +38,6 @@ export const describeAdminNotification = (
   expected: boolean,
 ): string => {
   if (!expected) return ''
-  if (recipient) return ` ${recipient} a été prévenu par e-mail.`
-  return ' Personne n’a été prévenu : ce rendez-vous n’a pas d’adresse e-mail.'
+  if (recipient) return ` Envoi d’un e-mail à ${recipient} prévu.`
+  return ' Aucun e-mail ne sera envoyé. Vérifiez l’adresse et le service d’envoi, ou appelez la personne.'
 }

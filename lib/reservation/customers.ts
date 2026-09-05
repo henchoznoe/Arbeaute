@@ -1,6 +1,7 @@
 import { writeAuditEvent } from '@/lib/admin/audit'
 import { normalizeEmail, normalizePhone } from '@/lib/reservation/identity'
 import type { Prisma } from '@/prisma/generated/prisma/client'
+import type { AuditActorType } from '@/prisma/generated/prisma/enums'
 
 interface CustomerIdentityInput {
   firstName: string | null
@@ -38,6 +39,7 @@ export const normalizeCustomerSearchName = (
 export const upsertCustomerIdentity = async (
   transaction: Prisma.TransactionClient,
   input: CustomerIdentityInput,
+  actorType: AuditActorType = 'CUSTOMER',
 ) => {
   const emailNormalized = normalizeEmail(input.email)
   const phoneNormalized = normalizePhone(input.phone)
@@ -48,7 +50,12 @@ export const upsertCustomerIdentity = async (
   }
   const existing = await transaction.customer.findUnique({
     where: { emailNormalized },
-    select: { id: true },
+    select: {
+      id: true,
+      firstName: true,
+      lastName: true,
+      phoneNormalized: true,
+    },
   })
   const updated = await transaction.customer.upsert({
     where: { emailNormalized },
@@ -68,13 +75,29 @@ export const upsertCustomerIdentity = async (
     },
   })
 
-  await writeAuditEvent(transaction, {
-    actorType: 'CUSTOMER',
-    actorId: updated.id,
-    entityType: 'CUSTOMER',
-    entityId: updated.id,
-    action: existing ? 'UPDATED' : 'CREATED',
-  })
+  const nameChanged =
+    existing &&
+    (existing.firstName !== names.firstName ||
+      existing.lastName !== names.lastName)
+  const phoneChanged = existing && existing.phoneNormalized !== phoneNormalized
+  // Une nouvelle réservation ne modifie pas forcément les coordonnées :
+  // renouveler lastSeenAt ne doit pas encombrer l'activité d'Arzu.
+  if (!existing || nameChanged || phoneChanged)
+    await writeAuditEvent(transaction, {
+      actorType,
+      actorId: actorType === 'ADMIN' ? 'admin' : updated.id,
+      entityType: 'CUSTOMER',
+      entityId: updated.id,
+      action: existing ? 'UPDATED' : 'CREATED',
+      ...(existing
+        ? {
+            after: {
+              ...(nameChanged ? { nameChanged: true } : {}),
+              ...(phoneChanged ? { phoneChanged: true } : {}),
+            },
+          }
+        : {}),
+    })
   return updated
 }
 

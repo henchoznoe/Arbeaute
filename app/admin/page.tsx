@@ -1,5 +1,5 @@
 import { formatInTimeZone } from 'date-fns-tz'
-import { CalendarClock, ChevronRight, Clock } from 'lucide-react'
+import { AlertTriangle, CalendarClock, ChevronRight, Clock } from 'lucide-react'
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { Suspense } from 'react'
@@ -12,6 +12,7 @@ import { NextAppointmentCard } from '@/components/admin/next-appointment-card'
 import { getActivityOverview } from '@/lib/admin/activity'
 import { getAgendaSettings } from '@/lib/admin/agenda-settings'
 import { buildAdminTimelineDay } from '@/lib/admin/agenda-timeline'
+import { getUpcomingConflicts } from '@/lib/admin/conflict-queries'
 import { buildDashboardMetrics } from '@/lib/admin/dashboard-metrics'
 import prisma from '@/lib/core/prisma'
 import { getAdminSession } from '@/lib/core/session-cookies'
@@ -21,6 +22,7 @@ import { getPendingLateRequestCount } from '@/lib/reservation/late-requests'
 import { formatServiceLabel } from '@/lib/reservation/service-label'
 import {
   addLocalDays,
+  formatAppointmentDate,
   getLocalDateKey,
   getLocalDayBounds,
   getLocalDayOfWeek,
@@ -64,6 +66,7 @@ const AdminAgenda = async ({ searchParams }: Readonly<AdminPageProps>) => {
     nextAppointment,
     agendaSettings,
     pendingRequestCount,
+    upcomingConflicts,
   ] = await Promise.all([
     prisma.appointment.findMany({
       where: {
@@ -117,6 +120,7 @@ const AdminAgenda = async ({ searchParams }: Readonly<AdminPageProps>) => {
     }),
     getAgendaSettings(),
     getPendingLateRequestCount(),
+    getUpcomingConflicts(now),
   ])
 
   const timelineDays = weekDays.map(dateKey => {
@@ -173,6 +177,28 @@ const AdminAgenda = async ({ searchParams }: Readonly<AdminPageProps>) => {
         <h1 className="font-heading text-title font-bold">Agenda</h1>
         <p className="text-sm font-medium text-brand">Arbeauté</p>
       </header>
+
+      {upcomingConflicts.ids.length > 0 ? (
+        <section
+          role="status"
+          className="mt-4 mb-4 rounded-2xl border border-destructive/40 bg-destructive/5 p-4"
+        >
+          <h2 className="flex items-center gap-2 font-semibold text-destructive">
+            <AlertTriangle className="size-5 shrink-0" />
+            {upcomingConflicts.ids.length} rendez-vous se superposent
+          </h2>
+          <p className="mt-1 text-sm">
+            Prochaine superposition :{' '}
+            {formatAppointmentDate(upcomingConflicts.conflicts[0].startsAt)}.
+          </p>
+          <Link
+            href="/admin/conflits"
+            className="mt-2 inline-flex min-h-11 items-center font-semibold text-primary underline underline-offset-4"
+          >
+            Voir les rendez-vous concernés
+          </Link>
+        </section>
+      ) : null}
 
       {/* Une demande se décide à l'heure près : elle ne peut pas attendre
           qu'Arzu pense à ouvrir un autre écran. */}
@@ -242,15 +268,22 @@ const AdminAgenda = async ({ searchParams }: Readonly<AdminPageProps>) => {
 
       {/* Les indicateurs et l'activité passent après la journée : ils se
           consultent au mieux une fois par semaine, l'agenda tous les jours. */}
+      <ActivityOverview {...activityOverview} />
+
       <DashboardMetrics
         metrics={dashboardMetrics}
+        anchor={anchor}
+        dayCounts={Object.fromEntries(
+          timelineDays.map(day => [
+            day.dateKey,
+            day.appointments.filter(
+              a => getLocalDateKey(a.startsAt) === day.dateKey,
+            ).length,
+          ]),
+        )}
         periodLabel={periodLabel}
         selectedDayLabel={formatCalendarDayTitle(anchor, true)}
       />
-
-      {/* Plus de `hidden md:block` : sur téléphone, Arzu ne voyait jamais les
-          réservations et annulations depuis son agenda. */}
-      <ActivityOverview {...activityOverview} />
     </AdminPageShell>
   )
 }

@@ -1,5 +1,10 @@
+'use client'
+
 import { Banknote, CalendarCheck2, Gauge, UserX } from 'lucide-react'
+import { useEffect, useState } from 'react'
 import type { DashboardMetrics as DashboardMetricsValues } from '@/lib/admin/dashboard-metrics'
+import { ADMIN_AGENDA_DATE_EVENT } from '@/lib/admin/navigation'
+import { formatCalendarDayTitle } from '@/lib/reservation/calendar-view'
 import { formatCount, formatPrice } from '@/lib/utils/format'
 
 const formatDuration = (minutes: number): string => {
@@ -14,11 +19,25 @@ export const DashboardMetrics = ({
   metrics,
   periodLabel,
   selectedDayLabel,
+  anchor,
+  dayCounts,
 }: Readonly<{
   metrics: DashboardMetricsValues
   periodLabel: string
   selectedDayLabel: string
+  anchor: string
+  dayCounts: Record<string, number>
 }>) => {
+  const [selectedDate, setSelectedDate] = useState(anchor)
+  useEffect(() => setSelectedDate(anchor), [anchor])
+  useEffect(() => {
+    const select = (event: Event) => {
+      if (event instanceof CustomEvent && typeof event.detail === 'string')
+        setSelectedDate(event.detail)
+    }
+    window.addEventListener(ADMIN_AGENDA_DATE_EVENT, select)
+    return () => window.removeEventListener(ADMIN_AGENDA_DATE_EVENT, select)
+  }, [])
   // Quatre cartes exactement : la grille mobile tient sur deux colonnes sans
   // qu'une dernière carte double de largeur ne casse le rythme. Les heures
   // réservées, cinquième carte auparavant, sont devenues la légende de
@@ -29,8 +48,8 @@ export const DashboardMetrics = ({
       // ouvert dans l'agenda. La date seule ne le disait pas : on lisait un
       // nombre hebdomadaire suivi d'une date inexpliquée.
       label: 'Rendez-vous du jour',
-      value: formatCount(metrics.selectedDayCount),
-      scope: `Le ${selectedDayLabel}, le jour ouvert dans l’agenda`,
+      value: formatCount(dayCounts[selectedDate] ?? metrics.selectedDayCount),
+      scope: `Le ${selectedDate === anchor ? selectedDayLabel : formatCalendarDayTitle(selectedDate, true)}, le jour ouvert dans l’agenda`,
       icon: CalendarCheck2,
     },
     {

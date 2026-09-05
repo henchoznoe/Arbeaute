@@ -102,7 +102,9 @@ describe('saveAdminAppointment', () => {
 
     expect(result.ok).toBe(true)
     expect(mocks.notifyRescheduled).toHaveBeenCalledTimes(1)
-    expect(result.message).toContain('claire@example.ch a été prévenu')
+    expect(result.message).toContain(
+      'Envoi d’un e-mail à claire@example.ch prévu',
+    )
   })
 
   it('n’écrit à personne pour une correction sans effet sur le rendez-vous', async () => {
@@ -186,6 +188,6 @@ describe('cancelAdminAppointment', () => {
     const result = await cancelAdminAppointment('appointment-1')
 
     expect(result.ok).toBe(true)
-    expect(result.message).toContain('Personne n’a été prévenu')
+    expect(result.message).toContain('Aucun e-mail ne sera envoyé')
   })
 })
