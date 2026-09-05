@@ -1,3 +1,10 @@
+# [1.16.0](https://github.com/henchoznoe/Arbeaute/compare/v1.15.2...v1.16.0) (2026-09-05)
+
+
+### Features
+
+* **admin:** clarifier les conflits et unifier l’activité ([64f42ec](https://github.com/henchoznoe/Arbeaute/commit/64f42ec8768b5ca61aaee332b467c5d3423b8d5b))
+
 ## [1.15.2](https://github.com/henchoznoe/Arbeaute/compare/v1.15.1...v1.15.2) (2026-08-24)
 
 
