@@ -79,35 +79,43 @@ export const DashboardMetrics = ({
   ]
 
   return (
-    <section className="mt-5" aria-labelledby="dashboard-metrics-title">
-      <div className="flex flex-wrap items-end justify-between gap-2">
-        <h2 id="dashboard-metrics-title" className="font-semibold">
+    <details className="mt-5 rounded-2xl border bg-card">
+      <summary className="flex min-h-14 cursor-pointer items-center justify-between gap-3 px-4 font-semibold">
+        <span>Voir ma semaine en chiffres</span>
+        <span className="text-xs font-normal text-muted-foreground">
+          {periodLabel}
+        </span>
+      </summary>
+      <section
+        className="border-t p-3 sm:p-4"
+        aria-labelledby="dashboard-metrics-title"
+      >
+        <h2 id="dashboard-metrics-title" className="sr-only">
           Votre semaine en chiffres
         </h2>
-        <p className="text-xs text-muted-foreground">{periodLabel}</p>
-      </div>
-      <div className="mt-3 grid grid-cols-2 gap-2 lg:grid-cols-4">
-        {cards.map(card => {
-          const Icon = card.icon
-          return (
-            <article
-              key={card.label}
-              className="min-w-0 rounded-2xl border bg-card p-3 shadow-sm sm:p-4"
-            >
-              <div className="flex items-center gap-2 text-muted-foreground">
-                <Icon className="size-4 shrink-0" aria-hidden="true" />
-                <h3 className="truncate text-xs font-medium">{card.label}</h3>
-              </div>
-              <p className="mt-2 truncate text-xl font-bold tabular-nums">
-                {card.value}
-              </p>
-              <p className="mt-1 text-[11px] leading-snug text-muted-foreground">
-                {card.scope}
-              </p>
-            </article>
-          )
-        })}
-      </div>
-    </section>
+        <div className="grid grid-cols-2 gap-2 lg:grid-cols-4">
+          {cards.map(card => {
+            const Icon = card.icon
+            return (
+              <article
+                key={card.label}
+                className="min-w-0 rounded-2xl border bg-background p-3 shadow-sm sm:p-4"
+              >
+                <div className="flex items-center gap-2 text-muted-foreground">
+                  <Icon className="size-4 shrink-0" aria-hidden="true" />
+                  <h3 className="truncate text-xs font-medium">{card.label}</h3>
+                </div>
+                <p className="mt-2 truncate text-xl font-bold tabular-nums">
+                  {card.value}
+                </p>
+                <p className="mt-1 text-2xs leading-snug text-muted-foreground">
+                  {card.scope}
+                </p>
+              </article>
+            )
+          })}
+        </div>
+      </section>
+    </details>
   )
 }

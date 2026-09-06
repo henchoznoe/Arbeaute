@@ -1,4 +1,4 @@
-import { Clock3, MailCheck, MailX } from 'lucide-react'
+import { ChevronDown, Clock3, MailCheck, MailX } from 'lucide-react'
 import { EmailResendButton } from '@/components/admin/email-resend-button'
 import { StatusBadge } from '@/components/ui/status-badge'
 import {
@@ -20,84 +20,87 @@ export interface AppointmentEmailDelivery {
   createdAt: Date
 }
 
-/**
- * Le sort des messages liés à *ce* rendez-vous.
- *
- * La question d'Arzu n'est pas « quels e-mails sont partis aujourd'hui » mais
- * « est-ce que la personne de 14 h a bien reçu sa confirmation ». Y répondre
- * demandait de quitter le rendez-vous, d'ouvrir les réglages, puis de retrouver
- * l'adresse dans une liste chronologique. La donnée était pourtant déjà là, et
- * déjà indexée par `[appointmentId, createdAt]`.
- *
- * `/admin/emails` garde son rôle : la santé des envois et le quota.
- */
 export const AppointmentEmailStatus = ({
   deliveries,
-}: Readonly<{ deliveries: AppointmentEmailDelivery[] }>) => (
-  <section className="rounded-3xl border bg-card p-5 shadow-sm sm:p-6">
-    <h2 className="text-lg font-semibold">Messages envoyés</h2>
+}: Readonly<{ deliveries: AppointmentEmailDelivery[] }>) => {
+  const latest = deliveries[0]
 
-    {deliveries.length === 0 ? (
-      <p className="mt-2 text-sm text-muted-foreground">
-        Aucun message n’a encore été envoyé pour ce rendez-vous.
-      </p>
-    ) : (
-      <ul className="mt-3 space-y-3">
-        {deliveries.map(delivery => {
-          const sent = delivery.status === 'SENT'
-          const pending = delivery.status === 'PENDING'
-          const advice = describeEmailError(delivery.error)
-          return (
-            <li key={delivery.id} className="rounded-2xl border p-3">
-              <div className="flex flex-wrap items-center gap-2">
-                {pending ? (
-                  <Clock3 className="size-4 shrink-0 text-warning-strong" />
-                ) : sent ? (
-                  <MailCheck className="size-4 shrink-0 text-success" />
-                ) : (
-                  <MailX className="size-4 shrink-0 text-destructive" />
-                )}
-                <span className="text-sm font-semibold">
-                  {emailKindLabels[delivery.kind]}
-                </span>
-                <StatusBadge variant={emailStatusVariants[delivery.status]}>
-                  {emailStatusLabels[delivery.status]}
-                </StatusBadge>
-              </div>
-              <p className="mt-1 text-xs text-muted-foreground">
-                {sent ? 'Envoyé le' : pending ? 'Préparé le' : 'Tenté le'}{' '}
-                {formatShortMoment(delivery.createdAt)} · {delivery.recipient}
-              </p>
+  return (
+    <section className="rounded-2xl border bg-card p-4">
+      <h2 className="font-semibold">Messages</h2>
 
-              {advice ? (
-                <p className="mt-2 text-sm leading-relaxed text-destructive">
-                  {advice}
-                </p>
-              ) : null}
-              {/* Le message brut du fournisseur reste consultable pour le
-                  diagnostic, mais replié : il n'a rien à faire en première
-                  ligne. */}
-              {delivery.error ? (
-                <details className="mt-2">
-                  <summary className="cursor-pointer text-xs text-muted-foreground">
-                    Détail technique
-                  </summary>
-                  <p className="mt-1 break-words text-xs text-muted-foreground">
-                    {delivery.error}
-                  </p>
-                </details>
-              ) : null}
+      {!latest ? (
+        <p className="mt-1 text-sm text-muted-foreground">
+          Aucun message envoyé pour ce rendez-vous.
+        </p>
+      ) : (
+        <>
+          <p className="mt-2 flex items-center gap-2 text-sm">
+            {latest.status === 'SENT' ? (
+              <MailCheck className="size-4 shrink-0 text-success" />
+            ) : latest.status === 'PENDING' ? (
+              <Clock3 className="size-4 shrink-0 text-warning-strong" />
+            ) : (
+              <MailX className="size-4 shrink-0 text-destructive" />
+            )}
+            <span>
+              {emailKindLabels[latest.kind]} ·{' '}
+              <strong>{emailStatusLabels[latest.status].toLowerCase()}</strong>{' '}
+              le {formatShortMoment(latest.createdAt)}
+            </span>
+          </p>
 
-              {delivery.status === 'FAILED' &&
-              isResendableKind(delivery.kind) ? (
-                <div className="mt-3">
-                  <EmailResendButton deliveryId={delivery.id} />
-                </div>
-              ) : null}
-            </li>
-          )
-        })}
-      </ul>
-    )}
-  </section>
-)
+          <details className="group mt-3 border-t pt-2">
+            <summary className="flex min-h-11 cursor-pointer list-none items-center gap-2 text-sm font-medium text-primary [&::-webkit-details-marker]:hidden">
+              Voir {deliveries.length > 1 ? `les ${deliveries.length}` : 'le'}{' '}
+              message{deliveries.length > 1 ? 's' : ''}
+              <ChevronDown className="ml-auto size-4 transition group-open:rotate-180" />
+            </summary>
+            <ul className="mt-2 space-y-3">
+              {deliveries.map(delivery => {
+                const advice = describeEmailError(delivery.error)
+                return (
+                  <li key={delivery.id} className="rounded-xl border p-3">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="text-sm font-semibold">
+                        {emailKindLabels[delivery.kind]}
+                      </span>
+                      <StatusBadge
+                        variant={emailStatusVariants[delivery.status]}
+                      >
+                        {emailStatusLabels[delivery.status]}
+                      </StatusBadge>
+                    </div>
+                    <p className="mt-1 break-all text-xs text-muted-foreground">
+                      {formatShortMoment(delivery.createdAt)} ·{' '}
+                      {delivery.recipient}
+                    </p>
+                    {advice ? (
+                      <p className="mt-2 text-sm text-destructive">{advice}</p>
+                    ) : null}
+                    {delivery.error ? (
+                      <details className="mt-2">
+                        <summary className="cursor-pointer text-xs text-muted-foreground">
+                          Détail technique
+                        </summary>
+                        <p className="mt-1 break-words text-xs text-muted-foreground">
+                          {delivery.error}
+                        </p>
+                      </details>
+                    ) : null}
+                    {delivery.status === 'FAILED' &&
+                    isResendableKind(delivery.kind) ? (
+                      <div className="mt-3">
+                        <EmailResendButton deliveryId={delivery.id} />
+                      </div>
+                    ) : null}
+                  </li>
+                )
+              })}
+            </ul>
+          </details>
+        </>
+      )}
+    </section>
+  )
+}

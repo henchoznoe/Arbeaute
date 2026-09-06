@@ -52,7 +52,7 @@ const BookingSettingsForm = async ({
         eyebrow="Arbeauté"
         title="Règles de réservation"
         icon={SlidersHorizontal}
-        description="Ces réglages décident de ce qui peut être réservé en ligne et de ce que vous préférez décider vous-même. Un rendez-vous reste toujours modifiable jusqu’à 24 heures avant."
+        description="Choisissez ce qui peut être réservé directement sur le site."
       />
 
       <AdminPageColumns>

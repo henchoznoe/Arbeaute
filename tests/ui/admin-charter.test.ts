@@ -66,17 +66,20 @@ describe('administration sur la charte', () => {
     expect(offenders).toEqual([])
   })
 
-  it('donne le même rayon aux panneaux de la page des prestations', () => {
-    const panels = [
-      'app/admin/services/page.tsx',
+  it('garde les formulaires amples et la liste des prestations compacte', () => {
+    expect(
+      readFileSync('components/admin/service-catalog-manager.tsx', 'utf8'),
+    ).toContain('rounded-2xl border bg-card')
+
+    const forms = [
       'components/admin/service-form.tsx',
       'components/admin/service-image-upload.tsx',
       'components/admin/service-consent-upload.tsx',
     ]
 
-    for (const panel of panels) {
-      const source = readFileSync(panel, 'utf8')
-      expect(source, panel).toContain('rounded-3xl border bg-card')
+    for (const form of forms) {
+      const source = readFileSync(form, 'utf8')
+      expect(source, form).toContain('rounded-3xl border bg-card')
     }
   })
 

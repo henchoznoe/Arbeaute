@@ -4,6 +4,7 @@ import { Suspense } from 'react'
 import { AdminPage, AdminPageHeader } from '@/components/admin/admin-page'
 import { AdminSkeleton } from '@/components/admin/admin-skeleton'
 import { AvailabilityExceptionCalendar } from '@/components/admin/availability-exception-calendar'
+import { AvailabilitySections } from '@/components/admin/availability-sections'
 import { FormField, formControlClass } from '@/components/ui/form-field'
 import { SubmitButton } from '@/components/ui/submit-button'
 import {
@@ -123,9 +124,9 @@ const Availability = async ({
         backHref="/admin/settings"
         backLabel="Réglages"
         eyebrow="Arbeauté"
-        title="Vos horaires d’ouverture"
+        title="Horaires"
         icon={Clock3}
-        description="Les horaires de la semaine décident des heures que le site propose en ligne. Pour un jour particulier — vacances, ouverture spéciale — marquez-le dans le calendrier : une fermeture retire des heures, une ouverture en ajoute."
+        description="Gérez la semaine habituelle, les vacances et les ouvertures spéciales."
       />
 
       {error && errorMessages[error] ? (
@@ -137,112 +138,130 @@ const Availability = async ({
         </p>
       ) : null}
 
-      <div className="mt-6">
-        <AvailabilityExceptionCalendar
-          monthKey={monthKey}
-          monthLabel={monthLabel}
-          previousMonth={addLocalMonths(monthKey, -1)}
-          nextMonth={addLocalMonths(monthKey, 1)}
-          days={calendarDays}
-          segments={segments}
-          groups={groups}
-          weekly={weekly.map(range => ({
-            dayOfWeek: range.dayOfWeek,
-            startMinute: range.startMinute,
-            endMinute: range.endMinute,
-          }))}
-        />
-      </div>
-
-      <section className="mt-6 rounded-3xl border bg-card p-5 shadow-sm sm:p-7">
-        <h2 className="text-xl font-semibold">Horaires hebdomadaires</h2>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Ces horaires servent de base à chaque semaine et peuvent être copiés
-          dans le calendrier ci-dessus.
-        </p>
-        <div className="mt-5 grid gap-2 lg:grid-cols-2 xl:grid-cols-3">
-          {days.map(day => {
-            const ranges = weekly.filter(range => range.dayOfWeek === day.value)
-            return (
-              <div
-                key={day.value}
-                className="min-w-0 rounded-2xl border bg-background p-4"
-              >
-                <p className="font-medium">{day.label}</p>
-                <div className="mt-2 flex flex-wrap gap-2">
-                  {ranges.length ? (
-                    ranges.map(range => (
+      <AvailabilitySections
+        exceptions={
+          <AvailabilityExceptionCalendar
+            monthKey={monthKey}
+            monthLabel={monthLabel}
+            previousMonth={addLocalMonths(monthKey, -1)}
+            nextMonth={addLocalMonths(monthKey, 1)}
+            days={calendarDays}
+            segments={segments}
+            groups={groups}
+            weekly={weekly.map(range => ({
+              dayOfWeek: range.dayOfWeek,
+              startMinute: range.startMinute,
+              endMinute: range.endMinute,
+            }))}
+          />
+        }
+        weekly={
+          <section className="overflow-hidden rounded-2xl border bg-card shadow-sm">
+            <div className="border-b px-4 py-3">
+              <h2 className="font-semibold">Semaine habituelle</h2>
+              <p className="mt-1 text-xs text-muted-foreground">
+                Touchez un jour pour voir ou changer ses heures.
+              </p>
+            </div>
+            <div className="divide-y">
+              {days.map(day => {
+                const ranges = weekly.filter(
+                  range => range.dayOfWeek === day.value,
+                )
+                return (
+                  <details key={day.value} className="group">
+                    <summary className="flex min-h-14 cursor-pointer list-none items-center justify-between gap-3 px-4 py-2 [&::-webkit-details-marker]:hidden">
+                      <span className="font-semibold">{day.label}</span>
+                      <span className="text-sm text-muted-foreground">
+                        {ranges.length
+                          ? ranges
+                              .map(
+                                range =>
+                                  `${minuteLabel(range.startMinute)}–${minuteLabel(range.endMinute)}`,
+                              )
+                              .join(', ')
+                          : 'Fermé'}
+                      </span>
+                    </summary>
+                    <div className="border-t bg-muted/20 p-4">
+                      {ranges.length ? (
+                        <div className="flex flex-wrap gap-2">
+                          {ranges.map(range => (
+                            <form
+                              key={range.id}
+                              action={deleteWeeklyAvailability}
+                              className="flex min-h-11 items-center gap-2 rounded-xl border bg-background pl-3 text-sm"
+                            >
+                              <input type="hidden" name="id" value={range.id} />
+                              <span>
+                                {minuteLabel(range.startMinute)}–
+                                {minuteLabel(range.endMinute)}
+                              </span>
+                              <SubmitButton
+                                aria-label={`Supprimer l’horaire du ${day.label}`}
+                                variant="ghost"
+                                size="icon"
+                                className="text-muted-foreground"
+                              >
+                                <Trash2 className="size-4" />
+                              </SubmitButton>
+                            </form>
+                          ))}
+                        </div>
+                      ) : (
+                        <p className="text-sm text-muted-foreground">
+                          L’institut est fermé ce jour-là.
+                        </p>
+                      )}
                       <form
-                        key={range.id}
-                        action={deleteWeeklyAvailability}
-                        className="flex min-h-11 items-center gap-2 rounded-xl bg-muted px-3 text-sm"
+                        action={createWeeklyAvailability}
+                        className="mt-4 grid gap-3 sm:grid-cols-[1fr_1fr_auto]"
                       >
-                        <input type="hidden" name="id" value={range.id} />
-                        <span>
-                          {minuteLabel(range.startMinute)}–
-                          {minuteLabel(range.endMinute)}
-                        </span>
-                        <SubmitButton
-                          aria-label={`Supprimer l’horaire du ${day.label}`}
-                          variant="ghost"
-                          size="icon"
-                          className="text-muted-foreground"
+                        <input
+                          type="hidden"
+                          name="dayOfWeek"
+                          value={day.value}
+                        />
+                        <FormField
+                          controlId={`weekly-start-${day.value}`}
+                          label="Début"
                         >
-                          <Trash2 className="size-4" />
+                          <input
+                            id={`weekly-start-${day.value}`}
+                            name="startTime"
+                            type="time"
+                            step={900}
+                            defaultValue="08:00"
+                            required
+                            className={fieldClass}
+                          />
+                        </FormField>
+                        <FormField
+                          controlId={`weekly-end-${day.value}`}
+                          label="Fin"
+                        >
+                          <input
+                            id={`weekly-end-${day.value}`}
+                            name="endTime"
+                            type="time"
+                            step={900}
+                            defaultValue="11:30"
+                            required
+                            className={fieldClass}
+                          />
+                        </FormField>
+                        <SubmitButton pendingLabel="Ajout…" className="mt-auto">
+                          <Plus className="size-4" /> Ajouter
                         </SubmitButton>
                       </form>
-                    ))
-                  ) : (
-                    <span className="py-2 text-sm text-muted-foreground">
-                      Fermé
-                    </span>
-                  )}
-                </div>
-              </div>
-            )
-          })}
-        </div>
-
-        <form
-          action={createWeeklyAvailability}
-          className="mt-5 grid gap-3 sm:max-w-2xl sm:grid-cols-[1.3fr_1fr_1fr_auto]"
-        >
-          <FormField controlId="weekly-day" label="Jour">
-            <select id="weekly-day" name="dayOfWeek" className={fieldClass}>
-              {days.map(day => (
-                <option key={day.value} value={day.value}>
-                  {day.label}
-                </option>
-              ))}
-            </select>
-          </FormField>
-          <FormField controlId="weekly-start" label="Début">
-            <input
-              id="weekly-start"
-              name="startTime"
-              type="time"
-              step={900}
-              defaultValue="08:00"
-              required
-              className={fieldClass}
-            />
-          </FormField>
-          <FormField controlId="weekly-end" label="Fin">
-            <input
-              id="weekly-end"
-              name="endTime"
-              type="time"
-              step={900}
-              defaultValue="11:30"
-              required
-              className={fieldClass}
-            />
-          </FormField>
-          <SubmitButton pendingLabel="Ajout…" className="mt-auto">
-            <Plus className="size-4" /> Ajouter
-          </SubmitButton>
-        </form>
-      </section>
+                    </div>
+                  </details>
+                )
+              })}
+            </div>
+          </section>
+        }
+      />
     </AdminPage>
   )
 }

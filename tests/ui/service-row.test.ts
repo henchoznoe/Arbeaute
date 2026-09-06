@@ -10,7 +10,10 @@ import { describe, expect, it } from 'vitest'
  * propres `⌃ ⌄` et son propre « Modifier », visuellement identiques à 250 px de
  * distance.
  */
-const PAGE = readFileSync('app/admin/services/page.tsx', 'utf8')
+const PAGE = readFileSync(
+  'components/admin/service-catalog-manager.tsx',
+  'utf8',
+)
 const ROW_ACTIONS = readFileSync(
   'components/admin/service-row-actions.tsx',
   'utf8',
@@ -18,28 +21,27 @@ const ROW_ACTIONS = readFileSync(
 
 /** Le corps d'une ligne de prestation, de son ouverture à sa fermeture. */
 const serviceRow = PAGE.slice(
-  PAGE.indexOf('{category.services.map((service, serviceIndex) => ('),
-  PAGE.indexOf('<form action={toggleCategory}'),
+  PAGE.indexOf('{category.services.map(service => {'),
+  PAGE.indexOf('<form\n                    action={toggleCategory}'),
 )
 
 const countMatches = (source: string, pattern: RegExp): number =>
   source.match(pattern)?.length ?? 0
 
 describe('ligne d’une prestation', () => {
-  it('ne garde en façade que l’ouverture et l’ordre', () => {
-    // Un lien qui ouvre la prestation, deux flèches, une ouverture pour le
-    // reste : quatre cibles au lieu de six.
+  it('ne garde en façade que l’ouverture et le menu secondaire', () => {
+    // Les deux flèches existent encore, mais uniquement dans le mode d'ordre.
     expect(countMatches(serviceRow, /<Link\b/g)).toBe(1)
     expect(countMatches(serviceRow, /<SubmitButton\b/g)).toBe(2)
     expect(countMatches(serviceRow, /<ServiceRowActions\b/g)).toBe(1)
+    expect(serviceRow).toContain('{ordering ? (')
   })
 
   it('tient sur un rang', () => {
     // `flex-wrap` était ce qui autorisait les trois rangs.
     expect(serviceRow).not.toContain('flex-wrap')
-    // Trois contrôles de 44 px et leurs intervalles laissent près de 200 px au
-    // nom sur le plus étroit des téléphones visés.
-    const controls = 3 * 44 + 3 * 8
+    // En mode normal, le lien et le menu laissent assez de place au nom.
+    const controls = 2 * 44 + 2 * 8
     expect(375 - 24 - controls).toBeGreaterThan(150)
   })
 
@@ -72,12 +74,13 @@ describe('ligne d’une prestation', () => {
 
 describe('ligne d’un groupe', () => {
   const categoryHeader = PAGE.slice(
-    PAGE.indexOf('<div className="flex flex-wrap items-center justify-between'),
-    PAGE.indexOf('{category.services.map'),
+    PAGE.indexOf('<summary className="flex min-h-16'),
+    PAGE.indexOf('<div className="divide-y">'),
   )
 
   it('se présente comme un groupe, pas comme une prestation', () => {
-    expect(categoryHeader).toContain('Groupe')
+    expect(categoryHeader).toContain('{category.name}')
+    expect(categoryHeader).toContain('{category.services.length} prestation')
     // Une forme de bouton différente de celle des lignes, qui sont en ghost.
     expect(countMatches(categoryHeader, /variant="secondary"/g)).toBe(2)
     expect(countMatches(serviceRow, /variant="ghost"/g)).toBe(2)

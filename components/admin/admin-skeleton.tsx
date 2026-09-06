@@ -28,8 +28,10 @@ const PageHeading = () => (
 
 const AgendaShape = () => (
   <>
-    <Skeleton className="h-8 w-32" />
-    <Skeleton className="mt-4 h-28 rounded-2xl" />
+    <div className="flex min-h-11 items-center justify-between gap-3">
+      <Skeleton className="h-8 w-32" />
+      <Skeleton className="h-11 w-24 rounded-full" />
+    </div>
 
     <div className="mt-4 rounded-2xl border p-3 md:hidden">
       <Skeleton className="h-4 w-40 rounded-full" />

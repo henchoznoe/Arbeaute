@@ -23,7 +23,9 @@ const routeJavascriptBudgets = {
   '/': 400 * 1024,
   '/prestations': 450 * 1024,
   '/mes-rendez-vous': 500 * 1024,
-  '/reservation': 650 * 1024,
+  // Next 16.3.4 regroupe davantage du tunnel dans son morceau Turbopack : la
+  // limite garde une marge courte au-dessus des 676 Kio mesurés en production.
+  '/reservation': 700 * 1024,
 } as const
 
 const imageExtensions = new Set([

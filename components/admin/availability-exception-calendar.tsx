@@ -1,11 +1,11 @@
 'use client'
 
 import {
-  CalendarDays,
+  CalendarX2,
   ChevronLeft,
   ChevronRight,
   Clock3,
-  Copy,
+  DoorOpen,
   LoaderCircle,
   Minus,
   Palmtree,
@@ -60,6 +60,7 @@ interface AvailabilityExceptionCalendarProps {
 }
 
 type Shortcut = 'CUSTOM' | 'ALL_DAY' | 'COPY_WEEKLY' | 'VACATION'
+type Intent = 'CLOSE' | 'OPEN' | 'VACATION'
 
 const DAY_LABELS = ['Di', 'Lu', 'Ma', 'Me', 'Je', 'Ve', 'Sa']
 const CALENDAR_DAY_LABELS = ['Lu', 'Ma', 'Me', 'Je', 'Ve', 'Sa', 'Di']
@@ -99,17 +100,6 @@ const formatDate = (dateKey: string): string =>
 const formatShortDate = (dateKey: string): string =>
   formatCalendarDayDate(dateKey)
 
-const shortcutButtons: Array<{
-  value: Shortcut
-  label: string
-  icon: typeof Clock3
-}> = [
-  { value: 'CUSTOM', label: 'Plage horaire', icon: Clock3 },
-  { value: 'ALL_DAY', label: 'Journée entière', icon: CalendarDays },
-  { value: 'COPY_WEEKLY', label: 'Copier les horaires', icon: Copy },
-  { value: 'VACATION', label: 'Vacances', icon: Palmtree },
-]
-
 export const AvailabilityExceptionCalendar = ({
   monthKey,
   monthLabel,
@@ -127,8 +117,8 @@ export const AvailabilityExceptionCalendar = ({
     days.find(day => day.isToday)?.dateKey ?? `${monthKey}-01`,
   )
   const [endDate, setEndDate] = useState('')
-  const [shortcut, setShortcut] = useState<Shortcut>('CUSTOM')
-  const [type, setType] = useState<'AVAILABLE' | 'UNAVAILABLE'>('UNAVAILABLE')
+  const [intent, setIntent] = useState<Intent>('CLOSE')
+  const [shortcut, setShortcut] = useState<Shortcut>('ALL_DAY')
   const [startTime, setStartTime] = useState('08:00')
   const [endTime, setEndTime] = useState('12:00')
   const [label, setLabel] = useState('')
@@ -140,8 +130,8 @@ export const AvailabilityExceptionCalendar = ({
     // Un jour particulier a toujours une fin, même quand elle tombe le jour
     // même : une case vide laissait croire à une période sans terme.
     setEndDate(dateKey)
-    setShortcut('CUSTOM')
-    setType('UNAVAILABLE')
+    setIntent('CLOSE')
+    setShortcut('ALL_DAY')
     setLabel('')
     const selectedDay = dateFromKey(dateKey).getUTCDay()
     setCopyDayOfWeek(
@@ -152,18 +142,19 @@ export const AvailabilityExceptionCalendar = ({
     setOpen(true)
   }
 
-  const chooseShortcut = (value: Shortcut) => {
-    const leavesVacation = shortcut === 'VACATION' && value !== 'VACATION'
-    setShortcut(value)
+  const chooseIntent = (value: Intent) => {
+    const leavesVacation = intent === 'VACATION' && value !== 'VACATION'
+    setIntent(value)
     if (value === 'VACATION') {
-      setType('UNAVAILABLE')
+      setShortcut('VACATION')
       setEndDate(addDays(selectedDate, 6))
       setLabel('Vacances')
-    } else if (value === 'COPY_WEEKLY') {
-      setType('AVAILABLE')
+    } else if (value === 'OPEN') {
+      setShortcut('CUSTOM')
       setEndDate(selectedDate)
       if (label === 'Vacances') setLabel('')
     } else {
+      setShortcut('ALL_DAY')
       if (leavesVacation) setEndDate(selectedDate)
       if (label === 'Vacances') setLabel('')
     }
@@ -267,11 +258,19 @@ export const AvailabilityExceptionCalendar = ({
           </Button>
         </div>
 
-        <div className="mt-5 grid grid-cols-7 gap-1" aria-hidden="true">
+        <div className="mt-4 flex flex-wrap justify-center gap-3 text-2xs font-semibold">
+          <span className="inline-flex items-center gap-1 text-success-strong">
+            <Plus className="size-3" /> Ouverture
+          </span>
+          <span className="inline-flex items-center gap-1 text-warning-strong">
+            <Minus className="size-3" /> Fermeture
+          </span>
+        </div>
+        <div className="mt-2 grid grid-cols-7 gap-1" aria-hidden="true">
           {CALENDAR_DAY_LABELS.map(day => (
             <span
               key={day}
-              className="py-1 text-center text-[11px] font-semibold text-muted-foreground"
+              className="py-1 text-center text-2xs font-semibold text-muted-foreground"
             >
               {day}
             </span>
@@ -433,29 +432,47 @@ export const AvailabilityExceptionCalendar = ({
         onOpenChange={setOpen}
         eyebrow="Jour particulier"
         title={capitalizeFirst(formatDate(selectedDate))}
-        description="Fermez l’institut sur ce jour, ou ouvrez des heures en plus de vos horaires habituels."
+        description="Choisissez d’abord ce que vous voulez faire."
       >
         <form method="post" onSubmit={submit} className="space-y-5">
           <input type="hidden" name="shortcut" value={shortcut} />
-          <div className="grid grid-cols-2 gap-2">
-            {shortcutButtons.map(option => {
-              const Icon = option.icon
-              return (
-                <button
-                  key={option.value}
-                  type="button"
-                  onClick={() => chooseShortcut(option.value)}
-                  aria-pressed={shortcut === option.value}
-                  className={`flex min-h-12 items-center justify-center gap-2 rounded-xl border px-2 text-xs font-semibold transition ${
-                    shortcut === option.value
-                      ? 'border-primary bg-primary/10 text-primary'
-                      : 'hover:bg-muted'
-                  }`}
-                >
-                  <Icon className="size-4" /> {option.label}
-                </button>
-              )
-            })}
+          <div className="grid gap-2">
+            <button
+              type="button"
+              onClick={() => chooseIntent('CLOSE')}
+              aria-pressed={intent === 'CLOSE'}
+              className={`flex min-h-12 items-center gap-3 rounded-xl border px-3 text-left text-sm font-semibold transition ${
+                intent === 'CLOSE'
+                  ? 'border-primary bg-primary/10 text-primary'
+                  : 'hover:bg-muted'
+              }`}
+            >
+              <CalendarX2 className="size-5" /> Fermer une période
+            </button>
+            <button
+              type="button"
+              onClick={() => chooseIntent('OPEN')}
+              aria-pressed={intent === 'OPEN'}
+              className={`flex min-h-12 items-center gap-3 rounded-xl border px-3 text-left text-sm font-semibold transition ${
+                intent === 'OPEN'
+                  ? 'border-primary bg-primary/10 text-primary'
+                  : 'hover:bg-muted'
+              }`}
+            >
+              <DoorOpen className="size-5" /> Ouvrir exceptionnellement
+            </button>
+            <button
+              type="button"
+              onClick={() => chooseIntent('VACATION')}
+              aria-pressed={intent === 'VACATION'}
+              className={`flex min-h-12 items-center gap-3 rounded-xl border px-3 text-left text-sm font-semibold transition ${
+                intent === 'VACATION'
+                  ? 'border-primary bg-primary/10 text-primary'
+                  : 'hover:bg-muted'
+              }`}
+            >
+              <Palmtree className="size-5" /> Ajouter des vacances
+            </button>
           </div>
 
           <div className="grid gap-4 sm:grid-cols-2">
@@ -471,7 +488,7 @@ export const AvailabilityExceptionCalendar = ({
                 onChange={event => {
                   const dateKey = event.target.value
                   setSelectedDate(dateKey)
-                  if (shortcut === 'VACATION') setEndDate(addDays(dateKey, 6))
+                  if (intent === 'VACATION') setEndDate(addDays(dateKey, 6))
                   else if (!endDate || endDate < dateKey) setEndDate(dateKey)
                 }}
                 className={formControlClass}
@@ -495,6 +512,67 @@ export const AvailabilityExceptionCalendar = ({
               <input type="hidden" name="endDate" value={selectedDate} />
             )}
           </div>
+
+          <input
+            type="hidden"
+            name="type"
+            value={intent === 'OPEN' ? 'AVAILABLE' : 'UNAVAILABLE'}
+          />
+
+          {intent === 'CLOSE' ? (
+            <div className="rounded-xl border bg-muted/30 p-3">
+              <p className="text-sm font-medium">
+                {shortcut === 'ALL_DAY'
+                  ? 'Fermeture toute la journée'
+                  : 'Fermeture sur certaines heures'}
+              </p>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                className="mt-1"
+                onClick={() =>
+                  setShortcut(value =>
+                    value === 'ALL_DAY' ? 'CUSTOM' : 'ALL_DAY',
+                  )
+                }
+              >
+                <Clock3 className="size-4" />
+                {shortcut === 'ALL_DAY'
+                  ? 'Seulement certaines heures'
+                  : 'Toute la journée'}
+              </Button>
+            </div>
+          ) : null}
+
+          {intent === 'OPEN' ? (
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                type="button"
+                aria-pressed={shortcut === 'CUSTOM'}
+                onClick={() => setShortcut('CUSTOM')}
+                className={`min-h-11 rounded-xl border px-2 text-xs font-semibold ${
+                  shortcut === 'CUSTOM'
+                    ? 'border-primary bg-primary/10 text-primary'
+                    : 'hover:bg-muted'
+                }`}
+              >
+                Saisir les heures
+              </button>
+              <button
+                type="button"
+                aria-pressed={shortcut === 'COPY_WEEKLY'}
+                onClick={() => setShortcut('COPY_WEEKLY')}
+                className={`min-h-11 rounded-xl border px-2 text-xs font-semibold ${
+                  shortcut === 'COPY_WEEKLY'
+                    ? 'border-primary bg-primary/10 text-primary'
+                    : 'hover:bg-muted'
+                }`}
+              >
+                Reprendre un jour habituel
+              </button>
+            </div>
+          ) : null}
 
           {shortcut === 'COPY_WEEKLY' ? (
             <FormField controlId="exception-copy-day" label="Horaire modèle">
@@ -530,35 +608,6 @@ export const AvailabilityExceptionCalendar = ({
               </select>
             </FormField>
           ) : null}
-
-          {shortcut === 'COPY_WEEKLY' || shortcut === 'VACATION' ? (
-            <div className="flex flex-col gap-2 text-sm font-medium">
-              <span>Type</span>
-              <input
-                type="hidden"
-                name="type"
-                value={shortcut === 'COPY_WEEKLY' ? 'AVAILABLE' : 'UNAVAILABLE'}
-              />
-              {/* Le raccourci a déjà tranché : la nature se lit, elle ne se
-                  choisit plus. */}
-              <p className="flex min-h-11 items-center rounded-xl border bg-muted px-3 font-normal">
-                {shortcut === 'COPY_WEEKLY' ? 'Ouverture' : 'Fermeture'}
-              </p>
-            </div>
-          ) : (
-            <FormField controlId="exception-type" label="Type">
-              <select
-                id="exception-type"
-                name="type"
-                value={type}
-                onChange={event => setType(event.target.value as typeof type)}
-                className={formControlClass}
-              >
-                <option value="UNAVAILABLE">Fermeture</option>
-                <option value="AVAILABLE">Ouverture</option>
-              </select>
-            </FormField>
-          )}
 
           {shortcut === 'CUSTOM' ? (
             <div className="grid grid-cols-2 gap-4">
@@ -601,7 +650,13 @@ export const AvailabilityExceptionCalendar = ({
               maxLength={120}
               value={label}
               onChange={event => setLabel(event.target.value)}
-              placeholder="Vacances, formation, ouverture…"
+              placeholder={
+                intent === 'VACATION'
+                  ? 'Vacances'
+                  : intent === 'OPEN'
+                    ? 'Ouverture spéciale…'
+                    : 'Formation, fermeture…'
+              }
               className={formControlClass}
             />
           </FormField>
@@ -651,7 +706,11 @@ export const AvailabilityExceptionCalendar = ({
             ) : (
               <Plus className="size-4" />
             )}
-            Enregistrer ce jour particulier
+            {intent === 'VACATION'
+              ? 'Ajouter les vacances'
+              : intent === 'OPEN'
+                ? 'Ajouter cette ouverture'
+                : 'Ajouter cette fermeture'}
           </Button>
         </form>
       </SidePanel>

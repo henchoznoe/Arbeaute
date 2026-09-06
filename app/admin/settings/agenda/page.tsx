@@ -46,7 +46,7 @@ const AgendaSettingsForm = async ({
         eyebrow="Arbeauté"
         title="Agenda"
         icon={CalendarDays}
-        description="Choisissez les jours que la vue semaine affiche sur ordinateur. Ce choix est enregistré ici, pas dans votre navigateur : tout le monde voit la même semaine."
+        description="Choisissez les jours montrés dans la vue semaine sur ordinateur."
       />
 
       <AdminPageColumns>

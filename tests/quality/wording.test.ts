@@ -35,26 +35,21 @@ describe('vocabulaire sans genre', () => {
   })
 })
 
-/**
- * L'agenda ouvrait sur « Aucun rendez-vous à venir » suivi de « Le prochain
- * rendez-vous confirmé s'affichera ici dès la première réservation. » La phrase
- * était fausse : des réservations existaient, il n'en restait simplement plus
- * à venir. On expliquait à Arzu qu'elle n'avait jamais reçu personne.
- */
-describe('carte du prochain rendez-vous', () => {
+/** La journée passe avant les résumés et ne dépend plus d'une carte globale. */
+describe('premier écran de l’agenda', () => {
   const AGENDA = readFileSync('app/admin/page.tsx', 'utf8')
 
-  it('ne prétend plus qu’aucune réservation n’a jamais eu lieu', () => {
+  it('ne réintroduit pas l’ancien message trompeur', () => {
     expect(AGENDA).not.toContain('dès la première réservation')
-    expect(AGENDA).toContain('Plus aucun rendez-vous confirmé à venir.')
+    expect(AGENDA).not.toContain('Plus aucun rendez-vous confirmé à venir.')
+    expect(AGENDA).not.toContain('<NextAppointmentCard')
   })
 
-  it('tient sur une ligne quand il n’y a rien à dire', () => {
-    // `EmptyState` pose `py-8` et un titre centré : 230 px avant la bande de
-    // semaine, pour le bloc qui a le moins à dire de tout l'écran.
+  it('place la journée avant les chiffres', () => {
     expect(AGENDA).not.toContain('<EmptyState')
-    expect(AGENDA).toContain(
-      'flex items-center gap-2 rounded-2xl border bg-card px-4 py-3',
+    expect(AGENDA.indexOf('<AdminAgendaView')).toBeGreaterThan(-1)
+    expect(AGENDA.indexOf('<AdminAgendaView')).toBeLessThan(
+      AGENDA.indexOf('<DashboardMetrics'),
     )
   })
 })

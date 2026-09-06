@@ -1,14 +1,15 @@
 import { formatInTimeZone } from 'date-fns-tz'
-import { CalendarClock, Copy, UserRound } from 'lucide-react'
+import {
+  CalendarClock,
+  ChevronDown,
+  Copy,
+  Pencil,
+  UserRound,
+} from 'lucide-react'
 import Link from 'next/link'
 import { notFound, redirect } from 'next/navigation'
 import { Suspense } from 'react'
-import {
-  AdminPage,
-  AdminPageAside,
-  AdminPageColumns,
-  AdminPageHeader,
-} from '@/components/admin/admin-page'
+import { AdminPage, AdminPageHeader } from '@/components/admin/admin-page'
 import { AdminSkeleton } from '@/components/admin/admin-skeleton'
 import { AppointmentEmailStatus } from '@/components/admin/appointment-email-status'
 import { AppointmentForm } from '@/components/admin/appointment-form'
@@ -63,8 +64,6 @@ const EditAppointment = async ({
   })
   if (!appointment) notFound()
 
-  // Bornée, et servie par l'index `[appointmentId, createdAt]` qui existait
-  // déjà sans que rien d'autre que l'écran de suivi ne le lise.
   const emailDeliveries = await prisma.emailDelivery.findMany({
     where: { appointmentId: appointment.id },
     orderBy: { createdAt: 'desc' },
@@ -108,46 +107,52 @@ const EditAppointment = async ({
   const customerName =
     [appointment.customerFirstName, appointment.customerLastName]
       .filter(Boolean)
-      .join(' ') || 'cette personne'
+      .join(' ') || 'Sans nom'
+  const serviceLabel = formatServiceLabel(
+    appointment.serviceNameSnapshot,
+    appointment.service.category?.name,
+  )
 
   return (
     <AdminPage>
       <AdminPageHeader
         backHref={`/admin?date=${date}`}
         backLabel="Agenda"
-        eyebrow="Arbeauté"
         icon={CalendarClock}
-        title={
-          appointment.status === 'CONFIRMED'
-            ? 'Modifier le rendez-vous'
-            : 'Détail du rendez-vous'
-        }
+        title={customerName}
         aside={
           <StatusBadge variant={statusVariants[appointment.status]}>
             {statusLabels[appointment.status]}
           </StatusBadge>
         }
-        description={
-          appointment.status === 'CONFIRMED'
-            ? 'Choisissez « Déplacer le rendez-vous » pour trouver une heure libre. Les autres informations se corrigent ci-dessous. Changer de soin actualise la durée et le prix.'
-            : 'Ce rendez-vous n’est plus actif. Vous pouvez le consulter, mais pas le modifier tant que vous ne l’avez pas rétabli.'
-        }
-        actions={
-          <Button asChild variant="outline">
-            <Link href={`/admin/appointments/new?duplicate=${appointment.id}`}>
-              <Copy className="size-4" /> Dupliquer
-            </Link>
-          </Button>
-        }
+        description={`${capitalizeFirst(formatAppointmentDate(appointment.startsAt))} · ${serviceLabel}`}
       />
 
-      <section className="mb-5 rounded-2xl border bg-card p-4">
-        <h2 className="font-semibold">{customerName}</h2>
-        <p className="text-sm">
-          {formatAppointmentDate(appointment.startsAt)} ·{' '}
-          {appointment.serviceNameSnapshot}
-        </p>
-        <div className="mt-3 grid gap-2 sm:grid-cols-2">
+      <section className="mt-4 rounded-2xl border bg-card p-4 shadow-sm sm:p-5">
+        <div className="flex flex-wrap items-start justify-between gap-2">
+          <div>
+            <h2 className="font-semibold">{serviceLabel}</h2>
+            <p className="mt-1 text-sm text-muted-foreground">
+              {time} · {formatPrice(appointment.servicePriceCents)}
+            </p>
+          </div>
+          {appointment.customerId ? (
+            <Button asChild variant="ghost" size="sm">
+              <Link href={`/admin/customers/${appointment.customerId}`}>
+                <UserRound className="size-4" /> Voir le client
+              </Link>
+            </Button>
+          ) : null}
+        </div>
+
+        {appointment.customerEmail ? null : (
+          <p className="mt-3 rounded-xl bg-warning-subtle p-3 text-xs leading-relaxed text-warning-strong">
+            Sans adresse e-mail : aucun message de déplacement ou d’annulation
+            ne pourra être envoyé.
+          </p>
+        )}
+
+        <div className="mt-4 grid gap-2 sm:grid-cols-2">
           <CustomerCallButton
             phone={appointment.customerPhone}
             customerName={customerName}
@@ -160,118 +165,67 @@ const EditAppointment = async ({
             </Button>
           ) : null}
         </div>
+
+        <div className="mt-4 border-t pt-4">
+          <p className="mb-2 text-sm font-semibold">Noter ce qui s’est passé</p>
+          <AppointmentStatusActions
+            appointmentId={appointment.id}
+            status={appointment.status}
+            startsAt={appointment.startsAt}
+          />
+        </div>
       </section>
 
-      <AdminPageColumns>
-        <AdminPageAside className="order-2 lg:order-1">
-          {/* Même trio d'actions que dans la liste du jour — appeler, puis changer
-          le statut — pour qu'Arzu n'ait qu'un seul geste à mémoriser. */}
-          <section className="rounded-3xl border bg-card p-5 shadow-sm sm:p-6">
-            <h2 className="text-lg font-semibold">
-              Appeler ou noter ce qui s’est passé
-            </h2>
-            <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
-              Chaque changement est daté et conservé dans l’historique des
-              modifications.
-            </p>
-            {/* Sans reproche : ce sont d'anciens rendez-vous, saisis avant que
-            l'adresse ne devienne obligatoire. Le dire évite de croire qu'un
-            déplacement ou une annulation préviendra quelqu'un. */}
-            {appointment.customerEmail ? null : (
-              <p className="mt-3 rounded-xl bg-warning-subtle p-3 text-xs leading-relaxed text-warning-strong">
-                Ce rendez-vous n’a pas d’adresse e-mail : personne ne sera
-                prévenu si vous le déplacez ou l’annulez.
-              </p>
-            )}
-            <div className="mt-4 grid gap-3">
-              <CustomerCallButton
-                phone={appointment.customerPhone}
-                customerName={customerName}
-                className="w-full"
-              />
-              {/* Un seul appui pour savoir si la personne est déjà venue. Rien
-              n'était proposé ici : il fallait retenir le nom, ouvrir la
-              recherche et le retaper. */}
-              {appointment.customerId ? (
-                <Button asChild variant="outline" className="w-full">
-                  <Link href={`/admin/customers/${appointment.customerId}`}>
-                    <UserRound className="size-4" /> Voir le client
-                  </Link>
-                </Button>
-              ) : null}
-            </div>
-            <AppointmentStatusActions
-              appointmentId={appointment.id}
-              status={appointment.status}
-              startsAt={appointment.startsAt}
-              className="mt-3"
+      <div className="mt-4 flex flex-wrap gap-2">
+        <Button asChild variant="outline">
+          <Link href={`/admin/appointments/new?duplicate=${appointment.id}`}>
+            <Copy className="size-4" /> Dupliquer
+          </Link>
+        </Button>
+      </div>
+
+      {appointment.status === 'CONFIRMED' ? (
+        <details className="group mt-4 rounded-2xl border bg-card">
+          <summary className="flex min-h-14 cursor-pointer list-none items-center gap-3 px-4 font-semibold [&::-webkit-details-marker]:hidden">
+            <Pencil className="size-4 text-primary" />
+            <span>Modifier les informations</span>
+            <ChevronDown className="ml-auto size-4 transition group-open:rotate-180" />
+          </summary>
+          <div className="border-t p-3 sm:p-5">
+            <AppointmentForm
+              key={appointment.id}
+              services={services}
+              appointment={{
+                id: appointment.id,
+                serviceId: appointment.serviceId,
+                date,
+                time,
+                firstName: appointment.customerFirstName,
+                lastName: appointment.customerLastName,
+                email: appointment.customerEmail,
+                phone: appointment.customerPhone,
+                comment: appointment.comment,
+              }}
             />
-          </section>
+          </div>
+        </details>
+      ) : (
+        <section className="mt-4 rounded-2xl border bg-card p-4">
+          <h2 className="font-semibold">Informations conservées</h2>
+          <p className="mt-2 break-words text-sm text-muted-foreground">
+            {appointment.customerEmail ?? 'Sans adresse e-mail'}
+          </p>
+          {appointment.comment ? (
+            <p className="mt-3 whitespace-pre-wrap border-t pt-3 text-sm text-muted-foreground">
+              {appointment.comment}
+            </p>
+          ) : null}
+        </section>
+      )}
 
-          <AppointmentEmailStatus deliveries={emailDeliveries} />
-        </AdminPageAside>
-
-        <div className="order-1 min-w-0 lg:order-2">
-          {appointment.status === 'CONFIRMED' ? (
-            <div>
-              <AppointmentForm
-                key={appointment.id}
-                services={services}
-                appointment={{
-                  id: appointment.id,
-                  serviceId: appointment.serviceId,
-                  date,
-                  time,
-                  firstName: appointment.customerFirstName,
-                  lastName: appointment.customerLastName,
-                  email: appointment.customerEmail,
-                  phone: appointment.customerPhone,
-                  comment: appointment.comment,
-                }}
-              />
-            </div>
-          ) : (
-            <section className="rounded-3xl border bg-card p-5 shadow-sm sm:p-7">
-              <div className="flex items-start gap-3">
-                <CalendarClock className="mt-0.5 size-5 shrink-0 text-primary" />
-                <div>
-                  <h2 className="text-lg font-semibold">
-                    {formatServiceLabel(
-                      appointment.serviceNameSnapshot,
-                      appointment.service.category?.name,
-                    )}
-                  </h2>
-                  <p className="mt-1 text-sm text-muted-foreground">
-                    {capitalizeFirst(
-                      formatAppointmentDate(appointment.startsAt),
-                    )}{' '}
-                    · {formatPrice(appointment.servicePriceCents)}
-                  </p>
-                </div>
-              </div>
-              <div className="mt-5 flex items-start gap-3 border-t pt-5">
-                <UserRound className="mt-0.5 size-5 shrink-0 text-primary" />
-                <div className="min-w-0 text-sm">
-                  <p className="font-semibold">{customerName}</p>
-                  {appointment.customerEmail ? (
-                    <p className="mt-1 break-all text-muted-foreground">
-                      {appointment.customerEmail}
-                    </p>
-                  ) : null}
-                </div>
-              </div>
-              {appointment.comment ? (
-                <div className="mt-5 border-t pt-5">
-                  <h3 className="text-sm font-semibold">Commentaire</h3>
-                  <p className="mt-1 whitespace-pre-wrap text-sm text-muted-foreground">
-                    {appointment.comment}
-                  </p>
-                </div>
-              ) : null}
-            </section>
-          )}
-        </div>
-      </AdminPageColumns>
+      <div className="mt-4">
+        <AppointmentEmailStatus deliveries={emailDeliveries} />
+      </div>
     </AdminPage>
   )
 }

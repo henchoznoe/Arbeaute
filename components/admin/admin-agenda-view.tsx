@@ -27,6 +27,7 @@ interface AdminAgendaViewProps {
   visibleDays: number[]
   previousWeek: string
   nextWeek: string
+  nextAppointmentId?: string
 }
 
 export const AdminAgendaView = ({
@@ -36,6 +37,7 @@ export const AdminAgendaView = ({
   visibleDays,
   previousWeek,
   nextWeek,
+  nextAppointmentId,
 }: Readonly<AdminAgendaViewProps>) => {
   const [selectedDate, setSelectedDate] = useState(anchor)
 
@@ -160,20 +162,10 @@ export const AdminAgendaView = ({
               </Link>
             </Button>
           </div>
-          <p className="mt-2 flex items-start gap-2 text-xs leading-relaxed text-muted-foreground">
-            <CircleHelp className="mt-0.5 size-4 shrink-0 text-primary" />
-            <span>
-              Touchez un rendez-vous pour l’ouvrir et le modifier.{' '}
-              <Link
-                href="/admin/aide"
-                className="font-medium text-foreground underline underline-offset-4"
-              >
-                Voir l’aide rapide
-              </Link>
-              .
-            </span>
-          </p>
-          <AdminDayTimeline day={selectedDay} />
+          <AdminDayTimeline
+            day={selectedDay}
+            nextAppointmentId={nextAppointmentId}
+          />
         </div>
       </section>
 

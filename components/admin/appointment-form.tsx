@@ -3,11 +3,15 @@
 import {
   AlertTriangle,
   CalendarCheck,
+  CalendarClock,
   CheckCircle2,
   LoaderCircle,
+  Pencil,
   Repeat2,
   Save,
   Trash2,
+  UserPlus,
+  UserRoundCheck,
   XCircle,
 } from 'lucide-react'
 import { useRouter } from 'next/navigation'
@@ -86,6 +90,18 @@ export const AppointmentForm = ({
   const [email, setEmail] = useState(appointment.email ?? '')
   const [phone, setPhone] = useState(appointment.phone ?? '')
   const [comment, setComment] = useState(appointment.comment ?? '')
+  const [selectedServiceId, setSelectedServiceId] = useState(
+    appointment.serviceId ?? '',
+  )
+  const [date, setDate] = useState(appointment.date)
+  const [time, setTime] = useState(appointment.time)
+  const [dateTimeReady, setDateTimeReady] = useState(Boolean(appointment.id))
+  const hasPrefilledCustomer = Boolean(
+    appointment.lastName && appointment.email && appointment.phone,
+  )
+  const [customerMode, setCustomerMode] = useState<
+    'choice' | 'search' | 'existing' | 'new'
+  >(appointment.id ? 'new' : hasPrefilledCustomer ? 'existing' : 'choice')
 
   const resetWarning = () => {
     setOverride(null)
@@ -175,8 +191,17 @@ export const AppointmentForm = ({
     setLastName(customer.lastName)
     setEmail(customer.email)
     setPhone(customer.phone)
+    setCustomerMode('existing')
     resetWarning()
   }
+
+  const customerReady =
+    customerMode !== 'choice' &&
+    customerMode !== 'search' &&
+    Boolean(lastName.trim() && email.trim() && phone.trim())
+  const creationReady = Boolean(
+    selectedServiceId && date && time && dateTimeReady && customerReady,
+  )
 
   const cancel = () => {
     if (!appointment.id) return
@@ -199,40 +224,105 @@ export const AppointmentForm = ({
         else submit(formData)
       }}
       onChange={resetWarning}
-      className="space-y-6 rounded-3xl border bg-card p-5 shadow-sm sm:p-7"
+      className="flex flex-col gap-6 rounded-3xl border bg-card p-5 shadow-sm sm:p-7"
     >
-      <ServicePicker
-        services={services}
-        initialServiceId={appointment.serviceId}
-        onSelectionChange={resetWarning}
-      />
+      <section className="order-1" aria-labelledby="appointment-service-step">
+        {!appointment.id ? (
+          <h2
+            id="appointment-service-step"
+            className="mb-3 text-lg font-semibold"
+          >
+            1. Choisir le soin
+          </h2>
+        ) : null}
+        <ServicePicker
+          services={services}
+          initialServiceId={appointment.serviceId}
+          onSelectionChange={serviceId => {
+            setSelectedServiceId(serviceId)
+            if (!serviceId) setDateTimeReady(false)
+            resetWarning()
+          }}
+        />
+      </section>
 
-      <div className="grid gap-5 sm:grid-cols-2">
-        <FormField controlId="admin-appointment-date" label="Date">
-          <input
-            id="admin-appointment-date"
-            name="date"
-            type="date"
-            required
-            defaultValue={appointment.date}
-            className={formControlClass}
-          />
-        </FormField>
-        <FormField controlId="admin-appointment-time" label="Heure de début">
-          <input
-            id="admin-appointment-time"
-            name="time"
-            type="time"
-            step={900}
-            required
-            defaultValue={appointment.time}
-            className={formControlClass}
-          />
-        </FormField>
-      </div>
+      {appointment.id || selectedServiceId ? (
+        <section
+          className="order-2 rounded-2xl border bg-muted/25 p-4"
+          aria-labelledby="appointment-time-step"
+        >
+          <div className="flex items-center justify-between gap-3">
+            <h2 id="appointment-time-step" className="font-semibold">
+              {!appointment.id ? '2. Date et heure' : 'Date et heure'}
+            </h2>
+            {!appointment.id && dateTimeReady ? (
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={() => setDateTimeReady(false)}
+              >
+                <Pencil className="size-4" /> Modifier
+              </Button>
+            ) : null}
+          </div>
 
-      {!appointment.id ? (
-        <section className="rounded-2xl border bg-muted/30 p-4">
+          {!appointment.id && dateTimeReady ? (
+            <>
+              <input type="hidden" name="date" value={date} />
+              <input type="hidden" name="time" value={time} />
+              <p className="mt-2 flex items-center gap-2 text-sm">
+                <CalendarClock className="size-4 text-primary" />
+                {capitalizeFirst(formatSeriesDate(date))} à {time}
+              </p>
+            </>
+          ) : (
+            <>
+              <div className="mt-4 grid gap-4 sm:grid-cols-2">
+                <FormField controlId="admin-appointment-date" label="Date">
+                  <input
+                    id="admin-appointment-date"
+                    name="date"
+                    type="date"
+                    required
+                    value={date}
+                    onChange={event => setDate(event.target.value)}
+                    className={formControlClass}
+                  />
+                </FormField>
+                <FormField
+                  controlId="admin-appointment-time"
+                  label="Heure de début"
+                >
+                  <input
+                    id="admin-appointment-time"
+                    name="time"
+                    type="time"
+                    step={900}
+                    required
+                    value={time}
+                    onChange={event => setTime(event.target.value)}
+                    className={formControlClass}
+                  />
+                </FormField>
+              </div>
+              {!appointment.id ? (
+                <Button
+                  type="button"
+                  className="mt-4 w-full sm:w-auto"
+                  disabled={!date || !time}
+                  onClick={() => setDateTimeReady(true)}
+                >
+                  Continuer vers le client
+                </Button>
+              ) : null}
+            </>
+          )}
+        </section>
+      ) : null}
+
+      {!appointment.id && dateTimeReady && customerReady ? (
+        <section className="order-4 rounded-2xl border bg-muted/30 p-4">
           <label className="flex min-h-11 cursor-pointer items-center gap-3">
             <input
               type="checkbox"
@@ -295,95 +385,169 @@ export const AppointmentForm = ({
         </section>
       ) : null}
 
-      {/* Uniquement à la création : c'est un pré-remplissage des coordonnées,
-          pas un rattachement. Sur un rendez-vous existant, la personne est déjà
-          connue, et proposer d'en « reprendre » une autre laissait croire qu'on
-          pouvait le transférer d'un client à l'autre. */}
-      {appointment.id ? null : <CustomerPicker onSelect={selectCustomer} />}
-
-      <div className="grid gap-5 sm:grid-cols-2">
-        <FormField
-          controlId="admin-appointment-first-name"
-          label="Prénom"
-          optional
+      {appointment.id || dateTimeReady ? (
+        <section
+          className="order-3 rounded-2xl border bg-muted/25 p-4"
+          aria-labelledby="appointment-customer-step"
         >
-          <input
-            id="admin-appointment-first-name"
-            name="firstName"
-            maxLength={100}
-            value={firstName}
-            onChange={event => setFirstName(event.target.value)}
-            className={formControlClass}
-            autoComplete="given-name"
-          />
-        </FormField>
-        <FormField controlId="admin-appointment-last-name" label="Nom">
-          <input
-            id="admin-appointment-last-name"
-            name="lastName"
-            required
-            maxLength={100}
-            value={lastName}
-            onChange={event => setLastName(event.target.value)}
-            className={formControlClass}
-            autoComplete="family-name"
-          />
-        </FormField>
-      </div>
+          <div className="flex items-center justify-between gap-3">
+            <h2 id="appointment-customer-step" className="font-semibold">
+              {!appointment.id
+                ? '3. Choisir le client'
+                : 'Client et commentaire'}
+            </h2>
+            {!appointment.id && customerMode !== 'choice' ? (
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={() => setCustomerMode('choice')}
+              >
+                Changer
+              </Button>
+            ) : null}
+          </div>
 
-      <div className="grid gap-5 sm:grid-cols-2">
-        <FormField controlId="admin-appointment-email" label="E-mail">
-          <input
-            id="admin-appointment-email"
-            name="email"
-            type="email"
-            required
-            maxLength={254}
-            value={email}
-            onChange={event => setEmail(event.target.value)}
-            className={formControlClass}
-            autoComplete="email"
-          />
-        </FormField>
-        <FormField controlId="admin-appointment-phone" label="Téléphone">
-          <input
-            id="admin-appointment-phone"
-            name="phone"
-            type="tel"
-            required
-            maxLength={40}
-            value={phone}
-            onChange={event => setPhone(event.target.value)}
-            className={formControlClass}
-            autoComplete="tel"
-          />
-        </FormField>
-      </div>
-      <p className="-mt-3 text-xs leading-relaxed text-muted-foreground">
-        Les deux sont nécessaires : l’e-mail sert à envoyer la confirmation et
-        le rappel de la veille, et permet de retrouver le rendez-vous dans « Mes
-        rendez-vous ».
-      </p>
+          {!appointment.id && customerMode === 'choice' ? (
+            <div className="mt-4 grid gap-3 sm:grid-cols-2">
+              <Button
+                type="button"
+                variant="outline"
+                className="min-h-16 justify-start"
+                onClick={() => setCustomerMode('search')}
+              >
+                <UserRoundCheck className="size-5" /> Client déjà connu
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                className="min-h-16 justify-start"
+                onClick={() => {
+                  setFirstName('')
+                  setLastName('')
+                  setEmail('')
+                  setPhone('')
+                  setCustomerMode('new')
+                }}
+              >
+                <UserPlus className="size-5" /> Nouveau client
+              </Button>
+            </div>
+          ) : null}
 
-      <FormField
-        controlId="admin-appointment-comment"
-        label="Commentaire"
-        optional
-      >
-        <textarea
-          id="admin-appointment-comment"
-          name="comment"
-          rows={4}
-          maxLength={1000}
-          value={comment}
-          onChange={event => setComment(event.target.value)}
-          className={`${formControlClass} py-3`}
-        />
-      </FormField>
+          {!appointment.id && customerMode === 'search' ? (
+            <div className="mt-4">
+              <CustomerPicker onSelect={selectCustomer} />
+            </div>
+          ) : null}
+
+          {!appointment.id && customerMode === 'existing' ? (
+            <div className="mt-4 rounded-xl border border-primary/25 bg-primary/5 p-4">
+              <input type="hidden" name="firstName" value={firstName} />
+              <input type="hidden" name="lastName" value={lastName} />
+              <input type="hidden" name="email" value={email} />
+              <input type="hidden" name="phone" value={phone} />
+              <p className="font-semibold">
+                {[firstName, lastName].filter(Boolean).join(' ')}
+              </p>
+              <p className="mt-1 text-sm text-muted-foreground">{phone}</p>
+            </div>
+          ) : null}
+
+          {appointment.id || customerMode === 'new' ? (
+            <>
+              <div className="mt-4 grid gap-4 sm:grid-cols-2">
+                <FormField
+                  controlId="admin-appointment-first-name"
+                  label="Prénom"
+                  optional
+                >
+                  <input
+                    id="admin-appointment-first-name"
+                    name="firstName"
+                    maxLength={100}
+                    value={firstName}
+                    onChange={event => setFirstName(event.target.value)}
+                    className={formControlClass}
+                    autoComplete="given-name"
+                  />
+                </FormField>
+                <FormField controlId="admin-appointment-last-name" label="Nom">
+                  <input
+                    id="admin-appointment-last-name"
+                    name="lastName"
+                    required
+                    maxLength={100}
+                    value={lastName}
+                    onChange={event => setLastName(event.target.value)}
+                    className={formControlClass}
+                    autoComplete="family-name"
+                  />
+                </FormField>
+              </div>
+
+              <div className="mt-4 grid gap-4 sm:grid-cols-2">
+                <FormField controlId="admin-appointment-email" label="E-mail">
+                  <input
+                    id="admin-appointment-email"
+                    name="email"
+                    type="email"
+                    required
+                    maxLength={254}
+                    value={email}
+                    onChange={event => setEmail(event.target.value)}
+                    className={formControlClass}
+                    autoComplete="email"
+                  />
+                </FormField>
+                <FormField
+                  controlId="admin-appointment-phone"
+                  label="Téléphone"
+                >
+                  <input
+                    id="admin-appointment-phone"
+                    name="phone"
+                    type="tel"
+                    required
+                    maxLength={40}
+                    value={phone}
+                    onChange={event => setPhone(event.target.value)}
+                    className={formControlClass}
+                    autoComplete="tel"
+                  />
+                </FormField>
+              </div>
+              <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
+                L’e-mail envoie la confirmation et le rappel. Le numéro sert au
+                bouton d’appel.
+              </p>
+            </>
+          ) : null}
+
+          {appointment.id || customerReady ? (
+            <FormField
+              controlId="admin-appointment-comment"
+              label="Commentaire"
+              optional
+              className="mt-4"
+            >
+              <textarea
+                id="admin-appointment-comment"
+                name="comment"
+                rows={3}
+                maxLength={1000}
+                value={comment}
+                onChange={event => setComment(event.target.value)}
+                className={`${formControlClass} py-3`}
+              />
+            </FormField>
+          ) : null}
+        </section>
+      ) : null}
 
       {seriesEnabled && seriesPreview ? (
         <section
-          className="rounded-2xl border border-primary/20 bg-primary/5 p-4"
+          className="order-5 rounded-2xl border border-primary/20 bg-primary/5 p-4"
           aria-labelledby="series-preview-title"
         >
           <div className="flex items-start gap-3">
@@ -424,15 +588,15 @@ export const AppointmentForm = ({
                       </span>
                     </span>
                     {hasConflict ? (
-                      <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-destructive/10 px-2 py-1 text-[11px] font-semibold text-destructive">
+                      <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-destructive/10 px-2 py-1 text-2xs font-semibold text-destructive">
                         <XCircle className="size-3" /> Conflit
                       </span>
                     ) : occurrence.outsidePublicHours ? (
-                      <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-warning-soft px-2 py-1 text-[11px] font-semibold text-warning-strong">
+                      <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-warning-soft px-2 py-1 text-2xs font-semibold text-warning-strong">
                         <AlertTriangle className="size-3" /> Hors ouverture
                       </span>
                     ) : (
-                      <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-success-subtle px-2 py-1 text-[11px] font-semibold text-success-strong">
+                      <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-success-subtle px-2 py-1 text-2xs font-semibold text-success-strong">
                         <CheckCircle2 className="size-3" /> Libre
                       </span>
                     )}
@@ -472,7 +636,7 @@ export const AppointmentForm = ({
       {message && override ? (
         <div
           role="status"
-          className="rounded-xl border border-warning-accent bg-warning-subtle p-4 text-sm text-warning-strong"
+          className="order-5 rounded-xl border border-warning-accent bg-warning-subtle p-4 text-sm text-warning-strong"
         >
           <div className="flex gap-2">
             <AlertTriangle className="mt-0.5 size-4 shrink-0" />
@@ -489,79 +653,83 @@ export const AppointmentForm = ({
         </div>
       ) : null}
 
-      <div className="flex flex-col-reverse gap-3 sm:flex-row sm:items-center sm:justify-between">
-        {appointment.id ? (
-          <ConfirmDialog
-            title="Annuler ce rendez-vous ?"
-            description="L’heure redevient libre tout de suite et le rendez-vous s’affichera comme annulé sur le site. Vous pourrez le rétablir ensuite si l’heure est encore disponible."
-            confirmLabel="Oui, annuler ce rendez-vous"
-            cancelLabel="Non, le garder"
-            onConfirm={cancel}
-            pending={pending}
-            trigger={
-              <Button type="button" variant="destructive" disabled={pending}>
-                <Trash2 className="size-4" />
-                Annuler le rendez-vous
-              </Button>
-            }
-          />
-        ) : (
-          <span />
-        )}
-        {seriesEnabled ? (
-          <div className="flex flex-col gap-2 sm:flex-row">
-            {seriesPreview ? (
-              <Button type="submit" variant="outline" disabled={pending}>
-                <Repeat2 className="size-4" /> Recalculer l’aperçu
-              </Button>
-            ) : null}
-            <Button
-              type={seriesPreview ? 'button' : 'submit'}
-              disabled={
-                pending ||
-                Boolean(seriesPreview?.conflictCount) ||
-                Boolean(
-                  seriesPreview?.outsidePublicHoursCount &&
-                    !acknowledgeSeriesOutsideHours,
-                )
+      {appointment.id || creationReady ? (
+        <div
+          className={`order-6 flex flex-col-reverse gap-3 sm:flex-row sm:items-center sm:justify-between ${appointment.id ? '' : 'sticky bottom-[calc(var(--admin-nav-height,5.25rem)+0.5rem)] z-20 rounded-2xl border bg-background/95 p-3 shadow-lg backdrop-blur md:bottom-2'}`}
+        >
+          {appointment.id ? (
+            <ConfirmDialog
+              title="Annuler ce rendez-vous ?"
+              description="L’heure redevient libre tout de suite et le rendez-vous s’affichera comme annulé sur le site. Vous pourrez le rétablir ensuite si l’heure est encore disponible."
+              confirmLabel="Oui, annuler ce rendez-vous"
+              cancelLabel="Non, le garder"
+              onConfirm={cancel}
+              pending={pending}
+              trigger={
+                <Button type="button" variant="destructive" disabled={pending}>
+                  <Trash2 className="size-4" />
+                  Annuler le rendez-vous
+                </Button>
               }
-              onClick={seriesPreview ? createSeries : undefined}
+            />
+          ) : (
+            <span />
+          )}
+          {seriesEnabled ? (
+            <div className="flex flex-col gap-2 sm:flex-row">
+              {seriesPreview ? (
+                <Button type="submit" variant="outline" disabled={pending}>
+                  <Repeat2 className="size-4" /> Recalculer l’aperçu
+                </Button>
+              ) : null}
+              <Button
+                type={seriesPreview ? 'button' : 'submit'}
+                disabled={
+                  pending ||
+                  Boolean(seriesPreview?.conflictCount) ||
+                  Boolean(
+                    seriesPreview?.outsidePublicHoursCount &&
+                      !acknowledgeSeriesOutsideHours,
+                  )
+                }
+                onClick={seriesPreview ? createSeries : undefined}
+              >
+                {pending ? (
+                  <LoaderCircle className="size-4 animate-spin" />
+                ) : seriesPreview ? (
+                  <Save className="size-4" />
+                ) : (
+                  <CalendarCheck className="size-4" />
+                )}
+                {seriesPreview
+                  ? `Créer ${seriesPreview.occurrences.length} rendez-vous`
+                  : 'Vérifier toutes les dates'}
+              </Button>
+            </div>
+          ) : (
+            <Button
+              type="submit"
+              disabled={pending}
+              className={override ? 'bg-warning text-ink-light' : undefined}
             >
               {pending ? (
                 <LoaderCircle className="size-4 animate-spin" />
-              ) : seriesPreview ? (
-                <Save className="size-4" />
+              ) : override ? (
+                <AlertTriangle className="size-4" />
               ) : (
-                <CalendarCheck className="size-4" />
+                <Save className="size-4" />
               )}
-              {seriesPreview
-                ? `Créer ${seriesPreview.occurrences.length} rendez-vous`
-                : 'Vérifier toutes les dates'}
+              {override
+                ? override.overlap && !override.outsideHours
+                  ? 'Confirmer la superposition'
+                  : 'Confirmer malgré l’horaire'
+                : appointment.id
+                  ? 'Enregistrer les modifications'
+                  : 'Créer le rendez-vous'}
             </Button>
-          </div>
-        ) : (
-          <Button
-            type="submit"
-            disabled={pending}
-            className={override ? 'bg-warning text-ink-light' : undefined}
-          >
-            {pending ? (
-              <LoaderCircle className="size-4 animate-spin" />
-            ) : override ? (
-              <AlertTriangle className="size-4" />
-            ) : (
-              <Save className="size-4" />
-            )}
-            {override
-              ? override.overlap && !override.outsideHours
-                ? 'Confirmer la superposition'
-                : 'Confirmer malgré l’horaire'
-              : appointment.id
-                ? 'Enregistrer les modifications'
-                : 'Créer le rendez-vous'}
-          </Button>
-        )}
-      </div>
+          )}
+        </div>
+      ) : null}
       <AppToast
         open={toastOpen}
         onOpenChange={open => {

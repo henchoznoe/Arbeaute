@@ -2,21 +2,23 @@
 
 import {
   Activity,
+  BadgeCheck,
   CalendarDays,
   CircleHelp,
   CirclePlus,
-  Clock,
   House,
   LogOut,
+  Menu,
   Search,
   Settings2,
 } from 'lucide-react'
 import Link from 'next/link'
 import { usePathname, useSearchParams } from 'next/navigation'
-import { useEffect, useRef, useState } from 'react'
+import { type ReactNode, useEffect, useRef, useState } from 'react'
 import { Button } from '@/components/ui/button'
+import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import { navigationItemBaseClass } from '@/components/ui/navigation'
-import { SubmitButton } from '@/components/ui/submit-button'
+import { SidePanel } from '@/components/ui/side-panel'
 import { logoutAdmin } from '@/lib/actions/admin-auth'
 import {
   ADMIN_AGENDA_DATE_EVENT,
@@ -29,26 +31,22 @@ import {
 import { getLocalDateKey } from '@/lib/reservation/time'
 
 interface AdminNavigationProps {
-  pendingRequestCount: number
+  /** Le compteur arrive séparément pour ne pas retenir toute la navigation. */
+  attentionBadge?: ReactNode
 }
 
 const navigationIcons: Record<AdminNavigationItem, typeof CalendarDays> = {
   agenda: CalendarDays,
-  requests: Clock,
   search: Search,
-  activity: Activity,
   create: CirclePlus,
+  attention: BadgeCheck,
   settings: Settings2,
 }
 
 /**
- * Le dégagement du bas de page suit la hauteur réelle de la barre, publiée par
- * `AdminNavigation` dans `--admin-nav-height`. Une constante suffisait tant que
- * la barre avait cinq entrées ; la sixième, celle des demandes, la faisait
- * grandir sans que le contenu le sache, et le bas de page passait dessous.
- *
- * La valeur de repli couvre le premier rendu, avant toute mesure ; au-delà de
- * `md` la barre disparaît, et la variable remise à zéro annule le dégagement.
+ * Le dégagement du bas de page suit la hauteur réelle de la barre. La liste est
+ * désormais fixe, mais la mesure protège la safe area et les futurs changements
+ * de libellé sans cacher le bas d'un formulaire.
  */
 export const AdminContent = ({
   children,
@@ -68,37 +66,8 @@ export const AdminContent = ({
   )
 }
 
-/**
- * La pastille se pose sur le coin du bouton, pas sur l'icône : accrochée à
- * l'icône, elle en recouvrait le dessin et se lisait comme une rature.
- *
- * Le texte caché dit ce que la pastille compte. Réemployée telle quelle pour
- * les demandes en attente, elle annonçait « N activité(s) non lue(s) » : un
- * lecteur d'écran présentait donc une demande urgente comme une activité
- * consultable plus tard.
- */
-const countBadge = (
-  count: number,
-  className: string,
-  describe: (count: number) => string,
-) => {
-  if (count <= 0) return null
-  const label = count > 99 ? '99+' : count.toString()
-  return (
-    <span
-      className={`absolute grid min-h-4 min-w-4 place-items-center rounded-full bg-brand-strong px-1 text-2xs font-bold leading-none text-ink-light ring-2 ring-background ${className}`}
-    >
-      <span aria-hidden="true">{label}</span>
-      <span className="sr-only">{describe(count)}</span>
-    </span>
-  )
-}
-
-const describePendingRequests = (count: number): string =>
-  `${count} demande${count > 1 ? 's' : ''} de dernière minute en attente`
-
 export const AdminNavigation = ({
-  pendingRequestCount,
+  attentionBadge,
 }: Readonly<AdminNavigationProps>) => {
   const pathname = usePathname()
   const searchParams = useSearchParams()
@@ -109,6 +78,7 @@ export const AdminNavigation = ({
     searchParams.get('date') ?? fallbackDate,
   )
   const bottomNavigationRef = useRef<HTMLElement>(null)
+  const logoutFormRef = useRef<HTMLFormElement>(null)
 
   useEffect(() => {
     setAgendaDate(searchParams.get('date') ?? fallbackDate)
@@ -123,9 +93,6 @@ export const AdminNavigation = ({
     return () => window.removeEventListener(ADMIN_AGENDA_DATE_EVENT, updateDate)
   }, [])
 
-  // La hauteur de la barre change avec le nombre d'entrées : elle est mesurée
-  // puis publiée, pour que le dégagement du contenu la suive au lieu de parier
-  // sur une constante.
   useEffect(() => {
     const bottomNavigation = bottomNavigationRef.current
     if (!bottomNavigation) return
@@ -145,12 +112,12 @@ export const AdminNavigation = ({
   }, [])
 
   const createHref = getNewAppointmentHref(agendaDate, fallbackDate)
-  const items = getAdminNavigationEntries(createHref, pendingRequestCount)
+  const items = getAdminNavigationEntries(createHref)
 
   return (
     <>
       <header className="sticky top-0 z-40 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/85">
-        <div className="mx-auto flex min-h-16 max-w-7xl items-center gap-4 px-4 sm:px-8">
+        <div className="mx-auto flex min-h-14 max-w-7xl items-center gap-3 px-4 sm:min-h-16 sm:px-8">
           <Link
             href="/admin"
             className="mr-auto inline-flex min-h-11 items-center font-heading text-lg font-bold"
@@ -158,8 +125,6 @@ export const AdminNavigation = ({
             Arbeauté <span className="ml-1 text-brand">Admin</span>
           </Link>
 
-          {/* Deux repères de navigation portaient le même nom : dans une
-              liste de repères, on ne pouvait pas les distinguer. */}
           <nav
             aria-label="Administration, navigation principale"
             className="hidden items-center gap-1 md:flex"
@@ -172,7 +137,7 @@ export const AdminNavigation = ({
                   key={item.key}
                   href={item.href}
                   aria-current={isActive ? 'page' : undefined}
-                  className={`${navigationItemBaseClass} relative gap-2 px-3 ${
+                  className={`${navigationItemBaseClass} gap-2 px-3 ${
                     isActive
                       ? 'bg-primary text-primary-foreground shadow-sm'
                       : 'text-muted-foreground hover:bg-muted hover:text-foreground'
@@ -180,56 +145,69 @@ export const AdminNavigation = ({
                 >
                   <Icon className="size-4" />
                   {item.label}
-
-                  {item.key === 'requests'
-                    ? countBadge(
-                        pendingRequestCount,
-                        '-right-1.5 -top-1',
-                        describePendingRequests,
-                      )
-                    : null}
                 </Link>
               )
             })}
           </nav>
 
-          {/* Les raccourcis qui restent utiles depuis chaque écran : l'aide,
-              le site public et la déconnexion. */}
-          <div className="flex items-center gap-2">
-            <Button
-              asChild
-              variant={helpIsActive ? 'default' : 'outline'}
-              size="icon"
-              className="gap-2 sm:w-auto sm:px-3"
-              title="Aide rapide"
+          {/* Les gestes quotidiens vivent dans la barre stable. Le reste garde
+              un nom visible dans un seul menu, au lieu de trois icônes à
+              deviner dans chaque écran. */}
+          <SidePanel
+            title="Menu"
+            description="Les accès utiles de temps en temps."
+            trigger={
+              <Button variant="outline" className="gap-2 px-3">
+                <Menu className="size-5" />
+                Menu
+              </Button>
+            }
+          >
+            <nav
+              aria-label="Administration, menu secondaire"
+              className="grid gap-2"
             >
-              <Link
-                href="/admin/aide"
-                aria-current={helpIsActive ? 'page' : undefined}
+              <Button asChild variant="outline" className="justify-start">
+                <Link href="/admin/activity">
+                  <Activity className="size-5" /> Activité
+                </Link>
+              </Button>
+              <Button
+                asChild
+                variant={helpIsActive ? 'default' : 'outline'}
+                className="justify-start"
               >
-                <CircleHelp className="size-5" />
-                <span className="hidden sm:inline">Aide</span>
-                <span className="sr-only sm:hidden">Aide rapide</span>
-              </Link>
-            </Button>
-            <Button asChild variant="outline" size="icon" title="Voir le site">
-              <Link href="/">
-                <House className="size-5" />
-                <span className="sr-only">Voir le site</span>
-              </Link>
-            </Button>
-            <form action={logoutAdmin}>
-              <SubmitButton
-                variant="outline"
-                size="icon"
-                title="Se déconnecter"
-                aria-label="Se déconnecter"
-                className="text-destructive hover:bg-destructive/10 hover:text-destructive"
-              >
-                <LogOut className="size-5" />
-              </SubmitButton>
-            </form>
-          </div>
+                <Link
+                  href="/admin/aide"
+                  aria-current={helpIsActive ? 'page' : undefined}
+                >
+                  <CircleHelp className="size-5" /> Aide
+                </Link>
+              </Button>
+              <Button asChild variant="outline" className="justify-start">
+                <Link href="/">
+                  <House className="size-5" /> Voir le site
+                </Link>
+              </Button>
+            </nav>
+
+            <form ref={logoutFormRef} action={logoutAdmin} className="hidden" />
+            <ConfirmDialog
+              trigger={
+                <Button
+                  variant="outline"
+                  className="mt-5 w-full justify-start text-destructive hover:bg-destructive/10 hover:text-destructive"
+                >
+                  <LogOut className="size-5" /> Se déconnecter
+                </Button>
+              }
+              title="Se déconnecter ?"
+              description="Vous devrez saisir à nouveau le mot de passe pour ouvrir l’administration."
+              confirmLabel="Oui, se déconnecter"
+              cancelLabel="Rester ici"
+              onConfirm={() => logoutFormRef.current?.requestSubmit()}
+            />
+          </SidePanel>
         </div>
       </header>
 
@@ -238,9 +216,8 @@ export const AdminNavigation = ({
         aria-label="Administration, barre du bas"
         className="fixed inset-x-0 bottom-0 z-50 border-t bg-background/97 px-1 pb-[env(safe-area-inset-bottom)] shadow-[0_-8px_30px_rgba(0,0,0,0.08)] backdrop-blur md:hidden"
       >
-        {/* Autant de colonnes que d'entrées : à six, la grille figée à cinq
-            renvoyait la dernière à la ligne. Le libellé rétrécit d'un point
-            plutôt que de se couper — la couleur ne dit jamais l'état seule. */}
+        {/* Cinq repères fixes : une demande ne déplace plus les habitudes
+            d'Arzu et aucun libellé ne descend sous 11 px. */}
         <div
           className="mx-auto grid max-w-lg"
           style={{
@@ -255,22 +232,13 @@ export const AdminNavigation = ({
                 key={item.key}
                 href={item.href}
                 aria-current={isActive ? 'page' : undefined}
-                className={`${navigationItemBaseClass} relative min-h-[4.25rem] flex-col gap-1 font-semibold whitespace-nowrap ${
-                  items.length > 5 ? 'text-[10px]' : 'text-[11px]'
-                } ${isActive ? 'text-primary' : 'text-muted-foreground'}`}
+                className={`${navigationItemBaseClass} relative min-h-[4.25rem] flex-col gap-1 text-2xs font-semibold whitespace-nowrap ${isActive ? 'text-primary' : 'text-muted-foreground'}`}
               >
                 <span
                   className={`relative grid h-7 min-w-10 place-items-center rounded-full px-2 ${isActive ? 'bg-primary/15' : ''}`}
                 >
                   <Icon className="size-5" />
-
-                  {item.key === 'requests'
-                    ? countBadge(
-                        pendingRequestCount,
-                        '-right-1 -top-1',
-                        describePendingRequests,
-                      )
-                    : null}
+                  {item.key === 'attention' ? attentionBadge : null}
                 </span>
                 {item.label}
               </Link>

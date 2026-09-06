@@ -1,6 +1,7 @@
 import type { LucideIcon } from 'lucide-react'
 import {
   CalendarDays,
+  ChevronRight,
   Clock3,
   Database,
   Mail,
@@ -14,68 +15,75 @@ import { AdminPage, AdminPageHeader } from '@/components/admin/admin-page'
 import { AdminSkeleton } from '@/components/admin/admin-skeleton'
 import { getAdminSession } from '@/lib/core/session-cookies'
 
-const SettingsPage = () => (
-  <Suspense fallback={<AdminSkeleton variant="cards" />}>
-    <Settings />
-  </Suspense>
-)
-
-const cards: Array<{
+interface SettingEntry {
   href: string
   icon: LucideIcon
   title: string
   description: string
-  action: string
-}> = [
+}
+
+const groups: Array<{ id: string; title: string; entries: SettingEntry[] }> = [
   {
-    href: '/admin/settings/booking',
-    icon: SlidersHorizontal,
-    title: 'Réservation',
-    description:
-      'Combien de temps à l’avance réserver, jusqu’à quand, les demandes de dernière minute, et jusqu’à quand un rendez-vous peut être changé sans vous.',
-    action: 'Gérer les règles',
+    id: 'institut',
+    title: 'Institut',
+    entries: [
+      {
+        href: '/admin/availability',
+        icon: Clock3,
+        title: 'Horaires',
+        description: 'Semaine habituelle, fermetures et vacances.',
+      },
+      {
+        href: '/admin/services',
+        icon: Settings2,
+        title: 'Prestations',
+        description: 'Soins, prix, durées et ordre sur le site.',
+      },
+    ],
   },
   {
-    href: '/admin/settings/agenda',
-    icon: CalendarDays,
-    title: 'Agenda',
-    description:
-      'Les jours que la vue semaine affiche sur ordinateur. Le choix est enregistré ici, pas dans votre navigateur.',
-    action: 'Choisir les jours',
+    id: 'reservations',
+    title: 'Réservations et messages',
+    entries: [
+      {
+        href: '/admin/settings/booking',
+        icon: SlidersHorizontal,
+        title: 'Règles de réservation',
+        description: 'Délais, créneaux et demandes de dernière minute.',
+      },
+      {
+        href: '/admin/emails',
+        icon: Mail,
+        title: 'E-mails',
+        description: 'Messages envoyés, échecs et limite gratuite.',
+      },
+    ],
   },
   {
-    href: '/admin/availability',
-    icon: Clock3,
-    title: 'Horaires',
-    description:
-      'Vos heures d’ouverture de la semaine, vos vacances et vos ouvertures exceptionnelles.',
-    action: 'Gérer les horaires',
-  },
-  {
-    href: '/admin/emails',
-    icon: Mail,
-    title: 'E-mails',
-    description:
-      'Les messages envoyés depuis le site, ceux qui ne sont pas partis, et ce qu’il vous reste sur l’offre gratuite.',
-    action: 'Voir les e-mails',
-  },
-  {
-    href: '/admin/data',
-    icon: Database,
-    title: 'Données',
-    description:
-      'Télécharger vos données, effacer les coordonnées d’une personne qui le demande, et vérifier vos sauvegardes.',
-    action: 'Gérer les données',
-  },
-  {
-    href: '/admin/services',
-    icon: Settings2,
-    title: 'Prestations',
-    description:
-      'Vos soins, leurs prix, leurs durées et l’ordre dans lequel ils apparaissent sur le site.',
-    action: 'Gérer les prestations',
+    id: 'administration',
+    title: 'Administration',
+    entries: [
+      {
+        href: '/admin/settings/agenda',
+        icon: CalendarDays,
+        title: 'Affichage de l’agenda',
+        description: 'Jours visibles dans la semaine sur ordinateur.',
+      },
+      {
+        href: '/admin/data',
+        icon: Database,
+        title: 'Données',
+        description: 'Téléchargements, sauvegardes et anonymisation.',
+      },
+    ],
   },
 ]
+
+const SettingsPage = () => (
+  <Suspense fallback={<AdminSkeleton variant="list" />}>
+    <Settings />
+  </Suspense>
+)
 
 const Settings = async () => {
   if (!(await getAdminSession())) redirect('/admin/login')
@@ -83,35 +91,44 @@ const Settings = async () => {
   return (
     <AdminPage>
       <AdminPageHeader
-        eyebrow="Arbeauté"
         title="Réglages"
-        description="Gérez les disponibilités de l’institut et les prestations proposées sur le site."
+        description="Choisissez ce que vous voulez changer."
       />
 
-      {/* Six entrées, trois par ligne : sur deux colonnes, les deux dernières
-          tombaient sous la ligne de flottaison sans raison. */}
-      <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {cards.map(card => {
-          const Icon = card.icon
-          return (
-            <Link
-              key={card.href}
-              href={card.href}
-              className="group flex flex-col rounded-3xl border bg-card p-6 shadow-sm transition hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-md"
+      <div className="mt-4 space-y-5">
+        {groups.map(group => (
+          <section key={group.id} aria-labelledby={`settings-${group.id}`}>
+            <h2
+              id={`settings-${group.id}`}
+              className="mb-2 text-sm font-semibold text-muted-foreground"
             >
-              <span className="grid size-12 place-items-center rounded-2xl bg-primary/10 text-primary">
-                <Icon className="size-6" />
-              </span>
-              <h2 className="mt-5 text-xl font-semibold">{card.title}</h2>
-              <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
-                {card.description}
-              </p>
-              <span className="mt-auto inline-flex min-h-11 items-center pt-4 text-sm font-medium text-primary">
-                {card.action} →
-              </span>
-            </Link>
-          )
-        })}
+              {group.title}
+            </h2>
+            <div className="overflow-hidden rounded-2xl border bg-card">
+              {group.entries.map((entry, index) => {
+                const Icon = entry.icon
+                return (
+                  <Link
+                    key={entry.href}
+                    href={entry.href}
+                    className={`flex min-h-16 items-center gap-3 px-4 py-3 transition hover:bg-muted focus-visible:bg-muted focus-visible:outline-none ${index ? 'border-t' : ''}`}
+                  >
+                    <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-primary/10 text-primary">
+                      <Icon className="size-5" />
+                    </span>
+                    <span className="min-w-0 flex-1">
+                      <span className="block font-semibold">{entry.title}</span>
+                      <span className="block text-xs leading-snug text-muted-foreground">
+                        {entry.description}
+                      </span>
+                    </span>
+                    <ChevronRight className="size-5 shrink-0 text-muted-foreground" />
+                  </Link>
+                )
+              })}
+            </div>
+          </section>
+        ))}
       </div>
     </AdminPage>
   )
