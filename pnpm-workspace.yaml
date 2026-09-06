@@ -5,7 +5,10 @@ allowBuilds:
   prisma: true
   sharp: true
 overrides:
-  fast-uri: 3.1.2
+  deepmerge-ts: 8.0.2
+  fast-uri: 3.1.6
+  lodash: 4.18.1
+  mysql2: 3.24.3
 # `next` déclare @playwright/test en peer optionnel. Sans ce blocage, pnpm le
 # réinstalle et le navigateur revient dans l'arbre alors que le projet interdit
 # les tests de bout en bout (voir AGENTS.md).
