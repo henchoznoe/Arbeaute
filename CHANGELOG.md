@@ -1,3 +1,17 @@
+# [1.17.0](https://github.com/henchoznoe/Arbeaute/compare/v1.16.0...v1.17.0) (2026-09-06)
+
+
+### Bug Fixes
+
+* **admin:** clarifier le changement de semaine ([b166f5e](https://github.com/henchoznoe/Arbeaute/commit/b166f5e5493fcf8e57b7053e21ad4b63af686298))
+
+
+### Features
+
+* **admin:** guider les parcours quotidiens ([80724ab](https://github.com/henchoznoe/Arbeaute/commit/80724ab187be9696b80aacf7255e225a09577da7))
+* **admin:** simplifier les premiers parcours mobiles ([28f3e53](https://github.com/henchoznoe/Arbeaute/commit/28f3e53f5d8b1e750f55c6472b8d55d1ef5b34fc))
+* **admin:** terminer la simplification mobile ([27d1f1a](https://github.com/henchoznoe/Arbeaute/commit/27d1f1a6a42dcb157f890a2ce1abc4fd61b00152))
+
 # [1.16.0](https://github.com/henchoznoe/Arbeaute/compare/v1.15.2...v1.16.0) (2026-09-05)
 
 
