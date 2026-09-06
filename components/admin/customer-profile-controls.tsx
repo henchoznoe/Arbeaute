@@ -5,14 +5,17 @@ import {
   Check,
   Clipboard,
   LoaderCircle,
+  Pencil,
   Phone,
   Save,
+  X,
 } from 'lucide-react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { type FormEvent, useState, useTransition } from 'react'
+import { type FormEvent, useEffect, useState, useTransition } from 'react'
 import { AppToast } from '@/components/ui/app-toast'
 import { Button } from '@/components/ui/button'
+import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import { FormField, formControlClass } from '@/components/ui/form-field'
 import { saveAdminCustomerProfile } from '@/lib/actions/admin-customers'
 import type { AdminCustomer } from '@/lib/admin/customer-profile'
@@ -24,8 +27,8 @@ export const CustomerQuickActions = ({
   const [copied, setCopied] = useState(false)
 
   return (
-    <div className="mt-4 grid grid-cols-3 gap-2">
-      <Button asChild className="min-w-0 px-2 text-xs min-[390px]:text-sm">
+    <div className="mt-4 grid grid-cols-2 gap-2">
+      <Button asChild className="min-w-0 px-2">
         <a href={`tel:${phone}`}>
           <Phone className="size-4" /> Appeler
         </a>
@@ -33,7 +36,7 @@ export const CustomerQuickActions = ({
       <Button
         type="button"
         variant="outline"
-        className="min-w-0 px-2 text-xs min-[390px]:text-sm"
+        className="min-w-0 px-2"
         onClick={async () => {
           try {
             await navigator.clipboard.writeText(phone)
@@ -49,15 +52,11 @@ export const CustomerQuickActions = ({
         ) : (
           <Clipboard className="size-4" />
         )}
-        {copied ? 'Copié' : 'Copier'}
+        {copied ? 'Numéro copié' : 'Copier le numéro'}
       </Button>
-      <Button
-        asChild
-        variant="outline"
-        className="min-w-0 px-2 text-xs min-[390px]:text-sm"
-      >
+      <Button asChild variant="outline" className="col-span-2 min-w-0 px-2">
         <Link href={`/admin/appointments/new?customerId=${customerId}`}>
-          <CalendarPlus2 className="size-4" /> Ajouter
+          <CalendarPlus2 className="size-4" /> Ajouter un rendez-vous
         </Link>
       </Button>
     </div>
@@ -72,6 +71,17 @@ export const CustomerProfileForm = ({
   const [toastOpen, setToastOpen] = useState(false)
   const [message, setMessage] = useState<string | null>(null)
   const [isError, setIsError] = useState(false)
+  const [editing, setEditing] = useState(false)
+  const [dirty, setDirty] = useState(false)
+
+  useEffect(() => {
+    if (!dirty) return
+    const warnBeforeLeaving = (event: BeforeUnloadEvent) => {
+      event.preventDefault()
+    }
+    window.addEventListener('beforeunload', warnBeforeLeaving)
+    return () => window.removeEventListener('beforeunload', warnBeforeLeaving)
+  }, [dirty])
 
   const submit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
@@ -89,17 +99,62 @@ export const CustomerProfileForm = ({
       setMessage(result.message)
       setIsError(!result.ok)
       setToastOpen(true)
-      if (result.ok) router.refresh()
+      if (result.ok) {
+        setDirty(false)
+        router.refresh()
+      }
     })
   }
+
+  if (!editing)
+    return (
+      <section className="rounded-2xl border bg-card p-4 shadow-sm sm:p-5">
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <h2 className="font-semibold">Coordonnées</h2>
+            <p className="mt-2 break-all text-sm">{customer.email}</p>
+            <p className="mt-1 text-sm">{customer.phone}</p>
+          </div>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={() => setEditing(true)}
+          >
+            <Pencil className="size-4" /> Modifier le client
+          </Button>
+        </div>
+
+        {customer.preferences ? (
+          <div className="mt-4 border-t pt-4">
+            <h3 className="text-sm font-semibold">Préférences</h3>
+            <p className="mt-1 whitespace-pre-wrap text-sm text-muted-foreground">
+              {customer.preferences}
+            </p>
+          </div>
+        ) : null}
+        {customer.internalNote ? (
+          <div className="mt-4 border-t pt-4">
+            <h3 className="text-sm font-semibold">Note interne</h3>
+            <p className="mt-1 text-xs text-muted-foreground">
+              Visible uniquement dans l’administration.
+            </p>
+            <p className="mt-2 whitespace-pre-wrap text-sm text-muted-foreground">
+              {customer.internalNote}
+            </p>
+          </div>
+        ) : null}
+      </section>
+    )
 
   return (
     <form
       method="post"
       onSubmit={submit}
+      onChange={() => setDirty(true)}
       className="rounded-3xl border bg-card p-5 shadow-sm sm:p-6"
     >
-      <h2 className="text-xl font-semibold">Coordonnées et suivi</h2>
+      <h2 className="text-xl font-semibold">Modifier le client</h2>
       <div className="mt-5 grid gap-4 sm:grid-cols-2">
         <FormField controlId="customer-first-name" label="Prénom" optional>
           <input
@@ -192,21 +247,48 @@ export const CustomerProfileForm = ({
         annulés ou notés absents gardent les coordonnées d’alors.
       </p>
 
-      <Button
-        type="submit"
-        disabled={pending}
-        className="mt-5 w-full sm:w-auto"
-      >
-        {pending ? (
-          <LoaderCircle className="size-4 animate-spin" />
+      <div className="mt-5 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+        {dirty ? (
+          <ConfirmDialog
+            title="Abandonner les modifications ?"
+            description="Les informations saisies depuis l’ouverture du formulaire seront perdues."
+            confirmLabel="Oui, abandonner"
+            cancelLabel="Continuer à modifier"
+            onConfirm={() => {
+              setDirty(false)
+              setEditing(false)
+            }}
+            trigger={
+              <Button type="button" variant="outline" disabled={pending}>
+                <X className="size-4" /> Fermer
+              </Button>
+            }
+          />
         ) : (
-          <Save className="size-4" />
+          <Button
+            type="button"
+            variant="outline"
+            disabled={pending}
+            onClick={() => setEditing(false)}
+          >
+            <X className="size-4" /> Fermer
+          </Button>
         )}
-        Enregistrer le client
-      </Button>
+        <Button type="submit" disabled={pending}>
+          {pending ? (
+            <LoaderCircle className="size-4 animate-spin" />
+          ) : (
+            <Save className="size-4" />
+          )}
+          Enregistrer le client
+        </Button>
+      </div>
       <AppToast
         open={toastOpen}
-        onOpenChange={setToastOpen}
+        onOpenChange={open => {
+          setToastOpen(open)
+          if (!open && !isError) setEditing(false)
+        }}
         title={isError ? 'Enregistrement impossible' : 'Client enregistré'}
         description={message ?? undefined}
         variant={isError ? 'danger' : 'success'}

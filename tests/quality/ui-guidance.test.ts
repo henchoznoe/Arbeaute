@@ -23,6 +23,20 @@ const ADMIN_NAVIGATION = readFileSync(
   'components/admin/admin-navigation.tsx',
   'utf8',
 )
+const APPOINTMENT_FORM = readFileSync(
+  'components/admin/appointment-form.tsx',
+  'utf8',
+)
+const SERVICE_PICKER = readFileSync(
+  'components/admin/service-picker.tsx',
+  'utf8',
+)
+const CUSTOMER_PAGE = readFileSync('app/admin/customers/[id]/page.tsx', 'utf8')
+const CUSTOMER_CONTROLS = readFileSync(
+  'components/admin/customer-profile-controls.tsx',
+  'utf8',
+)
+const SETTINGS_PAGE = readFileSync('app/admin/settings/page.tsx', 'utf8')
 
 describe('heures disponibles sur demande', () => {
   it('explique le parcours numérique avant de proposer l’appel', () => {
@@ -72,12 +86,12 @@ describe('aide aux actions de l’administration', () => {
     expect(ADMIN_AGENDA).toContain('<Plus className="size-4" /> Ajouter')
   })
 
-  it('place le formulaire de modification avant les actions secondaires sur mobile', () => {
-    expect(APPOINTMENT_PAGE).toContain(
-      '<AdminPageAside className="order-2 lg:order-1">',
+  it('place les actions avant le formulaire replié sur mobile', () => {
+    expect(APPOINTMENT_PAGE.indexOf('<CustomerCallButton')).toBeLessThan(
+      APPOINTMENT_PAGE.indexOf('Modifier les informations'),
     )
     expect(APPOINTMENT_PAGE).toContain(
-      '<div className="order-1 min-w-0 lg:order-2">',
+      '<details className="group mt-4 rounded-2xl border bg-card">',
     )
     expect(APPOINTMENT_PAGE).toContain('/deplacer`}')
     expect(APPOINTMENT_PAGE).toContain('Déplacer le rendez-vous')
@@ -102,5 +116,59 @@ describe('aide aux actions de l’administration', () => {
     expect(HELP_PAGE).toContain(
       'Un rendez-vous ne se supprime pas définitivement',
     )
+  })
+})
+
+describe('parcours admin mobile', () => {
+  it('révèle l’ajout dans l’ordre soin, heure, puis client', () => {
+    const serviceStep = APPOINTMENT_FORM.indexOf('1. Choisir le soin')
+    const timeStep = APPOINTMENT_FORM.indexOf('2. Date et heure')
+    const customerStep = APPOINTMENT_FORM.indexOf('3. Choisir le client')
+
+    expect(serviceStep).toBeGreaterThan(-1)
+    expect(serviceStep).toBeLessThan(timeStep)
+    expect(timeStep).toBeLessThan(customerStep)
+    expect(APPOINTMENT_FORM).toContain('Client déjà connu')
+    expect(APPOINTMENT_FORM).toContain('Nouveau client')
+    expect(APPOINTMENT_FORM).toContain('sticky bottom-')
+  })
+
+  it('permet de choisir un soin sans lancer de recherche', () => {
+    expect(SERVICE_PICKER).toContain('if (!normalized) return services')
+    expect(SERVICE_PICKER).toContain('ouvrez un groupe')
+    expect(SERVICE_PICKER).not.toContain('au moins deux caractères')
+  })
+
+  it('ne duplique pas l’appel sur la fiche rendez-vous', () => {
+    expect(APPOINTMENT_PAGE.match(/<CustomerCallButton/g)).toHaveLength(1)
+    expect(APPOINTMENT_PAGE).toContain('Noter ce qui s’est passé')
+  })
+
+  it('présente le prochain rendez-vous avant l’édition du client', () => {
+    expect(CUSTOMER_PAGE.indexOf('Prochains rendez-vous')).toBeLessThan(
+      CUSTOMER_PAGE.indexOf('<CustomerProfileForm'),
+    )
+    expect(CUSTOMER_PAGE).not.toContain('Jamais encore')
+    expect(CUSTOMER_PAGE).not.toContain('Rien d’habituel')
+    expect(CUSTOMER_CONTROLS).toContain('Copier le numéro')
+    expect(CUSTOMER_CONTROLS).toContain('Ajouter un rendez-vous')
+    expect(CUSTOMER_CONTROLS).toContain("addEventListener('beforeunload'")
+  })
+
+  it('groupe les six réglages dans des lignes tactiles', () => {
+    for (const label of [
+      'Institut',
+      'Réservations et messages',
+      'Administration',
+      'Horaires',
+      'Prestations',
+      'Règles de réservation',
+      'E-mails',
+      'Affichage de l’agenda',
+      'Données',
+    ])
+      expect(SETTINGS_PAGE).toContain(label)
+
+    expect(SETTINGS_PAGE).toContain('min-h-16')
   })
 })

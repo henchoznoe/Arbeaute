@@ -118,7 +118,7 @@ const NewAppointment = async ({
               : 'Choisissez le soin, l’heure et le client.'
         }
       />
-      <div className="mt-6">
+      <div className="mt-4">
         <AppointmentForm
           key={`new-${duplicateId ?? customerId ?? 'empty'}-${date}-${time}`}
           services={services}

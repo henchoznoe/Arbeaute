@@ -26,17 +26,13 @@ export const CustomerPicker = ({
   }
 
   return (
-    <section className="rounded-2xl border bg-muted/30 p-4">
+    <section>
       <div className="flex items-center gap-2">
         <UserRoundCheck className="size-4 text-primary" />
-        <h2 className="text-sm font-semibold">
-          Remplir avec un client déjà connu
-        </h2>
+        <h3 className="text-sm font-semibold">Rechercher un client</h3>
       </div>
       <p className="mt-1 text-xs text-muted-foreground">
-        Recherchez par nom, e-mail ou téléphone : les quatre champs ci-dessous
-        se remplissent seuls. Le rendez-vous reste rattaché à l’adresse e-mail
-        enregistrée au moment de l’enregistrer.
+        Par nom, e-mail ou numéro de téléphone.
       </p>
       <div className="mt-3 flex min-w-0 gap-2">
         <div className="relative min-w-0 flex-1">

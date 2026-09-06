@@ -122,11 +122,11 @@ l’information reste accessible, quitte à défiler verticalement.
 
 | Statut | Éléments |
 | --- | --- |
-| ✅ Terminés | 1 à 4 |
+| ✅ Terminés | 1 à 8 |
 | 🟡 En cours | Aucun |
-| ⏳ Prêts à démarrer | 0, 5 à 10 |
+| ⏳ Prêts à démarrer | 9 et 10 |
 | 🔒 Bloqués | Aucun |
-| ❌ Abandonnés | Aucun |
+| ❌ Abandonnés | 0 |
 
 - **Priorité P0** : améliore un geste quotidien ou empêche une erreur.
 - **Priorité P1** : améliore un geste fréquent ou un écran important.
@@ -138,7 +138,7 @@ l’information reste accessible, quitte à défiler verticalement.
 
 ## I. Valider les repères avant de déplacer les écrans
 
-### 0. Faire une courte recette des gestes réels avec Arzu — ⏳
+### 0. Faire une courte recette des gestes réels avec Arzu — ❌
 
 **Priorité : P0 · Effort : S · Nature : validation**
 
@@ -164,6 +164,11 @@ n’utilise jamais.
   la roadmap en journal de recherche.
 
 **Dépendances :** aucune ; valide le libellé « À traiter » de l’élément 1.
+
+**Abandonné le 6 septembre 2026.** Le projet assume une conception directe et
+intuitive sans séance de recette avec Arzu. Les vérifications continuent donc à
+s’appuyer sur les scénarios mobiles, le vocabulaire simple et les contrôles
+manuels prévus par cette roadmap.
 
 ---
 
@@ -202,7 +207,7 @@ informatifs.
 `components/admin/admin-navigation.tsx`, `app/admin/page.tsx`, nouvelle page
 `app/admin/a-traiter/page.tsx`.
 
-**Dépendances :** élément 0 pour les libellés.
+**Dépendances :** aucune.
 
 **Livré le 6 septembre 2026.** La barre contient toujours les cinq mêmes
 entrées. La nouvelle page « À traiter » réunit les demandes et les
@@ -329,7 +334,7 @@ après le titre. Les alertes sont résumées par un accès « À traiter », le 
 rendez-vous est signalé dans la chronologie et les chiffres de la semaine sont
 repliés sous l’agenda.
 
-### 5. Transformer l’ajout d’un rendez-vous en parcours guidé — ⏳
+### 5. Transformer l’ajout d’un rendez-vous en parcours guidé — ✅
 
 **Priorité : P0 · Effort : L · Nature : refonte de parcours**
 
@@ -372,7 +377,13 @@ au-dessus de la barre basse lorsque les données obligatoires sont valides.
 
 **Dépendances :** éléments 2 et 4 pour le départ depuis l’agenda.
 
-### 6. Ouvrir un rendez-vous sur ses actions, pas sur son formulaire — ⏳
+**Livré le 6 septembre 2026.** La création révèle successivement le soin, la
+date et l’heure, puis le choix entre un client connu et un nouveau client. Tous
+les soins restent parcourables par groupe sans clavier, la répétition attend que
+les informations principales soient prêtes et l’action finale reste au-dessus
+de la barre mobile.
+
+### 6. Ouvrir un rendez-vous sur ses actions, pas sur son formulaire — ✅
 
 **Priorité : P0 · Effort : M · Nature : refonte d’écran**
 
@@ -410,7 +421,12 @@ consultables, pas prioritaires.
 
 **Dépendances :** élément 2 pour l’en-tête compact.
 
-### 7. Faire lire le client avant de proposer de le modifier — ⏳
+**Livré le 6 septembre 2026.** La fiche porte le nom du client et présente
+d’abord appeler, déplacer et noter une absence. L’appel n’est plus répété, les
+informations modifiables sont repliées et le dernier état des messages se lit en
+une ligne avant leur historique détaillé.
+
+### 7. Faire lire le client avant de proposer de le modifier — ✅
 
 **Priorité : P1 · Effort : M · Nature : simplification**
 
@@ -442,11 +458,16 @@ ouvre le formulaire ; il ne doit plus être l’état normal de la page.
 
 **Dépendances :** éléments 2 et 5 pour des actions cohérentes.
 
+**Livré le 6 septembre 2026.** La fiche commence par les actions et les prochains
+rendez-vous. Les coordonnées, préférences et notes se lisent avant d’ouvrir le
+formulaire ; les cartes vides ont disparu et fermer une modification commencée
+demande confirmation.
+
 ---
 
 ## IV. Les gestes occasionnels
 
-### 8. Remplacer les grandes cartes de Réglages par une liste courte — ⏳
+### 8. Remplacer les grandes cartes de Réglages par une liste courte — ✅
 
 **Priorité : P1 · Effort : S · Nature : simplification**
 
@@ -475,6 +496,11 @@ Les six destinations tiennent au plus dans deux écrans de 360 × 780 px.
 **Fichiers principaux :** `app/admin/settings/page.tsx`.
 
 **Dépendances :** élément 2 pour l’en-tête compact.
+
+**Livré le 6 septembre 2026.** Les six destinations sont désormais des lignes
+tactiles regroupées sous « Institut », « Réservations et messages » et
+« Administration ». « Affichage de l’agenda » ne se confond plus avec l’agenda
+quotidien.
 
 ### 9. Organiser les horaires par intention — ⏳
 
@@ -548,14 +574,13 @@ accessible.
 
 ## Ordre de pilotage recommandé
 
-1. **0** — vérifier les mots et les habitudes avec Arzu.
-2. **1** — stabiliser les cinq repères et créer « À traiter ».
-3. **2**, puis **3** — alléger et stabiliser la coquille commune.
-4. **4** — rendre la journée visible dès l’ouverture.
-5. **6** — rendre chaque rendez-vous immédiatement actionnable.
-6. **5** — reprendre le parcours d’ajout, le plus gros chantier.
-7. **7** — aligner la fiche client sur ce nouveau parcours.
-8. **8**, puis **9** et **10** — simplifier les écrans occasionnels.
+1. **1** — stabiliser les cinq repères et créer « À traiter ».
+2. **2**, puis **3** — alléger et stabiliser la coquille commune.
+3. **4** — rendre la journée visible dès l’ouverture.
+4. **6** — rendre chaque rendez-vous immédiatement actionnable.
+5. **5** — reprendre le parcours d’ajout, le plus gros chantier.
+6. **7** — aligner la fiche client sur ce nouveau parcours.
+7. **8**, puis **9** et **10** — simplifier les écrans occasionnels.
 
 Livrer les éléments 1 à 4 ensemble évite un état intermédiaire où la barre
 « À traiter » existe sans que l’agenda sache lui céder ses alertes. Les éléments
