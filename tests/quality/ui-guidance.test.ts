@@ -37,6 +37,22 @@ const CUSTOMER_CONTROLS = readFileSync(
   'utf8',
 )
 const SETTINGS_PAGE = readFileSync('app/admin/settings/page.tsx', 'utf8')
+const AVAILABILITY_PAGE = readFileSync(
+  'app/admin/availability/page.tsx',
+  'utf8',
+)
+const AVAILABILITY_CALENDAR = readFileSync(
+  'components/admin/availability-exception-calendar.tsx',
+  'utf8',
+)
+const AVAILABILITY_SECTIONS = readFileSync(
+  'components/admin/availability-sections.tsx',
+  'utf8',
+)
+const SERVICE_CATALOG = readFileSync(
+  'components/admin/service-catalog-manager.tsx',
+  'utf8',
+)
 
 describe('heures disponibles sur demande', () => {
   it('explique le parcours numérique avant de proposer l’appel', () => {
@@ -170,5 +186,30 @@ describe('parcours admin mobile', () => {
       expect(SETTINGS_PAGE).toContain(label)
 
     expect(SETTINGS_PAGE).toContain('min-h-16')
+  })
+
+  it('sépare les horaires et nomme les trois intentions', () => {
+    expect(AVAILABILITY_SECTIONS).toContain('Jours particuliers')
+    expect(AVAILABILITY_SECTIONS).toContain('Semaine habituelle')
+    expect(AVAILABILITY_PAGE).toContain('<details key={day.value}')
+    expect(AVAILABILITY_CALENDAR).toContain('Fermer une période')
+    expect(AVAILABILITY_CALENDAR).toContain('Ouvrir exceptionnellement')
+    expect(AVAILABILITY_CALENDAR).toContain('Ajouter des vacances')
+    expect(AVAILABILITY_CALENDAR).toContain('Ouverture')
+    expect(AVAILABILITY_CALENDAR).toContain('Fermeture')
+    expect(AVAILABILITY_CALENDAR).not.toContain('label="Type"')
+  })
+
+  it('recherche les prestations localement et cache l’ordre par défaut', () => {
+    expect(SERVICE_CATALOG).toContain('type="search"')
+    expect(SERVICE_CATALOG).toContain('normalizeSearch')
+    expect(SERVICE_CATALOG).toContain(
+      'open={normalizedQuery ? true : undefined}',
+    )
+    expect(SERVICE_CATALOG).toContain(
+      "ordering ? 'Terminer' : 'Changer l’ordre'",
+    )
+    expect(SERVICE_CATALOG).toContain('{ordering ? (')
+    expect(SERVICE_CATALOG).not.toContain('searchAdmin')
   })
 })

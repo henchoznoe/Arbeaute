@@ -1,6 +1,6 @@
 # Roadmap V5 — l’administration dans la main d’Arzu
 
-> **Backlog actif.** Les roadmaps [V1](ROADMAP.md),
+> **Roadmap close le 6 septembre 2026.** Les roadmaps [V1](ROADMAP.md),
 > [V2](ROADMAP-V2.md), [V3](ROADMAP-V3.md) et [V4](ROADMAP-V4.md) sont closes.
 > Cette V5 concerne exclusivement l’administration. Elle ne modifie ni le site
 > vitrine, ni le tunnel de réservation public, ni « Mes rendez-vous ».
@@ -122,9 +122,9 @@ l’information reste accessible, quitte à défiler verticalement.
 
 | Statut | Éléments |
 | --- | --- |
-| ✅ Terminés | 1 à 8 |
+| ✅ Terminés | 1 à 10 |
 | 🟡 En cours | Aucun |
-| ⏳ Prêts à démarrer | 9 et 10 |
+| ⏳ Prêts à démarrer | Aucun |
 | 🔒 Bloqués | Aucun |
 | ❌ Abandonnés | 0 |
 
@@ -502,7 +502,7 @@ tactiles regroupées sous « Institut », « Réservations et messages » et
 « Administration ». « Affichage de l’agenda » ne se confond plus avec l’agenda
 quotidien.
 
-### 9. Organiser les horaires par intention — ⏳
+### 9. Organiser les horaires par intention — ✅
 
 **Priorité : P1 · Effort : M · Nature : refonte de parcours**
 
@@ -537,7 +537,12 @@ heures ; les contrôles de suppression ne restent pas visibles en permanence.
 
 **Dépendances :** éléments 2 et 8.
 
-### 10. Trouver une prestation sans parcourir les 34 lignes — ⏳
+**Livré le 6 septembre 2026.** Deux boutons séparent les jours particuliers de
+la semaine habituelle. Une fermeture, une ouverture exceptionnelle et des
+vacances commencent par trois intentions explicites ; chaque jour habituel se
+déplie séparément pour afficher ses heures et ses contrôles.
+
+### 10. Trouver une prestation sans parcourir les 34 lignes — ✅
 
 **Priorité : P1 · Effort : M · Nature : amélioration**
 
@@ -569,6 +574,11 @@ accessible.
 `components/admin/service-row-actions.tsx`, nouveau composant client de filtrage.
 
 **Dépendances :** éléments 2 et 8.
+
+**Livré le 6 septembre 2026.** La recherche filtre localement les noms et les
+groupes, sans nouvelle lecture en base. Les groupes sont repliés sur téléphone
+et s’ouvrent avec les résultats ; les flèches restent absentes jusqu’à
+l’ouverture du mode « Changer l’ordre ».
 
 ---
 
