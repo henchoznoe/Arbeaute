@@ -54,7 +54,7 @@ const DataManagement = async ({
         eyebrow="Arbeauté"
         title="Données et confidentialité"
         icon={Database}
-        description="Téléchargez vos données sur votre appareil, effacez les coordonnées d’une personne qui le demande, ou consultez la marche à suivre pour sauvegarder. Rien n’est stocké en ligne au passage."
+        description="Téléchargez vos données, effacez des coordonnées ou vérifiez vos sauvegardes."
       />
 
       {/* Un téléchargement qui échoue revient ici : le texte brut d'une page

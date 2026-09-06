@@ -21,11 +21,11 @@ const Conflicts = async () => {
   return (
     <AdminPage>
       <AdminPageHeader
-        backHref="/admin"
-        backLabel="Agenda"
+        backHref="/admin/a-traiter"
+        backLabel="À traiter"
         title="Rendez-vous superposés"
         icon={AlertTriangle}
-        description="Appelez les personnes concernées pour convenir d’une autre heure, puis déplacez l’un des rendez-vous."
+        description="Appelez les personnes concernées, puis déplacez un rendez-vous."
       />
       {!groups.length ? (
         <EmptyState

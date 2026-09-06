@@ -129,8 +129,8 @@ const EditAppointment = async ({
         }
         description={
           appointment.status === 'CONFIRMED'
-            ? 'Choisissez « Déplacer le rendez-vous » pour trouver une heure libre. Les autres informations se corrigent ci-dessous. Changer de soin actualise la durée et le prix.'
-            : 'Ce rendez-vous n’est plus actif. Vous pouvez le consulter, mais pas le modifier tant que vous ne l’avez pas rétabli.'
+            ? 'Appelez, déplacez ou corrigez les informations du rendez-vous.'
+            : 'Consultez ce rendez-vous ou rétablissez-le pour le modifier.'
         }
         actions={
           <Button asChild variant="outline">

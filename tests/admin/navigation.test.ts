@@ -14,8 +14,11 @@ describe('admin navigation', () => {
     ['/admin/appointments/appointment-1', 'agenda'],
     ['/admin/search', 'search'],
     ['/admin/customers/customer-1', 'search'],
-    ['/admin/activity', 'activity'],
-    ['/admin/activity?page=2', 'activity'],
+    ['/admin/activity', null],
+    ['/admin/activity?page=2', null],
+    ['/admin/a-traiter', 'attention'],
+    ['/admin/demandes', 'attention'],
+    ['/admin/conflits', 'attention'],
     ['/admin/appointments/new', 'create'],
     ['/admin/aide', null],
     ['/admin/settings', 'settings'],
@@ -43,46 +46,27 @@ describe('admin navigation', () => {
 })
 
 /**
- * La barre du bas comptait cinq colonnes fixes pour un tableau qui en contient
- * six dès qu'une demande attend : la sixième entrée passait à la ligne, la
- * barre doublait de hauteur, et le bas de page disparaissait dessous — au seul
- * moment où l'écran devait être net.
+ * Une entrée conditionnelle déplaçait tous les repères lorsqu'une demande
+ * arrivait. La barre garde désormais cinq destinations stables.
  */
 describe('barre du bas de l’administration', () => {
-  it('n’ajoute l’entrée « Demandes » que lorsqu’une demande attend', () => {
-    const withoutRequests = getAdminNavigationEntries('/admin/x', 0)
-    const withRequests = getAdminNavigationEntries('/admin/x', 1)
-
-    expect(withoutRequests.map(entry => entry.key)).toEqual([
-      'agenda',
-      'search',
-      'activity',
-      'create',
-      'settings',
-    ])
-    expect(withRequests.map(entry => entry.key)).toEqual([
-      'agenda',
-      'requests',
-      'search',
-      'activity',
-      'create',
-      'settings',
-    ])
+  it('garde toujours les cinq mêmes entrées', () => {
+    expect(
+      getAdminNavigationEntries('/admin/x').map(entry => entry.key),
+    ).toEqual(['agenda', 'search', 'create', 'attention', 'settings'])
   })
 
-  it('compte autant de colonnes que d’entrées', () => {
-    for (const pendingRequestCount of [0, 1, 4]) {
-      const entries = getAdminNavigationEntries('/admin/x', pendingRequestCount)
-      expect(getBottomNavigationColumns(entries.length)).toBe(
-        `repeat(${entries.length}, minmax(0, 1fr))`,
-      )
-    }
+  it('compte cinq colonnes', () => {
+    const entries = getAdminNavigationEntries('/admin/x')
+    expect(getBottomNavigationColumns(entries.length)).toBe(
+      'repeat(5, minmax(0, 1fr))',
+    )
   })
 
-  it('garde des cibles au-dessus de 44 px avec six entrées', () => {
-    const entries = getAdminNavigationEntries('/admin/x', 1)
+  it('garde des cibles au-dessus de 44 px', () => {
+    const entries = getAdminNavigationEntries('/admin/x')
 
-    expect(entries).toHaveLength(6)
+    expect(entries).toHaveLength(5)
     expect(getBottomNavigationItemWidth(entries.length)).toBeGreaterThanOrEqual(
       44,
     )
@@ -104,16 +88,15 @@ describe('dégagement du contenu', () => {
 })
 
 /**
- * Trois annonces étaient fausses ou incomplètes : le compteur de demandes
- * empruntait le texte caché des activités non lues, les deux repères de
- * navigation portaient le même nom, et deux bandeaux déclaraient un motif ARIA
- * d'onglets qu'ils n'implémentaient pas.
+ * Les compteurs, les trois repères de navigation et les bandeaux de sélection
+ * doivent annoncer exactement le comportement visible.
  */
 describe('ce que la navigation annonce', () => {
   const NAVIGATION = readFileSync(
     'components/admin/admin-navigation.tsx',
     'utf8',
   )
+  const LAYOUT = readFileSync('app/admin/layout.tsx', 'utf8')
   const AGENDA_VIEW = readFileSync(
     'components/admin/admin-agenda-view.tsx',
     'utf8',
@@ -123,19 +106,18 @@ describe('ce que la navigation annonce', () => {
     'utf8',
   )
 
-  it('donne aux demandes leur propre texte caché', () => {
-    expect(NAVIGATION).toContain('de dernière minute en attente')
-    // Le texte des activités n'est plus réemployé pour les demandes.
+  it('donne aux choses à traiter leur propre texte caché', () => {
+    expect(LAYOUT).toContain('chose')
     expect(NAVIGATION).not.toContain('unreadActivityCount')
   })
 
-  it('nomme les deux repères de navigation différemment', () => {
+  it('nomme les trois repères de navigation différemment', () => {
     const names = [
       ...NAVIGATION.matchAll(/aria-label="Administration, ([^"]+)"/g),
     ].map(match => match[1])
 
-    expect(names).toHaveLength(2)
-    expect(new Set(names).size).toBe(2)
+    expect(names).toHaveLength(3)
+    expect(new Set(names).size).toBe(3)
   })
 
   it('ne déclare aucun rôle d’onglet sans le clavier qui va avec', () => {

@@ -42,7 +42,7 @@ const Emails = async () => {
         eyebrow="Arbeauté"
         title="E-mails envoyés"
         icon={Mail}
-        description="Confirmations, rappels, déplacements, annulations et bilan de la semaine. Un e-mail qui ne part pas n’empêche jamais un rendez-vous : son résultat apparaît simplement ici."
+        description="Vérifiez les messages partis et ceux qu’il faut renvoyer."
       />
 
       {/* Les compteurs restent à gauche pendant qu'on descend la liste : ce

@@ -123,9 +123,9 @@ const Availability = async ({
         backHref="/admin/settings"
         backLabel="Réglages"
         eyebrow="Arbeauté"
-        title="Vos horaires d’ouverture"
+        title="Horaires"
         icon={Clock3}
-        description="Les horaires de la semaine décident des heures que le site propose en ligne. Pour un jour particulier — vacances, ouverture spéciale — marquez-le dans le calendrier : une fermeture retire des heures, une ouverture en ajoute."
+        description="Gérez la semaine habituelle, les vacances et les ouvertures spéciales."
       />
 
       {error && errorMessages[error] ? (
@@ -137,7 +137,7 @@ const Availability = async ({
         </p>
       ) : null}
 
-      <div className="mt-6">
+      <div className="mt-4">
         <AvailabilityExceptionCalendar
           monthKey={monthKey}
           monthLabel={monthLabel}

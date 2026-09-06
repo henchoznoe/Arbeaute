@@ -57,13 +57,13 @@ export const AdminPageHeader = ({
   actions,
   aside,
 }: Readonly<AdminPageHeaderProps>) => (
-  <header className="border-b pb-5">
+  <header className="border-b pb-4 sm:pb-5">
     {backHref && backLabel ? (
       <Button
         asChild
         variant="ghost"
         size="sm"
-        className="-ml-2 mb-1 text-muted-foreground"
+        className="-ml-2 mb-0 hidden text-muted-foreground sm:inline-flex"
       >
         <Link href={backHref}>
           <ChevronLeft className="size-4" /> {backLabel}
@@ -71,16 +71,32 @@ export const AdminPageHeader = ({
       </Button>
     ) : null}
 
-    <div className="flex flex-wrap items-start justify-between gap-4">
-      <div className="flex min-w-0 items-start gap-3">
+    <div className="flex flex-wrap items-start justify-between gap-3 sm:gap-4">
+      <div className="flex min-w-0 items-start gap-2.5 sm:gap-3">
+        {backHref && backLabel ? (
+          <Button
+            asChild
+            variant="ghost"
+            size="icon"
+            className="-ml-2 shrink-0 text-muted-foreground sm:hidden"
+          >
+            <Link href={backHref} aria-label={`Revenir à ${backLabel}`}>
+              <ChevronLeft className="size-5" />
+            </Link>
+          </Button>
+        ) : null}
         {Icon ? (
-          <span className="mt-0.5 grid size-11 shrink-0 place-items-center rounded-2xl bg-primary/10 text-primary">
+          <span
+            className={`mt-0.5 size-10 shrink-0 place-items-center rounded-xl bg-primary/10 text-primary sm:size-11 sm:rounded-2xl ${backHref ? 'hidden sm:grid' : 'grid'}`}
+          >
             <Icon className="size-5" />
           </span>
         ) : null}
         <div className="min-w-0">
           {eyebrow ? (
-            <p className="text-sm font-medium text-brand">{eyebrow}</p>
+            <p className="hidden text-sm font-medium text-brand sm:block">
+              {eyebrow}
+            </p>
           ) : null}
           <div className="flex flex-wrap items-center gap-3">
             <h1 className="break-words font-heading text-title font-bold">
@@ -89,7 +105,7 @@ export const AdminPageHeader = ({
             {aside}
           </div>
           {description ? (
-            <p className="mt-2 max-w-3xl text-sm leading-relaxed text-muted-foreground">
+            <p className="mt-1 max-w-3xl text-sm leading-snug text-muted-foreground sm:mt-2 sm:leading-relaxed">
               {description}
             </p>
           ) : null}

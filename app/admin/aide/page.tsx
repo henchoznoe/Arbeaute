@@ -100,7 +100,7 @@ const Help = async () => {
         eyebrow="Arbeauté"
         title="Aide rapide"
         icon={CircleHelp}
-        description="Les gestes du quotidien, expliqués étape par étape. Vous pouvez revenir ici à tout moment avec le bouton « Aide » en haut de l’écran."
+        description="Les gestes du quotidien, expliqués étape par étape."
       />
 
       <div className="mt-6 grid gap-4 lg:grid-cols-2">

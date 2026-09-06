@@ -112,10 +112,10 @@ const NewAppointment = async ({
         icon={CalendarPlus}
         description={
           duplicate
-            ? 'Le soin et les coordonnées ont été repris. Choisissez un nouveau créneau avant de créer le rendez-vous.'
+            ? 'Le soin et le client sont repris. Choisissez une nouvelle heure.'
             : customer
-              ? 'Les coordonnées ont été reprises. Choisissez le soin et le créneau.'
-              : '1. Choisissez le soin, la date et l’heure. 2. Recherchez un client déjà connu ou saisissez ses coordonnées. 3. Appuyez sur « Créer le rendez-vous ».'
+              ? 'Le client est repris. Choisissez le soin et l’heure.'
+              : 'Choisissez le soin, l’heure et le client.'
         }
       />
       <div className="mt-6">

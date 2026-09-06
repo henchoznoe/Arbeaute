@@ -122,9 +122,9 @@ l’information reste accessible, quitte à défiler verticalement.
 
 | Statut | Éléments |
 | --- | --- |
-| ✅ Terminés | Aucun |
+| ✅ Terminés | 1 à 4 |
 | 🟡 En cours | Aucun |
-| ⏳ Prêts à démarrer | 0 à 10 |
+| ⏳ Prêts à démarrer | 0, 5 à 10 |
 | 🔒 Bloqués | Aucun |
 | ❌ Abandonnés | Aucun |
 
@@ -169,7 +169,7 @@ n’utilise jamais.
 
 ## II. Les repères de l’application
 
-### 1. Garder cinq entrées fixes dans la barre du bas — ⏳
+### 1. Garder cinq entrées fixes dans la barre du bas — ✅
 
 **Priorité : P0 · Effort : M · Nature : refonte de navigation**
 
@@ -204,7 +204,12 @@ informatifs.
 
 **Dépendances :** élément 0 pour les libellés.
 
-### 2. Alléger le haut de l’écran et rendre le menu explicite — ⏳
+**Livré le 6 septembre 2026.** La barre contient toujours les cinq mêmes
+entrées. La nouvelle page « À traiter » réunit les demandes et les
+superpositions, avec un état vide simple. « Activité », « Aide » et « Voir le
+site » ont rejoint le menu secondaire.
+
+### 2. Alléger le haut de l’écran et rendre le menu explicite — ✅
 
 **Priorité : P1 · Effort : M · Nature : simplification**
 
@@ -238,7 +243,12 @@ le détail va au contact du champ concerné ou derrière « Bon à savoir ».
 
 **Dépendances :** élément 1 pour le contenu du menu.
 
-### 3. Conserver les repères pendant le chargement — ⏳
+**Livré le 6 septembre 2026.** Le bandeau mobile ne conserve que le nom de
+l’application et un bouton « Menu ». Les en-têtes de page sont plus courts, le
+retour est placé avec le titre et la déconnexion reste protégée par une
+confirmation.
+
+### 3. Conserver les repères pendant le chargement — ✅
 
 **Priorité : P1 · Effort : S · Nature : finition**
 
@@ -267,11 +277,15 @@ et seul le contenu utile affiche son squelette.
 
 **Dépendances :** éléments 1 et 2 pour la nouvelle coquille.
 
+**Livré le 6 septembre 2026.** Une coquille réserve immédiatement la place du
+bandeau et de la barre basse sans exposer de lien avant l’identification. Le
+compteur « À traiter » charge ensuite indépendamment de la navigation.
+
 ---
 
 ## III. Les gestes de tous les jours
 
-### 4. Faire commencer l’agenda par la journée choisie — ⏳
+### 4. Faire commencer l’agenda par la journée choisie — ✅
 
 **Priorité : P0 · Effort : M · Nature : refonte d’écran**
 
@@ -309,6 +323,11 @@ repliée sous un bouton explicite ; elle ne concurrence plus la journée.
 `components/admin/dashboard-metrics.tsx`.
 
 **Dépendances :** élément 1 pour « À traiter », élément 2 pour l’en-tête compact.
+
+**Livré le 6 septembre 2026.** La semaine et la journée arrivent directement
+après le titre. Les alertes sont résumées par un accès « À traiter », le prochain
+rendez-vous est signalé dans la chronologie et les chiffres de la semaine sont
+repliés sous l’agenda.
 
 ### 5. Transformer l’ajout d’un rendez-vous en parcours guidé — ⏳
 

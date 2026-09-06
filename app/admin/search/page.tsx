@@ -31,7 +31,7 @@ const SearchAppointments = async () => {
         eyebrow="Arbeauté"
         title="Rechercher"
         icon={Search}
-        description="Retrouvez quelqu’un par son nom, son adresse ou son numéro — ou un rendez-vous précis. Rien de ce que vous tapez n’apparaît dans l’adresse de la page."
+        description="Trouvez un client ou un rendez-vous par son nom, son adresse ou son numéro."
       />
       <AdminSearchTabs
         services={services}

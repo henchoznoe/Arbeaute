@@ -45,12 +45,12 @@ const LateRequests = async () => {
   return (
     <AdminPage>
       <AdminPageHeader
-        backHref="/admin"
-        backLabel="Agenda"
+        backHref="/admin/a-traiter"
+        backLabel="À traiter"
         eyebrow="Arbeauté"
         title="Demandes de dernière minute"
         icon={Clock}
-        description="Des heures encore libres, mais trop proches pour être réservées en ligne. Tant que vous n’avez pas répondu, rien n’est réservé et le créneau reste disponible."
+        description="Répondez aux heures demandées avant qu’elles ne soient prises."
       />
 
       {waiting.length === 0 ? (

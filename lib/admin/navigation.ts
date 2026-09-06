@@ -2,10 +2,9 @@ import { isDateKey } from '@/lib/reservation/time'
 
 export type AdminNavigationItem =
   | 'agenda'
-  | 'requests'
   | 'search'
-  | 'activity'
   | 'create'
+  | 'attention'
   | 'settings'
 
 export const ADMIN_AGENDA_DATE_EVENT = 'admin-agenda-date-change'
@@ -14,13 +13,18 @@ export const getActiveAdminNavigationItem = (
   pathname: string,
 ): AdminNavigationItem | null => {
   if (pathname.startsWith('/admin/aide')) return null
-  if (pathname.startsWith('/admin/demandes')) return 'requests'
+  if (
+    pathname.startsWith('/admin/a-traiter') ||
+    pathname.startsWith('/admin/demandes') ||
+    pathname.startsWith('/admin/conflits')
+  )
+    return 'attention'
   if (
     pathname.startsWith('/admin/search') ||
     pathname.startsWith('/admin/customers')
   )
     return 'search'
-  if (pathname.startsWith('/admin/activity')) return 'activity'
+  if (pathname.startsWith('/admin/activity')) return null
   if (pathname === '/admin/appointments/new') return 'create'
   if (
     pathname.startsWith('/admin/settings') ||
@@ -51,30 +55,25 @@ export interface AdminNavigationEntry {
 /**
  * Les entrées de la barre, dans leur ordre d'affichage.
  *
- * « Demandes » ne s'insère que lorsqu'une demande attend : une entrée de plus
- * encombrerait la barre du téléphone en permanence pour un cas rare. C'est bien
- * la liste qui décide du nombre de colonnes — voir `getBottomNavigationColumns`.
+ * Les cinq repères restent toujours à la même place. « À traiter » ne disparaît
+ * pas quand tout va bien : la mémoire du geste compte davantage que le gain
+ * d'une case vide, et son écran confirme alors simplement que tout est en ordre.
  */
 export const getAdminNavigationEntries = (
   createHref: string,
-  pendingRequestCount: number,
 ): AdminNavigationEntry[] => [
   { key: 'agenda', label: 'Agenda', href: '/admin' },
-  ...(pendingRequestCount > 0
-    ? [{ key: 'requests' as const, label: 'Demandes', href: '/admin/demandes' }]
-    : []),
   { key: 'search', label: 'Recherche', href: '/admin/search' },
-  { key: 'activity', label: 'Activité', href: '/admin/activity' },
   { key: 'create', label: 'Ajouter', href: createHref },
+  { key: 'attention', label: 'À traiter', href: '/admin/a-traiter' },
   { key: 'settings', label: 'Réglages', href: '/admin/settings' },
 ]
 
 /**
  * La grille de la barre du bas compte ses colonnes sur les entrées reçues.
  *
- * Figée à cinq, la sixième passait à la ligne : la barre doublait de hauteur au
- * moment précis où une demande attendait une réponse, et le bas de page
- * disparaissait dessous.
+ * La liste est désormais fixe, mais garder ce calcul explicite protège le
+ * dégagement du contenu si un repère est un jour remplacé.
  */
 export const getBottomNavigationColumns = (itemCount: number): string =>
   `repeat(${itemCount}, minmax(0, 1fr))`

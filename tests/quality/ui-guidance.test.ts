@@ -63,10 +63,9 @@ describe('heures disponibles sur demande', () => {
 })
 
 describe('aide aux actions de l’administration', () => {
-  it('guide les gestes depuis l’agenda sur mobile et ordinateur', () => {
-    expect(ADMIN_AGENDA).toContain(
-      'Touchez un rendez-vous pour l’ouvrir et le modifier',
-    )
+  it('garde l’ajout et la journée visibles sur mobile, puis guide la grille sur ordinateur', () => {
+    expect(ADMIN_AGENDA).toContain('<AdminDayTimeline')
+    expect(ADMIN_AGENDA).toContain('nextAppointmentId={nextAppointmentId}')
     expect(ADMIN_AGENDA).toContain(
       'Cliquez sur un rendez-vous pour le modifier, ou sur une heure libre',
     )
@@ -80,14 +79,14 @@ describe('aide aux actions de l’administration', () => {
     expect(APPOINTMENT_PAGE).toContain(
       '<div className="order-1 min-w-0 lg:order-2">',
     )
-    expect(APPOINTMENT_PAGE).toContain(
-      'Choisissez « Déplacer le rendez-vous » pour trouver une heure libre',
-    )
+    expect(APPOINTMENT_PAGE).toContain('/deplacer`}')
+    expect(APPOINTMENT_PAGE).toContain('Déplacer le rendez-vous')
   })
 
   it('rend l’aide accessible en permanence sans charger la barre du bas', () => {
     expect(ADMIN_NAVIGATION).toContain('href="/admin/aide"')
-    expect(ADMIN_NAVIGATION).toContain('Aide rapide')
+    expect(ADMIN_NAVIGATION).toContain('title="Menu"')
+    expect(ADMIN_NAVIGATION).toContain('<CircleHelp className="size-5" /> Aide')
   })
 
   it('couvre les cinq gestes du quotidien', () => {

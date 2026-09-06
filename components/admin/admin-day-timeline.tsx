@@ -45,7 +45,8 @@ const positionStyle = (
 
 export const AdminDayTimeline = ({
   day,
-}: Readonly<{ day: AdminTimelineDay }>) => {
+  nextAppointmentId,
+}: Readonly<{ day: AdminTimelineDay; nextAppointmentId?: string }>) => {
   const freeStarts = getFreeTimelineStarts(day)
   const height =
     (day.timelineEndMinute - day.timelineStartMinute) * PIXELS_PER_MINUTE
@@ -315,6 +316,7 @@ export const AdminDayTimeline = ({
               })}
 
               {day.appointments.map(appointment => {
+                const isNext = appointment.id === nextAppointmentId
                 const occupiedStyle = positionStyle(
                   {
                     startMinute: appointment.occupiedStartMinute,
@@ -331,18 +333,25 @@ export const AdminDayTimeline = ({
                   <Link
                     key={appointment.id}
                     href={`/admin/appointments/${appointment.id}?date=${day.dateKey}`}
-                    aria-label={`${formatTimelineMinute(appointment.startMinute)}, ${appointment.customerName}, ${appointment.serviceLabel}, ${statusLabels[appointment.status]}`}
+                    aria-label={`${isNext ? 'Prochain rendez-vous, ' : ''}${formatTimelineMinute(appointment.startMinute)}, ${appointment.customerName}, ${appointment.serviceLabel}, ${statusLabels[appointment.status]}`}
                     className={`absolute left-12 right-1 z-30 overflow-visible rounded-xl border border-dashed bg-background/75 shadow-sm transition hover:shadow-md ${
                       appointment.hasVisualOverlap
                         ? 'border-destructive ring-2 ring-destructive/60'
-                        : appointment.status === 'NO_SHOW'
-                          ? 'border-destructive/60 bg-destructive/5 opacity-75'
-                          : appointment.status === 'COMPLETED'
-                            ? 'border-primary/40 bg-primary/5 opacity-75'
-                            : 'border-muted-foreground/40'
+                        : isNext
+                          ? 'border-primary ring-2 ring-primary/35'
+                          : appointment.status === 'NO_SHOW'
+                            ? 'border-destructive/60 bg-destructive/5 opacity-75'
+                            : appointment.status === 'COMPLETED'
+                              ? 'border-primary/40 bg-primary/5 opacity-75'
+                              : 'border-muted-foreground/40'
                     }`}
                     style={occupiedStyle}
                   >
+                    {isNext ? (
+                      <span className="absolute -top-3 right-2 z-10 rounded-full bg-primary px-2 py-0.5 text-2xs font-semibold text-primary-foreground">
+                        Prochain
+                      </span>
+                    ) : null}
                     {appointment.preparationMinutes > 0 ? (
                       <span className="absolute inset-x-2 top-0 truncate text-2xs leading-4 text-muted-foreground">
                         Installation {appointment.preparationMinutes} min
