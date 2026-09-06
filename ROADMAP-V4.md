@@ -1,5 +1,9 @@
 # Roadmap V4 — les écrans, tels qu’on les voit sur un téléphone
 
+> **Backlog clos.** Ses 19 éléments sont livrés ; ce document est conservé comme
+> archive. La suite, consacrée exclusivement à l’administration mobile, se pilote
+> dans [ROADMAP-V5.md](ROADMAP-V5.md).
+
 ## Objectif
 
 La [roadmap v1](ROADMAP.md) a construit les capacités du produit. La
