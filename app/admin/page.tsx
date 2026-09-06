@@ -20,6 +20,7 @@ import {
   getLocalDayBounds,
   getLocalDayOfWeek,
   getLocalWeekDateKeys,
+  getLocalWeekStart,
   isDateKey,
 } from '@/lib/reservation/time'
 
@@ -41,6 +42,7 @@ const AdminAgenda = async ({ searchParams }: Readonly<AdminPageProps>) => {
   const today = getLocalDateKey(new Date())
   const anchor =
     requestedDate && isDateKey(requestedDate) ? requestedDate : today
+  const weekStart = getLocalWeekStart(anchor)
   const weekDays = getLocalWeekDateKeys(anchor)
   const queryStart = getLocalDayBounds(weekDays[0]).start
   const queryEnd = getLocalDayBounds(weekDays.at(-1) as string).end
@@ -159,8 +161,8 @@ const AdminAgenda = async ({ searchParams }: Readonly<AdminPageProps>) => {
       <AdminAgendaView
         anchor={anchor}
         today={today}
-        previousWeek={addLocalDays(anchor, -7)}
-        nextWeek={addLocalDays(anchor, 7)}
+        previousWeek={addLocalDays(weekStart, -7)}
+        nextWeek={addLocalDays(weekStart, 7)}
         days={timelineDays}
         visibleDays={agendaSettings.visibleDays}
         nextAppointmentId={nextAppointmentId}

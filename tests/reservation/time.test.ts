@@ -7,6 +7,7 @@ import {
   getLocalDayBounds,
   getLocalDayOfWeek,
   getLocalWeekDateKeys,
+  getLocalWeekStart,
   isDateKey,
   localDateMinuteToUtc,
 } from '@/lib/reservation/time'
@@ -46,6 +47,13 @@ describe('Europe/Zurich date conversion', () => {
       '2026-08-08',
       '2026-08-09',
     ])
+  })
+
+  it('ouvre la semaine suivante sur un lundi depuis un dimanche', () => {
+    const sunday = '2026-08-09'
+
+    expect(getLocalWeekStart(sunday)).toBe('2026-08-03')
+    expect(addLocalDays(getLocalWeekStart(sunday), 7)).toBe('2026-08-10')
   })
 
   it('uses a fixed 24-hour cutoff, weekend included', () => {

@@ -14,6 +14,11 @@ const ADMIN_AGENDA = readFileSync(
   'components/admin/admin-agenda-view.tsx',
   'utf8',
 )
+const ADMIN_WEEK_LINK = readFileSync(
+  'components/admin/admin-week-link.tsx',
+  'utf8',
+)
+const ADMIN_PAGE = readFileSync('app/admin/page.tsx', 'utf8')
 const APPOINTMENT_PAGE = readFileSync(
   'app/admin/appointments/[id]/page.tsx',
   'utf8',
@@ -100,6 +105,14 @@ describe('aide aux actions de l’administration', () => {
       'Cliquez sur un rendez-vous pour le modifier, ou sur une heure libre',
     )
     expect(ADMIN_AGENDA).toContain('<Plus className="size-4" /> Ajouter')
+  })
+
+  it('rend le changement de semaine visible et repart toujours du lundi', () => {
+    expect(ADMIN_WEEK_LINK).toContain('Chargement de la semaine…')
+    expect(ADMIN_WEEK_LINK).toContain('LoaderCircle')
+    expect(ADMIN_WEEK_LINK).toContain('role="status"')
+    expect(ADMIN_PAGE).toContain('nextWeek={addLocalDays(weekStart, 7)}')
+    expect(ADMIN_PAGE).toContain('previousWeek={addLocalDays(weekStart, -7)}')
   })
 
   it('place les actions avant le formulaire replié sur mobile', () => {
