@@ -1,3 +1,4 @@
+import { getAppointmentRevenueCents } from '@/lib/packages/domain'
 import { formatServiceLabel } from '@/lib/reservation/service-label'
 import type { AppointmentStatus } from '@/prisma/generated/prisma/enums'
 
@@ -28,6 +29,7 @@ export interface WeeklySummaryAppointment {
    */
   categoryName: string | null
   status: AppointmentStatus
+  recognisedPackage?: { packagePriceCents: number } | null
 }
 
 export interface WeeklySummary {
@@ -79,7 +81,7 @@ export const buildWeeklySummary = (
       0,
     ),
     revenueCents: realised.reduce(
-      (total, appointment) => total + appointment.servicePriceCents,
+      (total, appointment) => total + getAppointmentRevenueCents(appointment),
       0,
     ),
     noShowCount: appointments.filter(

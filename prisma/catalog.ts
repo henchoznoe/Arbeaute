@@ -19,6 +19,18 @@ export interface CatalogService {
   sortOrder: number
   isBookable: boolean
   sourceImageUrl: string | null
+  imageDisplayMode?: 'COVER' | 'CONTAIN'
+}
+
+export interface CatalogPackage {
+  slug: string
+  name: string
+  description: string
+  priceCents: number
+  sessionCount: number
+  validityMonths: number
+  sortOrder: number
+  serviceSlugs: string[]
 }
 
 export const catalogCategories: CatalogCategory[] = [
@@ -80,6 +92,14 @@ export const catalogCategories: CatalogCategory[] = [
       'Épilation laser pour différentes zones du visage et du corps.',
     color: '#927b59',
     sortOrder: 7,
+  },
+  {
+    slug: 'soins-corps',
+    name: 'Soins du corps',
+    description:
+      'Soins ciblés pour nettoyer, apaiser et prendre soin de la peau du corps.',
+    color: '#927b59',
+    sortOrder: 8,
   },
 ]
 
@@ -600,5 +620,54 @@ export const catalogServices: CatalogService[] = [
     isBookable: true,
     sourceImageUrl:
       'https://thumbs.agenda.ch/uploads/service_pictures/13688/original/Capture_d%E2%80%99e%CC%81cran_2024-03-05_a%CC%80_16.58.35.png?1709654432',
+  },
+  {
+    slug: 'soin-purifiant-dos-argile',
+    categorySlug: 'soins-corps',
+    agendaSourceId: null,
+    name: 'Soin purifiant du dos à l’argile',
+    description:
+      'Un soin complet du dos à l’argile qui nettoie la peau en profondeur et aide à éliminer les boutons et les impuretés.',
+    durationMinutes: 60,
+    priceCents: 12000,
+    priceNote: null,
+    color: '#927b59',
+    sortOrder: 0,
+    isBookable: true,
+    sourceImageUrl: null,
+    imageDisplayMode: 'CONTAIN',
+  },
+]
+
+export const catalogPackages: CatalogPackage[] = [
+  {
+    slug: 'laser-erbium-visage-cou-decollete-5-seances',
+    name: 'Forfait Laser Erbium — Visage, cou et décolleté',
+    description:
+      'Cinq séances de Laser Erbium pour le visage, le cou et le décolleté.',
+    priceCents: 170000,
+    sessionCount: 5,
+    validityMonths: 12,
+    sortOrder: 0,
+    serviceSlugs: ['laser-erbium-visage-cou-decollete'],
+  },
+  {
+    slug: 'epilation-laser-zone-au-choix-8-seances',
+    name: 'Forfait épilation laser — Zone au choix',
+    description:
+      'Huit séances avec une zone au choix à chaque rendez-vous parmi les zones proposées.',
+    priceCents: 160000,
+    sessionCount: 8,
+    validityMonths: 12,
+    sortOrder: 1,
+    serviceSlugs: [
+      'epilation-laser-visage',
+      'epilation-laser-aisselles',
+      'epilation-laser-bikini',
+      'epilation-laser-demi-jambes',
+      'epilation-laser-bras',
+      'epilation-laser-dos',
+      'epilation-laser-torse',
+    ],
   },
 ]

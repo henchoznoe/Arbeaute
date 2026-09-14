@@ -81,6 +81,8 @@ export const auditEntityLabels: Record<AuditEntityType, string> = {
   BOOKING_SETTINGS: 'Règles de réservation',
   AGENDA_SETTINGS: 'Jours affichés dans l’agenda',
   APPOINTMENT_REQUEST: 'Demande de dernière minute',
+  PACKAGE: 'Forfait',
+  CUSTOMER_PACKAGE: 'Forfait ouvert',
 }
 
 export const auditActionLabels: Record<AuditActionType, string> = {
@@ -108,6 +110,9 @@ export const getAuditEntityHref = (event: {
   entityId: string
 }): string | null => {
   if (event.entityType === 'APPOINTMENT_REQUEST') return '/admin/demandes'
+  if (event.entityType === 'PACKAGE') return `/admin/packages/${event.entityId}`
+  if (event.entityType === 'CUSTOMER_PACKAGE')
+    return `/admin/customer-packages/${event.entityId}`
   if (event.entityType === 'APPOINTMENT')
     return `/admin/appointments/${event.entityId}`
   if (event.entityType === 'SERVICE') return `/admin/services/${event.entityId}`

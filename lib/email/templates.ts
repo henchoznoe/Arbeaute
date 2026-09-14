@@ -34,6 +34,13 @@ export interface AppointmentMailData {
    * l'écran d'identification — le défaut exact qu'on corrige.
    */
   customerEmail: string | null
+  /** Présent lorsque ce rendez-vous ouvre un forfait. */
+  package?: {
+    name: string
+    priceCents: number
+    sessionCount: number
+    installmentCount: number
+  }
 }
 
 const BOOKING_URL = `${contact.website}${contact.bookingUrl}`
@@ -156,19 +163,42 @@ ${paragraphs}${buttons}
 const replyNotice = `Une question ? Répondez à ce message, il arrive sur ${contact.email}.`
 
 /** Bloc récapitulatif commun, en texte brut. */
+const installmentText = (count: number): string =>
+  count === 1 ? 'en une fois' : `en ${count} fois`
+
 const appointmentSummaryText = (data: AppointmentMailData): string[] => [
-  `Soin : ${data.serviceLabel}`,
+  ...(data.package
+    ? [
+        `Forfait : ${data.package.name}`,
+        `Premier soin : ${data.serviceLabel}`,
+        `Séances : ${data.package.sessionCount}`,
+        `Prix total : ${formatPrice(data.package.priceCents)}`,
+        `Paiement sur place : ${installmentText(data.package.installmentCount)}`,
+      ]
+    : [
+        `Soin : ${data.serviceLabel}`,
+        `Prix : ${formatPrice(data.priceCents)}`,
+      ]),
   `Date : ${formatMailDate(data.startsAt)}`,
   `Heure : ${formatMailTime(data.startsAt)}`,
-  `Prix : ${formatPrice(data.priceCents)}`,
   `Adresse : ${contact.address}`,
 ]
 
 const appointmentSummaryHtml = (data: AppointmentMailData): string[] => [
-  `<strong>Soin :</strong> ${escapeHtml(data.serviceLabel)}`,
+  ...(data.package
+    ? [
+        `<strong>Forfait :</strong> ${escapeHtml(data.package.name)}`,
+        `<strong>Premier soin :</strong> ${escapeHtml(data.serviceLabel)}`,
+        `<strong>Séances :</strong> ${data.package.sessionCount}`,
+        `<strong>Prix total :</strong> ${escapeHtml(formatPrice(data.package.priceCents))}`,
+        `<strong>Paiement sur place :</strong> ${escapeHtml(installmentText(data.package.installmentCount))}`,
+      ]
+    : [
+        `<strong>Soin :</strong> ${escapeHtml(data.serviceLabel)}`,
+        `<strong>Prix :</strong> ${escapeHtml(formatPrice(data.priceCents))}`,
+      ]),
   `<strong>Date :</strong> ${escapeHtml(formatMailDate(data.startsAt))}`,
   `<strong>Heure :</strong> ${escapeHtml(formatMailTime(data.startsAt))}`,
-  `<strong>Prix :</strong> ${escapeHtml(formatPrice(data.priceCents))}`,
   `<strong>Adresse :</strong> ${escapeHtml(contact.address)}`,
 ]
 
@@ -180,8 +210,12 @@ const textFooter = [replyNotice, '', signOff]
 export const buildConfirmationMail = (
   data: AppointmentMailData,
 ): MailContent => {
-  const title = 'Votre rendez-vous est confirmé'
-  const intro = `Bonjour ${greetingName(data)}, votre rendez-vous est bien enregistré.`
+  const title = data.package
+    ? 'Votre forfait est confirmé'
+    : 'Votre rendez-vous est confirmé'
+  const intro = data.package
+    ? `Bonjour ${greetingName(data)}, votre forfait et votre premier rendez-vous sont bien enregistrés.`
+    : `Bonjour ${greetingName(data)}, votre rendez-vous est bien enregistré.`
   // Le téléphone n'est plus demandé pour s'identifier depuis la v1.10 :
   // l'adresse e-mail suffit, et la promettre en plus enverrait quelqu'un
   // chercher une information dont on n'a pas besoin.
@@ -189,7 +223,7 @@ export const buildConfirmationMail = (
   const actions = [calendarAction(data), manageAction(data.customerEmail)]
 
   return {
-    subject: `Rendez-vous confirmé — ${formatMailDate(data.startsAt)} à ${formatMailTime(data.startsAt)}`,
+    subject: `${data.package ? 'Forfait confirmé' : 'Rendez-vous confirmé'} — ${formatMailDate(data.startsAt)} à ${formatMailTime(data.startsAt)}`,
     text: [
       intro,
       '',

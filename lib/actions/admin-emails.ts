@@ -81,6 +81,19 @@ export const resendFailedEmail = async (
       serviceNameSnapshot: true,
       servicePriceCents: true,
       service: { select: { category: { select: { name: true } } } },
+      packageSession: {
+        select: {
+          customerPackage: {
+            select: {
+              revenueAppointmentId: true,
+              packageNameSnapshot: true,
+              packagePriceCents: true,
+              sessionCountSnapshot: true,
+              installmentCount: true,
+            },
+          },
+        },
+      },
     },
   })
   if (!appointment?.customerEmail)
@@ -103,6 +116,20 @@ export const resendFailedEmail = async (
     endsAt: appointment.endsAt,
     priceCents: appointment.servicePriceCents,
     customerEmail: appointment.customerEmail,
+    package:
+      appointment.packageSession?.customerPackage.revenueAppointmentId ===
+      appointment.id
+        ? {
+            name: appointment.packageSession.customerPackage
+              .packageNameSnapshot,
+            priceCents:
+              appointment.packageSession.customerPackage.packagePriceCents,
+            sessionCount:
+              appointment.packageSession.customerPackage.sessionCountSnapshot,
+            installmentCount:
+              appointment.packageSession.customerPackage.installmentCount,
+          }
+        : undefined,
   })
 
   const attachment =

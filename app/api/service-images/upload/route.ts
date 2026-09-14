@@ -13,10 +13,13 @@ import {
   isValidServiceImagePath,
 } from '@/lib/services/service-image-policy'
 
-const uploadPayloadSchema = z.object({
-  serviceId: z.string().min(1),
-  kind: z.enum(['image', 'consent']),
-})
+const uploadPayloadSchema = z.union([
+  z.object({
+    serviceId: z.string().min(1),
+    kind: z.enum(['image', 'consent']),
+  }),
+  z.object({ packageId: z.string().min(1), kind: z.literal('package-image') }),
+])
 
 export const POST = async (request: Request) => {
   try {
@@ -30,14 +33,25 @@ export const POST = async (request: Request) => {
         if (!clientPayload) throw new Error('Missing service')
 
         const payload = uploadPayloadSchema.parse(JSON.parse(clientPayload))
-        const service = await prisma.service.findUnique({
-          where: { id: payload.serviceId },
-          select: { id: true },
-        })
-        if (!service || !isValidServiceImagePath(pathname, service.id))
-          throw new Error('Invalid upload target')
+        if ('packageId' in payload) {
+          const item = await prisma.package.findUnique({
+            where: { id: payload.packageId },
+            select: { id: true },
+          })
+          if (!item || !pathname.startsWith(`packages/${item.id}/`))
+            throw new Error('Invalid upload target')
+        } else {
+          const service = await prisma.service.findUnique({
+            where: { id: payload.serviceId },
+            select: { id: true },
+          })
+          if (!service || !isValidServiceImagePath(pathname, service.id))
+            throw new Error('Invalid upload target')
+        }
 
-        const { contentTypes, maxBytes } = getServiceAssetPolicy(payload.kind)
+        const { contentTypes, maxBytes } = getServiceAssetPolicy(
+          payload.kind === 'package-image' ? 'image' : payload.kind,
+        )
 
         const token = await issueSignedToken({
           storeId: env.BLOB_STORE_ID,

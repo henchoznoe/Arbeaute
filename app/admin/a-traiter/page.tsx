@@ -1,4 +1,10 @@
-import { AlertTriangle, BadgeCheck, ChevronRight, Clock } from 'lucide-react'
+import {
+  AlertTriangle,
+  BadgeCheck,
+  ChevronRight,
+  Clock,
+  Gift,
+} from 'lucide-react'
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { Suspense } from 'react'
@@ -10,8 +16,13 @@ import { getAdminSession } from '@/lib/core/session-cookies'
 
 const Attention = async () => {
   if (!(await getAdminSession())) redirect('/admin/login')
-  const { pendingRequestCount, conflictGroupCount, conflicts, totalCount } =
-    await getAdminAttentionSummary()
+  const {
+    pendingRequestCount,
+    conflictGroupCount,
+    packageCreditCount,
+    conflicts,
+    totalCount,
+  } = await getAdminAttentionSummary()
 
   return (
     <AdminPage>
@@ -73,6 +84,27 @@ const Attention = async () => {
                 </span>
               </span>
               <ChevronRight className="ml-auto size-5 shrink-0" />
+            </Link>
+          ) : null}
+          {packageCreditCount > 0 ? (
+            <Link
+              href="/admin/packages/credits"
+              className="flex min-h-20 items-center gap-3 rounded-2xl border border-warning-line bg-warning-subtle p-4 transition hover:border-warning"
+            >
+              <span className="grid size-11 shrink-0 place-items-center rounded-full bg-warning-soft text-warning-strong">
+                <Gift className="size-5" />
+              </span>
+              <span>
+                <span className="block font-semibold">
+                  {packageCreditCount === 1
+                    ? 'Une séance de forfait à décider'
+                    : `${packageCreditCount} séances de forfait à décider`}
+                </span>
+                <span className="mt-1 block text-sm text-muted-foreground">
+                  Comptez la séance ou rendez-la au forfait.
+                </span>
+              </span>
+              <ChevronRight className="ml-auto size-5" />
             </Link>
           ) : null}
         </div>

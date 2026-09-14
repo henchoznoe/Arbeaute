@@ -46,6 +46,7 @@ const makeDatabase = () => {
         ]),
     },
     availabilityException: { findMany: vi.fn().mockResolvedValue([]) },
+    customerPackage: { updateMany: vi.fn().mockResolvedValue({ count: 0 }) },
     auditEvent: { create: vi.fn().mockResolvedValue({}) },
   }
   return {
@@ -109,7 +110,20 @@ describe('déplacement guidé', () => {
     expect(database.$transaction).toHaveBeenCalledWith(expect.any(Function), {
       isolationLevel: 'Serializable',
     })
+    expect(database.customerPackage.updateMany).toHaveBeenCalledWith({
+      where: { revenueAppointmentId: 'rdv' },
+      data: { validityStartsAt: input.startsAt },
+    })
     expect(database.auditEvent.create).toHaveBeenCalledTimes(1)
+  })
+  it('ne décale plus la validité après le premier rendez-vous', async () => {
+    const database = makeDatabase()
+    await rescheduleAdminAppointment(
+      database as never,
+      input,
+      new Date('2026-09-07T08:30Z'),
+    )
+    expect(database.customerPackage.updateMany).not.toHaveBeenCalled()
   })
   it('refuse un changement concurrent et un rendez-vous annulé', async () => {
     for (const changed of [

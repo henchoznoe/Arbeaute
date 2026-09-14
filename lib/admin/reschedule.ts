@@ -98,6 +98,11 @@ export const rescheduleAdminAppointment = async (
               allowsOverlap: false,
             },
           })
+          if (current.startsAt > now)
+            await transaction.customerPackage.updateMany({
+              where: { revenueAppointmentId: current.id },
+              data: { validityStartsAt: input.startsAt },
+            })
           await writeAuditEvent(transaction, {
             actorType: 'ADMIN',
             actorId: 'admin',

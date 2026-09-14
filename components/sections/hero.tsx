@@ -2,7 +2,6 @@ import { CalendarCheck } from 'lucide-react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
-import { heroPlaceholder } from '@/lib/config/placeholders'
 import { contact } from '@/lib/constants/contact'
 
 /**
@@ -78,19 +77,18 @@ export const Hero = () => (
         </p>
       </div>
 
-      {/* Photo d'attente : elle part avec `lib/config/placeholders.ts` dès que
-          celles de l'institut arrivent. Pleine largeur sous `md`, où elle
-          termine l'écran au lieu de le laisser sur un aplat. */}
+      {/* La photo large fournie par l'institut garde son sujet au centre : le
+          recadrage change avec la colonne, sans rendre le texte incrusté
+          nécessaire à la compréhension de la page. */}
       <figure className="-mx-5 overflow-hidden sm:-mx-8 md:mx-0 md:rounded-3xl">
         <Image
-          src={heroPlaceholder.src}
-          alt={heroPlaceholder.alt}
-          width={1600}
-          height={1800}
+          src="/images/institut-arbeaute.webp"
+          alt="Un soin du visage à l’institut Arbeauté"
+          width={1408}
+          height={768}
           sizes="(min-width: 768px) 46vw, 100vw"
           priority
-          unoptimized
-          className="aspect-3/2 w-full object-cover md:aspect-4/5"
+          className="aspect-3/2 w-full object-cover object-center md:aspect-4/5"
         />
       </figure>
     </div>

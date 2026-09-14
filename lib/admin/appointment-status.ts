@@ -95,6 +95,13 @@ export const changeAdminAppointmentStatusSerializable = async (
               serviceNameSnapshot: true,
             },
           })
+          await transaction.packageSession.updateMany({
+            where: { appointmentId: updated.id },
+            data: {
+              creditState:
+                targetStatus === 'NO_SHOW' ? 'DECISION_REQUIRED' : 'COUNTED',
+            },
+          })
           await writeAuditEvent(transaction, {
             actorType: 'ADMIN',
             actorId: 'admin',

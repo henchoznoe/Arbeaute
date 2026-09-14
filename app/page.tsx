@@ -5,6 +5,7 @@ import { PublicShell } from '@/components/layout/public-shell'
 import { FeaturedServices } from '@/components/sections/featured-services'
 import { Gallery } from '@/components/sections/gallery'
 import { Hero } from '@/components/sections/hero'
+import { PackagesShowcase } from '@/components/sections/packages-showcase'
 import { VeraRecommendation } from '@/components/sections/vera-recommendation'
 import { JsonLd } from '@/components/seo/json-ld'
 import { Button } from '@/components/ui/button'
@@ -70,6 +71,8 @@ const Page = () => (
     </section>
 
     <FeaturedServices />
+
+    <PackagesShowcase compact />
 
     <Gallery />
 

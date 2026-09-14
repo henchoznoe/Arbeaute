@@ -31,6 +31,7 @@ interface CatalogService {
   priceCents: number
   priceNote: string | null
   imageUrl: string | null
+  imageDisplayMode: 'COVER' | 'CONTAIN'
   consentFormUrl: string | null
   isBookable: boolean
 }
@@ -71,6 +72,7 @@ const serviceFields = {
   priceCents: true,
   priceNote: true,
   imageUrl: true,
+  imageDisplayMode: true,
   consentFormUrl: true,
   isBookable: true,
 } as const

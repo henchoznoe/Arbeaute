@@ -67,6 +67,12 @@ const AdminAgenda = async ({ searchParams }: Readonly<AdminPageProps>) => {
           cleanupMinutes: true,
           serviceDurationMinutes: true,
           servicePriceCents: true,
+          recognisedPackage: { select: { packagePriceCents: true } },
+          packageSession: {
+            select: {
+              customerPackage: { select: { packageNameSnapshot: true } },
+            },
+          },
           customerId: true,
           customerFirstName: true,
           customerLastName: true,
@@ -116,10 +122,15 @@ const AdminAgenda = async ({ searchParams }: Readonly<AdminPageProps>) => {
           .join(' '),
         customerPhone: appointment.customerPhone,
         customerId: appointment.customerId,
-        serviceLabel: formatServiceLabel(
-          appointment.serviceNameSnapshot,
-          appointment.service.category?.name,
-        ),
+        serviceLabel: [
+          formatServiceLabel(
+            appointment.serviceNameSnapshot,
+            appointment.service.category?.name,
+          ),
+          appointment.packageSession?.customerPackage.packageNameSnapshot,
+        ]
+          .filter(Boolean)
+          .join(' · '),
         serviceColor: appointment.service.color,
         source: appointment.source,
         status: appointment.status,

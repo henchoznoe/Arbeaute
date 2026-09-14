@@ -84,6 +84,29 @@ describe('buildConfirmationMail', () => {
     expect(mail.text).toContain('info@arbeaute.ch')
     expect(mail.html).toContain('info@arbeaute.ch')
   })
+
+  it('confirme le forfait, son prix total et le paiement sur place', () => {
+    const packageMail = buildConfirmationMail({
+      ...base,
+      package: {
+        name: 'Forfait épilation laser — Zone au choix',
+        priceCents: 160_000,
+        sessionCount: 8,
+        installmentCount: 3,
+      },
+    })
+
+    expect(packageMail.subject).toContain('Forfait confirmé')
+    expect(packageMail.text).toContain(
+      'Forfait : Forfait épilation laser — Zone au choix',
+    )
+    expect(packageMail.text).toContain('Premier soin : Soins visage')
+    expect(packageMail.text.replace(/\u00a0/g, ' ')).toContain(
+      "Prix total : 1'600 CHF",
+    )
+    expect(packageMail.text).toContain('Paiement sur place : en 3 fois')
+    expect(packageMail.text).not.toContain('Prix : 120 CHF')
+  })
 })
 
 describe('échappement HTML', () => {

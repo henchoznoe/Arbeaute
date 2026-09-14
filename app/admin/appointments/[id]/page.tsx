@@ -3,6 +3,7 @@ import {
   CalendarClock,
   ChevronDown,
   Copy,
+  Gift,
   Pencil,
   UserRound,
 } from 'lucide-react'
@@ -60,6 +61,13 @@ const EditAppointment = async ({
     where: { id },
     include: {
       service: { select: { category: { select: { name: true } } } },
+      packageSession: {
+        include: {
+          customerPackage: {
+            include: { sessions: { select: { creditState: true } } },
+          },
+        },
+      },
     },
   })
   if (!appointment) notFound()
@@ -175,6 +183,30 @@ const EditAppointment = async ({
           />
         </div>
       </section>
+
+      {appointment.packageSession ? (
+        <Link
+          href={`/admin/customer-packages/${appointment.packageSession.customerPackageId}`}
+          className="mt-4 flex items-start gap-3 rounded-2xl border bg-card p-4 transition hover:border-primary"
+        >
+          <Gift className="mt-0.5 size-5 shrink-0 text-brand" />
+          <span>
+            <span className="block font-semibold">
+              {appointment.packageSession.customerPackage.packageNameSnapshot}
+            </span>
+            <span className="mt-1 block text-sm text-muted-foreground">
+              Inclus dans le forfait ·{' '}
+              {
+                appointment.packageSession.customerPackage.sessions.filter(
+                  session => session.creditState !== 'RETURNED',
+                ).length
+              }
+              /{appointment.packageSession.customerPackage.sessionCountSnapshot}{' '}
+              séances utilisées
+            </span>
+          </span>
+        </Link>
+      ) : null}
 
       <div className="mt-4 flex flex-wrap gap-2">
         <Button asChild variant="outline">

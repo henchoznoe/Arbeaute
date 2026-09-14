@@ -12,6 +12,11 @@ import { identifyCustomer, logoutCustomer } from '@/lib/actions/reservation'
 import { createPageMetadata } from '@/lib/config/seo'
 import prisma from '@/lib/core/prisma'
 import { getCustomerSession } from '@/lib/core/session-cookies'
+import {
+  formatInstallmentChoice,
+  getPackageCreditSummary,
+  getPackageExpiry,
+} from '@/lib/packages/domain'
 import { getBookingSettings } from '@/lib/reservation/booking-settings'
 import { createAppointmentCalendar } from '@/lib/reservation/calendar'
 import { CUSTOMER_CHANGE_CUTOFF_HOURS } from '@/lib/reservation/constants'
@@ -26,6 +31,7 @@ import { formatServiceLabel } from '@/lib/reservation/service-label'
 import {
   canCustomerChangeAppointment,
   formatAppointmentDate,
+  formatLongDate,
   getBookingDateLimits,
   getCustomerChangeDeadline,
   getLocalDateKey,
@@ -175,30 +181,45 @@ const CustomerAppointments = async ({
         category: { select: { name: true } },
       },
     },
+    packageSession: {
+      select: {
+        customerPackage: { select: { packageNameSnapshot: true } },
+      },
+    },
   } as const
-  const [upcomingAppointments, historyAppointments, settings, pendingRequests] =
-    await Promise.all([
-      prisma.appointment.findMany({
-        where: {
-          customerId: customer.id,
-          status: 'CONFIRMED',
-          startsAt: { gt: now },
-        },
-        orderBy: { startsAt: 'asc' },
-        include: appointmentInclude,
-      }),
-      prisma.appointment.findMany({
-        where: {
-          customerId: customer.id,
-          OR: [{ status: { not: 'CONFIRMED' } }, { startsAt: { lte: now } }],
-        },
-        orderBy: { startsAt: 'desc' },
-        take: CUSTOMER_HISTORY_LIMIT,
-        include: appointmentInclude,
-      }),
-      getBookingSettings(),
-      getPendingLateRequestsForCustomer(customer.id),
-    ])
+  const [
+    upcomingAppointments,
+    historyAppointments,
+    settings,
+    pendingRequests,
+    customerPackages,
+  ] = await Promise.all([
+    prisma.appointment.findMany({
+      where: {
+        customerId: customer.id,
+        status: 'CONFIRMED',
+        startsAt: { gt: now },
+      },
+      orderBy: { startsAt: 'asc' },
+      include: appointmentInclude,
+    }),
+    prisma.appointment.findMany({
+      where: {
+        customerId: customer.id,
+        OR: [{ status: { not: 'CONFIRMED' } }, { startsAt: { lte: now } }],
+      },
+      orderBy: { startsAt: 'desc' },
+      take: CUSTOMER_HISTORY_LIMIT,
+      include: appointmentInclude,
+    }),
+    getBookingSettings(),
+    getPendingLateRequestsForCustomer(customer.id),
+    prisma.customerPackage.findMany({
+      where: { customerId: customer.id, status: 'ACTIVE' },
+      orderBy: { createdAt: 'desc' },
+      include: { sessions: { select: { creditState: true } } },
+    }),
+  ])
   const limits = getBookingDateLimits(now, settings.bookingHorizonMonths)
   const customerChangeCutoffLabel = `${CUSTOMER_CHANGE_CUTOFF_HOURS} heures`
 
@@ -229,6 +250,59 @@ const CustomerAppointments = async ({
           <h1 className="mt-2 font-heading text-title font-bold">
             Mes rendez-vous
           </h1>
+          {customerPackages.length > 0 ? (
+            <section className="mt-8" aria-labelledby="packages-title">
+              <h2
+                id="packages-title"
+                className="font-heading text-2xl font-bold"
+              >
+                Mes forfaits
+              </h2>
+              <div className="mt-4 grid gap-4">
+                {customerPackages.map(item => {
+                  const credits = getPackageCreditSummary(
+                    item.sessionCountSnapshot,
+                    item.sessions,
+                  )
+                  const expiry = getPackageExpiry({
+                    validityStartsAt: item.validityStartsAt,
+                    validityMonths: item.validityMonthsSnapshot,
+                    expiresAtOverride: item.expiresAtOverride,
+                  })
+                  return (
+                    <article
+                      key={item.id}
+                      className="rounded-3xl border bg-card p-5 shadow-sm sm:p-6"
+                    >
+                      <h3 className="font-heading text-xl font-semibold">
+                        {item.packageNameSnapshot}
+                      </h3>
+                      <p className="mt-2 text-sm text-muted-foreground">
+                        {credits.remaining} séance
+                        {credits.remaining > 1 ? 's' : ''} restante
+                        {credits.remaining > 1 ? 's' : ''} sur{' '}
+                        {item.sessionCountSnapshot}
+                      </p>
+                      <p className="mt-1 text-sm text-muted-foreground">
+                        {formatInstallmentChoice(item.installmentCount)} ·{' '}
+                        {formatPrice(item.packagePriceCents)}
+                      </p>
+                      <p className="mt-1 text-sm text-muted-foreground">
+                        {expiry
+                          ? `Valable jusqu’au ${formatLongDate(expiry)}`
+                          : 'La validité commencera au premier rendez-vous.'}
+                      </p>
+                      {credits.decisions > 0 ? (
+                        <p className="mt-3 rounded-xl bg-warning-subtle p-3 text-sm text-warning-strong">
+                          Une séance annulée attend la décision de l’institut.
+                        </p>
+                      ) : null}
+                    </article>
+                  )
+                })}
+              </div>
+            </section>
+          ) : null}
           {/* Avant « À venir » : une demande sans réponse est la question la
               plus pressante que la personne se pose en ouvrant cette page. */}
           {pendingRequests.length > 0 ? (
@@ -279,7 +353,11 @@ const CustomerAppointments = async ({
                       appointment.service.category?.name,
                     )}
                     dateLabel={formatAppointmentDate(appointment.startsAt)}
-                    priceLabel={formatPrice(appointment.servicePriceCents)}
+                    priceLabel={
+                      appointment.packageSession
+                        ? `Inclus dans ${appointment.packageSession.customerPackage.packageNameSnapshot}`
+                        : formatPrice(appointment.servicePriceCents)
+                    }
                     canChange={canCustomerChangeAppointment(
                       appointment.startsAt,
                       now,
@@ -344,7 +422,11 @@ const CustomerAppointments = async ({
                         appointment.service.category?.name,
                       )}
                       dateLabel={formatAppointmentDate(appointment.startsAt)}
-                      priceLabel={formatPrice(appointment.servicePriceCents)}
+                      priceLabel={
+                        appointment.packageSession
+                          ? `Inclus dans ${appointment.packageSession.customerPackage.packageNameSnapshot}`
+                          : formatPrice(appointment.servicePriceCents)
+                      }
                       state={state}
                       bookingPath={getCustomerRebookingPath(
                         appointment.service,

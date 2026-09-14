@@ -57,6 +57,12 @@ export function Footer() {
                 L’institut
               </Link>
               <Link
+                href="/forfaits"
+                className="transition-colors hover:text-foreground"
+              >
+                Forfaits
+              </Link>
+              <Link
                 href="/contact"
                 className="transition-colors hover:text-foreground"
               >

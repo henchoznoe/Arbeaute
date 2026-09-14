@@ -1,6 +1,6 @@
 import { PrismaPg } from '@prisma/adapter-pg'
 import { config } from 'dotenv'
-import { catalogCategories, catalogServices } from './catalog'
+import { catalogCategories, catalogPackages, catalogServices } from './catalog'
 import { PrismaClient } from './generated/prisma/client'
 
 config({ path: '.env.local' })
@@ -60,6 +60,43 @@ const main = async () => {
           cleanupMinutes: 0,
           isVisible: true,
           isArchived: false,
+        },
+      })
+    }
+
+    for (const item of catalogPackages) {
+      const { serviceSlugs, ...data } = item
+      const services = await prisma.service.findMany({
+        where: { slug: { in: serviceSlugs } },
+        select: { id: true, slug: true },
+      })
+      if (services.length !== serviceSlugs.length)
+        throw new Error(`Prestations introuvables pour ${item.slug}`)
+      await prisma.package.upsert({
+        where: { slug: item.slug },
+        update: {
+          ...data,
+          isVisible: true,
+          isArchived: false,
+          services: {
+            deleteMany: {},
+            create: serviceSlugs.map((slug, sortOrder) => ({
+              serviceId: services.find(service => service.slug === slug)
+                ?.id as string,
+              sortOrder,
+            })),
+          },
+        },
+        create: {
+          id: `package-${item.slug}`,
+          ...data,
+          services: {
+            create: serviceSlugs.map((slug, sortOrder) => ({
+              serviceId: services.find(service => service.slug === slug)
+                ?.id as string,
+              sortOrder,
+            })),
+          },
         },
       })
     }

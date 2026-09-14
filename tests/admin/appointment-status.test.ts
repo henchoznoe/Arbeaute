@@ -29,6 +29,7 @@ const makeDatabase = (status: 'CONFIRMED' | 'CANCELLED' | 'NO_SHOW') => {
         serviceNameSnapshot: 'Soin visage',
       })),
     },
+    packageSession: { updateMany: vi.fn().mockResolvedValue({ count: 0 }) },
     auditEvent: { create: vi.fn().mockResolvedValue({ id: 'audit-1' }) },
   }
   const database = {

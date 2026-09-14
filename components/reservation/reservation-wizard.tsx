@@ -79,7 +79,7 @@ import { cn } from '@/lib/utils/cn'
 import { capitalizeFirst, formatPrice } from '@/lib/utils/format'
 import { CancellationPolicy } from './cancellation-policy'
 
-interface ReservationService extends ServiceCareDetails {
+export interface ReservationService extends ServiceCareDetails {
   id: string
   slug: string
   name: string
@@ -91,7 +91,7 @@ interface ReservationService extends ServiceCareDetails {
   categoryName: string
 }
 
-interface ReservationWizardProps {
+export interface ReservationWizardProps {
   services: ReservationService[]
   minDate: string
   maxDate: string

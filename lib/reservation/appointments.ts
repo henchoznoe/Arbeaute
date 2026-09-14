@@ -241,6 +241,11 @@ export const moveAppointmentSerializable = async (
               ),
             },
           })
+          if (appointment.startsAt > now)
+            await transaction.customerPackage.updateMany({
+              where: { revenueAppointmentId: appointment.id },
+              data: { validityStartsAt: startsAt },
+            })
           const activity = await transaction.appointmentActivity.create({
             data: {
               type: 'RESCHEDULED',
@@ -313,6 +318,10 @@ export const cancelAppointmentSerializable = async (
           service: { select: { category: { select: { name: true } } } },
         },
         data: { status: 'CANCELLED', cancelledAt: now },
+      })
+      await transaction.packageSession.updateMany({
+        where: { appointmentId: cancelled.id },
+        data: { creditState: 'DECISION_REQUIRED' },
       })
       const activity = await transaction.appointmentActivity.create({
         data: {

@@ -548,6 +548,11 @@ export const saveAdminAppointmentSerializable = async (
             where: { id: current.id },
             data,
           })
+          if (current.startsAt > new Date())
+            await transaction.customerPackage.updateMany({
+              where: { revenueAppointmentId: current.id },
+              data: { validityStartsAt: updated.startsAt },
+            })
           await writeAuditEvent(transaction, {
             actorType: 'ADMIN',
             actorId: 'admin',
@@ -736,6 +741,10 @@ export const cancelAdminAppointmentSerializable = async (
         },
         where: { id: appointment.id },
         data: { status: 'CANCELLED', cancelledAt: new Date() },
+      })
+      await transaction.packageSession.updateMany({
+        where: { appointmentId: cancelled.id },
+        data: { creditState: 'DECISION_REQUIRED' },
       })
       await writeAuditEvent(transaction, {
         actorType: 'ADMIN',

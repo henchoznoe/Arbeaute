@@ -67,7 +67,9 @@ describe('CSV exports', () => {
     )
     // Le groupe a sa propre colonne : le tableur peut trier et filtrer dessus,
     // et deux « Visage » de groupes différents cessent de se confondre.
-    expect(csv).toContain('"Soins visage";"Soin visage";"120.00";"60"')
+    expect(csv).toContain(
+      '"Soins visage";"Soin visage";"120.00";"";"120.00";"60"',
+    )
     expect(csv).toContain('"2026-08-10 14:00"')
   })
 

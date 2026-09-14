@@ -9,6 +9,7 @@ const publicRoutes = [
   '/',
   '/conditions-generales',
   '/contact',
+  '/forfaits',
   '/institut',
   '/mentions-legales',
   '/mes-rendez-vous',

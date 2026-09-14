@@ -38,6 +38,11 @@ const searchResultSelect = {
       category: { select: { name: true } },
     },
   },
+  packageSession: {
+    select: {
+      customerPackage: { select: { packageNameSnapshot: true } },
+    },
+  },
 } satisfies Prisma.AppointmentSelect
 
 type AdminSearchAppointment = Prisma.AppointmentGetPayload<{
