@@ -2,6 +2,8 @@ import {
   createAppointmentsExport,
   createCatalogExport,
   createCustomersExport,
+  createPackageSessionsExport,
+  createPackagesExport,
 } from '@/lib/admin/data-management'
 import prisma from '@/lib/core/prisma'
 import { getAdminSession } from '@/lib/core/session-cookies'
@@ -63,6 +65,13 @@ export const GET = async (
       return csvResponse(await createCustomersExport(prisma), 'clients')
     if (type === 'catalog')
       return csvResponse(await createCatalogExport(prisma), 'catalogue')
+    if (type === 'packages')
+      return csvResponse(await createPackagesExport(prisma), 'forfaits')
+    if (type === 'package-sessions')
+      return csvResponse(
+        await createPackageSessionsExport(prisma),
+        'seances-forfaits',
+      )
     return backToData(request, 'introuvable')
   } catch {
     return backToData(request, 'impossible')

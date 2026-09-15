@@ -12,11 +12,19 @@ import {
   getServiceAssetPolicy,
   isValidServiceImagePath,
 } from '@/lib/services/service-image-policy'
+import { hasSameOrigin } from '@/lib/utils/request'
 
-const uploadPayloadSchema = z.object({
-  serviceId: z.string().min(1),
-  kind: z.enum(['image', 'consent']),
-})
+const uploadPayloadSchema = z.union([
+  z.object({
+    serviceId: z.string().min(1),
+    kind: z.enum(['image', 'consent']),
+  }),
+  z.object({ packageId: z.string().min(1), kind: z.literal('package-image') }),
+])
+
+// La signature du jeton dépend de la session admin au moment du POST. Cette
+// route ne peut donc pas participer à une navigation instantanée prérendue.
+export const instant = false
 
 export const POST = async (request: Request) => {
   try {
@@ -26,18 +34,30 @@ export const POST = async (request: Request) => {
       body,
       webhookPublicKey: env.BLOB_WEBHOOK_PUBLIC_KEY,
       getSignedToken: async (pathname, clientPayload) => {
-        if (!(await getAdminSession())) throw new Error('Unauthorized')
+        if (!(await getAdminSession()) || !(await hasSameOrigin()))
+          throw new Error('Unauthorized')
         if (!clientPayload) throw new Error('Missing service')
 
         const payload = uploadPayloadSchema.parse(JSON.parse(clientPayload))
-        const service = await prisma.service.findUnique({
-          where: { id: payload.serviceId },
-          select: { id: true },
-        })
-        if (!service || !isValidServiceImagePath(pathname, service.id))
-          throw new Error('Invalid upload target')
+        if ('packageId' in payload) {
+          const item = await prisma.package.findUnique({
+            where: { id: payload.packageId },
+            select: { id: true },
+          })
+          if (!item || !pathname.startsWith(`packages/${item.id}/`))
+            throw new Error('Invalid upload target')
+        } else {
+          const service = await prisma.service.findUnique({
+            where: { id: payload.serviceId },
+            select: { id: true },
+          })
+          if (!service || !isValidServiceImagePath(pathname, service.id))
+            throw new Error('Invalid upload target')
+        }
 
-        const { contentTypes, maxBytes } = getServiceAssetPolicy(payload.kind)
+        const { contentTypes, maxBytes } = getServiceAssetPolicy(
+          payload.kind === 'package-image' ? 'image' : payload.kind,
+        )
 
         const token = await issueSignedToken({
           storeId: env.BLOB_STORE_ID,

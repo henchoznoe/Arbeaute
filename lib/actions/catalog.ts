@@ -242,6 +242,10 @@ const parseServiceForm = (formData: FormData) => {
     priceCents: Math.round(data.priceChf * 100),
     isBookable: formData.get('isBookable') === 'on',
     isVisible: formData.get('isVisible') === 'on',
+    imageDisplayMode:
+      formData.get('showFullImage') === 'on'
+        ? ('CONTAIN' as const)
+        : ('COVER' as const),
   }
 }
 

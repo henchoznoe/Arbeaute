@@ -1,4 +1,6 @@
 import { appointmentAuditValues, writeAuditEvent } from '@/lib/admin/audit'
+import { getPackageExpiry } from '@/lib/packages/domain'
+import { syncCustomerPackageMilestones } from '@/lib/packages/milestones'
 import {
   MAX_SERIALIZABLE_ATTEMPTS,
   RESERVATION_TIME_ZONE,
@@ -28,6 +30,7 @@ interface Interval {
 
 interface AdminAppointmentInput {
   appointmentId?: string
+  customerPackageId?: string
   serviceId: string
   startsAt: Date
   firstName: string | null
@@ -42,6 +45,7 @@ interface AdminAppointmentInput {
 }
 
 export interface AdminAppointmentSeriesInput {
+  customerPackageId?: string
   serviceId: string
   date: string
   minute: number
@@ -77,6 +81,7 @@ export class AdminAgendaError extends Error {
     public readonly code:
       | 'APPOINTMENT_NOT_FOUND'
       | 'SERVICE_NOT_FOUND'
+      | 'PACKAGE_UNAVAILABLE'
       | 'OVERLAP',
     /** Heure du rendez-vous déjà en place, pour la nommer à l'écran. */
     public readonly conflictTime?: string,
@@ -313,7 +318,7 @@ const validateAdminAppointmentSeries = async (
       category: { select: { name: true } },
     },
   })
-  if (!service || service.isArchived)
+  if (!service || (service.isArchived && !input.customerPackageId))
     throw new AdminAgendaError('SERVICE_NOT_FOUND')
 
   const startsAt = buildAdminAppointmentSeriesStarts(input)
@@ -424,6 +429,48 @@ const isOverlapConstraint = (error: unknown): boolean =>
   (error.message.includes('appointment_no_confirmed_overlap') ||
     error.message.includes('Exclusion constraint'))
 
+const requireCustomerPackageCapacity = async (
+  transaction: Prisma.TransactionClient,
+  input: {
+    customerPackageId: string
+    customerId: string
+    serviceId: string
+    startsAt: Date[]
+  },
+) => {
+  const item = await transaction.customerPackage.findUnique({
+    where: { id: input.customerPackageId },
+    include: { allowedServices: true, sessions: true },
+  })
+  const used =
+    item?.sessions.filter(session => session.creditState !== 'RETURNED')
+      .length ?? 0
+  const firstNew = input.startsAt[0]
+  const validityStartsAt =
+    item?.validityStartsAt && firstNew
+      ? new Date(Math.min(item.validityStartsAt.getTime(), firstNew.getTime()))
+      : (item?.validityStartsAt ?? firstNew ?? null)
+  const expiry = item
+    ? getPackageExpiry({
+        validityStartsAt,
+        validityMonths: item.validityMonthsSnapshot,
+        expiresAtOverride: item.expiresAtOverride,
+      })
+    : null
+  if (
+    item?.status !== 'ACTIVE' ||
+    item.customerId !== input.customerId ||
+    !item.allowedServices.some(
+      service => service.serviceId === input.serviceId,
+    ) ||
+    used + input.startsAt.length > item.sessionCountSnapshot ||
+    input.startsAt.some(
+      startsAt => startsAt <= new Date() || (expiry && startsAt > expiry),
+    )
+  )
+    throw new AdminAgendaError('PACKAGE_UNAVAILABLE')
+}
+
 export const saveAdminAppointmentSerializable = async (
   prisma: PrismaClient,
   input: AdminAppointmentInput,
@@ -447,7 +494,9 @@ export const saveAdminAppointmentSerializable = async (
           })
           if (
             !service ||
-            (service.isArchived && service.id !== current?.serviceId)
+            (service.isArchived &&
+              service.id !== current?.serviceId &&
+              !input.customerPackageId)
           )
             throw new AdminAgendaError('SERVICE_NOT_FOUND')
 
@@ -488,6 +537,16 @@ export const saveAdminAppointmentSerializable = async (
             'ADMIN',
           )
 
+          if (input.customerPackageId) {
+            if (current) throw new AdminAgendaError('PACKAGE_UNAVAILABLE')
+            await requireCustomerPackageCapacity(transaction, {
+              customerPackageId: input.customerPackageId,
+              customerId: customer.id,
+              serviceId: service.id,
+              startsAt: [input.startsAt],
+            })
+          }
+
           const data = {
             serviceId: service.id,
             customerId: customer.id,
@@ -519,6 +578,18 @@ export const saveAdminAppointmentSerializable = async (
             const created = await transaction.appointment.create({
               data: { ...data, source: 'ADMIN', status: 'CONFIRMED' },
             })
+            if (input.customerPackageId) {
+              await transaction.packageSession.create({
+                data: {
+                  customerPackageId: input.customerPackageId,
+                  appointmentId: created.id,
+                },
+              })
+              await syncCustomerPackageMilestones(
+                transaction,
+                input.customerPackageId,
+              )
+            }
             await writeAuditEvent(transaction, {
               actorType: 'ADMIN',
               actorId: 'admin',
@@ -548,6 +619,15 @@ export const saveAdminAppointmentSerializable = async (
             where: { id: current.id },
             data,
           })
+          const packageSession = await transaction.packageSession.findUnique({
+            where: { appointmentId: current.id },
+            select: { customerPackageId: true },
+          })
+          if (packageSession)
+            await syncCustomerPackageMilestones(
+              transaction,
+              packageSession.customerPackageId,
+            )
           await writeAuditEvent(transaction, {
             actorType: 'ADMIN',
             actorId: 'admin',
@@ -635,6 +715,13 @@ export const createAdminAppointmentSeriesSerializable = async (
             },
             'ADMIN',
           )
+          if (input.customerPackageId)
+            await requireCustomerPackageCapacity(transaction, {
+              customerPackageId: input.customerPackageId,
+              customerId: customer.id,
+              serviceId: validation.service.id,
+              startsAt: validation.startsAt,
+            })
           const created = []
           for (const startsAt of validation.startsAt) {
             const endsAt = new Date(
@@ -671,6 +758,13 @@ export const createAdminAppointmentSeriesSerializable = async (
                 status: 'CONFIRMED',
               },
             })
+            if (input.customerPackageId)
+              await transaction.packageSession.create({
+                data: {
+                  customerPackageId: input.customerPackageId,
+                  appointmentId: appointment.id,
+                },
+              })
             await writeAuditEvent(transaction, {
               actorType: 'ADMIN',
               actorId: 'admin',
@@ -690,6 +784,11 @@ export const createAdminAppointmentSeriesSerializable = async (
               categoryName: validation.service.category?.name ?? null,
             })
           }
+          if (input.customerPackageId)
+            await syncCustomerPackageMilestones(
+              transaction,
+              input.customerPackageId,
+            )
           return created
         },
         { isolationLevel: 'Serializable' },
@@ -737,6 +836,19 @@ export const cancelAdminAppointmentSerializable = async (
         where: { id: appointment.id },
         data: { status: 'CANCELLED', cancelledAt: new Date() },
       })
+      await transaction.packageSession.updateMany({
+        where: { appointmentId: cancelled.id },
+        data: { creditState: 'DECISION_REQUIRED' },
+      })
+      const packageSession = await transaction.packageSession.findUnique({
+        where: { appointmentId: cancelled.id },
+        select: { customerPackageId: true },
+      })
+      if (packageSession)
+        await syncCustomerPackageMilestones(
+          transaction,
+          packageSession.customerPackageId,
+        )
       await writeAuditEvent(transaction, {
         actorType: 'ADMIN',
         actorId: 'admin',

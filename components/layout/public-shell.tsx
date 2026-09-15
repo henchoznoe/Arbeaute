@@ -21,6 +21,7 @@ import { contact } from '@/lib/constants/contact'
 
 const PUBLIC_LINKS = [
   { href: '/prestations', label: 'Prestations' },
+  { href: '/forfaits', label: 'Forfaits' },
   { href: '/institut', label: 'L’institut' },
   { href: '/contact', label: 'Contact' },
   { href: '/mes-rendez-vous', label: 'Mes rendez-vous' },

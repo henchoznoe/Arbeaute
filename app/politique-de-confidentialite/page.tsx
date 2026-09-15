@@ -48,6 +48,12 @@ const PrivacyPage = () => (
         éventuel du refus.
       </p>
       <p>
+        Lorsqu’un forfait est choisi, le site conserve aussi son nom, son prix,
+        le nombre de séances, les soins autorisés, sa date de validité et le
+        choix d’un paiement sur place en une, deux ou trois fois. Il ne conserve
+        ni carte, ni compte bancaire, ni échéancier de paiement.
+      </p>
+      <p>
         <strong>Chaque rendez-vous conserve une copie</strong> du nom, de
         l’adresse e-mail et du numéro tels qu’ils étaient au moment de la
         réservation, ainsi que le nom, le prix et la durée de la prestation

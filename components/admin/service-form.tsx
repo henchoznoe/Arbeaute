@@ -33,6 +33,7 @@ interface ServiceValues {
   color?: string
   isBookable?: boolean
   isVisible?: boolean
+  imageDisplayMode?: 'COVER' | 'CONTAIN'
 }
 
 interface ServiceFormProps {
@@ -279,7 +280,7 @@ export const ServiceForm = ({
       />
     </div>
 
-    <div className="grid gap-4 sm:grid-cols-2">
+    <div className="grid gap-4 sm:grid-cols-3">
       <label className="flex min-h-11 items-start gap-3 rounded-xl border bg-background p-3 text-sm font-medium focus-within:ring-3 focus-within:ring-ring/40">
         <input
           name="isVisible"
@@ -308,6 +309,20 @@ export const ServiceForm = ({
             Elle peut être choisie dans l’assistant de réservation en ligne. À
             décocher pour un tarif variable (ex. « au temps passé ») que vous
             réservez vous-même.
+          </span>
+        </span>
+      </label>
+      <label className="flex min-h-11 items-start gap-3 rounded-xl border bg-background p-3 text-sm font-medium focus-within:ring-3 focus-within:ring-ring/40">
+        <input
+          name="showFullImage"
+          type="checkbox"
+          className="mt-0.5 size-5 accent-primary"
+          defaultChecked={service?.imageDisplayMode === 'CONTAIN'}
+        />
+        <span>
+          Afficher l’image entière
+          <span className="mt-1 block text-xs font-normal text-muted-foreground">
+            Évite de rogner une affiche contenant du texte.
           </span>
         </span>
       </label>

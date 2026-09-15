@@ -125,7 +125,7 @@ export const ServiceCatalog = ({
                         width={96}
                         height={96}
                         sizes="(min-width: 640px) 96px, 80px"
-                        className="size-20 shrink-0 rounded-xl object-cover transition-transform duration-500 group-hover:scale-105 sm:size-24"
+                        className={`size-20 shrink-0 rounded-xl transition-transform duration-500 group-hover:scale-105 sm:size-24 ${service.imageDisplayMode === 'CONTAIN' ? 'bg-muted object-contain' : 'object-cover'}`}
                       />
                     ) : null}
                     <div className="min-w-0 flex-1">

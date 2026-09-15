@@ -1,5 +1,9 @@
 import { formatInTimeZone } from 'date-fns-tz'
 import { writeAuditEvent } from '@/lib/admin/audit'
+import {
+  getAppointmentRevenueCents,
+  getPackageExpiry,
+} from '@/lib/packages/domain'
 import { RESERVATION_TIME_ZONE } from '@/lib/reservation/constants'
 import { getLocalDayBounds } from '@/lib/reservation/time'
 import type { PrismaClient } from '@/prisma/generated/prisma/client'
@@ -61,6 +65,15 @@ export const exportColumnDocumentation = {
     'Visibilité, réservation et archivage',
     'Ordres d’affichage',
   ],
+  packages: [
+    'Forfait, client et choix de paiement',
+    'Nombre de séances et validité',
+    'État et date de création',
+  ],
+  packageSessions: [
+    'Forfait et rendez-vous lié',
+    'Prestation, date et décision du crédit',
+  ],
 } as const
 
 export interface AppointmentExportFilters {
@@ -82,7 +95,11 @@ export const createAppointmentsExport = async (
     },
     orderBy: [{ startsAt: 'asc' }, { id: 'asc' }],
     take: EXPORT_ROW_LIMIT,
-    include: { service: { select: { category: { select: { name: true } } } } },
+    include: {
+      service: { select: { category: { select: { name: true } } } },
+      recognisedPackage: { select: { packagePriceCents: true } },
+      packageSession: { select: { customerPackageId: true } },
+    },
   })
   return createCsv(
     [
@@ -100,6 +117,14 @@ export const createAppointmentsExport = async (
         value: row => (row.servicePriceCents / 100).toFixed(2),
       },
       {
+        header: 'forfait_id',
+        value: row => row.packageSession?.customerPackageId,
+      },
+      {
+        header: 'montant_compte_chf',
+        value: row => (getAppointmentRevenueCents(row) / 100).toFixed(2),
+      },
+      {
         header: 'duree_minutes',
         value: row => row.serviceDurationMinutes,
       },
@@ -111,6 +136,99 @@ export const createAppointmentsExport = async (
       { header: 'cree_le', value: row => formatLocalDateTime(row.createdAt) },
     ],
     appointments,
+  )
+}
+
+export const createPackagesExport = async (
+  database: PrismaClient,
+): Promise<string> => {
+  const rows = await database.customerPackage.findMany({
+    orderBy: { createdAt: 'asc' },
+    take: EXPORT_ROW_LIMIT,
+    include: { customer: true, sessions: true },
+  })
+  return createCsv(
+    [
+      { header: 'id', value: row => row.id },
+      { header: 'client_id', value: row => row.customerId },
+      {
+        header: 'client',
+        value: row =>
+          `${row.customer.firstName ?? ''} ${row.customer.lastName}`.trim(),
+      },
+      { header: 'forfait', value: row => row.packageNameSnapshot },
+      {
+        header: 'prix_chf',
+        value: row => (row.packagePriceCents / 100).toFixed(2),
+      },
+      { header: 'paiements', value: row => row.installmentCount },
+      { header: 'seances', value: row => row.sessionCountSnapshot },
+      {
+        header: 'seances_comptees',
+        value: row =>
+          row.sessions.filter(session => session.creditState !== 'RETURNED')
+            .length,
+      },
+      {
+        header: 'validite_debut',
+        value: row =>
+          row.validityStartsAt
+            ? formatLocalDateTime(row.validityStartsAt)
+            : null,
+      },
+      {
+        header: 'validite_exceptionnelle',
+        value: row =>
+          row.expiresAtOverride
+            ? formatLocalDateTime(row.expiresAtOverride)
+            : null,
+      },
+      {
+        header: 'validite_fin',
+        value: row => {
+          const expiry = getPackageExpiry({
+            validityStartsAt: row.validityStartsAt,
+            validityMonths: row.validityMonthsSnapshot,
+            expiresAtOverride: row.expiresAtOverride,
+          })
+          return expiry ? formatLocalDateTime(expiry) : null
+        },
+      },
+      { header: 'statut', value: row => row.status },
+      { header: 'cree_le', value: row => formatLocalDateTime(row.createdAt) },
+    ],
+    rows,
+  )
+}
+
+export const createPackageSessionsExport = async (
+  database: PrismaClient,
+): Promise<string> => {
+  const rows = await database.packageSession.findMany({
+    orderBy: { appointment: { startsAt: 'asc' } },
+    take: EXPORT_ROW_LIMIT,
+    include: { customerPackage: true, appointment: true },
+  })
+  return createCsv(
+    [
+      { header: 'forfait_id', value: row => row.customerPackageId },
+      {
+        header: 'forfait',
+        value: row => row.customerPackage.packageNameSnapshot,
+      },
+      { header: 'rendez_vous_id', value: row => row.appointmentId },
+      {
+        header: 'prestation',
+        value: row => row.appointment.serviceNameSnapshot,
+      },
+      {
+        header: 'debut',
+        value: row => formatLocalDateTime(row.appointment.startsAt),
+      },
+      { header: 'statut_rendez_vous', value: row => row.appointment.status },
+      { header: 'decision_credit', value: row => row.creditState },
+    ],
+    rows,
   )
 }
 

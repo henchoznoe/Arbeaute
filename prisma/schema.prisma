@@ -55,6 +55,24 @@ enum AuditEntityType {
   BOOKING_SETTINGS
   AGENDA_SETTINGS
   APPOINTMENT_REQUEST
+  PACKAGE
+  CUSTOMER_PACKAGE
+}
+
+enum PackageStatus {
+  ACTIVE
+  CANCELLED
+}
+
+enum PackageSessionCreditState {
+  COUNTED
+  DECISION_REQUIRED
+  RETURNED
+}
+
+enum ServiceImageDisplayMode {
+  COVER
+  CONTAIN
 }
 
 enum EmailKind {
@@ -135,6 +153,7 @@ model Service {
   priceCents         Int
   color              String               @default("#d99086")
   imageUrl           String?
+  imageDisplayMode   ServiceImageDisplayMode @default(COVER)
   consentFormUrl     String?
   sortOrder          Int                  @default(0)
   isBookable         Boolean              @default(true)
@@ -145,10 +164,47 @@ model Service {
   category           ServiceCategory?     @relation(fields: [categoryId], references: [id], onDelete: SetNull)
   appointments       Appointment[]
   requests           AppointmentRequest[]
+  packages           PackageService[]
+  customerPackages   CustomerPackageService[]
 
   @@index([categoryId, isArchived, sortOrder])
   @@index([isBookable, isVisible, isArchived])
   @@map("service")
+}
+
+/// Un forfait proposé au public. Les ventes en conservent une copie : modifier
+/// ce modèle ne change jamais une promesse déjà faite.
+model Package {
+  id               String                   @id @default(cuid())
+  slug             String                   @unique
+  name             String
+  description      String?
+  priceCents       Int
+  sessionCount     Int
+  validityMonths   Int                      @default(12)
+  imageUrl         String?
+  sortOrder        Int                      @default(0)
+  isVisible        Boolean                  @default(true)
+  isArchived       Boolean                  @default(false)
+  createdAt        DateTime                 @default(now())
+  updatedAt        DateTime                 @updatedAt
+  services         PackageService[]
+  customerPackages CustomerPackage[]
+
+  @@index([isVisible, isArchived, sortOrder])
+  @@map("package")
+}
+
+model PackageService {
+  packageId String
+  serviceId String
+  sortOrder Int     @default(0)
+  package   Package @relation(fields: [packageId], references: [id], onDelete: Cascade)
+  service   Service @relation(fields: [serviceId], references: [id], onDelete: Restrict)
+
+  @@id([packageId, serviceId])
+  @@index([serviceId])
+  @@map("package_service")
 }
 
 model WeeklyAvailability {
@@ -236,11 +292,51 @@ model Customer {
   preferences     String?
   appointments    Appointment[]
   requests        AppointmentRequest[]
+  packages        CustomerPackage[]
 
   @@index([phoneNormalized])
   @@index([searchName])
   @@index([anonymizedAt])
   @@map("customer")
+}
+
+model CustomerPackage {
+  id                     String                   @id @default(cuid())
+  packageId              String?
+  customerId             String
+  packageNameSnapshot    String
+  packagePriceCents      Int
+  sessionCountSnapshot   Int
+  validityMonthsSnapshot Int
+  installmentCount       Int
+  validityStartsAt       DateTime?
+  expiresAtOverride      DateTime?
+  status                 PackageStatus            @default(ACTIVE)
+  revenueAppointmentId   String?                  @unique
+  cancelledAt            DateTime?
+  createdAt              DateTime                 @default(now())
+  updatedAt              DateTime                 @updatedAt
+  package                Package?                 @relation(fields: [packageId], references: [id], onDelete: SetNull)
+  customer               Customer                 @relation(fields: [customerId], references: [id], onDelete: Restrict)
+  revenueAppointment     Appointment?             @relation("PackageRevenueAppointment", fields: [revenueAppointmentId], references: [id], onDelete: SetNull)
+  allowedServices        CustomerPackageService[]
+  sessions               PackageSession[]
+
+  @@index([customerId, status, createdAt])
+  @@index([status, validityStartsAt])
+  @@map("customer_package")
+}
+
+/// Copie des soins autorisés le jour de la vente.
+model CustomerPackageService {
+  customerPackageId String
+  serviceId         String
+  customerPackage   CustomerPackage @relation(fields: [customerPackageId], references: [id], onDelete: Cascade)
+  service           Service         @relation(fields: [serviceId], references: [id], onDelete: Restrict)
+
+  @@id([customerPackageId, serviceId])
+  @@index([serviceId])
+  @@map("customer_package_service")
 }
 
 model Appointment {
@@ -281,6 +377,8 @@ model Appointment {
   activities             AppointmentActivity[]
   emailDeliveries        EmailDelivery[]
   request                AppointmentRequest?
+  packageSession         PackageSession?
+  recognisedPackage     CustomerPackage?       @relation("PackageRevenueAppointment")
 
   @@index([startsAt, endsAt, status])
   @@index([occupiedStartsAt, occupiedEndsAt, status])
@@ -292,6 +390,20 @@ model Appointment {
   @@index([serviceId, startsAt])
   @@index([status, source, startsAt])
   @@map("appointment")
+}
+
+model PackageSession {
+  id                String                    @id @default(cuid())
+  customerPackageId String
+  appointmentId     String                    @unique
+  creditState       PackageSessionCreditState @default(COUNTED)
+  createdAt         DateTime                  @default(now())
+  updatedAt         DateTime                  @updatedAt
+  customerPackage   CustomerPackage           @relation(fields: [customerPackageId], references: [id], onDelete: Cascade)
+  appointment       Appointment               @relation(fields: [appointmentId], references: [id], onDelete: Cascade)
+
+  @@index([customerPackageId, creditState])
+  @@map("package_session")
 }
 
 /// Demande d'une heure trop proche pour la réservation en ligne.

@@ -1,10 +1,10 @@
 /**
- * Photos d'attente, en attendant celles d'Arzu.
+ * Photos d'attente restantes, en attendant celles d'Arzu.
  *
  * **Ce fichier est fait pour disparaître.** Le jour où les photos de l'institut
  * arrivent, elles sont téléversées comme le reste des visuels — sur Vercel
  * Blob, depuis l'administration — et il ne reste plus qu'à supprimer ce module
- * et ses trois usages.
+ * et ses deux usages.
  *
  * Les images sont distantes et marquées `unoptimized` : le plan Vercel Hobby
  * facture 5 000 transformations d'image par mois, et une photo d'attente n'a
@@ -23,12 +23,6 @@ export interface Placeholder {
 
 const unsplash = (id: string, width = 1600): string =>
   `https://images.unsplash.com/photo-${id}?auto=format&fit=crop&w=${width}&q=70`
-
-/** Le grand visuel de la page d'accueil. */
-export const heroPlaceholder: Placeholder = {
-  alt: 'Cabine de soin, lumière douce',
-  src: unsplash('1600334089648-b0d9d3028eb2'),
-}
 
 /** L'institut, sur la page « L'institut ». */
 export const institutePlaceholders: Placeholder[] = [

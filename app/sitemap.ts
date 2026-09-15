@@ -24,6 +24,7 @@ const sitemap = async (): Promise<MetadataRoute.Sitemap> => {
     { url: siteConfig.url },
     { url: `${siteConfig.url}/reservation` },
     { url: `${siteConfig.url}/prestations` },
+    { url: `${siteConfig.url}/forfaits` },
     { url: `${siteConfig.url}/institut` },
     { url: `${siteConfig.url}/contact` },
     // Une page par soin : c'est là que vit le contenu qui fait venir du monde

@@ -85,6 +85,10 @@ const makeDatabase = () => {
       update: vi.fn(),
     },
     appointmentActivity: { create: vi.fn().mockResolvedValue({ id: 'event' }) },
+    packageSession: {
+      findUnique: vi.fn().mockResolvedValue(null),
+      updateMany: vi.fn().mockResolvedValue({ count: 0 }),
+    },
     auditEvent: { create: vi.fn().mockResolvedValue({ id: 'audit-event' }) },
   }
   const database = {

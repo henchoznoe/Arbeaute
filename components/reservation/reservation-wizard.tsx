@@ -79,7 +79,7 @@ import { cn } from '@/lib/utils/cn'
 import { capitalizeFirst, formatPrice } from '@/lib/utils/format'
 import { CancellationPolicy } from './cancellation-policy'
 
-interface ReservationService extends ServiceCareDetails {
+export interface ReservationService extends ServiceCareDetails {
   id: string
   slug: string
   name: string
@@ -91,7 +91,7 @@ interface ReservationService extends ServiceCareDetails {
   categoryName: string
 }
 
-interface ReservationWizardProps {
+export interface ReservationWizardProps {
   services: ReservationService[]
   minDate: string
   maxDate: string
@@ -633,7 +633,9 @@ export const ReservationWizard = ({
         scrollToWizardTop()
         return
       }
-      if (response.reason === 'SLOT_CONFLICT') {
+      if (response.reason === 'PACKAGE_AVAILABLE' && response.redirectPath) {
+        window.location.assign(response.redirectPath)
+      } else if (response.reason === 'SLOT_CONFLICT') {
         setStartsAt('')
         goToStep(STEPS.slot)
       } else if (response.reason === 'INVALID_CUSTOMER') {

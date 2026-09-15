@@ -1,14 +1,29 @@
 import { describe, expect, it } from 'vitest'
-import { catalogCategories, catalogServices } from '@/prisma/catalog'
+import {
+  catalogCategories,
+  catalogPackages,
+  catalogServices,
+} from '@/prisma/catalog'
 
 describe('canonical catalog from Arzu photo', () => {
-  it('contains the 8 groups and 34 services from the photo', () => {
-    expect(catalogCategories).toHaveLength(8)
-    expect(catalogServices).toHaveLength(34)
+  it('contains the catalogue and the new body treatment', () => {
+    expect(catalogCategories).toHaveLength(9)
+    expect(catalogServices).toHaveLength(35)
     expect(new Set(catalogCategories.map(category => category.slug)).size).toBe(
-      8,
+      9,
     )
-    expect(new Set(catalogServices.map(service => service.slug)).size).toBe(34)
+    expect(new Set(catalogServices.map(service => service.slug)).size).toBe(35)
+  })
+
+  it('defines the two initial packages with eligible services', () => {
+    expect(catalogPackages).toHaveLength(2)
+    expect(catalogPackages[0]).toMatchObject({
+      sessionCount: 5,
+      priceCents: 170_000,
+    })
+    expect(catalogPackages[1]?.serviceSlugs).not.toContain(
+      'epilation-laser-corps-entier',
+    )
   })
 
   it('keeps the photo prices when Agenda.ch differs', () => {

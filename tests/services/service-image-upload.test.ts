@@ -2,7 +2,9 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 const mocks = vi.hoisted(() => ({
   getAdminSession: vi.fn(),
-  findUnique: vi.fn(),
+  findService: vi.fn(),
+  findPackage: vi.fn(),
+  hasSameOrigin: vi.fn(),
   issueSignedToken: vi.fn(),
 }))
 
@@ -11,7 +13,13 @@ vi.mock('@/lib/core/session-cookies', () => ({
 }))
 
 vi.mock('@/lib/core/prisma', () => ({
-  default: { service: { findUnique: mocks.findUnique } },
+  default: {
+    service: { findUnique: mocks.findService },
+    package: { findUnique: mocks.findPackage },
+  },
+}))
+vi.mock('@/lib/utils/request', () => ({
+  hasSameOrigin: mocks.hasSameOrigin,
 }))
 
 vi.mock('@vercel/blob', () => ({
@@ -47,7 +55,9 @@ const makeRequest = (
 describe('service image upload authorization', () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    mocks.findUnique.mockResolvedValue({ id: 'service-1' })
+    mocks.findService.mockResolvedValue({ id: 'service-1' })
+    mocks.findPackage.mockResolvedValue({ id: 'package-1' })
+    mocks.hasSameOrigin.mockResolvedValue(true)
     mocks.issueSignedToken.mockResolvedValue('signed-token')
   })
 
@@ -71,6 +81,42 @@ describe('service image upload authorization', () => {
         pathname: 'services/service-1/photo.jpg',
         maximumSizeInBytes: 5 * 1024 * 1024,
         allowedContentTypes: ['image/jpeg', 'image/png', 'image/webp'],
+      }),
+    )
+  })
+
+  it('refuses a token when the request comes from another site', async () => {
+    mocks.getAdminSession.mockResolvedValue({ kind: 'admin' })
+    mocks.hasSameOrigin.mockResolvedValue(false)
+
+    const response = await POST(makeRequest())
+
+    expect(response.status).toBe(400)
+    expect(mocks.issueSignedToken).not.toHaveBeenCalled()
+  })
+
+  it('issues a scoped token for a package poster', async () => {
+    mocks.getAdminSession.mockResolvedValue({ kind: 'admin' })
+
+    const response = await POST(
+      new Request('http://localhost/api/service-images/upload', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({
+          pathname: 'packages/package-1/affiche.jpeg',
+          clientPayload: JSON.stringify({
+            packageId: 'package-1',
+            kind: 'package-image',
+          }),
+        }),
+      }),
+    )
+
+    expect(response.status).toBe(200)
+    expect(mocks.issueSignedToken).toHaveBeenCalledWith(
+      expect.objectContaining({
+        pathname: 'packages/package-1/affiche.jpeg',
+        maximumSizeInBytes: 5 * 1024 * 1024,
       }),
     )
   })

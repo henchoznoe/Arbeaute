@@ -1,4 +1,5 @@
 import { appointmentAuditValues, writeAuditEvent } from '@/lib/admin/audit'
+import { syncCustomerPackageMilestones } from '@/lib/packages/milestones'
 import { getAvailableSlots } from '@/lib/reservation/availability'
 import { getBookingSettings } from '@/lib/reservation/booking-settings'
 import { MAX_SERIALIZABLE_ATTEMPTS } from '@/lib/reservation/constants'
@@ -241,6 +242,15 @@ export const moveAppointmentSerializable = async (
               ),
             },
           })
+          const packageSession = await transaction.packageSession.findUnique({
+            where: { appointmentId: appointment.id },
+            select: { customerPackageId: true },
+          })
+          if (packageSession)
+            await syncCustomerPackageMilestones(
+              transaction,
+              packageSession.customerPackageId,
+            )
           const activity = await transaction.appointmentActivity.create({
             data: {
               type: 'RESCHEDULED',
@@ -314,6 +324,19 @@ export const cancelAppointmentSerializable = async (
         },
         data: { status: 'CANCELLED', cancelledAt: now },
       })
+      await transaction.packageSession.updateMany({
+        where: { appointmentId: cancelled.id },
+        data: { creditState: 'DECISION_REQUIRED' },
+      })
+      const packageSession = await transaction.packageSession.findUnique({
+        where: { appointmentId: cancelled.id },
+        select: { customerPackageId: true },
+      })
+      if (packageSession)
+        await syncCustomerPackageMilestones(
+          transaction,
+          packageSession.customerPackageId,
+        )
       const activity = await transaction.appointmentActivity.create({
         data: {
           type: 'CANCELLED',

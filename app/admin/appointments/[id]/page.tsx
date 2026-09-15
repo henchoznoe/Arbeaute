@@ -3,6 +3,7 @@ import {
   CalendarClock,
   ChevronDown,
   Copy,
+  Gift,
   Pencil,
   UserRound,
 } from 'lucide-react'
@@ -19,6 +20,7 @@ import { Button } from '@/components/ui/button'
 import { StatusBadge } from '@/components/ui/status-badge'
 import prisma from '@/lib/core/prisma'
 import { getAdminSession } from '@/lib/core/session-cookies'
+import { formatInstallmentChoice } from '@/lib/packages/domain'
 import { RESERVATION_TIME_ZONE } from '@/lib/reservation/constants'
 import { formatServiceLabel } from '@/lib/reservation/service-label'
 import { formatAppointmentDate } from '@/lib/reservation/time'
@@ -60,6 +62,13 @@ const EditAppointment = async ({
     where: { id },
     include: {
       service: { select: { category: { select: { name: true } } } },
+      packageSession: {
+        include: {
+          customerPackage: {
+            include: { sessions: { select: { creditState: true } } },
+          },
+        },
+      },
     },
   })
   if (!appointment) notFound()
@@ -133,7 +142,13 @@ const EditAppointment = async ({
           <div>
             <h2 className="font-semibold">{serviceLabel}</h2>
             <p className="mt-1 text-sm text-muted-foreground">
-              {time} · {formatPrice(appointment.servicePriceCents)}
+              {time} ·{' '}
+              {appointment.packageSession
+                ? appointment.packageSession.customerPackage
+                    .revenueAppointmentId === appointment.id
+                  ? `Prix total du forfait : ${formatPrice(appointment.packageSession.customerPackage.packagePriceCents)} · ${formatInstallmentChoice(appointment.packageSession.customerPackage.installmentCount).toLowerCase()} sur place`
+                  : 'Inclus dans le forfait'
+                : formatPrice(appointment.servicePriceCents)}
             </p>
           </div>
           {appointment.customerId ? (
@@ -175,6 +190,30 @@ const EditAppointment = async ({
           />
         </div>
       </section>
+
+      {appointment.packageSession ? (
+        <Link
+          href={`/admin/customer-packages/${appointment.packageSession.customerPackageId}`}
+          className="mt-4 flex items-start gap-3 rounded-2xl border bg-card p-4 transition hover:border-primary"
+        >
+          <Gift className="mt-0.5 size-5 shrink-0 text-brand" />
+          <span>
+            <span className="block font-semibold">
+              {appointment.packageSession.customerPackage.packageNameSnapshot}
+            </span>
+            <span className="mt-1 block text-sm text-muted-foreground">
+              Inclus dans le forfait ·{' '}
+              {
+                appointment.packageSession.customerPackage.sessions.filter(
+                  session => session.creditState !== 'RETURNED',
+                ).length
+              }
+              /{appointment.packageSession.customerPackage.sessionCountSnapshot}{' '}
+              séances utilisées
+            </span>
+          </span>
+        </Link>
+      ) : null}
 
       <div className="mt-4 flex flex-wrap gap-2">
         <Button asChild variant="outline">

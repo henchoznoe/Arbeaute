@@ -206,7 +206,11 @@ const ServiceDetailPage = async ({ params }: ServicePageProps) => {
                     height={1100}
                     sizes="(min-width: 1024px) 42vw, 100vw"
                     priority
-                    className="drift-on-scroll aspect-4/5 w-full object-cover"
+                    className={
+                      service.imageDisplayMode === 'CONTAIN'
+                        ? 'aspect-video w-full object-contain'
+                        : 'drift-on-scroll aspect-4/5 w-full object-cover'
+                    }
                   />
                 </figure>
               ) : null}

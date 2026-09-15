@@ -271,6 +271,136 @@ describe('manual admin appointments', () => {
       data: expect.objectContaining({ allowsOverlap: false }),
     })
   })
+
+  it('crée et rattache une séance de forfait dans la même transaction', async () => {
+    const transaction = {
+      ...buildTransaction(),
+      customerPackage: {
+        findUnique: vi.fn().mockResolvedValue({
+          id: 'package-client',
+          status: 'ACTIVE',
+          customerId: 'customer-manual',
+          sessionCountSnapshot: 5,
+          validityStartsAt: null,
+          validityMonthsSnapshot: 12,
+          expiresAtOverride: null,
+          allowedServices: [{ serviceId: 'service' }],
+          sessions: [],
+        }),
+        findUniqueOrThrow: vi.fn().mockResolvedValue({
+          validityMonthsSnapshot: 12,
+          expiresAtOverride: null,
+        }),
+        update: vi.fn().mockResolvedValue({}),
+      },
+      packageSession: {
+        create: vi.fn().mockResolvedValue({ id: 'session-1' }),
+        findMany: vi.fn().mockResolvedValue([
+          {
+            appointmentId: created.id,
+            creditState: 'COUNTED',
+            appointment: { startsAt },
+          },
+        ]),
+      },
+    }
+
+    await saveAdminAppointmentSerializable(asDatabase(transaction as never), {
+      ...input,
+      customerPackageId: 'package-client',
+    })
+
+    expect(transaction.packageSession.create).toHaveBeenCalledWith({
+      data: {
+        customerPackageId: 'package-client',
+        appointmentId: created.id,
+      },
+    })
+    expect(transaction.customerPackage.update).toHaveBeenCalledWith({
+      where: { id: 'package-client' },
+      data: {
+        revenueAppointmentId: created.id,
+        validityStartsAt: startsAt,
+      },
+    })
+  })
+
+  it('permet d’honorer une prestation retirée après la vente du forfait', async () => {
+    const transaction = {
+      ...buildTransaction(),
+      customerPackage: {
+        findUnique: vi.fn().mockResolvedValue({
+          id: 'package-client',
+          status: 'ACTIVE',
+          customerId: 'customer-manual',
+          sessionCountSnapshot: 5,
+          validityStartsAt: null,
+          validityMonthsSnapshot: 12,
+          expiresAtOverride: null,
+          allowedServices: [{ serviceId: 'service' }],
+          sessions: [],
+        }),
+        findUniqueOrThrow: vi.fn().mockResolvedValue({
+          validityMonthsSnapshot: 12,
+          expiresAtOverride: null,
+        }),
+        update: vi.fn().mockResolvedValue({}),
+      },
+      packageSession: {
+        create: vi.fn().mockResolvedValue({ id: 'session-1' }),
+        findMany: vi.fn().mockResolvedValue([
+          {
+            appointmentId: created.id,
+            creditState: 'COUNTED',
+            appointment: { startsAt },
+          },
+        ]),
+      },
+    }
+    transaction.service.findUnique.mockResolvedValue({
+      id: 'service',
+      name: 'Soin',
+      priceCents: 10_000,
+      durationMinutes: 60,
+      preparationMinutes: 0,
+      cleanupMinutes: 0,
+      isArchived: true,
+    })
+
+    await expect(
+      saveAdminAppointmentSerializable(asDatabase(transaction as never), {
+        ...input,
+        customerPackageId: 'package-client',
+      }),
+    ).resolves.toMatchObject({ appointment: { id: created.id } })
+  })
+
+  it('refuse un forfait épuisé avant de créer le rendez-vous', async () => {
+    const transaction = {
+      ...buildTransaction(),
+      customerPackage: {
+        findUnique: vi.fn().mockResolvedValue({
+          id: 'package-client',
+          status: 'ACTIVE',
+          customerId: 'customer-manual',
+          sessionCountSnapshot: 1,
+          validityStartsAt: startsAt,
+          validityMonthsSnapshot: 12,
+          expiresAtOverride: null,
+          allowedServices: [{ serviceId: 'service' }],
+          sessions: [{ creditState: 'COUNTED' }],
+        }),
+      },
+    }
+
+    await expect(
+      saveAdminAppointmentSerializable(asDatabase(transaction as never), {
+        ...input,
+        customerPackageId: 'package-client',
+      }),
+    ).rejects.toMatchObject({ code: 'PACKAGE_UNAVAILABLE' })
+    expect(transaction.appointment.create).not.toHaveBeenCalled()
+  })
 })
 
 describe('admin appointment series', () => {

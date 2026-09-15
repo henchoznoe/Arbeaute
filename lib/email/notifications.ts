@@ -34,6 +34,7 @@ interface NotifiableAppointment {
    * « Visage » sans dire lequel des trois.
    */
   categoryName: string | null
+  package?: AppointmentMailData['package']
 }
 
 const toMailData = (
@@ -51,6 +52,7 @@ const toMailData = (
   priceCents: appointment.servicePriceCents,
   previousStartsAt,
   customerEmail: appointment.customerEmail,
+  package: appointment.package,
 })
 
 const queue = (
@@ -77,10 +79,15 @@ const queue = (
       ? null
       : createCalendarAttachment({
           ...appointment,
-          serviceLabel: formatServiceLabel(
-            appointment.serviceNameSnapshot,
-            appointment.categoryName,
-          ),
+          serviceLabel: [
+            appointment.package?.name,
+            formatServiceLabel(
+              appointment.serviceNameSnapshot,
+              appointment.categoryName,
+            ),
+          ]
+            .filter(Boolean)
+            .join(' — '),
         })
 
   after(async () => {

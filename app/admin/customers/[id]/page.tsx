@@ -1,4 +1,10 @@
-import { CalendarClock, ChevronRight, History, UserRound } from 'lucide-react'
+import {
+  CalendarClock,
+  ChevronRight,
+  Gift,
+  History,
+  UserRound,
+} from 'lucide-react'
 import Link from 'next/link'
 import { notFound, redirect } from 'next/navigation'
 import { Suspense } from 'react'
@@ -11,12 +17,14 @@ import {
 } from '@/components/admin/customer-profile-controls'
 import { EmptyState } from '@/components/ui/empty-state'
 import { StatusBadge } from '@/components/ui/status-badge'
+import { openCustomerPackage } from '@/lib/actions/packages'
 import {
   type AdminCustomerAppointment,
   getAdminCustomerProfile,
 } from '@/lib/admin/customer-profile'
 import prisma from '@/lib/core/prisma'
 import { getAdminSession } from '@/lib/core/session-cookies'
+import { formatInstallmentChoice } from '@/lib/packages/domain'
 import { formatServiceLabel } from '@/lib/reservation/service-label'
 import { formatCompactMoment, formatDayDate } from '@/lib/reservation/time'
 import { capitalizeFirst, formatPrice } from '@/lib/utils/format'
@@ -75,7 +83,13 @@ const CustomerAppointmentList = ({
                     appointment.serviceNameSnapshot,
                     appointment.service.category?.name,
                   )}{' '}
-                  · {formatPrice(appointment.servicePriceCents)}
+                  ·{' '}
+                  {appointment.packageSession
+                    ? appointment.packageSession.customerPackage
+                        .revenueAppointmentId === appointment.id
+                      ? `Prix total ${formatPrice(appointment.packageSession.customerPackage.packagePriceCents)} · ${formatInstallmentChoice(appointment.packageSession.customerPackage.installmentCount).toLowerCase()}`
+                      : 'Inclus dans le forfait'
+                    : formatPrice(appointment.servicePriceCents)}
                 </span>
                 <span className="mt-2 block">
                   <StatusBadge variant={statusVariants[appointment.status]}>
@@ -115,7 +129,39 @@ const CustomerPage = ({ params }: Readonly<CustomerPageProps>) => (
 const CustomerProfile = async ({ params }: Readonly<CustomerPageProps>) => {
   if (!(await getAdminSession())) redirect('/admin/login')
   const { id } = await params
-  const profile = await getAdminCustomerProfile(prisma, id)
+  const [profile, customerPackages, packageTemplates] = await Promise.all([
+    getAdminCustomerProfile(prisma, id),
+    prisma.customerPackage.findMany({
+      where: { customerId: id },
+      orderBy: { createdAt: 'desc' },
+      include: { sessions: true },
+    }),
+    prisma.package.findMany({
+      where: {
+        isArchived: false,
+        services: {
+          some: {
+            service: {
+              isArchived: false,
+              isBookable: true,
+              isVisible: true,
+              category: { isActive: true },
+            },
+          },
+          every: {
+            service: {
+              isArchived: false,
+              isBookable: true,
+              isVisible: true,
+              category: { isActive: true },
+            },
+          },
+        },
+      },
+      orderBy: { sortOrder: 'asc' },
+      select: { id: true, name: true },
+    }),
+  ])
   if (!profile) notFound()
   const { customer } = profile
   const customerName = [customer.firstName, customer.lastName]
@@ -134,6 +180,71 @@ const CustomerProfile = async ({ params }: Readonly<CustomerPageProps>) => {
       <div className="rounded-b-2xl border-x border-b bg-card px-4 pb-4">
         <CustomerQuickActions customerId={customer.id} phone={customer.phone} />
       </div>
+
+      <section className="mt-4 rounded-2xl border bg-card p-4 shadow-sm sm:p-5">
+        <div className="flex items-center gap-2">
+          <Gift className="size-5 text-primary" />
+          <h2 className="text-lg font-semibold">Forfaits</h2>
+        </div>
+        <div className="mt-3 space-y-2">
+          {customerPackages.map(item => (
+            <Link
+              key={item.id}
+              href={`/admin/customer-packages/${item.id}`}
+              className="flex min-h-12 items-center justify-between rounded-xl border px-4 py-2"
+            >
+              <span>
+                <span className="block font-medium">
+                  {item.packageNameSnapshot}
+                </span>
+                <span className="text-xs text-muted-foreground">
+                  {
+                    item.sessions.filter(
+                      session => session.creditState !== 'RETURNED',
+                    ).length
+                  }
+                  /{item.sessionCountSnapshot} séances utilisées ou réservées
+                </span>
+              </span>
+              <ChevronRight className="size-4" />
+            </Link>
+          ))}
+        </div>
+        {packageTemplates.length > 0 ? (
+          <form
+            action={openCustomerPackage}
+            className="mt-4 grid gap-3 sm:grid-cols-[1fr_auto_auto]"
+          >
+            <input type="hidden" name="customerId" value={customer.id} />
+            <select
+              name="packageId"
+              required
+              className="min-h-11 rounded-xl border bg-background px-3"
+            >
+              <option value="">Choisir un forfait</option>
+              {packageTemplates.map(item => (
+                <option key={item.id} value={item.id}>
+                  {item.name}
+                </option>
+              ))}
+            </select>
+            <select
+              name="installmentCount"
+              className="min-h-11 rounded-xl border bg-background px-3"
+            >
+              <option value="1">En une fois</option>
+              <option value="2">En 2 fois</option>
+              <option value="3">En 3 fois</option>
+            </select>
+            <button
+              type="submit"
+              className="min-h-11 rounded-xl bg-primary px-4 font-medium text-primary-foreground"
+            >
+              Ouvrir le forfait
+            </button>
+          </form>
+        ) : null}
+      </section>
 
       <section className="mt-4 rounded-2xl border bg-card p-4 shadow-sm sm:p-5">
         <div className="flex items-center gap-2">

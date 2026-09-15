@@ -329,6 +329,15 @@ export const AdminSearch = ({
                       appointment.service.category?.name,
                     )}
                   </p>
+                  {appointment.packageSession ? (
+                    <p className="mt-1 truncate text-xs font-medium text-brand">
+                      Inclus dans{' '}
+                      {
+                        appointment.packageSession.customerPackage
+                          .packageNameSnapshot
+                      }
+                    </p>
+                  ) : null}
                   <div className="mt-3 min-w-0 border-t pt-3">
                     <div className="min-w-0 text-xs text-muted-foreground">
                       {appointment.customerEmail ? (

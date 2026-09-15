@@ -1,3 +1,4 @@
+import { getAppointmentRevenueCents } from '@/lib/packages/domain'
 import {
   getLocalDateKey,
   getLocalDayBounds,
@@ -21,6 +22,8 @@ interface DashboardAppointment {
   serviceDurationMinutes: number
   servicePriceCents: number
   status: AppointmentStatus
+  recognisedPackage?: { packagePriceCents: number } | null
+  packageSession?: unknown | null
 }
 
 interface DashboardWeeklyRange {
@@ -184,7 +187,10 @@ export const buildDashboardMetrics = ({
           appointment.status === 'CONFIRMED' ||
           appointment.status === 'COMPLETED',
       )
-      .reduce((total, appointment) => total + appointment.servicePriceCents, 0),
+      .reduce(
+        (total, appointment) => total + getAppointmentRevenueCents(appointment),
+        0,
+      ),
     occupancyRate:
       openMinutes > 0
         ? Math.min(100, Math.round((occupiedMinutes / openMinutes) * 100))

@@ -10,6 +10,7 @@ const mocks = vi.hoisted(() => ({
   notifyConfirmed: vi.fn(),
   notifyRescheduled: vi.fn(),
   notifyCancelled: vi.fn(),
+  getPackageMailContext: vi.fn(),
 }))
 
 vi.mock('@/lib/core/session-cookies', () => ({
@@ -31,6 +32,9 @@ vi.mock('@/lib/email/notifications', () => ({
   notifyAppointmentRescheduled: mocks.notifyRescheduled,
   notifyAppointmentCancelled: mocks.notifyCancelled,
   notifyAppointmentSeriesConfirmed: vi.fn(),
+}))
+vi.mock('@/lib/packages/mail-context', () => ({
+  getAppointmentPackageMailContext: mocks.getPackageMailContext,
 }))
 vi.mock('next/cache', () => ({
   revalidatePath: mocks.revalidatePath,
@@ -77,6 +81,7 @@ describe('saveAdminAppointment', () => {
     })
     mocks.notifyConfirmed.mockReturnValue('claire@example.ch')
     mocks.notifyRescheduled.mockReturnValue('claire@example.ch')
+    mocks.getPackageMailContext.mockResolvedValue(undefined)
   })
 
   it('refuse d’enregistrer un rendez-vous sans adresse e-mail', async () => {
@@ -180,6 +185,7 @@ describe('cancelAdminAppointment', () => {
     mocks.getAdminSession.mockResolvedValue({ kind: 'admin' })
     mocks.hasSameOrigin.mockResolvedValue(true)
     mocks.cancelAppointment.mockResolvedValue(savedAppointment)
+    mocks.getPackageMailContext.mockResolvedValue(undefined)
   })
 
   it('annonce clairement que personne n’a été prévenu, faute d’adresse', async () => {

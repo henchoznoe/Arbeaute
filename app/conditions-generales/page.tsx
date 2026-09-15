@@ -51,10 +51,27 @@ const TermsPage = async () => {
           règlement s’effectue sur place, à l’issue de la prestation.
         </p>
         <p>
+          Pour un forfait, le premier rendez-vous confirme l’offre choisie et
+          fait commencer sa durée de validité. Le prix total est réglé sur
+          place, en une, deux ou trois fois selon le choix indiqué lors de la
+          réservation. Ce choix n’entraîne aucun prélèvement automatique.
+        </p>
+        <p>
           Une réservation doit être prise au moins{' '}
           <strong>{noticeLabel}</strong> à l’avance, et au plus tôt{' '}
           <strong>{horizonLabel}</strong> avant la date souhaitée. Les heures
           qui sortent de ces bornes n’apparaissent pas dans le calendrier.
+        </p>
+      </section>
+
+      <section>
+        <h2>Forfaits</h2>
+        <p>
+          Les séances restantes sont planifiées directement avec {contact.owner}
+          et doivent être utilisées avant la date affichée dans « Mes
+          rendez-vous ». Une séance annulée ou une absence n’est rendue au
+          forfait qu’après décision de l’institut, selon les conditions
+          d’annulation ci-dessous.
         </p>
       </section>
 

@@ -81,6 +81,19 @@ export const resendFailedEmail = async (
       serviceNameSnapshot: true,
       servicePriceCents: true,
       service: { select: { category: { select: { name: true } } } },
+      packageSession: {
+        select: {
+          customerPackage: {
+            select: {
+              revenueAppointmentId: true,
+              packageNameSnapshot: true,
+              packagePriceCents: true,
+              sessionCountSnapshot: true,
+              installmentCount: true,
+            },
+          },
+        },
+      },
     },
   })
   if (!appointment?.customerEmail)
@@ -94,6 +107,20 @@ export const resendFailedEmail = async (
     appointment.serviceNameSnapshot,
     appointment.service.category?.name,
   )
+  const packageContext = appointment.packageSession
+    ? {
+        name: appointment.packageSession.customerPackage.packageNameSnapshot,
+        priceCents:
+          appointment.packageSession.customerPackage.packagePriceCents,
+        sessionCount:
+          appointment.packageSession.customerPackage.sessionCountSnapshot,
+        installmentCount:
+          appointment.packageSession.customerPackage.installmentCount,
+        isInitialAppointment:
+          appointment.packageSession.customerPackage.revenueAppointmentId ===
+          appointment.id,
+      }
+    : undefined
 
   const content = build({
     customerFirstName: appointment.customerFirstName,
@@ -103,6 +130,7 @@ export const resendFailedEmail = async (
     endsAt: appointment.endsAt,
     priceCents: appointment.servicePriceCents,
     customerEmail: appointment.customerEmail,
+    package: packageContext,
   })
 
   const attachment =
@@ -110,7 +138,9 @@ export const resendFailedEmail = async (
       ? null
       : createCalendarAttachment({
           id: appointment.id,
-          serviceLabel,
+          serviceLabel: packageContext
+            ? `${packageContext.name} — ${serviceLabel}`
+            : serviceLabel,
           startsAt: appointment.startsAt,
           endsAt: appointment.endsAt,
         })

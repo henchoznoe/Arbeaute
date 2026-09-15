@@ -31,7 +31,9 @@ export const getActiveAdminNavigationItem = (
     pathname.startsWith('/admin/data') ||
     pathname.startsWith('/admin/availability') ||
     pathname.startsWith('/admin/emails') ||
-    pathname.startsWith('/admin/services')
+    pathname.startsWith('/admin/services') ||
+    pathname.startsWith('/admin/packages') ||
+    pathname.startsWith('/admin/customer-packages')
   )
     return 'settings'
   return 'agenda'
