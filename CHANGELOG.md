@@ -1,3 +1,17 @@
+# [1.18.0](https://github.com/henchoznoe/Arbeaute/compare/v1.17.0...v1.18.0) (2026-09-15)
+
+
+### Bug Fixes
+
+* update some blocking points ([5aaf3ba](https://github.com/henchoznoe/Arbeaute/commit/5aaf3ba589313253f36e47d234e60d2a67d5b766))
+* update some blocking points ([35b2ca9](https://github.com/henchoznoe/Arbeaute/commit/35b2ca9fb1cdfaac196b832f3539a34c713804c7))
+* update some blocking points ([002f34e](https://github.com/henchoznoe/Arbeaute/commit/002f34e64d628d70c655cf2aa137f97dfab7e6c0))
+
+
+### Features
+
+* add forfait pack ([44d6df4](https://github.com/henchoznoe/Arbeaute/commit/44d6df4c8cd27c8af17d8e2d6de1bdd1eb5db722))
+
 # [1.17.0](https://github.com/henchoznoe/Arbeaute/compare/v1.16.0...v1.17.0) (2026-09-06)
 
 
