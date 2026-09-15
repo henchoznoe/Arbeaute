@@ -202,9 +202,9 @@ export const CustomerPackageReservationWizard = ({
           {result.appointment.installmentLabel}
         </p>
         <p className="mt-3 font-medium text-primary">
-          {result.appointment.remainingCredits} séance
-          {result.appointment.remainingCredits > 1 ? 's' : ''} restante
-          {result.appointment.remainingCredits > 1 ? 's' : ''}.
+          {result.appointment.remainingCredits > 0
+            ? `${result.appointment.remainingCredits} séance${result.appointment.remainingCredits > 1 ? 's' : ''} restante${result.appointment.remainingCredits > 1 ? 's' : ''}.`
+            : 'Cette séance termine le forfait.'}
         </p>
         <ConfirmationActions appointment={result.appointment} />
       </section>

@@ -120,12 +120,18 @@ export const PackageReservationWizard = ({
           {result.appointment.priceLabel} ·{' '}
           {result.appointment.installmentLabel}
         </p>
-        <p className="mt-3 font-medium text-primary">
-          {result.appointment.remainingCredits} séance
-          {result.appointment.remainingCredits > 1 ? 's' : ''} encore disponible
-          {result.appointment.remainingCredits > 1 ? 's' : ''} dans « Mes
-          rendez-vous ».
-        </p>
+        {result.appointment.remainingCredits > 0 ? (
+          <p className="mt-3 font-medium text-primary">
+            {result.appointment.remainingCredits} séance
+            {result.appointment.remainingCredits > 1 ? 's' : ''} encore
+            disponible{result.appointment.remainingCredits > 1 ? 's' : ''} dans
+            « Mes rendez-vous ».
+          </p>
+        ) : (
+          <p className="mt-3 font-medium text-primary">
+            Cette séance termine le forfait.
+          </p>
+        )}
         <ConfirmationActions appointment={result.appointment} />
       </section>
     )
@@ -266,7 +272,7 @@ export const PackageReservationWizard = ({
           {[1, 2, 3].map(count => (
             <label
               key={count}
-              className="flex min-h-12 items-center justify-center gap-2 rounded-xl border p-2"
+              className="flex min-h-12 items-center justify-center gap-2 rounded-xl border p-2 text-sm whitespace-nowrap"
             >
               <input
                 type="radio"
@@ -274,7 +280,7 @@ export const PackageReservationWizard = ({
                 checked={installmentCount === count}
                 onChange={() => setInstallmentCount(count)}
               />
-              {count === 1 ? 'En une fois' : `En ${count} fois`}
+              En {count} fois
             </label>
           ))}
         </div>

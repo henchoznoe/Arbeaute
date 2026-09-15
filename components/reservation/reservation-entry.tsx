@@ -84,6 +84,7 @@ export const ReservationEntry = ({
       ) : null}
       {customerPackageMode ? (
         <CustomerPackageReservationWizard
+          key={`${requestedCustomerPackage ?? ''}:${params.get('serviceId') ?? ''}:${params.get('startsAt') ?? ''}`}
           packages={customerPackages}
           requestedId={requestedCustomerPackage}
           requestedServiceId={params.get('serviceId')}
