@@ -82,7 +82,13 @@ const CustomerAppointmentList = ({
                     appointment.serviceNameSnapshot,
                     appointment.service.category?.name,
                   )}{' '}
-                  · {formatPrice(appointment.servicePriceCents)}
+                  ·{' '}
+                  {appointment.packageSession
+                    ? appointment.packageSession.customerPackage
+                        .revenueAppointmentId === appointment.id
+                      ? `${formatPrice(appointment.packageSession.customerPackage.packagePriceCents)} · forfait`
+                      : 'Inclus dans le forfait'
+                    : formatPrice(appointment.servicePriceCents)}
                 </span>
                 <span className="mt-2 block">
                   <StatusBadge variant={statusVariants[appointment.status]}>
@@ -130,7 +136,27 @@ const CustomerProfile = async ({ params }: Readonly<CustomerPageProps>) => {
       include: { sessions: true },
     }),
     prisma.package.findMany({
-      where: { isArchived: false },
+      where: {
+        isArchived: false,
+        services: {
+          some: {
+            service: {
+              isArchived: false,
+              isBookable: true,
+              isVisible: true,
+              category: { isActive: true },
+            },
+          },
+          every: {
+            service: {
+              isArchived: false,
+              isBookable: true,
+              isVisible: true,
+              category: { isActive: true },
+            },
+          },
+        },
+      },
       orderBy: { sortOrder: 'asc' },
       select: { id: true, name: true },
     }),

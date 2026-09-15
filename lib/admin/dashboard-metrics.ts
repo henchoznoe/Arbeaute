@@ -23,6 +23,7 @@ interface DashboardAppointment {
   servicePriceCents: number
   status: AppointmentStatus
   recognisedPackage?: { packagePriceCents: number } | null
+  packageSession?: unknown | null
 }
 
 interface DashboardWeeklyRange {

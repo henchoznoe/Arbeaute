@@ -16,7 +16,12 @@ const NewPackagePage = () => (
 const NewPackage = async () => {
   if (!(await getAdminSession())) redirect('/admin/login')
   const services = await prisma.service.findMany({
-    where: { isArchived: false, isBookable: true },
+    where: {
+      isArchived: false,
+      isBookable: true,
+      isVisible: true,
+      category: { isActive: true },
+    },
     orderBy: [{ category: { sortOrder: 'asc' } }, { sortOrder: 'asc' }],
     select: { id: true, name: true, category: { select: { name: true } } },
   })

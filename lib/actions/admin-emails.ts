@@ -107,6 +107,20 @@ export const resendFailedEmail = async (
     appointment.serviceNameSnapshot,
     appointment.service.category?.name,
   )
+  const packageContext = appointment.packageSession
+    ? {
+        name: appointment.packageSession.customerPackage.packageNameSnapshot,
+        priceCents:
+          appointment.packageSession.customerPackage.packagePriceCents,
+        sessionCount:
+          appointment.packageSession.customerPackage.sessionCountSnapshot,
+        installmentCount:
+          appointment.packageSession.customerPackage.installmentCount,
+        isInitialAppointment:
+          appointment.packageSession.customerPackage.revenueAppointmentId ===
+          appointment.id,
+      }
+    : undefined
 
   const content = build({
     customerFirstName: appointment.customerFirstName,
@@ -116,20 +130,7 @@ export const resendFailedEmail = async (
     endsAt: appointment.endsAt,
     priceCents: appointment.servicePriceCents,
     customerEmail: appointment.customerEmail,
-    package:
-      appointment.packageSession?.customerPackage.revenueAppointmentId ===
-      appointment.id
-        ? {
-            name: appointment.packageSession.customerPackage
-              .packageNameSnapshot,
-            priceCents:
-              appointment.packageSession.customerPackage.packagePriceCents,
-            sessionCount:
-              appointment.packageSession.customerPackage.sessionCountSnapshot,
-            installmentCount:
-              appointment.packageSession.customerPackage.installmentCount,
-          }
-        : undefined,
+    package: packageContext,
   })
 
   const attachment =
@@ -137,7 +138,9 @@ export const resendFailedEmail = async (
       ? null
       : createCalendarAttachment({
           id: appointment.id,
-          serviceLabel,
+          serviceLabel: packageContext
+            ? `${packageContext.name} — ${serviceLabel}`
+            : serviceLabel,
           startsAt: appointment.startsAt,
           endsAt: appointment.endsAt,
         })

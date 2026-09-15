@@ -10,7 +10,23 @@ export const PackagesShowcase = async ({
   compact = false,
 }: Readonly<{ compact?: boolean }>) => {
   const packages = await getPublicPackages()
-  if (packages.length === 0) return null
+  if (packages.length === 0)
+    return compact ? null : (
+      <section className="bg-brand-subtle/35 px-5 py-20 sm:px-8">
+        <div className="mx-auto max-w-3xl rounded-3xl border bg-card p-6 text-center sm:p-10">
+          <h2 className="font-heading text-2xl font-semibold">
+            Les forfaits arrivent bientôt
+          </h2>
+          <p className="mt-3 text-muted-foreground">
+            Les prestations restent disponibles à la réservation pendant leur
+            préparation.
+          </p>
+          <Button asChild className="mt-6 rounded-full">
+            <Link href="/reservation">Réserver une prestation</Link>
+          </Button>
+        </div>
+      </section>
+    )
   const visible = compact ? packages.slice(0, 2) : packages
   return (
     <section className="bg-brand-subtle/35 px-5 py-20 sm:px-8">

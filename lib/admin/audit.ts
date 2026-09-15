@@ -176,6 +176,7 @@ const changeFieldLabels: Record<string, string> = {
   preferencesChanged: 'Préférences modifiées',
   sourceCustomerId: 'Client source',
   sourceAppointmentCount: 'Rendez-vous fusionnés',
+  sessionDetached: 'Séance détachée',
 }
 
 const asJsonObject = (

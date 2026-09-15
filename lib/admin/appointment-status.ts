@@ -1,4 +1,5 @@
 import { writeAuditEvent } from '@/lib/admin/audit'
+import { syncCustomerPackageMilestones } from '@/lib/packages/milestones'
 import { MAX_SERIALIZABLE_ATTEMPTS } from '@/lib/reservation/constants'
 import { Prisma, type PrismaClient } from '@/prisma/generated/prisma/client'
 import type { AppointmentStatus } from '@/prisma/generated/prisma/enums'
@@ -102,6 +103,15 @@ export const changeAdminAppointmentStatusSerializable = async (
                 targetStatus === 'NO_SHOW' ? 'DECISION_REQUIRED' : 'COUNTED',
             },
           })
+          const packageSession = await transaction.packageSession.findUnique({
+            where: { appointmentId: updated.id },
+            select: { customerPackageId: true },
+          })
+          if (packageSession)
+            await syncCustomerPackageMilestones(
+              transaction,
+              packageSession.customerPackageId,
+            )
           await writeAuditEvent(transaction, {
             actorType: 'ADMIN',
             actorId: 'admin',

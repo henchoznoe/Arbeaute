@@ -1,6 +1,9 @@
 import { formatInTimeZone } from 'date-fns-tz'
 import { writeAuditEvent } from '@/lib/admin/audit'
-import { getAppointmentRevenueCents } from '@/lib/packages/domain'
+import {
+  getAppointmentRevenueCents,
+  getPackageExpiry,
+} from '@/lib/packages/domain'
 import { RESERVATION_TIME_ZONE } from '@/lib/reservation/constants'
 import { getLocalDayBounds } from '@/lib/reservation/time'
 import type { PrismaClient } from '@/prisma/generated/prisma/client'
@@ -179,6 +182,17 @@ export const createPackagesExport = async (
           row.expiresAtOverride
             ? formatLocalDateTime(row.expiresAtOverride)
             : null,
+      },
+      {
+        header: 'validite_fin',
+        value: row => {
+          const expiry = getPackageExpiry({
+            validityStartsAt: row.validityStartsAt,
+            validityMonths: row.validityMonthsSnapshot,
+            expiresAtOverride: row.expiresAtOverride,
+          })
+          return expiry ? formatLocalDateTime(expiry) : null
+        },
       },
       { header: 'statut', value: row => row.status },
       { header: 'cree_le', value: row => formatLocalDateTime(row.createdAt) },

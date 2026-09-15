@@ -18,6 +18,7 @@ import {
   notifyAppointmentConfirmed,
   notifyAppointmentRescheduled,
 } from '@/lib/email/notifications'
+import { getAppointmentPackageMailContext } from '@/lib/packages/mail-context'
 import {
   cancelAppointmentSerializable,
   createAppointmentSerializable,
@@ -499,8 +500,12 @@ export const moveCustomerAppointment = async (
     })
     revalidatePath('/mes-rendez-vous')
     refreshAdminActivity()
+    const packageContext = await getAppointmentPackageMailContext(
+      prisma,
+      appointment.id,
+    )
     const notifiedEmail = notifyAppointmentRescheduled(
-      appointment,
+      { ...appointment, package: packageContext },
       appointment.previousStartsAt,
     )
     return {
@@ -551,7 +556,14 @@ export const cancelCustomerAppointment = async (
     )
     revalidatePath('/mes-rendez-vous')
     refreshAdminActivity()
-    const notifiedEmail = notifyAppointmentCancelled(cancelled)
+    const packageContext = await getAppointmentPackageMailContext(
+      prisma,
+      cancelled.id,
+    )
+    const notifiedEmail = notifyAppointmentCancelled({
+      ...cancelled,
+      package: packageContext,
+    })
     return {
       ok: true,
       message: 'Votre rendez-vous a bien été annulé.',

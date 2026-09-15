@@ -64,7 +64,9 @@ describe('formatPrice', () => {
   })
 
   it('sépare les milliers par l’apostrophe suisse', () => {
-    expect(plainSpaces(formatPrice(125_000))).toBe("1'250 CHF")
+    // Exactement la même chaîne dans Node et dans le navigateur : une espace
+    // fine choisie par l'un des deux provoquerait une erreur d'hydratation.
+    expect(formatPrice(125_000)).toBe("1'250\u00a0CHF")
   })
 
   /**

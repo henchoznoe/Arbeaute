@@ -93,6 +93,7 @@ describe('buildConfirmationMail', () => {
         priceCents: 160_000,
         sessionCount: 8,
         installmentCount: 3,
+        isInitialAppointment: true,
       },
     })
 
@@ -233,6 +234,47 @@ describe('buildSeriesConfirmationMail', () => {
     expect(mail.text.replace(/\u00a0/g, ' ')).toContain(
       'Prix par séance : 120 CHF',
     )
+  })
+
+  it('annonce le prix total une seule fois pour une série de forfait', () => {
+    const packageMail = buildSeriesConfirmationMail(
+      {
+        ...base,
+        package: {
+          name: 'Forfait laser',
+          priceCents: 160_000,
+          sessionCount: 8,
+          installmentCount: 3,
+          isInitialAppointment: true,
+        },
+      },
+      occurrences,
+    )
+
+    expect(packageMail.text.replace(/\u00a0/g, ' ')).toContain(
+      "Prix total : 1'600 CHF",
+    )
+    expect(packageMail.text).toContain('Paiement sur place : en 3 fois')
+    expect(packageMail.text).not.toContain('Prix par séance')
+  })
+
+  it('présente une série ajoutée ensuite comme incluse dans le forfait', () => {
+    const packageMail = buildSeriesConfirmationMail(
+      {
+        ...base,
+        package: {
+          name: 'Forfait laser',
+          priceCents: 160_000,
+          sessionCount: 8,
+          installmentCount: 2,
+          isInitialAppointment: false,
+        },
+      },
+      occurrences,
+    )
+
+    expect(packageMail.text).toContain('Prix : inclus dans le forfait')
+    expect(packageMail.text).not.toContain('1’600')
   })
 })
 

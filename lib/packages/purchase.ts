@@ -57,7 +57,9 @@ export const purchasePackageWithFirstAppointment = async (
                 orderBy: { sortOrder: 'asc' },
                 include: {
                   service: {
-                    include: { category: { select: { name: true } } },
+                    include: {
+                      category: { select: { name: true, isActive: true } },
+                    },
                   },
                 },
               },
@@ -71,7 +73,8 @@ export const purchasePackageWithFirstAppointment = async (
           if (
             !selected?.isBookable ||
             !selected.isVisible ||
-            selected.isArchived
+            selected.isArchived ||
+            !selected.category?.isActive
           )
             throw new PackagePurchaseError('SERVICE_NOT_ALLOWED')
 

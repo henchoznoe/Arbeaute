@@ -34,7 +34,7 @@ const service = {
   isBookable: true,
   isVisible: true,
   isArchived: false,
-  category: { name: 'Épilation laser' },
+  category: { name: 'Épilation laser', isActive: true },
 }
 const offeredPackage = {
   id: 'package-1',

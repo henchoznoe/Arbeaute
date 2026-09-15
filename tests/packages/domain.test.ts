@@ -51,5 +51,11 @@ describe('forfaits', () => {
     expect(getAppointmentRevenueCents({ servicePriceCents: 58_000 })).toBe(
       58_000,
     )
+    expect(
+      getAppointmentRevenueCents({
+        servicePriceCents: 58_000,
+        packageSession: { id: 'session-2' },
+      }),
+    ).toBe(0)
   })
 })

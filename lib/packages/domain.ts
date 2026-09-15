@@ -39,10 +39,16 @@ export const getPackageCreditSummary = (
 export const getAppointmentRevenueCents = ({
   servicePriceCents,
   recognisedPackage,
+  packageSession,
 }: {
   servicePriceCents: number
   recognisedPackage?: { packagePriceCents: number } | null
-}): number => recognisedPackage?.packagePriceCents ?? servicePriceCents
+  packageSession?: unknown | null
+}): number => {
+  if (recognisedPackage) return recognisedPackage.packagePriceCents
+  if (packageSession) return 0
+  return servicePriceCents
+}
 
 export const formatInstallmentChoice = (count: number): string =>
   count === 1 ? 'Paiement en une fois' : `Paiement en ${count} fois`

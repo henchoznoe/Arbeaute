@@ -32,6 +32,17 @@ const appointmentSelect = {
   // ne peut atteindre. Une colonne de plus, aucune requête de plus.
   customerEmail: true,
   service: { select: { category: { select: { name: true } } } },
+  packageSession: {
+    select: {
+      customerPackage: {
+        select: {
+          packageNameSnapshot: true,
+          packagePriceCents: true,
+          revenueAppointmentId: true,
+        },
+      },
+    },
+  },
 } satisfies Prisma.AppointmentSelect
 
 export type AdminCustomer = Prisma.CustomerGetPayload<{

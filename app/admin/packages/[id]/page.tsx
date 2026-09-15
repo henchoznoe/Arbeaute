@@ -30,7 +30,12 @@ const EditPackage = async ({
     searchParams,
     prisma.package.findUnique({ where: { id }, include: { services: true } }),
     prisma.service.findMany({
-      where: { isArchived: false, isBookable: true },
+      where: {
+        isArchived: false,
+        isBookable: true,
+        isVisible: true,
+        category: { isActive: true },
+      },
       orderBy: [{ category: { sortOrder: 'asc' } }, { sortOrder: 'asc' }],
       select: { id: true, name: true, category: { select: { name: true } } },
     }),

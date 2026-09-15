@@ -37,6 +37,7 @@ const appointmentSelect = {
   serviceNameSnapshot: true,
   status: true,
   recognisedPackage: { select: { packagePriceCents: true } },
+  packageSession: { select: { id: true } },
   service: { select: { category: { select: { name: true } } } },
 } as const
 

@@ -622,7 +622,7 @@ export const catalogServices: CatalogService[] = [
       'https://thumbs.agenda.ch/uploads/service_pictures/13688/original/Capture_d%E2%80%99e%CC%81cran_2024-03-05_a%CC%80_16.58.35.png?1709654432',
   },
   {
-    slug: 'soin-purifiant-dos-argile',
+    slug: 'soin-purifiant-du-dos-a-l-argile',
     categorySlug: 'soins-corps',
     agendaSourceId: null,
     name: 'Soin purifiant du dos à l’argile',

@@ -30,6 +30,7 @@ export interface WeeklySummaryAppointment {
   categoryName: string | null
   status: AppointmentStatus
   recognisedPackage?: { packagePriceCents: number } | null
+  packageSession?: unknown | null
 }
 
 export interface WeeklySummary {

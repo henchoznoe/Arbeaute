@@ -141,7 +141,13 @@ const EditAppointment = async ({
           <div>
             <h2 className="font-semibold">{serviceLabel}</h2>
             <p className="mt-1 text-sm text-muted-foreground">
-              {time} · {formatPrice(appointment.servicePriceCents)}
+              {time} ·{' '}
+              {appointment.packageSession
+                ? appointment.packageSession.customerPackage
+                    .revenueAppointmentId === appointment.id
+                  ? `${formatPrice(appointment.packageSession.customerPackage.packagePriceCents)} · prix total du forfait`
+                  : 'Inclus dans le forfait'
+                : formatPrice(appointment.servicePriceCents)}
             </p>
           </div>
           {appointment.customerId ? (

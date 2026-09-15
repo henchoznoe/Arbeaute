@@ -29,7 +29,10 @@ const makeDatabase = (status: 'CONFIRMED' | 'CANCELLED' | 'NO_SHOW') => {
         serviceNameSnapshot: 'Soin visage',
       })),
     },
-    packageSession: { updateMany: vi.fn().mockResolvedValue({ count: 0 }) },
+    packageSession: {
+      findUnique: vi.fn().mockResolvedValue(null),
+      updateMany: vi.fn().mockResolvedValue({ count: 0 }),
+    },
     auditEvent: { create: vi.fn().mockResolvedValue({ id: 'audit-1' }) },
   }
   const database = {
@@ -140,6 +143,46 @@ describe('admin appointment status transitions', () => {
       ),
     ).rejects.toEqual(new AdminAppointmentStatusError('OVERLAP'))
     expect(transaction.auditEvent.create).not.toHaveBeenCalled()
+  })
+
+  it('recalcule le début et le montant quand une séance de forfait est rétablie', async () => {
+    const { database, transaction } = makeDatabase('NO_SHOW')
+    const updateCustomerPackage = vi.fn().mockResolvedValue({})
+    transaction.packageSession.findUnique.mockResolvedValue({
+      customerPackageId: 'package-1',
+    })
+    Object.assign(transaction.packageSession, {
+      findMany: vi.fn().mockResolvedValue([
+        {
+          appointmentId: 'appointment-1',
+          creditState: 'COUNTED',
+          appointment: { startsAt: new Date('2026-08-15T09:00:00.000Z') },
+        },
+      ]),
+    })
+    Object.assign(transaction, {
+      customerPackage: {
+        findUniqueOrThrow: vi.fn().mockResolvedValue({
+          validityMonthsSnapshot: 12,
+          expiresAtOverride: null,
+        }),
+        update: updateCustomerPackage,
+      },
+    })
+
+    await changeAdminAppointmentStatusSerializable(
+      database,
+      'appointment-1',
+      'CONFIRMED',
+    )
+
+    expect(updateCustomerPackage).toHaveBeenCalledWith({
+      where: { id: 'package-1' },
+      data: {
+        revenueAppointmentId: 'appointment-1',
+        validityStartsAt: new Date('2026-08-15T09:00:00.000Z'),
+      },
+    })
   })
 
   it('rejects a stale transition before writing anything', async () => {

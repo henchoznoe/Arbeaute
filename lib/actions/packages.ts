@@ -14,6 +14,7 @@ import {
   getPackageExpiry,
   isInstallmentCount,
 } from '@/lib/packages/domain'
+import { syncCustomerPackageMilestones } from '@/lib/packages/milestones'
 import {
   PackagePurchaseError,
   purchasePackageWithFirstAppointment,
@@ -81,6 +82,7 @@ const refreshPackages = () => {
   revalidatePath('/forfaits')
   revalidatePath('/admin/packages')
   revalidatePath('/admin/a-traiter')
+  revalidatePath('/mes-rendez-vous')
 }
 
 const parsePackageForm = (formData: FormData) => {
@@ -90,9 +92,24 @@ const parsePackageForm = (formData: FormData) => {
   })
   return {
     ...parsed,
+    serviceIds: [...new Set(parsed.serviceIds)],
     priceCents: Math.round(parsed.priceChf * 100),
     isVisible: formData.get('isVisible') === 'on',
   }
+}
+
+const requireUsablePackageServices = async (serviceIds: string[]) => {
+  const count = await prisma.service.count({
+    where: {
+      id: { in: serviceIds },
+      isArchived: false,
+      isBookable: true,
+      isVisible: true,
+      category: { isActive: true },
+    },
+  })
+  if (count !== serviceIds.length)
+    throw new Error('PACKAGE_SERVICE_NOT_PUBLICLY_BOOKABLE')
 }
 
 export const createPackage = async (formData: FormData): Promise<void> => {
@@ -102,6 +119,7 @@ export const createPackage = async (formData: FormData): Promise<void> => {
     serviceIds,
     ...data
   } = parsePackageForm(formData)
+  await requireUsablePackageServices(serviceIds)
   const last = await prisma.package.aggregate({ _max: { sortOrder: true } })
   const slug = await uniqueSlug(data.name)
   const created = await prisma.$transaction(async transaction => {
@@ -141,6 +159,7 @@ export const updatePackage = async (formData: FormData): Promise<void> => {
     serviceIds,
     ...data
   } = parsePackageForm(formData)
+  await requireUsablePackageServices(serviceIds)
   await prisma.$transaction(async transaction => {
     const before = await transaction.package.findUniqueOrThrow({
       where: { id },
@@ -407,6 +426,7 @@ export const createPublicPackageBooking = async (
         priceCents: result.customerPackage.packagePriceCents,
         sessionCount: result.customerPackage.sessionCountSnapshot,
         installmentCount: result.customerPackage.installmentCount,
+        isInitialAppointment: true,
       },
     })
     revalidatePath('/admin')
@@ -429,7 +449,10 @@ export const createPublicPackageBooking = async (
         endsAt: result.appointment.endsAt.toISOString(),
         calendar: createAppointmentCalendar({
           id: result.appointment.id,
-          serviceLabel: result.customerPackage.packageNameSnapshot,
+          serviceLabel: `${result.customerPackage.packageNameSnapshot} — ${formatServiceLabel(
+            result.appointment.serviceNameSnapshot,
+            result.appointment.categoryName,
+          )}`,
           startsAt: result.appointment.startsAt,
           endsAt: result.appointment.endsAt,
         }),
@@ -464,6 +487,9 @@ export const openCustomerPackage = async (
     where: { id: packageId, isArchived: false },
     include: { services: true },
   })
+  await requireUsablePackageServices(
+    offeredPackage.services.map(service => service.serviceId),
+  )
   const created = await prisma.$transaction(async transaction => {
     const item = await transaction.customerPackage.create({
       data: {
@@ -510,31 +536,16 @@ export const decidePackageCredit = async (
         where: { id },
         include: { customerPackage: true, appointment: true },
       })
+      if (session.creditState !== 'DECISION_REQUIRED')
+        throw new Error('PACKAGE_CREDIT_ALREADY_DECIDED')
       await transaction.packageSession.update({
         where: { id },
         data: { creditState },
       })
-      if (
-        creditState === 'RETURNED' &&
-        session.customerPackage.revenueAppointmentId === session.appointmentId
-      ) {
-        const next = await transaction.packageSession.findFirst({
-          where: {
-            customerPackageId: session.customerPackageId,
-            id: { not: id },
-            creditState: { not: 'RETURNED' },
-          },
-          include: { appointment: true },
-          orderBy: { appointment: { startsAt: 'asc' } },
-        })
-        await transaction.customerPackage.update({
-          where: { id: session.customerPackageId },
-          data: {
-            revenueAppointmentId: next?.appointmentId ?? null,
-            validityStartsAt: next?.appointment.startsAt ?? null,
-          },
-        })
-      }
+      await syncCustomerPackageMilestones(
+        transaction,
+        session.customerPackageId,
+      )
       await writeAuditEvent(transaction, {
         actorType: 'ADMIN',
         actorId: 'admin',
@@ -549,6 +560,45 @@ export const decidePackageCredit = async (
     { isolationLevel: 'Serializable' },
   )
   refreshPackages()
+  revalidatePath('/mes-rendez-vous')
+}
+
+export const detachAppointmentFromPackage = async (
+  formData: FormData,
+): Promise<void> => {
+  await requireAdmin()
+  const id = z.string().min(1).parse(formData.get('sessionId'))
+  await prisma.$transaction(
+    async transaction => {
+      const session = await transaction.packageSession.findUniqueOrThrow({
+        where: { id },
+        include: { customerPackage: true, appointment: true },
+      })
+      if (
+        session.appointment.status !== 'CONFIRMED' ||
+        session.appointment.startsAt <= new Date()
+      )
+        throw new Error('PACKAGE_SESSION_CANNOT_BE_DETACHED')
+      await transaction.packageSession.delete({ where: { id } })
+      await syncCustomerPackageMilestones(
+        transaction,
+        session.customerPackageId,
+      )
+      await writeAuditEvent(transaction, {
+        actorType: 'ADMIN',
+        actorId: 'admin',
+        entityType: 'CUSTOMER_PACKAGE',
+        entityId: session.customerPackageId,
+        entityLabel: session.customerPackage.packageNameSnapshot,
+        action: 'UPDATED',
+        before: { appointmentId: session.appointmentId },
+        after: { sessionDetached: true },
+      })
+    },
+    { isolationLevel: 'Serializable' },
+  )
+  refreshPackages()
+  revalidatePath('/mes-rendez-vous')
 }
 
 export const updateCustomerPackageInstallments = async (
@@ -599,13 +649,17 @@ export const cancelCustomerPackage = async (
       },
     })
     if (
+      item.status !== 'ACTIVE' ||
+      item.sessions.some(
+        session => session.creditState === 'DECISION_REQUIRED',
+      ) ||
       item.sessions.some(
         session =>
           session.appointment.status === 'CONFIRMED' &&
           session.appointment.startsAt > new Date(),
       )
     )
-      throw new Error('PACKAGE_HAS_FUTURE_APPOINTMENTS')
+      throw new Error('PACKAGE_CANNOT_BE_CANCELLED')
     await transaction.customerPackage.update({
       where: { id },
       data: { status: 'CANCELLED', cancelledAt: new Date() },
@@ -634,6 +688,17 @@ export const extendCustomerPackage = async (
     where: { id },
   })
   const expiresAtOverride = new Date(getLocalDayBounds(date).end.getTime() - 1)
+  const currentExpiry = getPackageExpiry({
+    validityStartsAt: before.validityStartsAt,
+    validityMonths: before.validityMonthsSnapshot,
+    expiresAtOverride: before.expiresAtOverride,
+  })
+  if (
+    before.status !== 'ACTIVE' ||
+    !currentExpiry ||
+    expiresAtOverride <= currentExpiry
+  )
+    throw new Error('PACKAGE_EXTENSION_MUST_EXTEND')
   await prisma.$transaction(async transaction => {
     await transaction.customerPackage.update({
       where: { id },
@@ -647,17 +712,13 @@ export const extendCustomerPackage = async (
       entityLabel: before.packageNameSnapshot,
       action: 'UPDATED',
       before: {
-        expiresAt:
-          getPackageExpiry({
-            validityStartsAt: before.validityStartsAt,
-            validityMonths: before.validityMonthsSnapshot,
-            expiresAtOverride: before.expiresAtOverride,
-          })?.toISOString() ?? null,
+        expiresAt: currentExpiry.toISOString(),
       },
       after: { expiresAt: expiresAtOverride.toISOString() },
     })
   })
   refreshPackages()
+  revalidatePath('/mes-rendez-vous')
 }
 
 export const attachAppointmentsToPackage = async (
@@ -672,6 +733,7 @@ export const attachAppointmentsToPackage = async (
     .array(z.string().min(1))
     .min(1)
     .parse(formData.getAll('appointmentId'))
+  const now = new Date()
   await prisma.$transaction(
     async transaction => {
       const [item, appointments] = await Promise.all([
@@ -689,8 +751,18 @@ export const attachAppointmentsToPackage = async (
       const used = item.sessions.filter(
         session => session.creditState !== 'RETURNED',
       ).length
+      const first = appointments[0]
+      const validityStartsAt =
+        item.validityStartsAt && first
+          ? new Date(
+              Math.min(
+                item.validityStartsAt.getTime(),
+                first.startsAt.getTime(),
+              ),
+            )
+          : (item.validityStartsAt ?? first?.startsAt ?? null)
       const expiry = getPackageExpiry({
-        validityStartsAt: item.validityStartsAt,
+        validityStartsAt,
         validityMonths: item.validityMonthsSnapshot,
         expiresAtOverride: item.expiresAtOverride,
       })
@@ -700,6 +772,8 @@ export const attachAppointmentsToPackage = async (
         appointments.some(
           appointment =>
             item.customerId !== appointment.customerId ||
+            appointment.status !== 'CONFIRMED' ||
+            appointment.startsAt <= now ||
             !item.allowedServices.some(
               service => service.serviceId === appointment.serviceId,
             ) ||
@@ -713,14 +787,7 @@ export const attachAppointmentsToPackage = async (
           appointmentId: appointment.id,
         })),
       })
-      const first = appointments[0]
-      await transaction.customerPackage.update({
-        where: { id: customerPackageId },
-        data: {
-          validityStartsAt: item.validityStartsAt ?? first?.startsAt,
-          revenueAppointmentId: item.revenueAppointmentId ?? first?.id,
-        },
-      })
+      await syncCustomerPackageMilestones(transaction, customerPackageId)
       await writeAuditEvent(transaction, {
         actorType: 'ADMIN',
         actorId: 'admin',
@@ -739,4 +806,5 @@ export const attachAppointmentsToPackage = async (
     { isolationLevel: 'Serializable' },
   )
   refreshPackages()
+  revalidatePath('/mes-rendez-vous')
 }

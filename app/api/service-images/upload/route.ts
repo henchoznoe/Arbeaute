@@ -12,6 +12,7 @@ import {
   getServiceAssetPolicy,
   isValidServiceImagePath,
 } from '@/lib/services/service-image-policy'
+import { hasSameOrigin } from '@/lib/utils/request'
 
 const uploadPayloadSchema = z.union([
   z.object({
@@ -21,6 +22,10 @@ const uploadPayloadSchema = z.union([
   z.object({ packageId: z.string().min(1), kind: z.literal('package-image') }),
 ])
 
+// La signature du jeton dépend de la session admin au moment du POST. Cette
+// route ne peut donc pas participer à une navigation instantanée prérendue.
+export const instant = false
+
 export const POST = async (request: Request) => {
   try {
     const body = (await request.json()) as HandleUploadPresignedBody
@@ -29,7 +34,8 @@ export const POST = async (request: Request) => {
       body,
       webhookPublicKey: env.BLOB_WEBHOOK_PUBLIC_KEY,
       getSignedToken: async (pathname, clientPayload) => {
-        if (!(await getAdminSession())) throw new Error('Unauthorized')
+        if (!(await getAdminSession()) || !(await hasSameOrigin()))
+          throw new Error('Unauthorized')
         if (!clientPayload) throw new Error('Missing service')
 
         const payload = uploadPayloadSchema.parse(JSON.parse(clientPayload))

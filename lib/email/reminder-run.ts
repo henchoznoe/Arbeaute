@@ -33,6 +33,19 @@ const appointmentSelect = {
   serviceNameSnapshot: true,
   servicePriceCents: true,
   service: { select: { category: { select: { name: true } } } },
+  packageSession: {
+    select: {
+      customerPackage: {
+        select: {
+          revenueAppointmentId: true,
+          packageNameSnapshot: true,
+          packagePriceCents: true,
+          sessionCountSnapshot: true,
+          installmentCount: true,
+        },
+      },
+    },
+  },
 } as const
 
 type ReminderAppointment = Awaited<ReturnType<typeof loadReminderAppointment>>
@@ -64,6 +77,20 @@ const buildContent = (
     startsAt: appointment.startsAt,
     endsAt: appointment.endsAt,
     priceCents: appointment.servicePriceCents,
+    package: appointment.packageSession
+      ? {
+          name: appointment.packageSession.customerPackage.packageNameSnapshot,
+          priceCents:
+            appointment.packageSession.customerPackage.packagePriceCents,
+          sessionCount:
+            appointment.packageSession.customerPackage.sessionCountSnapshot,
+          installmentCount:
+            appointment.packageSession.customerPackage.installmentCount,
+          isInitialAppointment:
+            appointment.packageSession.customerPackage.revenueAppointmentId ===
+            appointment.id,
+        }
+      : undefined,
     changeDeadline: canCustomerChangeAppointment(appointment.startsAt, now)
       ? getCustomerChangeDeadline(appointment.startsAt)
       : null,

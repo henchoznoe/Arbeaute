@@ -1,7 +1,7 @@
 'use client'
 
 import { Check, ChevronLeft, Mail } from 'lucide-react'
-import { useEffect, useMemo, useState, useTransition } from 'react'
+import { useEffect, useMemo, useRef, useState, useTransition } from 'react'
 import { ConfirmationActions } from '@/components/reservation/confirmation-actions'
 import { WeekAvailabilityPicker } from '@/components/reservation/week-availability-picker'
 import { Button } from '@/components/ui/button'
@@ -53,6 +53,7 @@ export const PackageReservationWizard = ({
     'email' | 'known' | 'identity'
   >('email')
   const [result, setResult] = useState<PackageBookingResult | null>(null)
+  const availabilityRequest = useRef(0)
   const selectedService = selectedPackage?.services.find(
     service => service.id === serviceId,
   )
@@ -71,9 +72,12 @@ export const PackageReservationWizard = ({
   }, [])
 
   useEffect(() => {
+    const request = availabilityRequest.current + 1
+    availabilityRequest.current = request
     if (!serviceId) return
     startLoading(async () => {
       const loaded = await getPublicWeekAvailability(serviceId, viewStart)
+      if (availabilityRequest.current !== request) return
       const bookableOnly = Object.fromEntries(
         Object.entries(loaded).map(([key, day]) => [
           key,
@@ -123,6 +127,17 @@ export const PackageReservationWizard = ({
   if (!selectedPackage)
     return (
       <div className="mx-auto grid max-w-3xl gap-4 sm:grid-cols-2">
+        {packages.length === 0 ? (
+          <div className="rounded-3xl border bg-card p-6 sm:col-span-2">
+            <h2 className="font-heading text-xl font-semibold">
+              Les forfaits arrivent bientôt
+            </h2>
+            <p className="mt-2 text-muted-foreground">
+              En attendant, toutes les prestations restent réservables
+              séparément.
+            </p>
+          </div>
+        ) : null}
         {packages.map(item => (
           <button
             key={item.id}
@@ -292,7 +307,7 @@ export const PackageReservationWizard = ({
         </>
       ) : null}
       {detailsStage === 'email' ? (
-        <form action={checkEmail} method="post" className="mt-8 space-y-4">
+        <form action={checkEmail} className="mt-8 space-y-4">
           <h3 className="font-heading text-xl font-semibold">
             Votre adresse e-mail
           </h3>

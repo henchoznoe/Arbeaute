@@ -6,6 +6,7 @@ const mocks = vi.hoisted(() => ({
   move: vi.fn(),
   notify: vi.fn(),
   refresh: vi.fn(),
+  getPackageMailContext: vi.fn(),
 }))
 vi.mock('@/lib/core/prisma', () => ({ default: {} }))
 vi.mock('@/lib/core/session-cookies', () => ({
@@ -18,6 +19,9 @@ vi.mock('@/lib/admin/reschedule', async original => ({
 }))
 vi.mock('@/lib/email/notifications', () => ({
   notifyAppointmentRescheduled: mocks.notify,
+}))
+vi.mock('@/lib/packages/mail-context', () => ({
+  getAppointmentPackageMailContext: mocks.getPackageMailContext,
 }))
 vi.mock('next/cache', () => ({ revalidatePath: mocks.refresh }))
 
@@ -34,6 +38,7 @@ describe('action de déplacement', () => {
     vi.resetAllMocks()
     mocks.session.mockResolvedValue({})
     mocks.origin.mockResolvedValue(true)
+    mocks.getPackageMailContext.mockResolvedValue(undefined)
   })
   it('contrôle la session et l’origine avant toute écriture', async () => {
     mocks.session.mockResolvedValue(null)

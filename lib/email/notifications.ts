@@ -79,10 +79,15 @@ const queue = (
       ? null
       : createCalendarAttachment({
           ...appointment,
-          serviceLabel: formatServiceLabel(
-            appointment.serviceNameSnapshot,
-            appointment.categoryName,
-          ),
+          serviceLabel: [
+            appointment.package?.name,
+            formatServiceLabel(
+              appointment.serviceNameSnapshot,
+              appointment.categoryName,
+            ),
+          ]
+            .filter(Boolean)
+            .join(' — '),
         })
 
   after(async () => {

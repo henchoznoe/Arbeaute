@@ -10,6 +10,7 @@ import {
 import prisma from '@/lib/core/prisma'
 import { getAdminSession } from '@/lib/core/session-cookies'
 import { notifyAppointmentRescheduled } from '@/lib/email/notifications'
+import { getAppointmentPackageMailContext } from '@/lib/packages/mail-context'
 import { hasSameOrigin } from '@/lib/utils/request'
 
 const schema = z.object({
@@ -40,8 +41,12 @@ export const moveAdminAppointment = async (input: {
         startsAt: new Date(parsed.data.startsAt),
       },
     )
+    const packageContext = await getAppointmentPackageMailContext(
+      prisma,
+      appointment.id,
+    )
     const recipient = notifyAppointmentRescheduled(
-      appointment,
+      { ...appointment, package: packageContext },
       previousStartsAt,
     )
     revalidatePath('/admin', 'layout')

@@ -46,7 +46,7 @@ const makeDatabase = () => {
         ]),
     },
     availabilityException: { findMany: vi.fn().mockResolvedValue([]) },
-    customerPackage: { updateMany: vi.fn().mockResolvedValue({ count: 0 }) },
+    packageSession: { findUnique: vi.fn().mockResolvedValue(null) },
     auditEvent: { create: vi.fn().mockResolvedValue({}) },
   }
   return {
@@ -110,9 +110,9 @@ describe('déplacement guidé', () => {
     expect(database.$transaction).toHaveBeenCalledWith(expect.any(Function), {
       isolationLevel: 'Serializable',
     })
-    expect(database.customerPackage.updateMany).toHaveBeenCalledWith({
-      where: { revenueAppointmentId: 'rdv' },
-      data: { validityStartsAt: input.startsAt },
+    expect(database.packageSession.findUnique).toHaveBeenCalledWith({
+      where: { appointmentId: 'rdv' },
+      select: { customerPackageId: true },
     })
     expect(database.auditEvent.create).toHaveBeenCalledTimes(1)
   })
@@ -123,7 +123,7 @@ describe('déplacement guidé', () => {
       input,
       new Date('2026-09-07T08:30Z'),
     )
-    expect(database.customerPackage.updateMany).not.toHaveBeenCalled()
+    expect(database.packageSession.findUnique).toHaveBeenCalledOnce()
   })
   it('refuse un changement concurrent et un rendez-vous annulé', async () => {
     for (const changed of [

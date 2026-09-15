@@ -25,20 +25,17 @@ export const capitalizeFirst = (text: string): string =>
  * qui n'est ni une somme suisse ni même un prix. Les francs entiers restent
  * sans décimale, les autres en portent exactement deux.
  */
-const wholeFrancs = new Intl.NumberFormat('fr-CH', {
-  style: 'currency',
-  currency: 'CHF',
-  minimumFractionDigits: 0,
-})
-
-const withCentimes = new Intl.NumberFormat('fr-CH', {
-  style: 'currency',
-  currency: 'CHF',
-  minimumFractionDigits: 2,
-})
-
-export const formatPrice = (priceCents: number): string =>
-  (priceCents % 100 === 0 ? wholeFrancs : withCentimes).format(priceCents / 100)
+export const formatPrice = (priceCents: number): string => {
+  // Node et Chromium n'emploient pas toujours le même séparateur `fr-CH`
+  // (apostrophe ASCII, typographique ou espace fine). Une chaîne construite
+  // explicitement évite une régénération du tunnel lors de l'hydratation.
+  const absoluteCents = Math.abs(Math.trunc(priceCents))
+  const francs = Math.floor(absoluteCents / 100)
+    .toString()
+    .replace(/\B(?=(\d{3})+(?!\d))/g, "'")
+  const centimes = absoluteCents % 100
+  return `${priceCents < 0 ? '-' : ''}${francs}${centimes ? `.${centimes.toString().padStart(2, '0')}` : ''}\u00a0CHF`
+}
 
 /**
  * « 3 » ,« 3 000 » — un décompte, jamais une somme.

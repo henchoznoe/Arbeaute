@@ -39,6 +39,9 @@ import { capitalizeFirst } from '@/lib/utils/format'
 
 interface AppointmentValues {
   id?: string
+  customerPackageId?: string
+  packageName?: string
+  remainingPackageCredits?: number
   serviceId?: string
   date: string
   time: string
@@ -99,6 +102,7 @@ export const AppointmentForm = ({
   const hasPrefilledCustomer = Boolean(
     appointment.lastName && appointment.email && appointment.phone,
   )
+  const packageBooking = Boolean(appointment.customerPackageId)
   const [customerMode, setCustomerMode] = useState<
     'choice' | 'search' | 'existing' | 'new'
   >(appointment.id ? 'new' : hasPrefilledCustomer ? 'existing' : 'choice')
@@ -115,6 +119,7 @@ export const AppointmentForm = ({
   const getSeriesInput = (
     formData: FormData,
   ): AdminAppointmentSeriesFormInput => ({
+    customerPackageId: appointment.customerPackageId,
     serviceId: String(formData.get('serviceId') ?? ''),
     date: String(formData.get('date') ?? ''),
     time: String(formData.get('time') ?? ''),
@@ -133,6 +138,7 @@ export const AppointmentForm = ({
     startTransition(async () => {
       const result = await saveAdminAppointment({
         appointmentId: appointment.id,
+        customerPackageId: appointment.customerPackageId,
         serviceId: String(formData.get('serviceId') ?? ''),
         date,
         time: String(formData.get('time') ?? ''),
@@ -226,6 +232,11 @@ export const AppointmentForm = ({
       onChange={resetWarning}
       className="flex flex-col gap-6 rounded-3xl border bg-card p-5 shadow-sm sm:p-7"
     >
+      {packageBooking ? (
+        <p className="order-0 rounded-xl bg-primary/10 p-4 text-sm font-medium text-primary">
+          Séance incluse dans {appointment.packageName}
+        </p>
+      ) : null}
       <section className="order-1" aria-labelledby="appointment-service-step">
         {!appointment.id ? (
           <h2
@@ -321,7 +332,10 @@ export const AppointmentForm = ({
         </section>
       ) : null}
 
-      {!appointment.id && dateTimeReady && customerReady ? (
+      {!appointment.id &&
+      dateTimeReady &&
+      customerReady &&
+      (appointment.remainingPackageCredits ?? 2) > 1 ? (
         <section className="order-4 rounded-2xl border bg-muted/30 p-4">
           <label className="flex min-h-11 cursor-pointer items-center gap-3">
             <input
@@ -355,8 +369,11 @@ export const AppointmentForm = ({
                   name="occurrenceCount"
                   type="number"
                   min={2}
-                  max={24}
-                  defaultValue={4}
+                  max={Math.min(24, appointment.remainingPackageCredits ?? 24)}
+                  defaultValue={Math.min(
+                    4,
+                    appointment.remainingPackageCredits ?? 4,
+                  )}
                   required
                   className={formControlClass}
                 />
@@ -396,7 +413,7 @@ export const AppointmentForm = ({
                 ? '3. Choisir le client'
                 : 'Client et commentaire'}
             </h2>
-            {!appointment.id && customerMode !== 'choice' ? (
+            {!appointment.id && !packageBooking && customerMode !== 'choice' ? (
               <Button
                 type="button"
                 variant="ghost"
@@ -408,7 +425,7 @@ export const AppointmentForm = ({
             ) : null}
           </div>
 
-          {!appointment.id && customerMode === 'choice' ? (
+          {!appointment.id && !packageBooking && customerMode === 'choice' ? (
             <div className="mt-4 grid gap-3 sm:grid-cols-2">
               <Button
                 type="button"
@@ -435,7 +452,7 @@ export const AppointmentForm = ({
             </div>
           ) : null}
 
-          {!appointment.id && customerMode === 'search' ? (
+          {!appointment.id && !packageBooking && customerMode === 'search' ? (
             <div className="mt-4">
               <CustomerPicker onSelect={selectCustomer} />
             </div>

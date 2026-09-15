@@ -1,3 +1,4 @@
+import Link from 'next/link'
 import { notFound, redirect } from 'next/navigation'
 import { Suspense } from 'react'
 import { AdminPage, AdminPageHeader } from '@/components/admin/admin-page'
@@ -6,6 +7,7 @@ import {
   attachAppointmentsToPackage,
   cancelCustomerPackage,
   decidePackageCredit,
+  detachAppointmentFromPackage,
   extendCustomerPackage,
   updateCustomerPackageInstallments,
 } from '@/lib/actions/packages'
@@ -16,7 +18,11 @@ import {
   getPackageCreditSummary,
   getPackageExpiry,
 } from '@/lib/packages/domain'
-import { formatAppointmentDate, getLocalDateKey } from '@/lib/reservation/time'
+import {
+  addLocalDays,
+  formatAppointmentDate,
+  getLocalDateKey,
+} from '@/lib/reservation/time'
 import { formatPrice } from '@/lib/utils/format'
 import type { AppointmentStatus } from '@/prisma/generated/prisma/enums'
 
@@ -63,13 +69,14 @@ const CustomerPackage = async ({
     validityMonths: item.validityMonthsSnapshot,
     expiresAtOverride: item.expiresAtOverride,
   })
+  const now = new Date()
   const candidates = await prisma.appointment.findMany({
     where: {
       customerId: item.customerId,
       serviceId: { in: item.allowedServices.map(service => service.serviceId) },
       packageSession: null,
       status: 'CONFIRMED',
-      ...(expiry ? { startsAt: { lte: expiry } } : {}),
+      startsAt: { gt: now, ...(expiry ? { lte: expiry } : {}) },
     },
     orderBy: { startsAt: 'asc' },
     take: 20,
@@ -77,7 +84,10 @@ const CustomerPackage = async ({
   const hasFutureAppointment = item.sessions.some(
     session =>
       session.appointment.status === 'CONFIRMED' &&
-      session.appointment.startsAt > new Date(),
+      session.appointment.startsAt > now,
+  )
+  const hasPendingDecision = item.sessions.some(
+    session => session.creditState === 'DECISION_REQUIRED',
   )
   return (
     <AdminPage>
@@ -87,6 +97,18 @@ const CustomerPackage = async ({
         title={item.packageNameSnapshot}
         description={`${credits.remaining} séance${credits.remaining > 1 ? 's' : ''} restante${credits.remaining > 1 ? 's' : ''} · ${formatPrice(item.packagePriceCents)} · ${formatInstallmentChoice(item.installmentCount)}`}
       />
+      {item.status === 'ACTIVE' &&
+      credits.remaining > 0 &&
+      (!expiry || expiry > now) ? (
+        <div className="mt-5">
+          <Link
+            href={`/admin/appointments/new?customerPackageId=${item.id}`}
+            className="inline-flex min-h-11 items-center rounded-xl bg-primary px-4 py-2 font-medium text-primary-foreground"
+          >
+            Planifier une séance
+          </Link>
+        </div>
+      ) : null}
       <section className="mt-5 rounded-2xl border bg-card p-5">
         <h2 className="font-semibold">Paiement sur place</h2>
         <form
@@ -115,22 +137,24 @@ const CustomerPackage = async ({
             ? `Jusqu’au ${getLocalDateKey(expiry)}`
             : 'Commencera au premier rendez-vous.'}
         </p>
-        <form
-          action={extendCustomerPackage}
-          className="mt-3 flex flex-wrap gap-2"
-        >
-          <input type="hidden" name="id" value={item.id} />
-          <input
-            type="date"
-            name="expiresOn"
-            required
-            defaultValue={expiry ? getLocalDateKey(expiry) : undefined}
-            className="min-h-11 rounded-xl border bg-background px-3"
-          />
-          <button type="submit" className="rounded-xl border px-4">
-            Prolonger
-          </button>
-        </form>
+        {item.status === 'ACTIVE' && expiry ? (
+          <form
+            action={extendCustomerPackage}
+            className="mt-3 flex flex-wrap gap-2"
+          >
+            <input type="hidden" name="id" value={item.id} />
+            <input
+              type="date"
+              name="expiresOn"
+              required
+              min={addLocalDays(getLocalDateKey(expiry), 1)}
+              className="min-h-11 rounded-xl border bg-background px-3"
+            />
+            <button type="submit" className="rounded-xl border px-4">
+              Prolonger
+            </button>
+          </form>
+        ) : null}
       </section>
       <section className="mt-4 rounded-2xl border bg-card p-5">
         <h2 className="font-semibold">Séances</h2>
@@ -171,11 +195,25 @@ const CustomerPackage = async ({
                     : 'Crédit compté'}
                 </p>
               )}
+              {session.appointment.status === 'CONFIRMED' &&
+              session.appointment.startsAt > now ? (
+                <form action={detachAppointmentFromPackage} className="mt-3">
+                  <input type="hidden" name="sessionId" value={session.id} />
+                  <button
+                    type="submit"
+                    className="rounded-lg border px-3 py-2 text-sm"
+                  >
+                    Détacher du forfait
+                  </button>
+                </form>
+              ) : null}
             </article>
           ))}
         </div>
       </section>
-      {credits.remaining > 0 && candidates.length > 0 ? (
+      {item.status === 'ACTIVE' &&
+      credits.remaining > 0 &&
+      candidates.length > 0 ? (
         <section className="mt-4 rounded-2xl border bg-card p-5">
           <h2 className="font-semibold">Rattacher des rendez-vous</h2>
           <p className="mt-1 text-sm text-muted-foreground">
@@ -216,13 +254,15 @@ const CustomerPackage = async ({
           <p className="mt-2 text-sm text-muted-foreground">
             {hasFutureAppointment
               ? 'Annulez ou détachez d’abord les rendez-vous à venir.'
-              : 'Cette action ferme le forfait. Son historique reste consultable.'}
+              : hasPendingDecision
+                ? 'Décidez d’abord si la séance annulée ou manquée doit être comptée.'
+                : 'Cette action ferme le forfait. Son historique reste consultable.'}
           </p>
           <form action={cancelCustomerPackage} className="mt-3">
             <input type="hidden" name="id" value={item.id} />
             <button
               type="submit"
-              disabled={hasFutureAppointment}
+              disabled={hasFutureAppointment || hasPendingDecision}
               className="rounded-xl border border-destructive/40 px-4 py-2 text-destructive disabled:opacity-50"
             >
               Annuler le forfait

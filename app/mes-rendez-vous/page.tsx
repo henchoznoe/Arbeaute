@@ -183,7 +183,13 @@ const CustomerAppointments = async ({
     },
     packageSession: {
       select: {
-        customerPackage: { select: { packageNameSnapshot: true } },
+        customerPackage: {
+          select: {
+            packageNameSnapshot: true,
+            packagePriceCents: true,
+            revenueAppointmentId: true,
+          },
+        },
       },
     },
   } as const
@@ -355,7 +361,10 @@ const CustomerAppointments = async ({
                     dateLabel={formatAppointmentDate(appointment.startsAt)}
                     priceLabel={
                       appointment.packageSession
-                        ? `Inclus dans ${appointment.packageSession.customerPackage.packageNameSnapshot}`
+                        ? appointment.packageSession.customerPackage
+                            .revenueAppointmentId === appointment.id
+                          ? `${formatPrice(appointment.packageSession.customerPackage.packagePriceCents)} · ${appointment.packageSession.customerPackage.packageNameSnapshot}`
+                          : `Inclus dans ${appointment.packageSession.customerPackage.packageNameSnapshot}`
                         : formatPrice(appointment.servicePriceCents)
                     }
                     canChange={canCustomerChangeAppointment(
@@ -368,10 +377,16 @@ const CustomerAppointments = async ({
                     customerChangeCutoffLabel={customerChangeCutoffLabel}
                     calendar={createAppointmentCalendar({
                       id: appointment.id,
-                      serviceLabel: formatServiceLabel(
-                        appointment.serviceNameSnapshot,
-                        appointment.service.category?.name,
-                      ),
+                      serviceLabel: [
+                        appointment.packageSession?.customerPackage
+                          .packageNameSnapshot,
+                        formatServiceLabel(
+                          appointment.serviceNameSnapshot,
+                          appointment.service.category?.name,
+                        ),
+                      ]
+                        .filter(Boolean)
+                        .join(' — '),
                       startsAt: appointment.startsAt,
                       endsAt: appointment.endsAt,
                     })}
@@ -424,7 +439,10 @@ const CustomerAppointments = async ({
                       dateLabel={formatAppointmentDate(appointment.startsAt)}
                       priceLabel={
                         appointment.packageSession
-                          ? `Inclus dans ${appointment.packageSession.customerPackage.packageNameSnapshot}`
+                          ? appointment.packageSession.customerPackage
+                              .revenueAppointmentId === appointment.id
+                            ? `${formatPrice(appointment.packageSession.customerPackage.packagePriceCents)} · ${appointment.packageSession.customerPackage.packageNameSnapshot}`
+                            : `Inclus dans ${appointment.packageSession.customerPackage.packageNameSnapshot}`
                           : formatPrice(appointment.servicePriceCents)
                       }
                       state={state}

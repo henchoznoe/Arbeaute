@@ -13,6 +13,14 @@ const publicPackageSelect = {
   validityMonths: true,
   imageUrl: true,
   services: {
+    where: {
+      service: {
+        isArchived: false,
+        isBookable: true,
+        isVisible: true,
+        category: { isActive: true },
+      },
+    },
     orderBy: { sortOrder: 'asc' as const },
     select: {
       service: {
@@ -35,7 +43,20 @@ export const getPublicPackages = async () => {
   cacheTag(PACKAGES_TAG)
 
   const packages = await prisma.package.findMany({
-    where: { isVisible: true, isArchived: false },
+    where: {
+      isVisible: true,
+      isArchived: false,
+      services: {
+        some: {
+          service: {
+            isArchived: false,
+            isBookable: true,
+            isVisible: true,
+            category: { isActive: true },
+          },
+        },
+      },
+    },
     orderBy: [{ sortOrder: 'asc' }, { name: 'asc' }],
     select: publicPackageSelect,
   })

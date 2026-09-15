@@ -1,4 +1,5 @@
 import { appointmentAuditValues, writeAuditEvent } from '@/lib/admin/audit'
+import { syncCustomerPackageMilestones } from '@/lib/packages/milestones'
 import {
   type AvailableSlot,
   getAdminRescheduleSlots,
@@ -98,11 +99,15 @@ export const rescheduleAdminAppointment = async (
               allowsOverlap: false,
             },
           })
-          if (current.startsAt > now)
-            await transaction.customerPackage.updateMany({
-              where: { revenueAppointmentId: current.id },
-              data: { validityStartsAt: input.startsAt },
-            })
+          const packageSession = await transaction.packageSession.findUnique({
+            where: { appointmentId: current.id },
+            select: { customerPackageId: true },
+          })
+          if (packageSession)
+            await syncCustomerPackageMilestones(
+              transaction,
+              packageSession.customerPackageId,
+            )
           await writeAuditEvent(transaction, {
             actorType: 'ADMIN',
             actorId: 'admin',

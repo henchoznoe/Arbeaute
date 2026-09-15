@@ -37,6 +37,7 @@ import {
   notifyAppointmentRescheduled,
   notifyAppointmentSeriesConfirmed,
 } from '@/lib/email/notifications'
+import { getAppointmentPackageMailContext } from '@/lib/packages/mail-context'
 import { MAX_AVAILABILITY_EXCEPTION_RANGE_DAYS } from '@/lib/reservation/constants'
 import { normalizeEmail, normalizePhone } from '@/lib/reservation/identity'
 import { OPENING_HOURS_TAG } from '@/lib/reservation/opening-hours'
@@ -47,6 +48,7 @@ const timePattern = /^([01]\d|2[0-3]):([0-5]\d)$/
 
 const appointmentSchema = z.object({
   appointmentId: z.string().min(1).optional(),
+  customerPackageId: z.string().min(1).optional(),
   serviceId: z.string().min(1),
   date: z.string().refine(isDateKey),
   time: z.string().regex(timePattern),
@@ -95,6 +97,7 @@ const countDateKeys = (startDateKey: string, endDateKey: string): number =>
 
 export interface AdminAppointmentFormInput {
   appointmentId?: string
+  customerPackageId?: string
   serviceId: string
   date: string
   time: string
@@ -159,6 +162,7 @@ const toAppointmentSeriesInput = (
 ) => {
   const identity = normalizeAppointmentIdentity(data)
   return {
+    customerPackageId: data.customerPackageId,
     serviceId: data.serviceId,
     date: data.date,
     minute: parseMinute(data.time),
@@ -290,7 +294,13 @@ export const createAdminAppointmentSeries = async (
     )
     revalidatePath('/admin')
     revalidatePath('/mes-rendez-vous')
-    const recipient = notifyAppointmentSeriesConfirmed(appointments)
+    const notifiableAppointments = await Promise.all(
+      appointments.map(async appointment => ({
+        ...appointment,
+        package: await getAppointmentPackageMailContext(prisma, appointment.id),
+      })),
+    )
+    const recipient = notifyAppointmentSeriesConfirmed(notifiableAppointments)
     return {
       ok: true,
       message: `${appointments.length} rendez-vous ont été créés.${describeAdminNotification(recipient, true)}`,
@@ -305,6 +315,15 @@ export const createAdminAppointmentSeries = async (
             : 'Confirmez la création des rendez-vous placés hors ouverture.',
         preview: error.preview,
         needsOutsideHoursConfirmation: error.code === 'OUTSIDE_HOURS',
+      }
+    if (
+      error instanceof AdminAgendaError &&
+      error.code === 'PACKAGE_UNAVAILABLE'
+    )
+      return {
+        ok: false,
+        message:
+          'Cette série dépasse le solde ou la date de validité du forfait.',
       }
     return {
       ok: false,
@@ -386,6 +405,7 @@ export const saveAdminAppointment = async (
       prisma,
       {
         appointmentId: parsed.data.appointmentId,
+        customerPackageId: parsed.data.customerPackageId,
         serviceId: parsed.data.serviceId,
         startsAt,
         firstName: parsed.data.firstName || null,
@@ -402,11 +422,22 @@ export const saveAdminAppointment = async (
     // Rectifier une orthographe ne déplace rien : seul un changement d'horaire
     // ou de soin justifie d'écrire à la personne.
     const change = describeAdminAppointmentChange(previous, appointment)
+    const packageContext = await getAppointmentPackageMailContext(
+      prisma,
+      appointment.id,
+    )
+    const notifiableAppointment = {
+      ...appointment,
+      package: packageContext,
+    }
     const recipient =
       change === 'created'
-        ? notifyAppointmentConfirmed(appointment)
+        ? notifyAppointmentConfirmed(notifiableAppointment)
         : change === 'rescheduled' && previous
-          ? notifyAppointmentRescheduled(appointment, previous.startsAt)
+          ? notifyAppointmentRescheduled(
+              notifiableAppointment,
+              previous.startsAt,
+            )
           : null
 
     return {
@@ -428,6 +459,15 @@ export const saveAdminAppointment = async (
           ? `Cette heure se superpose au rendez-vous de ${error.conflictTime}, temps d’installation et de rangement compris.`
           : 'Cette heure vient d’être prise par quelqu’un d’autre. Rafraîchissez la page pour voir l’agenda à jour.',
         needsOverlapConfirmation: Boolean(error.conflictTime),
+      }
+    if (
+      error instanceof AdminAgendaError &&
+      error.code === 'PACKAGE_UNAVAILABLE'
+    )
+      return {
+        ok: false,
+        message:
+          'Ce forfait ne peut pas recevoir cette séance : vérifiez le soin, le solde et la date de validité.',
       }
     return {
       ok: false,
@@ -459,7 +499,14 @@ export const cancelAdminAppointment = async (
     )
     revalidatePath('/admin')
     revalidatePath('/mes-rendez-vous')
-    const recipient = notifyAppointmentCancelled(cancelled)
+    const packageContext = await getAppointmentPackageMailContext(
+      prisma,
+      cancelled.id,
+    )
+    const recipient = notifyAppointmentCancelled({
+      ...cancelled,
+      package: packageContext,
+    })
     return {
       ok: true,
       message: `Le rendez-vous a été annulé.${describeAdminNotification(recipient, true)}`,
