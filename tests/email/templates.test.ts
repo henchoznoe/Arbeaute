@@ -103,9 +103,11 @@ describe('buildConfirmationMail', () => {
     )
     expect(packageMail.text).toContain('Premier soin : Soins visage')
     expect(packageMail.text.replace(/\u00a0/g, ' ')).toContain(
-      "Prix total : 1'600 CHF",
+      "Prix total du forfait : 1'600 CHF",
     )
-    expect(packageMail.text).toContain('Paiement sur place : en 3 fois')
+    expect(packageMail.text).toContain(
+      'Modalité de paiement sur place : en 3 fois',
+    )
     expect(packageMail.text).not.toContain('Prix : 120 CHF')
   })
 })
@@ -252,9 +254,11 @@ describe('buildSeriesConfirmationMail', () => {
     )
 
     expect(packageMail.text.replace(/\u00a0/g, ' ')).toContain(
-      "Prix total : 1'600 CHF",
+      "Prix total du forfait : 1'600 CHF",
     )
-    expect(packageMail.text).toContain('Paiement sur place : en 3 fois')
+    expect(packageMail.text).toContain(
+      'Modalité de paiement sur place : en 3 fois',
+    )
     expect(packageMail.text).not.toContain('Prix par séance')
   })
 

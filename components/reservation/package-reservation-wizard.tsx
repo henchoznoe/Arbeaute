@@ -120,6 +120,12 @@ export const PackageReservationWizard = ({
           {result.appointment.priceLabel} ·{' '}
           {result.appointment.installmentLabel}
         </p>
+        <p className="mt-3 font-medium text-primary">
+          {result.appointment.remainingCredits} séance
+          {result.appointment.remainingCredits > 1 ? 's' : ''} encore disponible
+          {result.appointment.remainingCredits > 1 ? 's' : ''} dans « Mes
+          rendez-vous ».
+        </p>
         <ConfirmationActions appointment={result.appointment} />
       </section>
     )
@@ -161,7 +167,8 @@ export const PackageReservationWizard = ({
               {item.name}
             </span>
             <span className="mt-2 block text-sm text-muted-foreground">
-              {item.sessionCount} séances · {formatPrice(item.priceCents)}
+              {item.sessionCount} séances · prix total{' '}
+              {formatPrice(item.priceCents)}
             </span>
           </button>
         ))}
@@ -224,7 +231,7 @@ export const PackageReservationWizard = ({
         {selectedPackage.name}
       </h2>
       <p className="mt-2 text-muted-foreground">
-        {selectedPackage.sessionCount} séances ·{' '}
+        {selectedPackage.sessionCount} séances · prix total{' '}
         {formatPrice(selectedPackage.priceCents)} · valable{' '}
         {selectedPackage.validityMonths} mois
       </p>
@@ -271,6 +278,10 @@ export const PackageReservationWizard = ({
             </label>
           ))}
         </div>
+        <p className="mt-2 text-sm text-muted-foreground">
+          Ce choix concerne le règlement global du forfait sur place. Il ne
+          répartit pas automatiquement le prix entre les rendez-vous.
+        </p>
       </fieldset>
       {selectedService ? (
         <>

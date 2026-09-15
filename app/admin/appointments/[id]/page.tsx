@@ -20,6 +20,7 @@ import { Button } from '@/components/ui/button'
 import { StatusBadge } from '@/components/ui/status-badge'
 import prisma from '@/lib/core/prisma'
 import { getAdminSession } from '@/lib/core/session-cookies'
+import { formatInstallmentChoice } from '@/lib/packages/domain'
 import { RESERVATION_TIME_ZONE } from '@/lib/reservation/constants'
 import { formatServiceLabel } from '@/lib/reservation/service-label'
 import { formatAppointmentDate } from '@/lib/reservation/time'
@@ -145,7 +146,7 @@ const EditAppointment = async ({
               {appointment.packageSession
                 ? appointment.packageSession.customerPackage
                     .revenueAppointmentId === appointment.id
-                  ? `${formatPrice(appointment.packageSession.customerPackage.packagePriceCents)} · prix total du forfait`
+                  ? `Prix total du forfait : ${formatPrice(appointment.packageSession.customerPackage.packagePriceCents)} · ${formatInstallmentChoice(appointment.packageSession.customerPackage.installmentCount).toLowerCase()} sur place`
                   : 'Inclus dans le forfait'
                 : formatPrice(appointment.servicePriceCents)}
             </p>

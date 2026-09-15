@@ -7,7 +7,11 @@ import { z } from 'zod/v4'
 import { writeAuditEvent } from '@/lib/admin/audit'
 import { env } from '@/lib/core/env'
 import prisma from '@/lib/core/prisma'
-import { getAdminSession, setCustomerSession } from '@/lib/core/session-cookies'
+import {
+  getAdminSession,
+  getCustomerSession,
+  setCustomerSession,
+} from '@/lib/core/session-cookies'
 import { notifyAppointmentConfirmed } from '@/lib/email/notifications'
 import {
   formatInstallmentChoice,
@@ -16,11 +20,13 @@ import {
 } from '@/lib/packages/domain'
 import { syncCustomerPackageMilestones } from '@/lib/packages/milestones'
 import {
+  bookCustomerPackageSession,
   PackagePurchaseError,
   purchasePackageWithFirstAppointment,
 } from '@/lib/packages/purchase'
 import { PACKAGES_TAG } from '@/lib/packages/queries'
 import { createAppointmentCalendar } from '@/lib/reservation/calendar'
+import { findCustomerForSession } from '@/lib/reservation/customers'
 import { normalizeEmail, normalizePhone } from '@/lib/reservation/identity'
 import { formatServiceLabel } from '@/lib/reservation/service-label'
 import {
@@ -335,6 +341,7 @@ export interface PackageBookingResult {
     endsAt: string
     calendar: string
     confirmationEmailTo: string | null
+    remainingCredits: number
   }
 }
 
@@ -353,6 +360,15 @@ const publicPackageSchema = z.object({
   lastName: optionalBookingText(100),
   email: z.string().trim().min(1).max(254),
   phone: optionalBookingText(40),
+  comment: optionalBookingText(1000),
+  consent: z.literal(true),
+  website: optionalBookingText(0),
+})
+
+const existingPackageSessionSchema = z.object({
+  customerPackageId: z.string().min(1),
+  serviceId: z.string().min(1),
+  startsAt: z.iso.datetime({ offset: true }),
   comment: optionalBookingText(1000),
   consent: z.literal(true),
   website: optionalBookingText(0),
@@ -441,10 +457,8 @@ export const createPublicPackageBooking = async (
         ),
         packageLabel: result.customerPackage.packageNameSnapshot,
         dateLabel: formatAppointmentDate(result.appointment.startsAt),
-        priceLabel: formatPrice(result.customerPackage.packagePriceCents),
-        installmentLabel: formatInstallmentChoice(
-          result.customerPackage.installmentCount,
-        ),
+        priceLabel: `Prix total du forfait : ${formatPrice(result.customerPackage.packagePriceCents)}`,
+        installmentLabel: `${formatInstallmentChoice(result.customerPackage.installmentCount)} sur place`,
         startsAt: result.appointment.startsAt.toISOString(),
         endsAt: result.appointment.endsAt.toISOString(),
         calendar: createAppointmentCalendar({
@@ -457,6 +471,7 @@ export const createPublicPackageBooking = async (
           endsAt: result.appointment.endsAt,
         }),
         confirmationEmailTo,
+        remainingCredits: result.customerPackage.sessionCountSnapshot - 1,
       },
     }
   } catch (error) {
@@ -466,6 +481,141 @@ export const createPublicPackageBooking = async (
         reason: 'SLOT_CONFLICT',
         message:
           'Ce créneau ou ce forfait n’est plus disponible. Choisissez-en un autre.',
+      }
+    return packageBookingError()
+  }
+}
+
+export const identifyCustomerForPackageBooking = async (
+  formData: FormData,
+): Promise<void> => {
+  const packageId = z
+    .string()
+    .optional()
+    .catch(undefined)
+    .parse(formData.get('customerPackageId') ?? undefined)
+  const suffix = packageId
+    ? `&utiliserForfait=${encodeURIComponent(packageId)}`
+    : ''
+  let customer: { id: string; identityVersion: number } | null = null
+  try {
+    if (!(await hasSameOrigin()) || formData.get('website') !== '')
+      throw new Error('INVALID_ORIGIN')
+    const limit = await checkRateLimit({
+      action: 'customer-identification',
+      key: await getRequestIp(),
+      limit: 10,
+      windowMs: 15 * 60 * 1000,
+    })
+    if (!limit.allowed) throw new Error('RATE_LIMIT')
+    const email = normalizeEmail(
+      z.string().max(254).parse(formData.get('email')),
+    )
+    customer = await prisma.customer.findFirst({
+      where: { emailNormalized: email, anonymizedAt: null },
+      select: { id: true, identityVersion: true },
+    })
+  } catch {}
+  if (!customer)
+    redirect(`/reservation?type=mon-forfait${suffix}&error=identification`)
+  await setCustomerSession(customer.id, customer.identityVersion)
+  redirect(`/reservation?type=mon-forfait${suffix}`)
+}
+
+export const createPublicCustomerPackageSession = async (
+  input: unknown,
+): Promise<PackageBookingResult> => {
+  if (!(await hasSameOrigin())) return packageBookingError()
+  const parsed = existingPackageSessionSchema.safeParse(input)
+  if (!parsed.success) return packageBookingError()
+  try {
+    const session = await getCustomerSession()
+    const customer = session
+      ? await findCustomerForSession(prisma, session)
+      : null
+    if (!customer)
+      return {
+        ok: false,
+        reason: 'INVALID_CUSTOMER',
+        message:
+          'Votre accès a expiré. Identifiez-vous à nouveau avec votre adresse e-mail.',
+      }
+    const [customerLimit, ipLimit] = await Promise.all([
+      checkRateLimit({
+        action: 'customer-mutation',
+        key: customer.id,
+        limit: 20,
+        windowMs: 3_600_000,
+      }),
+      checkRateLimit({
+        action: 'public-package-session-ip',
+        key: await getRequestIp(),
+        limit: 10,
+        windowMs: 3_600_000,
+      }),
+    ])
+    if (!customerLimit.allowed || !ipLimit.allowed) return packageBookingError()
+
+    const result = await bookCustomerPackageSession(prisma, {
+      customerPackageId: parsed.data.customerPackageId,
+      customerId: customer.id,
+      serviceId: parsed.data.serviceId,
+      startsAt: new Date(parsed.data.startsAt),
+      comment: parsed.data.comment || null,
+    })
+    const packageContext = {
+      name: result.customerPackage.packageNameSnapshot,
+      priceCents: result.customerPackage.packagePriceCents,
+      sessionCount: result.customerPackage.sessionCountSnapshot,
+      installmentCount: result.customerPackage.installmentCount,
+      isInitialAppointment: false,
+    }
+    const confirmationEmailTo = notifyAppointmentConfirmed({
+      ...result.appointment,
+      package: packageContext,
+    })
+    const serviceLabel = formatServiceLabel(
+      result.appointment.serviceNameSnapshot,
+      result.appointment.categoryName,
+    )
+    revalidatePath('/mes-rendez-vous')
+    revalidatePath('/admin')
+    revalidatePath('/admin/a-traiter')
+    revalidatePath(`/admin/customer-packages/${result.customerPackage.id}`)
+    revalidatePath(`/admin/customers/${customer.id}`)
+    return {
+      ok: true,
+      message: 'Votre séance est confirmée et déduite de votre forfait.',
+      appointment: {
+        serviceLabel,
+        packageLabel: result.customerPackage.packageNameSnapshot,
+        dateLabel: formatAppointmentDate(result.appointment.startsAt),
+        priceLabel: 'Inclus dans le forfait',
+        installmentLabel: `${formatInstallmentChoice(result.customerPackage.installmentCount)} sur place`,
+        startsAt: result.appointment.startsAt.toISOString(),
+        endsAt: result.appointment.endsAt.toISOString(),
+        calendar: createAppointmentCalendar({
+          id: result.appointment.id,
+          serviceLabel: `${result.customerPackage.packageNameSnapshot} — ${serviceLabel}`,
+          startsAt: result.appointment.startsAt,
+          endsAt: result.appointment.endsAt,
+        }),
+        confirmationEmailTo,
+        remainingCredits: Math.max(
+          0,
+          result.customerPackage.sessionCountSnapshot -
+            result.customerPackage.sessions.length -
+            1,
+        ),
+      },
+    }
+  } catch (error) {
+    if (error instanceof PackagePurchaseError)
+      return {
+        ok: false,
+        reason: 'SLOT_CONFLICT',
+        message:
+          'Ce créneau ou ce forfait n’est plus disponible. Rechargez la page et choisissez une autre heure.',
       }
     return packageBookingError()
   }

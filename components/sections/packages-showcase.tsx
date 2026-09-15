@@ -72,7 +72,10 @@ export const PackagesShowcase = async ({
                   </p>
                 ) : null}
                 <p className="mt-5 font-heading text-3xl font-semibold text-price">
-                  {formatPrice(item.priceCents)}
+                  {formatPrice(item.priceCents)}{' '}
+                  <span className="font-sans text-sm font-normal text-muted-foreground">
+                    prix total
+                  </span>
                 </p>
                 <ul className="mt-5 space-y-2 text-sm">
                   <li className="flex gap-2">

@@ -176,13 +176,14 @@ const appointmentSummaryText = (data: AppointmentMailData): string[] => [
           `Forfait : ${data.package.name}`,
           `Premier soin : ${data.serviceLabel}`,
           `Séances : ${data.package.sessionCount}`,
-          `Prix total : ${formatPrice(data.package.priceCents)}`,
-          `Paiement sur place : ${installmentText(data.package.installmentCount)}`,
+          `Prix total du forfait : ${formatPrice(data.package.priceCents)}`,
+          `Modalité de paiement sur place : ${installmentText(data.package.installmentCount)}`,
         ]
       : [
           `Forfait : ${data.package.name}`,
           `Soin : ${data.serviceLabel}`,
           'Prix : inclus dans le forfait',
+          `Modalité de paiement du forfait : ${installmentText(data.package.installmentCount)} sur place`,
         ]
     : [
         `Soin : ${data.serviceLabel}`,
@@ -200,13 +201,14 @@ const appointmentSummaryHtml = (data: AppointmentMailData): string[] => [
           `<strong>Forfait :</strong> ${escapeHtml(data.package.name)}`,
           `<strong>Premier soin :</strong> ${escapeHtml(data.serviceLabel)}`,
           `<strong>Séances :</strong> ${data.package.sessionCount}`,
-          `<strong>Prix total :</strong> ${escapeHtml(formatPrice(data.package.priceCents))}`,
-          `<strong>Paiement sur place :</strong> ${escapeHtml(installmentText(data.package.installmentCount))}`,
+          `<strong>Prix total du forfait :</strong> ${escapeHtml(formatPrice(data.package.priceCents))}`,
+          `<strong>Modalité de paiement sur place :</strong> ${escapeHtml(installmentText(data.package.installmentCount))}`,
         ]
       : [
           `<strong>Forfait :</strong> ${escapeHtml(data.package.name)}`,
           `<strong>Soin :</strong> ${escapeHtml(data.serviceLabel)}`,
           '<strong>Prix :</strong> inclus dans le forfait',
+          `<strong>Modalité de paiement du forfait :</strong> ${escapeHtml(installmentText(data.package.installmentCount))} sur place`,
         ]
     : [
         `<strong>Soin :</strong> ${escapeHtml(data.serviceLabel)}`,
@@ -398,13 +400,14 @@ export const buildSeriesConfirmationMail = (
           `Forfait : ${data.package.name}`,
           `Soin : ${data.serviceLabel}`,
           `Séances du forfait : ${data.package.sessionCount}`,
-          `Prix total : ${formatPrice(data.package.priceCents)}`,
-          `Paiement sur place : ${installmentText(data.package.installmentCount)}`,
+          `Prix total du forfait : ${formatPrice(data.package.priceCents)}`,
+          `Modalité de paiement sur place : ${installmentText(data.package.installmentCount)}`,
         ]
       : [
           `Forfait : ${data.package.name}`,
           `Soin : ${data.serviceLabel}`,
           'Prix : inclus dans le forfait',
+          `Modalité de paiement du forfait : ${installmentText(data.package.installmentCount)} sur place`,
         ]
     : [
         `Soin : ${data.serviceLabel}`,
@@ -416,13 +419,14 @@ export const buildSeriesConfirmationMail = (
           `<strong>Forfait :</strong> ${escapeHtml(data.package.name)}`,
           `<strong>Soin :</strong> ${escapeHtml(data.serviceLabel)}`,
           `<strong>Séances du forfait :</strong> ${data.package.sessionCount}`,
-          `<strong>Prix total :</strong> ${escapeHtml(formatPrice(data.package.priceCents))}`,
-          `<strong>Paiement sur place :</strong> ${escapeHtml(installmentText(data.package.installmentCount))}`,
+          `<strong>Prix total du forfait :</strong> ${escapeHtml(formatPrice(data.package.priceCents))}`,
+          `<strong>Modalité de paiement sur place :</strong> ${escapeHtml(installmentText(data.package.installmentCount))}`,
         ]
       : [
           `<strong>Forfait :</strong> ${escapeHtml(data.package.name)}`,
           `<strong>Soin :</strong> ${escapeHtml(data.serviceLabel)}`,
           '<strong>Prix :</strong> inclus dans le forfait',
+          `<strong>Modalité de paiement du forfait :</strong> ${escapeHtml(installmentText(data.package.installmentCount))} sur place`,
         ]
     : [
         `<strong>Soin :</strong> ${escapeHtml(data.serviceLabel)}`,

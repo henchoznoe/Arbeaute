@@ -95,7 +95,7 @@ const CustomerPackage = async ({
         backHref={`/admin/customers/${item.customerId}`}
         backLabel="Client"
         title={item.packageNameSnapshot}
-        description={`${credits.remaining} séance${credits.remaining > 1 ? 's' : ''} restante${credits.remaining > 1 ? 's' : ''} · ${formatPrice(item.packagePriceCents)} · ${formatInstallmentChoice(item.installmentCount)}`}
+        description={`${credits.remaining} séance${credits.remaining > 1 ? 's' : ''} restante${credits.remaining > 1 ? 's' : ''} · prix total ${formatPrice(item.packagePriceCents)} · ${formatInstallmentChoice(item.installmentCount).toLowerCase()} sur place`}
       />
       {item.status === 'ACTIVE' &&
       credits.remaining > 0 &&
@@ -111,6 +111,10 @@ const CustomerPackage = async ({
       ) : null}
       <section className="mt-5 rounded-2xl border bg-card p-5">
         <h2 className="font-semibold">Paiement sur place</h2>
+        <p className="mt-1 text-sm text-muted-foreground">
+          Modalité globale convenue avec la personne. Elle n’attribue pas un
+          montant à chaque rendez-vous.
+        </p>
         <form
           action={updateCustomerPackageInstallments}
           className="mt-3 flex flex-wrap gap-2"

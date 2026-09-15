@@ -183,10 +183,12 @@ const CustomerAppointments = async ({
     },
     packageSession: {
       select: {
+        customerPackageId: true,
         customerPackage: {
           select: {
             packageNameSnapshot: true,
             packagePriceCents: true,
+            installmentCount: true,
             revenueAppointmentId: true,
           },
         },
@@ -290,8 +292,12 @@ const CustomerAppointments = async ({
                         {item.sessionCountSnapshot}
                       </p>
                       <p className="mt-1 text-sm text-muted-foreground">
-                        {formatInstallmentChoice(item.installmentCount)} ·{' '}
+                        Prix total du forfait :{' '}
                         {formatPrice(item.packagePriceCents)}
+                      </p>
+                      <p className="mt-1 text-sm font-medium text-foreground">
+                        {formatInstallmentChoice(item.installmentCount)} sur
+                        place
                       </p>
                       <p className="mt-1 text-sm text-muted-foreground">
                         {expiry
@@ -302,6 +308,15 @@ const CustomerAppointments = async ({
                         <p className="mt-3 rounded-xl bg-warning-subtle p-3 text-sm text-warning-strong">
                           Une séance annulée attend la décision de l’institut.
                         </p>
+                      ) : null}
+                      {credits.remaining > 0 && (!expiry || expiry >= now) ? (
+                        <Button asChild className="mt-4 w-full sm:w-auto">
+                          <Link
+                            href={`/reservation?type=mon-forfait&utiliserForfait=${encodeURIComponent(item.id)}`}
+                          >
+                            Réserver une séance de ce forfait
+                          </Link>
+                        </Button>
                       ) : null}
                     </article>
                   )
@@ -363,8 +378,8 @@ const CustomerAppointments = async ({
                       appointment.packageSession
                         ? appointment.packageSession.customerPackage
                             .revenueAppointmentId === appointment.id
-                          ? `${formatPrice(appointment.packageSession.customerPackage.packagePriceCents)} · ${appointment.packageSession.customerPackage.packageNameSnapshot}`
-                          : `Inclus dans ${appointment.packageSession.customerPackage.packageNameSnapshot}`
+                          ? `Prix total du forfait : ${formatPrice(appointment.packageSession.customerPackage.packagePriceCents)} · ${formatInstallmentChoice(appointment.packageSession.customerPackage.installmentCount).toLowerCase()} sur place`
+                          : `Séance incluse dans ${appointment.packageSession.customerPackage.packageNameSnapshot}`
                         : formatPrice(appointment.servicePriceCents)
                     }
                     canChange={canCustomerChangeAppointment(
@@ -390,7 +405,11 @@ const CustomerAppointments = async ({
                       startsAt: appointment.startsAt,
                       endsAt: appointment.endsAt,
                     })}
-                    bookingPath={getCustomerRebookingPath(appointment.service)}
+                    bookingPath={
+                      appointment.packageSession
+                        ? `/reservation?type=mon-forfait&utiliserForfait=${encodeURIComponent(appointment.packageSession.customerPackageId)}&serviceId=${encodeURIComponent(appointment.serviceId)}`
+                        : getCustomerRebookingPath(appointment.service)
+                    }
                     dateKey={getLocalDateKey(appointment.startsAt)}
                     minDate={limits.min}
                     maxDate={limits.max}
@@ -441,14 +460,16 @@ const CustomerAppointments = async ({
                         appointment.packageSession
                           ? appointment.packageSession.customerPackage
                               .revenueAppointmentId === appointment.id
-                            ? `${formatPrice(appointment.packageSession.customerPackage.packagePriceCents)} · ${appointment.packageSession.customerPackage.packageNameSnapshot}`
-                            : `Inclus dans ${appointment.packageSession.customerPackage.packageNameSnapshot}`
+                            ? `Prix total du forfait : ${formatPrice(appointment.packageSession.customerPackage.packagePriceCents)} · ${formatInstallmentChoice(appointment.packageSession.customerPackage.installmentCount).toLowerCase()} sur place`
+                            : `Séance incluse dans ${appointment.packageSession.customerPackage.packageNameSnapshot}`
                           : formatPrice(appointment.servicePriceCents)
                       }
                       state={state}
-                      bookingPath={getCustomerRebookingPath(
-                        appointment.service,
-                      )}
+                      bookingPath={
+                        appointment.packageSession
+                          ? `/reservation?type=mon-forfait&utiliserForfait=${encodeURIComponent(appointment.packageSession.customerPackageId)}&serviceId=${encodeURIComponent(appointment.serviceId)}`
+                          : getCustomerRebookingPath(appointment.service)
+                      }
                     />
                   )
                 })}

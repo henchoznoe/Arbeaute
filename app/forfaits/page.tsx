@@ -20,8 +20,9 @@ const PackagesPage = () => (
           Choisissez votre forfait, puis votre premier rendez-vous.
         </h1>
         <p className="mt-5 max-w-2xl text-lg leading-relaxed text-muted-foreground">
-          Les séances suivantes seront planifiées avec Arzu. Le paiement
-          s’effectue à l’institut, en une, deux ou trois fois selon votre choix.
+          Réservez le premier rendez-vous ici, puis utilisez « Mes rendez-vous »
+          pour planifier les séances restantes. Le paiement s’effectue à
+          l’institut, en une, deux ou trois fois selon votre choix.
         </p>
       </div>
     </section>

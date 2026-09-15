@@ -24,6 +24,7 @@ import {
 } from '@/lib/admin/customer-profile'
 import prisma from '@/lib/core/prisma'
 import { getAdminSession } from '@/lib/core/session-cookies'
+import { formatInstallmentChoice } from '@/lib/packages/domain'
 import { formatServiceLabel } from '@/lib/reservation/service-label'
 import { formatCompactMoment, formatDayDate } from '@/lib/reservation/time'
 import { capitalizeFirst, formatPrice } from '@/lib/utils/format'
@@ -86,7 +87,7 @@ const CustomerAppointmentList = ({
                   {appointment.packageSession
                     ? appointment.packageSession.customerPackage
                         .revenueAppointmentId === appointment.id
-                      ? `${formatPrice(appointment.packageSession.customerPackage.packagePriceCents)} · forfait`
+                      ? `Prix total ${formatPrice(appointment.packageSession.customerPackage.packagePriceCents)} · ${formatInstallmentChoice(appointment.packageSession.customerPackage.installmentCount).toLowerCase()}`
                       : 'Inclus dans le forfait'
                     : formatPrice(appointment.servicePriceCents)}
                 </span>

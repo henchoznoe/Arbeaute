@@ -9,6 +9,8 @@ import {
 import { getLocalDateKey } from '@/lib/reservation/time'
 import { Prisma, type PrismaClient } from '@/prisma/generated/prisma/client'
 import type { InstallmentCount } from './domain'
+import { getPackageExpiry } from './domain'
+import { syncCustomerPackageMilestones } from './milestones'
 
 export class PackagePurchaseError extends Error {
   constructor(
@@ -33,9 +35,26 @@ interface PackagePurchaseInput {
   comment: string | null
 }
 
+interface PackageSessionBookingInput {
+  customerPackageId: string
+  customerId: string
+  serviceId: string
+  startsAt: Date
+  comment: string | null
+}
+
 const shouldRetry = (error: unknown): boolean =>
   error instanceof Prisma.PrismaClientKnownRequestError &&
   error.code === 'P2034'
+
+const isPackageAvailabilityDatabaseError = (error: unknown): boolean => {
+  const message = error instanceof Error ? error.message : String(error)
+  return [
+    'customer package has no remaining credit',
+    'customer package is expired',
+    'customer package is not active',
+  ].some(fragment => message.includes(fragment))
+}
 
 export const purchasePackageWithFirstAppointment = async (
   prisma: PrismaClient,
@@ -194,6 +213,168 @@ export const purchasePackageWithFirstAppointment = async (
       )
     } catch (error) {
       if (error instanceof PackagePurchaseError) throw error
+      if (isPackageAvailabilityDatabaseError(error))
+        throw new PackagePurchaseError('PACKAGE_UNAVAILABLE')
+      if (shouldRetry(error) && attempt === MAX_SERIALIZABLE_ATTEMPTS)
+        throw new PackagePurchaseError('SLOT_UNAVAILABLE')
+      if (!shouldRetry(error) || attempt === MAX_SERIALIZABLE_ATTEMPTS)
+        throw error
+    }
+  }
+  throw new PackagePurchaseError('SLOT_UNAVAILABLE')
+}
+
+/** Réserve une nouvelle séance sur un forfait déjà ouvert. */
+export const bookCustomerPackageSession = async (
+  prisma: PrismaClient,
+  input: PackageSessionBookingInput,
+) => {
+  const settings = await getBookingSettings()
+  for (let attempt = 1; attempt <= MAX_SERIALIZABLE_ATTEMPTS; attempt += 1) {
+    try {
+      return await prisma.$transaction(
+        async transaction => {
+          const soldPackage = await transaction.customerPackage.findFirst({
+            where: {
+              id: input.customerPackageId,
+              customerId: input.customerId,
+              status: 'ACTIVE',
+            },
+            include: {
+              customer: true,
+              allowedServices: {
+                where: { serviceId: input.serviceId },
+                include: {
+                  service: {
+                    include: {
+                      category: { select: { name: true, isActive: true } },
+                    },
+                  },
+                },
+              },
+              sessions: {
+                where: { creditState: { not: 'RETURNED' } },
+                select: { id: true },
+              },
+            },
+          })
+          if (!soldPackage)
+            throw new PackagePurchaseError('PACKAGE_UNAVAILABLE')
+          if (soldPackage.sessions.length >= soldPackage.sessionCountSnapshot)
+            throw new PackagePurchaseError('PACKAGE_UNAVAILABLE')
+          const expiry = getPackageExpiry({
+            validityStartsAt: soldPackage.validityStartsAt,
+            validityMonths: soldPackage.validityMonthsSnapshot,
+            expiresAtOverride: soldPackage.expiresAtOverride,
+          })
+          if (expiry && input.startsAt > expiry)
+            throw new PackagePurchaseError('PACKAGE_UNAVAILABLE')
+
+          const selected = soldPackage.allowedServices[0]?.service
+          if (
+            !selected?.isBookable ||
+            !selected.isVisible ||
+            selected.isArchived ||
+            !selected.category?.isActive
+          )
+            throw new PackagePurchaseError('SERVICE_NOT_ALLOWED')
+
+          const slots = await getAvailableSlots({
+            database: transaction,
+            serviceId: selected.id,
+            dateKey: getLocalDateKey(input.startsAt),
+            settings: { ...settings, lateRequestsEnabled: false },
+          })
+          if (
+            !slots.some(
+              slot =>
+                slot.startsAt === input.startsAt.toISOString() &&
+                slot.state === 'OPEN',
+            )
+          )
+            throw new PackagePurchaseError('SLOT_UNAVAILABLE')
+
+          const customer = soldPackage.customer
+          const appointment = await transaction.appointment.create({
+            data: {
+              serviceId: selected.id,
+              customerId: customer.id,
+              serviceNameSnapshot: selected.name,
+              servicePriceCents: selected.priceCents,
+              serviceDurationMinutes: selected.durationMinutes,
+              preparationMinutes: selected.preparationMinutes,
+              cleanupMinutes: selected.cleanupMinutes,
+              startsAt: input.startsAt,
+              endsAt: new Date(
+                input.startsAt.getTime() + selected.durationMinutes * 60_000,
+              ),
+              occupiedStartsAt: new Date(
+                input.startsAt.getTime() - selected.preparationMinutes * 60_000,
+              ),
+              occupiedEndsAt: new Date(
+                input.startsAt.getTime() +
+                  (selected.durationMinutes + selected.cleanupMinutes) * 60_000,
+              ),
+              customerFirstName: customer.firstName,
+              customerLastName: customer.lastName,
+              customerSearchName: normalizeCustomerSearchName(
+                customer.firstName,
+                customer.lastName,
+              ),
+              customerEmail: customer.email,
+              customerPhone: customer.phone,
+              comment: input.comment,
+              source: 'PUBLIC',
+              status: 'CONFIRMED',
+            },
+          })
+          await transaction.packageSession.create({
+            data: {
+              customerPackageId: soldPackage.id,
+              appointmentId: appointment.id,
+            },
+          })
+          await syncCustomerPackageMilestones(transaction, soldPackage.id)
+          const activity = await transaction.appointmentActivity.create({
+            data: {
+              type: 'CREATED',
+              appointmentId: appointment.id,
+              customerFirstNameSnapshot: appointment.customerFirstName,
+              customerLastNameSnapshot: appointment.customerLastName,
+              serviceNameSnapshot: appointment.serviceNameSnapshot,
+              appointmentStartsAt: appointment.startsAt,
+            },
+          })
+          await writeAuditEvent(transaction, {
+            actorType: 'CUSTOMER',
+            actorId: customer.id,
+            entityType: 'CUSTOMER_PACKAGE',
+            entityId: soldPackage.id,
+            entityLabel: soldPackage.packageNameSnapshot,
+            action: 'UPDATED',
+            after: {
+              appointmentId: appointment.id,
+              ...appointmentAuditValues(appointment),
+              activityId: activity.id,
+            },
+          })
+          return {
+            appointment: {
+              ...appointment,
+              categoryName: selected.category?.name ?? null,
+            },
+            customer,
+            customerPackage: soldPackage,
+          }
+        },
+        { isolationLevel: 'Serializable' },
+      )
+    } catch (error) {
+      if (error instanceof PackagePurchaseError) throw error
+      if (isPackageAvailabilityDatabaseError(error))
+        throw new PackagePurchaseError('PACKAGE_UNAVAILABLE')
+      if (shouldRetry(error) && attempt === MAX_SERIALIZABLE_ATTEMPTS)
+        throw new PackagePurchaseError('SLOT_UNAVAILABLE')
       if (!shouldRetry(error) || attempt === MAX_SERIALIZABLE_ATTEMPTS)
         throw error
     }

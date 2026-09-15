@@ -633,7 +633,9 @@ export const ReservationWizard = ({
         scrollToWizardTop()
         return
       }
-      if (response.reason === 'SLOT_CONFLICT') {
+      if (response.reason === 'PACKAGE_AVAILABLE' && response.redirectPath) {
+        window.location.assign(response.redirectPath)
+      } else if (response.reason === 'SLOT_CONFLICT') {
         setStartsAt('')
         goToStep(STEPS.slot)
       } else if (response.reason === 'INVALID_CUSTOMER') {

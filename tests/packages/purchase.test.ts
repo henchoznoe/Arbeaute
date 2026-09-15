@@ -19,6 +19,7 @@ vi.mock('@/lib/reservation/customers', () => ({
 }))
 
 import {
+  bookCustomerPackageSession,
   PackagePurchaseError,
   purchasePackageWithFirstAppointment,
 } from '@/lib/packages/purchase'
@@ -178,5 +179,132 @@ describe('purchasePackageWithFirstAppointment', () => {
     await expect(
       purchasePackageWithFirstAppointment(database, input),
     ).rejects.toEqual(new PackagePurchaseError('PACKAGE_UNAVAILABLE'))
+  })
+})
+
+describe('bookCustomerPackageSession', () => {
+  const soldPackage = {
+    id: 'customer-package-1',
+    customerId: 'customer-1',
+    packageNameSnapshot: 'Forfait laser',
+    packagePriceCents: 160000,
+    sessionCountSnapshot: 4,
+    validityMonthsSnapshot: 12,
+    installmentCount: 2,
+    validityStartsAt: new Date('2099-08-01T12:00:00.000Z'),
+    expiresAtOverride: null,
+    customer: {
+      id: 'customer-1',
+      firstName: 'Marie',
+      lastName: 'Dupont',
+      email: 'marie@example.com',
+      phone: '+41791234567',
+    },
+    allowedServices: [{ service }],
+    sessions: [],
+  }
+
+  const makeSessionDatabase = () => {
+    const transaction = {
+      customerPackage: {
+        findFirst: vi.fn().mockResolvedValue(soldPackage),
+        findUniqueOrThrow: vi.fn().mockResolvedValue({
+          validityMonthsSnapshot: 12,
+          expiresAtOverride: null,
+        }),
+        update: vi.fn().mockResolvedValue({}),
+      },
+      appointment: { create: vi.fn().mockResolvedValue(appointment) },
+      packageSession: {
+        create: vi.fn().mockResolvedValue({ id: 'session-2' }),
+        findMany: vi.fn().mockResolvedValue([
+          {
+            appointmentId: appointment.id,
+            creditState: 'COUNTED',
+            appointment: { startsAt },
+          },
+        ]),
+      },
+      appointmentActivity: {
+        create: vi.fn().mockResolvedValue({ id: 'event-1' }),
+      },
+      auditEvent: { create: vi.fn().mockResolvedValue({ id: 'audit-1' }) },
+    }
+    const database = {
+      $transaction: vi.fn(callback => callback(transaction)),
+    } as unknown as PrismaClient
+    return { database, transaction }
+  }
+
+  const sessionInput = {
+    customerPackageId: soldPackage.id,
+    customerId: soldPackage.customerId,
+    serviceId: service.id,
+    startsAt,
+    comment: 'Deuxième séance',
+  }
+
+  it('réserve et déduit une séance dans la même transaction', async () => {
+    const { database, transaction } = makeSessionDatabase()
+
+    const result = await bookCustomerPackageSession(database, sessionInput)
+
+    expect(database.$transaction).toHaveBeenCalledWith(expect.any(Function), {
+      isolationLevel: 'Serializable',
+    })
+    expect(transaction.customerPackage.findFirst).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({
+          id: soldPackage.id,
+          customerId: soldPackage.customerId,
+          status: 'ACTIVE',
+        }),
+      }),
+    )
+    expect(transaction.packageSession.create).toHaveBeenCalledWith({
+      data: {
+        customerPackageId: soldPackage.id,
+        appointmentId: appointment.id,
+      },
+    })
+    expect(transaction.customerPackage.update).toHaveBeenCalledWith({
+      where: { id: soldPackage.id },
+      data: {
+        revenueAppointmentId: appointment.id,
+        validityStartsAt: startsAt,
+      },
+    })
+    expect(result.customerPackage.id).toBe(soldPackage.id)
+  })
+
+  it('refuse un forfait sans crédit restant', async () => {
+    const { database, transaction } = makeSessionDatabase()
+    transaction.customerPackage.findFirst.mockResolvedValue({
+      ...soldPackage,
+      sessions: Array.from(
+        { length: soldPackage.sessionCountSnapshot },
+        (_, index) => ({
+          id: `session-${index}`,
+        }),
+      ),
+    })
+
+    await expect(
+      bookCustomerPackageSession(database, sessionInput),
+    ).rejects.toEqual(new PackagePurchaseError('PACKAGE_UNAVAILABLE'))
+    expect(transaction.appointment.create).not.toHaveBeenCalled()
+  })
+
+  it('refuse un forfait appartenant à une autre personne', async () => {
+    const { database, transaction } = makeSessionDatabase()
+    transaction.customerPackage.findFirst.mockResolvedValue(null)
+
+    await expect(
+      bookCustomerPackageSession(database, {
+        ...sessionInput,
+        customerId: 'customer-2',
+      }),
+    ).rejects.toEqual(new PackagePurchaseError('PACKAGE_UNAVAILABLE'))
+    expect(transaction.appointment.create).not.toHaveBeenCalled()
   })
 })

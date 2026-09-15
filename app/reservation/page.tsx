@@ -7,8 +7,12 @@ import { MAIN_CONTENT_ID } from '@/components/ui/skip-link'
 import { getBookableServices } from '@/lib/catalog/queries'
 import { createPageMetadata } from '@/lib/config/seo'
 import { isEmailConfigured } from '@/lib/core/env'
+import prisma from '@/lib/core/prisma'
+import { getCustomerSession } from '@/lib/core/session-cookies'
+import { getBookableCustomerPackages } from '@/lib/packages/customer-packages'
 import { getPublicPackages } from '@/lib/packages/queries'
 import { getPublicBookingWindow } from '@/lib/reservation/booking-window'
+import { findCustomerForSession } from '@/lib/reservation/customers'
 
 export const metadata = createPageMetadata({
   title: 'Prendre rendez-vous en ligne',
@@ -79,7 +83,7 @@ const ReservationPage = async () => {
           </p>
         </div>
         <Suspense fallback={<WizardSkeleton />}>
-          <ReservationEntry
+          <ReservationContent
             services={services}
             packages={packages}
             minDate={window.min}
@@ -89,6 +93,28 @@ const ReservationPage = async () => {
         </Suspense>
       </main>
     </>
+  )
+}
+
+const ReservationContent = async (
+  props: Omit<
+    Parameters<typeof ReservationEntry>[0],
+    'customerPackages' | 'customerAuthenticated'
+  >,
+) => {
+  const session = await getCustomerSession()
+  const customer = session
+    ? await findCustomerForSession(prisma, session)
+    : null
+  const customerPackages = customer
+    ? await getBookableCustomerPackages(prisma, customer.id, new Date())
+    : []
+  return (
+    <ReservationEntry
+      {...props}
+      customerAuthenticated={Boolean(customer)}
+      customerPackages={customerPackages}
+    />
   )
 }
 

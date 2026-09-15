@@ -38,6 +38,7 @@ const appointmentSelect = {
         select: {
           packageNameSnapshot: true,
           packagePriceCents: true,
+          installmentCount: true,
           revenueAppointmentId: true,
         },
       },

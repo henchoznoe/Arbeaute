@@ -18,6 +18,7 @@ import {
   notifyAppointmentConfirmed,
   notifyAppointmentRescheduled,
 } from '@/lib/email/notifications'
+import { getBookableCustomerPackages } from '@/lib/packages/customer-packages'
 import { getAppointmentPackageMailContext } from '@/lib/packages/mail-context'
 import {
   cancelAppointmentSerializable,
@@ -71,7 +72,12 @@ const appointmentMutationSchema = z.object({
 export interface BookingResult {
   ok: boolean
   message: string
-  reason?: 'INVALID_CUSTOMER' | 'SLOT_CONFLICT' | 'UNKNOWN'
+  reason?:
+    | 'INVALID_CUSTOMER'
+    | 'SLOT_CONFLICT'
+    | 'PACKAGE_AVAILABLE'
+    | 'UNKNOWN'
+  redirectPath?: string
   appointment?: {
     serviceLabel: string
     dateLabel: string
@@ -257,7 +263,13 @@ export const createPublicAppointment = async (
   // navigateur, qui n'a jamais su si l'adresse était connue.
   const known = await prisma.customer.findFirst({
     where: { emailNormalized: email, anonymizedAt: null },
-    select: { firstName: true, lastName: true, phone: true },
+    select: {
+      id: true,
+      identityVersion: true,
+      firstName: true,
+      lastName: true,
+      phone: true,
+    },
   })
 
   const lastName = parsed.data.lastName?.trim() || known?.lastName
@@ -289,6 +301,30 @@ export const createPublicAppointment = async (
       }),
     ])
     if (!ipLimit.allowed || !emailLimit.allowed) return genericBookingError()
+
+    if (known) {
+      const activePackages = await getBookableCustomerPackages(
+        prisma,
+        known.id,
+        new Date(),
+      )
+      const eligiblePackage = activePackages.find(
+        item =>
+          item.services.some(service => service.id === parsed.data.serviceId) &&
+          (!item.expiresAt ||
+            new Date(item.expiresAt) >= new Date(parsed.data.startsAt)),
+      )
+      if (eligiblePackage) {
+        await setCustomerSession(known.id, known.identityVersion)
+        return {
+          ok: false,
+          reason: 'PACKAGE_AVAILABLE',
+          message:
+            'Ce soin est compris dans un forfait encore actif. Nous vous redirigeons pour utiliser une séance, sans compter le prix normal.',
+          redirectPath: `/reservation?type=mon-forfait&utiliserForfait=${encodeURIComponent(eligiblePackage.id)}&serviceId=${encodeURIComponent(parsed.data.serviceId)}&startsAt=${encodeURIComponent(parsed.data.startsAt)}`,
+        }
+      }
+    }
 
     const { appointment, customer } = await createAppointmentSerializable(
       prisma,
